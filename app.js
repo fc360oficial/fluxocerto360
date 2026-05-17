@@ -367,8 +367,8 @@ function getChecklistsObrigatoriosHoje() {
   var myLoja = S.currentUser ? (S.currentUser.loja || '').toLowerCase() : '';
   return getCustomCLs().filter(function(cl) {
     var dias = cl.diasObrigatorios || [];
-    if (!dias.length) return false;             // sem agenda = não obrigatório
-    if (!dias.some(function(d){ return Number(d) === diaSemana; })) return false;
+    // sem agenda configurada = obrigatório todo dia
+    if (dias.length && !dias.some(function(d){ return Number(d) === diaSemana; })) return false;
     // Filtra por loja se o checklist tiver loja configurada
     if (cl.loja && myLoja && cl.loja.toLowerCase() !== myLoja) return false;
     return true;

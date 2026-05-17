@@ -406,16 +406,27 @@ function getPendencias() {
 
 // Abre painel de pendências
 function abrirPendentes() {
+  var u = S.currentUser;
+  var isManager = u && (u.perfil === 'admin' || u.perfil === 'gerencia');
+  var todos = isManager ? getCustomCLs() : getChecklistsObrigatoriosHoje();
+  var hoje = new Date().toLocaleDateString('pt-BR');
+  var resultados = getResultados();
+  var resultadosHoje = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hoje) === 0; });
   var pendencias = getPendencias();
   var lista = document.getElementById('pendentes-lista');
   if (!lista) return;
   var titulo = document.getElementById('pendentes-titulo');
+  var debug = '<div style="font-size:11px;color:var(--t3);background:var(--gray);border-radius:8px;padding:8px 12px;margin-bottom:10px">'
+    +'Checklists no sistema: <b>'+todos.length+'</b> · '
+    +'Enviados hoje: <b>'+resultadosHoje.length+'</b> · '
+    +'Pendentes: <b>'+pendencias.length+'</b>'
+    +'</div>';
   if (!pendencias.length) {
     if (titulo) { titulo.textContent = '✅ Checklists em Dia'; titulo.style.color = 'var(--g)'; }
-    lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--g);font-weight:600">Todos os checklists obrigatórios de hoje foram enviados!</div>';
+    lista.innerHTML = debug + '<div style="text-align:center;padding:20px;color:var(--g);font-weight:600">Todos os checklists de hoje foram enviados!</div>';
   } else {
     if (titulo) { titulo.textContent = '⚠️ Checklists Pendentes'; titulo.style.color = '#c0392b'; }
-    lista.innerHTML = pendencias.map(function(p){
+    lista.innerHTML = debug + pendencias.map(function(p){
       var cor = p.atrasado ? '#c0392b' : '#e67e22';
       var icone = p.atrasado ? '🔴' : '🟡';
       return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--gray);border-radius:10px;border-left:4px solid '+cor+'">'

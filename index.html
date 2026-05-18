@@ -381,6 +381,8 @@
             <div class="tab" onclick="switchRelClTab('executivo',this)">📈 Executivo</div>
             <div class="tab" onclick="switchRelClTab('naoconformidade',this)">⚠️ Nao Conformidade</div>
             <div class="tab" onclick="switchRelClTab('ranking',this)">🏆 Ranking</div>
+            <div class="tab" onclick="switchRelClTab('porquestao',this)">🔍 Por Questão</div>
+            <div class="tab" onclick="switchRelClTab('execucao',this)">📅 Execução</div>
             <div class="tab" onclick="switchRelClTab('corporativo',this)">📊 Corporativo</div>
           </div>
 
@@ -433,6 +435,40 @@
               <div class="card-hdr"><div class="card-title">Desempenho Completo da Equipe</div></div>
               <table><thead><tr><th>Operador</th><th>Perfil</th><th>Enviados</th><th>100%</th><th>Media %</th><th>Ultimo Envio</th></tr></thead>
               <tbody id="rel-equipe-tbody"><tr class="erow"><td colspan="6">Nenhum checklist enviado ainda</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- POR QUESTÃO -->
+          <div id="rel-cl-porquestao" style="display:none">
+            <div class="g3" style="margin-bottom:16px">
+              <div class="mc"><div class="lbl">Questões Analisadas</div><div class="val" id="pq-total">0</div></div>
+              <div class="mc"><div class="lbl">Maior Taxa de Falha</div><div class="val dn" id="pq-pior">—</div></div>
+              <div class="mc"><div class="lbl">Questões Críticas Reprovadas</div><div class="val dn" id="pq-criticas">0</div></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Questões com Maior Taxa de Falha</div><div style="font-size:12px;color:var(--t3)">Ordenado por % de falha</div></div>
+              <table><thead><tr><th>#</th><th>Questão</th><th>Checklist</th><th>Apareceu</th><th>Falhou</th><th>% Falha</th><th>Tipo</th></tr></thead>
+              <tbody id="pq-tbody"><tr class="erow"><td colspan="7">Nenhum resultado para analisar</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- EXECUÇÃO VS AGENDADO -->
+          <div id="rel-cl-execucao" style="display:none">
+            <div class="g4" style="margin-bottom:16px">
+              <div class="mc"><div class="lbl">Agendados (período)</div><div class="val" id="ex-agendados">0</div></div>
+              <div class="mc"><div class="lbl">Executados</div><div class="val up" id="ex-executados">0</div></div>
+              <div class="mc"><div class="lbl">Pendentes</div><div class="val dn" id="ex-pendentes">0</div></div>
+              <div class="mc"><div class="lbl">Taxa de Execução</div><div class="val" id="ex-taxa">—</div></div>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Execução por Checklist</div></div>
+              <table><thead><tr><th>Checklist</th><th>Setor</th><th>Dias Agendados</th><th>Executados</th><th>Pendentes</th><th>Taxa</th></tr></thead>
+              <tbody id="ex-cl-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Execução por Dia — Últimos 7 dias</div></div>
+              <table><thead><tr><th>Data</th><th>Dia</th><th>Agendados</th><th>Executados</th><th>Taxa</th><th>Status</th></tr></thead>
+              <tbody id="ex-dia-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
             </div>
           </div>
 
@@ -793,6 +829,9 @@
           <option value="depois">📷 Foto depois</option>
           <option value="antes_depois">📷📷 Foto antes e depois</option>
         </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--r);white-space:nowrap;cursor:pointer" title="Item crítico reprova a inspeção inteira se marcado Não">
+          <input type="checkbox" id="ncl-item-critico" style="accent-color:var(--r);width:15px;height:15px"/> ⚠️ Crítico
+        </label>
         <button class="btn btn-p btn-sm" onclick="addItemNCL()">+ Adicionar</button>
       </div>
     </div>

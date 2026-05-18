@@ -927,8 +927,14 @@ function buildCLBlock(cl) {
   var done = cl.itens.filter(function(i){ return S.checkState[cl.id+'_'+i.t]; }).length;
   var total = cl.itens.length;
   var pct = total ? Math.round(done/total*100) : 0;
-  // Check if already sent today by this user
   var jaConcluido = jaEnviouHoje(cl.id);
+  // Verifica se algum item crítico está reprovado (simNao=nao ou checkbox=false)
+  var itemCriticoReprovado = cl.itens.some(function(item, i){
+    if (!item.critico) return false;
+    var val = S.checkState[cl.id+'_'+item.t];
+    if ((item.tipo||'checkbox') === 'simNao') return val === 'nao';
+    return !val;
+  });
 
   var items = cl.itens.map(function(item,i){
     var key = cl.id + '_' + item.t;
@@ -1047,7 +1053,10 @@ function buildCLBlock(cl) {
     return '<div id="cli-' + cl.id + '-' + i + '" style="display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:1px solid var(--gray2);border-radius:10px;background:' + itemBg + '">'
       + leftCtrl
       + '<div style="flex:1;min-width:0">'
+      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
       + '<div style="font-size:13px;font-weight:500;line-height:1.4;' + txtStyle + '">' + item.t + '</div>'
+      + (item.critico ? '<span style="font-size:10px;font-weight:800;color:var(--r);background:var(--r2);padding:1px 7px;border-radius:20px;border:1px solid var(--r);white-space:nowrap">⚠️ CRÍTICO</span>' : '')
+      + '</div>'
       + (item.obs ? '<div style="font-size:11px;color:var(--t3);margin-top:3px">' + item.obs + '</div>' : '')
       + belowHtml
       + '</div>'
@@ -1055,6 +1064,13 @@ function buildCLBlock(cl) {
       + '</div>';
   }).join('');
   var empty = !total ? '<div style="text-align:center;padding:32px;color:var(--t3);font-size:13px">Nenhum item neste checklist.</div>' : '';
+  var criticoBanner = (!jaConcluido && itemCriticoReprovado)
+    ? '<div style="display:flex;align-items:center;gap:10px;background:var(--r2);border:1.5px solid var(--r);border-radius:10px;padding:12px 16px;margin-bottom:14px">'
+      + '<span style="font-size:22px">🚨</span>'
+      + '<div><div style="font-size:13px;font-weight:800;color:var(--r)">Inspeção Reprovada!</div>'
+      + '<div style="font-size:12px;color:var(--r)">Um item crítico foi marcado como Não conforme. O envio registrará esta inspeção como REPROVADA.</div></div>'
+      + '</div>'
+    : '';
   var envioBanner = jaConcluido
     ? '<div style="display:flex;align-items:center;gap:10px;background:#e8f5ee;border:1px solid #a8d5b5;border-radius:10px;padding:12px 16px;margin-bottom:14px">'
       + '<span style="font-size:20px">✅</span>'
@@ -1073,6 +1089,7 @@ function buildCLBlock(cl) {
     + '<div>'
     + '<div style="font-family:\'Syne\',sans-serif;font-size:18px;font-weight:800;color:var(--t);margin-bottom:4px">' + clLabel + '</div>'
     + (clDesc ? '<div style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:6px">' + clDesc + '</div>' : '')
+    + criticoBanner
     + envioBanner
     + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
     + (clSetor ? '<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:var(--g3);color:var(--g);font-weight:600">' + clSetor + '</span>' : '')
@@ -1632,6 +1649,12 @@ function confirmarEnviar(assinatura) {
   var feitos = snapshot.filter(function(i){return i.feito;}).length;
   var total = snapshot.length;
   var pct = total ? Math.round(feitos/total*100) : 0;
+  // Verifica se algum item crítico foi reprovado
+  var reprovado = snapshot.some(function(item){
+    if (!item.critico) return false;
+    if (item.tipo === 'simNao') return item.resposta === 'nao';
+    return !item.feito;
+  });
   var customCL = getCustomCLs().find(function(c){return c.id===clId;});
   var setor = customCL ? customCL.setor : 'Geral';
   var now = new Date();
@@ -1641,7 +1664,7 @@ function confirmarEnviar(assinatura) {
     operador:S.currentUser?S.currentUser.nome:'--', perfil:S.role,
     loja:S.currentUser?S.currentUser.loja||'':'',
     dataHora:dh, itens:snapshot, feitos:feitos, total:total, pct:pct,
-    assinatura:assinatura||null
+    reprovado:reprovado, assinatura:assinatura||null
   };
   var lista = getAllResultados();
   // Salva sem assinatura no cache local (base64 enorme estoura localStorage)
@@ -1666,7 +1689,8 @@ function confirmarEnviar(assinatura) {
   if (block) block.innerHTML = buildCLBlock(cl);
   updateCLProg(cl);
   updateDash();
-  showToast(pct===100 ? 'Checklist enviado com sucesso!' : 'Checklist enviado com '+pct+'% concluído');
+  if (reprovado) showToast('🚨 Inspeção REPROVADA — item crítico não conforme!');
+  else showToast(pct===100 ? 'Checklist enviado com sucesso!' : 'Checklist enviado com '+pct+'% concluído');
 }
 
 function cancelarEnviar() {
@@ -1711,12 +1735,15 @@ function addItemNCL() {
   var fotoVal = document.getElementById('ncl-item-foto').value;
   var tipo = (document.getElementById('ncl-item-tipo')||{value:'checkbox'}).value || 'checkbox';
   var foto = fotoVal !== 'none' ? fotoVal : false;
+  var criticoEl = document.getElementById('ncl-item-critico');
+  var critico = criticoEl ? criticoEl.checked : false;
   if (!txt) return;
-  nclItens.push({t:txt, obs:obs, foto:foto, tipo:tipo});
+  nclItens.push({t:txt, obs:obs, foto:foto, tipo:tipo, critico:critico});
   document.getElementById('ncl-item-txt').value='';
   document.getElementById('ncl-item-obs').value='';
   document.getElementById('ncl-item-foto').value='none';
   var tipoEl = document.getElementById('ncl-item-tipo'); if (tipoEl) tipoEl.value='checkbox';
+  if (criticoEl) criticoEl.checked = false;
   renderNclItens();
   document.getElementById('ncl-item-txt').focus();
 }
@@ -1737,6 +1764,7 @@ function renderNclItens() {
       +(item.obs ? '<div style="font-size:11px;color:var(--t3);margin-top:2px">'+item.obs+'</div>' : '')
       +(item.tipo && item.tipo!=='checkbox' ? '<div style="font-size:11px;color:var(--bl);margin-top:2px">'+({simNao:'✅ Sim/Não',nota:'⭐ Nota 1–5',texto:'📝 Texto'}[item.tipo]||'')+'</div>' : '')
       +(item.foto && item.foto!=='none' ? '<div style="font-size:11px;color:var(--g);margin-top:2px">'+(item.foto==='antes_depois'?'📷📷 Foto antes e depois':'📷 Foto depois')+'</div>' : '')
+      +(item.critico ? '<div style="font-size:11px;font-weight:700;color:var(--r);margin-top:2px">⚠️ Item Crítico — reprova a inspeção inteira</div>' : '')
       +'</div>'
       +'<button onclick="removeItemNCL('+i+')" style="background:none;border:none;color:var(--r);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0">✕</button>'
       +'</div>';
@@ -1903,14 +1931,15 @@ function renderCentral() {
   var reversed = lista.slice().reverse();
   tbody.innerHTML = reversed.map(function(r,i){
     var realIdx = lista.length-1-i;
-    var st = r.pct===100?'st-ok':r.pct>=50?'st-warn':'st-err';
+    var st = r.reprovado?'st-err':r.pct===100?'st-ok':r.pct>=50?'st-warn':'st-err';
+    var pctLabel = r.reprovado ? '🚨 REPROVADO' : r.pct+'%'+(r.resetado?' ↺':'');
     return '<tr>'
       +'<td style="white-space:nowrap;font-size:12px">'+r.dataHora+'</td>'
       +'<td><strong>'+r.checklistNome+'</strong></td>'
       +'<td>'+r.setor+'</td>'
       +'<td>'+r.operador+'</td>'
       +'<td><span class="st '+(PCLS[r.perfil]||'st-ok')+'">'+(PLABEL[r.perfil]||r.perfil)+'</span></td>'
-      +'<td><span class="st '+st+'">'+r.pct+'%'+(r.resetado?' ↺':'')+'</span></td>'
+      +'<td><span class="st '+st+'">'+pctLabel+'</span></td>'
       +'<td style="font-size:12px">'+r.feitos+'/'+r.total+'</td>'
       +'<td><button class="btn btn-s btn-sm" onclick="verDetalhe('+realIdx+')">Ver</button></td>'
       +'</tr>';
@@ -2700,7 +2729,7 @@ function initDashCharts() {
 }
 
 function switchRelClTab(sub, btn) {
-  ['geral','executivo','naoconformidade','ranking','corporativo'].forEach(function(t){
+  ['geral','executivo','naoconformidade','ranking','porquestao','execucao','corporativo'].forEach(function(t){
     var el = document.getElementById('rel-cl-'+t);
     if (el) el.style.display = t===sub ? 'block' : 'none';
   });
@@ -2710,6 +2739,8 @@ function switchRelClTab(sub, btn) {
   if (sub==='executivo') { renderRelExecutivo(); }
   if (sub==='naoconformidade') { renderRelNaoConformidade(); }
   if (sub==='ranking') { renderRelRanking(); }
+  if (sub==='porquestao') { renderRelPorQuestao(); }
+  if (sub==='execucao') { renderRelExecucao(); }
   if (sub==='corporativo') { renderRelCorporativoTab(); }
 }
 
@@ -2877,6 +2908,131 @@ function renderRelChecklist() {
       +'<td>'+o.env+'</td><td><span class="st '+(o.comp===o.env?'st-ok':'st-warn')+'">'+o.comp+'/'+o.env+'</span></td>'
       +'<td><span class="st '+mst+'">'+o.media+'%</span></td><td style="font-size:12px;color:var(--t3)">'+o.ultimo+'</td></tr>';
   }).join('') : '<tr class="erow"><td colspan="6">Nenhum checklist enviado ainda</td></tr>';
+}
+
+function renderRelPorQuestao() {
+  var resultados = getResultados();
+  // Agrupa itens por texto da questão
+  var mapa = {};
+  resultados.forEach(function(r) {
+    (r.itens||[]).forEach(function(item) {
+      var chave = (item.texto||'').trim();
+      if (!chave) return;
+      if (!mapa[chave]) mapa[chave] = {texto:chave, checklistNome:r.checklistNome, tipo:item.tipo||'checkbox', critico:!!item.critico, total:0, falhou:0};
+      mapa[chave].total++;
+      var falha = false;
+      if (item.tipo==='simNao') falha = item.resposta==='nao';
+      else falha = !item.feito;
+      if (falha) mapa[chave].falhou++;
+    });
+  });
+  var lista = Object.values(mapa).filter(function(q){return q.total>0;});
+  lista.sort(function(a,b){ return (b.falhou/b.total) - (a.falhou/a.total); });
+
+  var criticas = lista.filter(function(q){return q.critico && q.falhou>0;}).length;
+  document.getElementById('pq-total').textContent = lista.length;
+  document.getElementById('pq-criticas').textContent = criticas;
+  var pior = lista.length ? Math.round(lista[0].falhou/lista[0].total*100)+'%' : '—';
+  document.getElementById('pq-pior').textContent = pior;
+
+  var tbody = document.getElementById('pq-tbody');
+  if (!lista.length) { tbody.innerHTML='<tr class="erow"><td colspan="7">Nenhum resultado para analisar</td></tr>'; return; }
+  tbody.innerHTML = lista.map(function(q, i) {
+    var taxa = Math.round(q.falhou/q.total*100);
+    var st = taxa>=50?'st-err':taxa>=20?'st-warn':'st-ok';
+    var tipoLabel = {checkbox:'☑ Checkbox',simNao:'✅ Sim/Não',nota:'⭐ Nota',texto:'📝 Texto'}[q.tipo]||q.tipo;
+    return '<tr>'
+      +'<td style="font-weight:700;color:var(--t3)">'+(i+1)+'</td>'
+      +'<td style="font-size:12px">'+(q.critico?'<span style="color:var(--r);font-weight:700">⚠️ </span>':'')+q.texto+'</td>'
+      +'<td style="font-size:12px;color:var(--t3)">'+q.checklistNome+'</td>'
+      +'<td style="text-align:center">'+q.total+'</td>'
+      +'<td style="text-align:center;color:var(--r);font-weight:600">'+q.falhou+'</td>'
+      +'<td><span class="st '+st+'">'+taxa+'%</span></td>'
+      +'<td style="font-size:11px;color:var(--t3)">'+tipoLabel+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function renderRelExecucao() {
+  var customCLs = getCustomCLs();
+  var resultados = getResultados();
+  var agora = new Date();
+  var dias7 = [];
+  for (var i=6; i>=0; i--) {
+    var d = new Date(agora); d.setDate(d.getDate()-i);
+    dias7.push({
+      dateStr: d.toLocaleDateString('pt-BR'),
+      diaSemana: d.getDay(),
+      label: d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})
+    });
+  }
+  // Calcula agendados por checklist no período
+  var porCL = customCLs.map(function(cl) {
+    var dias = cl.diasObrigatorios || [];
+    var agendados = dias7.filter(function(d){
+      if (!dias.length) return true; // sem agenda = todo dia
+      return dias.some(function(x){ return Number(x)===d.diaSemana; });
+    }).length;
+    var executados = dias7.filter(function(d){
+      return resultados.some(function(r){
+        return r.checklistId===cl.id && r.dataHora && r.dataHora.indexOf(d.dateStr)===0;
+      });
+    }).length;
+    return {nome:cl.label||cl.nome||'', setor:cl.setor||'', agendados:agendados, executados:executados};
+  }).filter(function(x){return x.agendados>0;});
+
+  var totAg = porCL.reduce(function(s,x){return s+x.agendados;},0);
+  var totEx = porCL.reduce(function(s,x){return s+x.executados;},0);
+  var totPend = totAg - totEx;
+  var taxa = totAg ? Math.round(totEx/totAg*100) : 0;
+
+  document.getElementById('ex-agendados').textContent = totAg;
+  document.getElementById('ex-executados').textContent = totEx;
+  document.getElementById('ex-pendentes').textContent = totPend;
+  var taxaEl = document.getElementById('ex-taxa');
+  taxaEl.textContent = totAg ? taxa+'%' : '—';
+  taxaEl.style.color = taxa>=80?'var(--g)':taxa>=50?'var(--am)':'var(--r)';
+
+  // Tabela por checklist
+  var tbCL = document.getElementById('ex-cl-tbody');
+  if (!porCL.length) { tbCL.innerHTML='<tr class="erow"><td colspan="6">Nenhum checklist agendado</td></tr>'; }
+  else tbCL.innerHTML = porCL.map(function(x){
+    var t = x.agendados ? Math.round(x.executados/x.agendados*100) : 0;
+    var st = t>=80?'st-ok':t>=50?'st-warn':'st-err';
+    return '<tr>'
+      +'<td><strong>'+x.nome+'</strong></td>'
+      +'<td style="font-size:12px;color:var(--t3)">'+x.setor+'</td>'
+      +'<td style="text-align:center">'+x.agendados+'</td>'
+      +'<td style="text-align:center;color:var(--g);font-weight:600">'+x.executados+'</td>'
+      +'<td style="text-align:center;color:var(--r)">'+Math.max(0,x.agendados-x.executados)+'</td>'
+      +'<td><span class="st '+st+'">'+t+'%</span></td>'
+      +'</tr>';
+  }).join('');
+
+  // Tabela por dia
+  var tbDia = document.getElementById('ex-dia-tbody');
+  tbDia.innerHTML = dias7.map(function(d){
+    var agDia = customCLs.filter(function(cl){
+      var dias = cl.diasObrigatorios||[];
+      if (!dias.length) return true;
+      return dias.some(function(x){return Number(x)===d.diaSemana;});
+    }).length;
+    var exDia = resultados.filter(function(r){
+      return r.dataHora && r.dataHora.indexOf(d.dateStr)===0;
+    }).map(function(r){return r.checklistId;}).filter(function(id,idx,arr){return arr.indexOf(id)===idx;}).length;
+    if (agDia===0) return '';
+    var t = Math.round(exDia/agDia*100);
+    var st = t>=80?'st-ok':t>=50?'st-warn':'st-err';
+    var stLabel = t>=80?'OK':t>=50?'Parcial':'Crítico';
+    return '<tr>'
+      +'<td style="font-size:12px">'+d.dateStr+'</td>'
+      +'<td style="font-size:12px;color:var(--t3)">'+d.label.split(',')[0]+'</td>'
+      +'<td style="text-align:center">'+agDia+'</td>'
+      +'<td style="text-align:center;color:var(--g);font-weight:600">'+exDia+'</td>'
+      +'<td><span class="st '+st+'">'+t+'%</span></td>'
+      +'<td><span class="st '+st+'">'+stLabel+'</span></td>'
+      +'</tr>';
+  }).filter(Boolean).join('') || '<tr class="erow"><td colspan="6">Nenhum dado</td></tr>';
 }
 
 function renderRelInventario() {

@@ -836,9 +836,13 @@
         <button class="btn btn-p btn-sm" onclick="addItemNCL()">+ Adicionar</button>
       </div>
       <div id="ncl-planilha-row" style="display:none;margin-top:8px">
-        <label style="font-size:12px;color:var(--t2);font-weight:600;display:block;margin-bottom:4px">Arquivo CSV com produtos (código de barras, descrição, setor)</label>
-        <input type="file" id="ncl-planilha-csv" accept=".csv,.txt" onchange="onPlanilhaCSVChange(this)" style="font-size:12px;width:100%;padding:6px;border:1.5px solid var(--gray2);border-radius:8px;background:#fff"/>
-        <div id="ncl-planilha-info" style="font-size:11px;color:var(--t3);margin-top:4px">Formato: uma linha por produto — código, descrição, setor (separado por vírgula ou ponto e vírgula)</div>
+        <div id="ncl-planilha-lojas-lista" style="margin-bottom:6px"></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="ncl-planilha-loja-nome" placeholder="Nome da loja (ex: Muribeca)" style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit;background:#fff"/>
+          <input type="file" id="ncl-planilha-csv" accept=".csv,.txt" onchange="onPlanilhaCSVChange(this)" style="flex:2;min-width:140px;font-size:12px;padding:6px;border:1.5px solid var(--gray2);border-radius:8px;background:#fff"/>
+          <button class="btn btn-s btn-sm" onclick="adicionarLojaPlanilha()">+ Loja</button>
+        </div>
+        <div id="ncl-planilha-info" style="font-size:11px;color:var(--t3);margin-top:4px">Formato: código, descrição, setor — um produto por linha</div>
       </div>
     </div>
     <div class="modal-err" id="mcl-err"></div>

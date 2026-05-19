@@ -603,7 +603,6 @@ function finalizarLogin(found) {
 
   function iniciarApp() {
     limparContagensAntigas();
-    loadPlanilhasDiarias();
     // Load inv and perdas for this user/day
     loadInvFromFirebase(function(){
       loadPerdasFromFirebase(function(){
@@ -613,7 +612,10 @@ function finalizarLogin(found) {
       });
     });
     if (!isOpOrPrev2) initDashCharts();
-    buildCLTabs();
+    // buildCLTabs só após planilhas diárias carregadas para que _planilhaTemplates esteja populado
+    loadPlanilhasDiarias(function() {
+      buildCLTabs();
+    });
     var hoje = new Date();
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
@@ -875,11 +877,9 @@ function sincronizarEstadoFirebase() {
   }).catch(function(){});
 
   Promise.all([promiseState, promiseResultados]).then(function(){
-    buildCLTabs();
-    updateDash();
+    loadPlanilhasDiarias(function() { buildCLTabs(); updateDash(); });
   }).catch(function(){
-    buildCLTabs();
-    updateDash();
+    loadPlanilhasDiarias(function() { buildCLTabs(); updateDash(); });
   });
 }
 

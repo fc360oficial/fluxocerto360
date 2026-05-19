@@ -230,6 +230,8 @@
 
         <!-- MODO EXECUTAR -->
         <div id="cl-mode-executar">
+          <!-- Banner de alertas de planos de ação -->
+          <div id="plano-alert-banner" style="display:none;margin-bottom:12px"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="tabs" style="margin-bottom:0" id="cl-tabs"></div>
             <div style="font-size:12px;color:var(--t3);background:var(--gray);padding:5px 12px;border-radius:20px;border:1px solid var(--gray2)" id="cl-data-hoje"></div>
@@ -1088,7 +1090,21 @@
     <div class="frow c1"><div class="fg"><label>O que precisa ser feito</label><input id="plano-desc" type="text" placeholder="Descreva a ação corretiva necessária..."/></div></div>
     <div class="frow c2">
       <div class="fg"><label>Responsável</label><input id="plano-resp" type="text" placeholder="Nome do responsável"/></div>
-      <div class="fg"><label>Prazo</label><input id="plano-prazo" type="date"/></div>
+      <div class="fg"><label>Prazo (data de referência)</label><input id="plano-prazo" type="date"/></div>
+    </div>
+    <div class="frow c2">
+      <div class="fg">
+        <label>⏱ Prazo de execução</label>
+        <select id="plano-prazo-horas" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%;background:#fff">
+          <option value="24">24 horas (1 dia)</option>
+          <option value="48">48 horas (2 dias)</option>
+          <option value="72" selected>72 horas (3 dias)</option>
+          <option value="120">120 horas (5 dias)</option>
+          <option value="168">168 horas (7 dias)</option>
+          <option value="336">336 horas (14 dias)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Mensagem / instrução ao operador</label><input id="plano-mensagem" type="text" placeholder="Ex: Corrigir antes da abertura da loja"/></div>
     </div>
     <div class="frow c1"><div class="fg"><label>Origem / Motivo</label><input id="plano-origem" type="text" placeholder="Ex: Checklist Açougue — Temperatura fora do padrão"/></div></div>
     <div class="frow c1"><div class="fg"><label>Observação adicional</label><textarea id="plano-obs" rows="2" placeholder="Detalhes, fotos, referências..."></textarea></div></div>
@@ -1141,6 +1157,36 @@
     <div class="btn-row" style="margin-top:16px">
       <button class="btn btn-p" onclick="confirmarConclusaoPlano()">✅ Confirmar Conclusão</button>
       <button class="btn btn-s" onclick="document.getElementById('modal-conclusao-plano').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRORROGAÇÃO DE PRAZO -->
+<div class="modal-bg" id="modal-prorrogacao" style="display:none">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-title">⏳ Solicitar Prorrogação</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:14px;padding:8px 10px;background:var(--gray);border-radius:8px" id="mprorrog-desc"></div>
+    <div class="frow c1">
+      <div class="fg">
+        <label>Motivo da prorrogação <span style="color:var(--r)">*</span></label>
+        <textarea id="prorrog-motivo" rows="3" placeholder="Explique por que precisa de mais tempo..."></textarea>
+      </div>
+    </div>
+    <div class="frow c1">
+      <div class="fg">
+        <label>Tempo adicional solicitado</label>
+        <select id="prorrog-horas" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%;background:#fff">
+          <option value="24">+24 horas (1 dia)</option>
+          <option value="48" selected>+48 horas (2 dias)</option>
+          <option value="72">+72 horas (3 dias)</option>
+          <option value="120">+120 horas (5 dias)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-err" id="mprorrog-err" style="display:none"></div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-p" onclick="salvarProrrogacao()">📨 Enviar Solicitação</button>
+      <button class="btn btn-s" onclick="document.getElementById('modal-prorrogacao').style.display='none'">Cancelar</button>
     </div>
   </div>
 </div>

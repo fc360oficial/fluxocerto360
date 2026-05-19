@@ -613,8 +613,11 @@ function finalizarLogin(found) {
     });
     if (!isOpOrPrev2) initDashCharts();
     // buildCLTabs só após planilhas diárias carregadas para que _planilhaTemplates esteja populado
-    loadPlanilhasDiarias(function() {
-      buildCLTabs();
+    loadPlanosFromFirebase(function() {
+      loadPlanilhasDiarias(function() {
+        buildCLTabs();
+        renderAlertaPlanos();
+      });
     });
     var hoje = new Date();
     var dEl = document.getElementById('cl-data-hoje');
@@ -877,9 +880,9 @@ function sincronizarEstadoFirebase() {
   }).catch(function(){});
 
   Promise.all([promiseState, promiseResultados]).then(function(){
-    loadPlanilhasDiarias(function() { buildCLTabs(); updateDash(); });
+    loadPlanilhasDiarias(function() { buildCLTabs(); renderAlertaPlanos(); updateDash(); });
   }).catch(function(){
-    loadPlanilhasDiarias(function() { buildCLTabs(); updateDash(); });
+    loadPlanilhasDiarias(function() { buildCLTabs(); renderAlertaPlanos(); updateDash(); });
   });
 }
 
@@ -1880,6 +1883,12 @@ function jaEnviouHoje(clId) {
 }
 
 function enviarCL(clId, label) {
+  // Bloqueia envio se há planos vencidos para a loja do operador
+  var vencidos = _planosVencidosDoUsuario();
+  if (vencidos.length) {
+    showToast('🚨 Envio bloqueado: '+vencidos.length+' plano(s) de ação vencido(s). Resolva ou solicite prorrogação.', 5000);
+    return;
+  }
   var cl = getMyCLs().find(function(c){return c.id===clId;});
   if (!cl) return;
   var feitos = cl.itens.filter(function(i){return !!S.checkState[clId+'_'+i.t];}).length;
@@ -2657,16 +2666,53 @@ function renderCentralPlanos() {
 
   var wrap = document.getElementById('cplano-lista');
   if (!wrap) return;
-  if (!lista.length) { wrap.innerHTML='<div style="padding:32px;text-align:center;color:var(--t3);font-size:13px">Nenhum plano de ação registrado.</div>'; return; }
 
   var COR = {aberto:'var(--r)',andamento:'var(--am)',resolvido:'var(--g)'};
   var LABEL = {aberto:'🔴 Aberto',andamento:'🟡 Em Andamento',resolvido:'✅ Resolvido'};
   var PERFIL = {operator:'Operador',prevencao:'Prevenção',gerencia:'Gerência',admin:'Administrador'};
 
-  wrap.innerHTML = lista.map(function(p){
+  // Seção de prorrogações pendentes para aprovação
+  var todosPlanos = getPlanos();
+  var prorrogPendentes = [];
+  todosPlanos.forEach(function(p){
+    (p.prorrogacoes||[]).filter(function(pr){ return pr.status==='pendente'; }).forEach(function(pr){
+      prorrogPendentes.push({ plano:p, prorr:pr });
+    });
+  });
+  var prorrogHtml = '';
+  if (prorrogPendentes.length) {
+    prorrogHtml = '<div style="background:#fff8e1;border:1.5px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:#b45309;margin-bottom:10px">⏳ '+prorrogPendentes.length+' Solicitação(ões) de Prorrogação Pendente(s)</div>'
+      +prorrogPendentes.map(function(item){
+        var p=item.plano; var pr=item.prorr;
+        return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #fde68a">'
+          +'<div style="flex:1;min-width:200px">'
+          +'<div style="font-size:12px;font-weight:700;color:var(--t)">'+p.desc+'</div>'
+          +(p.loja?'<div style="font-size:11px;color:#b45309">🏪 '+p.loja+'</div>':'')
+          +'<div style="font-size:11px;color:var(--t2);margin-top:2px">Solicitado por <strong>'+pr.solicitadoPor+'</strong> · +'+pr.horasExtras+'h · "'+pr.motivo+'"</div>'
+          +'<div style="font-size:10px;color:var(--t3)">'+pr.solicitadoEm+'</div>'
+          +'</div>'
+          +'<div style="display:flex;gap:6px">'
+          +'<button class="btn btn-p btn-sm" onclick="avaliarProrrogacao(\''+p.id+'\',\''+pr.id+'\',true)">✓ Aprovar</button>'
+          +'<button class="btn btn-s btn-sm" onclick="avaliarProrrogacao(\''+p.id+'\',\''+pr.id+'\',false)">✗ Rejeitar</button>'
+          +'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
+
+  if (!lista.length) {
+    wrap.innerHTML = prorrogHtml + '<div style="padding:32px;text-align:center;color:var(--t3);font-size:13px">Nenhum plano de ação registrado.</div>';
+    return;
+  }
+
+  wrap.innerHTML = prorrogHtml + lista.map(function(p){
     var cor = COR[p.status]||'var(--t3)';
+    var inf = _prazoInfo(p);
+    var prazoTag = (inf && p.status !== 'resolvido') ? '<span style="padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;color:#fff;background:'+inf.cor+';margin-left:4px">⏱ '+inf.texto+'</span>' : '';
     var ini = p.iniciadoPor ? ('<div style="font-size:12px;color:var(--t2);margin-top:4px">▶ Iniciado por <strong>'+p.iniciadoPor.nome+'</strong>'+(p.iniciadoPor.perfil?' ('+PERFIL[p.iniciadoPor.perfil]||p.iniciadoPor.perfil+')':'')+(p.iniciadoPor.em?' — '+p.iniciadoPor.em:'')+'</div>') : '';
-    var loja = p.loja ? '<span style="background:var(--am-bg,#fff8e1);color:#b45309;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:600;margin-right:6px">🏪 '+p.loja+'</span>' : '';
+    var loja = p.loja ? '<span style="background:#fff8e1;color:#b45309;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:600;margin-right:6px">🏪 '+p.loja+'</span>' : '';
+    var mensagemTag = (p.mensagem && p.status!=='resolvido') ? '<div style="font-size:11px;color:#0369a1;margin-top:4px">💬 '+p.mensagem+'</div>' : '';
     var concl = '';
     if (p.conclusao && p.conclusao.texto) {
       concl = '<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border-left:3px solid var(--g);border-radius:6px">'
@@ -2676,9 +2722,8 @@ function renderCentralPlanos() {
         +'</div>';
     }
     return '<div style="border:1px solid var(--gray2);border-left:4px solid '+cor+';border-radius:10px;padding:14px 16px;margin-bottom:10px;background:#fff">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">'
       +'<div style="flex:1;min-width:0">'
-      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">'+loja+'<span style="font-size:13px;font-weight:700;color:var(--t)">'+p.desc+'</span></div>'
+      +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">'+loja+'<span style="font-size:13px;font-weight:700;color:var(--t)">'+p.desc+'</span>'+prazoTag+'</div>'
       +(p.origem?'<div style="font-size:11px;color:var(--t3)">📋 '+p.origem+'</div>':'')
       +'<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--t2);margin-top:4px">'
       +'<span style="color:'+cor+';font-weight:600">'+LABEL[p.status]+'</span>'
@@ -2686,9 +2731,7 @@ function renderCentralPlanos() {
       +(p.prazo?'<span>📅 Prazo: '+p.prazo+'</span>':'')
       +(p.resolvidoEm?'<span>✅ '+p.resolvidoEm+'</span>':'')
       +'</div>'
-      +ini
-      +concl
-      +'</div>'
+      +ini+mensagemTag+concl
       +'</div>'
       +'<div style="font-size:10px;color:var(--t3);margin-top:8px">Criado em '+p.criadoEm+' por '+p.criadoPor+'</div>'
       +'</div>';
@@ -4175,10 +4218,13 @@ function salvarPlano() {
   var list = getPlanos();
   var now = new Date().toLocaleString('pt-BR');
   var loja = S.currentUser ? (S.currentUser.loja||'') : '';
+  var prazoHoras = parseInt((document.getElementById('plano-prazo-horas')||{}).value||'72');
+  var prazoFim = new Date(Date.now() + prazoHoras * 3600000).toISOString();
+  var mensagem = (document.getElementById('plano-mensagem')||{}).value || '';
   if (editingPlanoId) {
-    list = list.map(function(p){ return p.id===editingPlanoId ? Object.assign({},p,{desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim()}) : p; });
+    list = list.map(function(p){ return p.id===editingPlanoId ? Object.assign({},p,{desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim()}) : p; });
   } else {
-    list.push({id:genId(),desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),status:'aberto',loja:loja,criadoEm:now,criadoPor:S.currentUser?S.currentUser.nome:'—'});
+    list.push({id:genId(),desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),status:'aberto',loja:loja,criadoEm:now,criadoPor:S.currentUser?S.currentUser.nome:'—',prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim(),prorrogacoes:[]});
   }
   savePlanos(list);
   fecharModalPlano();
@@ -4349,6 +4395,39 @@ function renderPlanos(filtro) {
     var lojaTag = (p.loja && isAdmin) ? '<span style="background:#fff8e1;color:#b45309;border-radius:5px;padding:1px 8px;font-size:11px;font-weight:600;margin-right:4px">🏪 '+p.loja+'</span>' : '';
     var iniInfo = (p.iniciadoPor && p.iniciadoPor.nome)
       ? '<div style="font-size:11px;color:var(--t2);margin-top:5px">▶ Iniciado por <strong>'+p.iniciadoPor.nome+'</strong> ('+(PERFIL_LABEL[p.iniciadoPor.perfil]||p.iniciadoPor.perfil||'')+')'+(p.iniciadoPor.em?' — '+p.iniciadoPor.em:'')+'</div>' : '';
+    // Prazo countdown
+    var prazoHtml = '';
+    var inf = _prazoInfo(p);
+    if (inf && p.status !== 'resolvido') {
+      prazoHtml = '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:'+inf.cor+';margin-left:6px">⏱ '+inf.texto+'</span>';
+    }
+    if (p.mensagem && p.status !== 'resolvido') {
+      prazoHtml += '<div style="font-size:11px;color:#0369a1;margin-top:4px;padding:4px 8px;background:#f0f9ff;border-radius:6px;border-left:3px solid #38bdf8">💬 '+p.mensagem+'</div>';
+    }
+    // Prorrogações
+    var prorrogHtml = '';
+    var prorrogs = p.prorrogacoes || [];
+    var pendentes = prorrogs.filter(function(pr){ return pr.status==='pendente'; });
+    var ultimaProrr = prorrogs.length ? prorrogs[prorrogs.length-1] : null;
+    if (p.status !== 'resolvido') {
+      if (pendentes.length) {
+        prorrogHtml = '<div style="font-size:11px;color:#b45309;margin-top:6px;padding:5px 8px;background:#fff8e1;border-radius:6px">⏳ Prorrogação aguardando aprovação da Central</div>';
+        if (isAdmin) {
+          pendentes.forEach(function(pr){
+            prorrogHtml += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 8px;background:#fff8e1;border-radius:6px;margin-top:4px;flex-wrap:wrap">'
+              +'<span><strong>'+pr.solicitadoPor+'</strong> pede +'+pr.horasExtras+'h: "'+pr.motivo+'"</span>'
+              +'<button class="btn btn-p btn-sm" style="font-size:11px;padding:2px 8px" onclick="avaliarProrrogacao(\''+p.id+'\',\''+pr.id+'\',true)">✓ Aprovar</button>'
+              +'<button class="btn btn-s btn-sm" style="font-size:11px;padding:2px 8px" onclick="avaliarProrrogacao(\''+p.id+'\',\''+pr.id+'\',false)">✗ Rejeitar</button>'
+              +'</div>';
+          });
+        }
+      } else if (inf && inf.vencido && !isAdmin) {
+        prorrogHtml = '<div style="margin-top:6px"><button class="btn btn-s btn-sm" style="font-size:11px" onclick="solicitarProrrogacao(\''+p.id+'\')">⏳ Solicitar Prorrogação</button></div>';
+      } else if (ultimaProrr && ultimaProrr.status==='rejeitado') {
+        prorrogHtml = '<div style="font-size:11px;color:var(--r);margin-top:4px">❌ Prorrogação rejeitada'+(ultimaProrr.avaliadoPor?' por '+ultimaProrr.avaliadoPor:'')+'</div>';
+        if (!isAdmin) prorrogHtml += '<div style="margin-top:4px"><button class="btn btn-s btn-sm" style="font-size:11px" onclick="solicitarProrrogacao(\''+p.id+'\')">↩ Solicitar novamente</button></div>';
+      }
+    }
     var conclusaoHtml = '';
     if (p.conclusao && p.conclusao.texto) {
       conclusaoHtml = '<div style="margin-top:10px;padding:8px 12px;background:#f0fdf4;border-left:3px solid var(--g);border-radius:6px">'
@@ -4360,7 +4439,7 @@ function renderPlanos(filtro) {
     return '<div style="background:#fff;border:1px solid var(--gray2);border-left:4px solid '+cor+';border-radius:12px;padding:16px 18px;box-shadow:var(--sh)">'
       +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
       +'<div style="flex:1;min-width:0">'
-      +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">'+lojaTag+'<span style="font-size:14px;font-weight:700;color:var(--t)">'+p.desc+'</span></div>'
+      +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">'+lojaTag+'<span style="font-size:14px;font-weight:700;color:var(--t)">'+p.desc+'</span>'+prazoHtml+'</div>'
       +(p.origem?'<div style="font-size:11px;color:var(--t3);margin-bottom:4px">📋 '+p.origem+'</div>':'')
       +'<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--t2)">'
       +(p.responsavel?'<span>👤 '+p.responsavel+'</span>':'')
@@ -4369,6 +4448,7 @@ function renderPlanos(filtro) {
       +'</div>'
       +iniInfo
       +(p.obs?'<div style="font-size:12px;color:var(--t3);margin-top:6px;padding:6px 10px;background:var(--gray);border-radius:6px">'+p.obs+'</div>':'')
+      +prorrogHtml
       +conclusaoHtml
       +'</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
@@ -4394,9 +4474,149 @@ function criarPlanoAuto(checklistNome, itemTexto, justificativa, setor) {
   var loja = S.currentUser ? (S.currentUser.loja||'') : '';
   var list = getPlanos();
   var desc = '['+checklistNome+'] '+itemTexto;
-  list.push({id:genId(),desc:desc,responsavel:'',prazo:'',origem:checklistNome,obs:justificativa||'',status:'aberto',loja:loja,setor:setor||'',criadoEm:new Date().toLocaleString('pt-BR'),criadoPor:S.currentUser?S.currentUser.nome:'—'});
+  var prazoHoras = 72;
+  var prazoFim = new Date(Date.now() + prazoHoras * 3600000).toISOString();
+  list.push({id:genId(),desc:desc,responsavel:'',prazo:'',origem:checklistNome,obs:justificativa||'',status:'aberto',loja:loja,setor:setor||'',criadoEm:new Date().toLocaleString('pt-BR'),criadoPor:S.currentUser?S.currentUser.nome:'—',prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:'',prorrogacoes:[]});
   savePlanos(list);
   atualizarBadgePlano();
+}
+
+// Retorna info de prazo { vencido, urgente, texto, cor } ou null
+function _prazoInfo(p) {
+  if (!p.prazoFim) return null;
+  var now = Date.now();
+  var fim = new Date(p.prazoFim).getTime();
+  var diffMs = fim - now;
+  if (diffMs < 0) {
+    var overH = Math.floor(-diffMs / 3600000);
+    var overD = Math.floor(overH / 24);
+    var txt = overD > 0 ? (overD+'d '+(overH%24)+'h vencido') : (overH+'h vencido');
+    return { vencido:true, urgente:true, texto:txt, cor:'var(--r)' };
+  }
+  var h = Math.floor(diffMs / 3600000);
+  var d = Math.floor(h / 24);
+  var m = Math.floor((diffMs % 3600000) / 60000);
+  var txt2 = d > 0 ? (d+'d '+(h%24)+'h restantes') : (h+'h '+m+'m restantes');
+  var urgente = diffMs < 24 * 3600000;
+  return { vencido:false, urgente:urgente, texto:txt2, cor: urgente ? '#d68910' : 'var(--g)' };
+}
+
+// Verifica se submissão de checklist deve ser bloqueada por plano vencido
+function _planosVencidosDoUsuario() {
+  var uLoja = S.currentUser ? (S.currentUser.loja||'').toLowerCase() : '';
+  var agora = Date.now();
+  return getPlanos().filter(function(p) {
+    if (p.status === 'resolvido') return false;
+    if (uLoja && (p.loja||'').toLowerCase() !== uLoja) return false;
+    return p.prazoFim && new Date(p.prazoFim).getTime() < agora;
+  });
+}
+
+function renderAlertaPlanos() {
+  var wrap = document.getElementById('plano-alert-banner');
+  if (!wrap) return;
+  var isAdm = S.role === 'admin' || S.role === 'gerencia';
+  if (isAdm) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+  var uLoja = S.currentUser ? (S.currentUser.loja||'').toLowerCase() : '';
+  var agora = Date.now();
+  var planos = getPlanos().filter(function(p) {
+    if (p.status === 'resolvido') return false;
+    if (uLoja && (p.loja||'').toLowerCase() !== uLoja) return false;
+    return true;
+  });
+  var vencidos = planos.filter(function(p){ return p.prazoFim && new Date(p.prazoFim).getTime() < agora; });
+  var urgentes = planos.filter(function(p){
+    if (!p.prazoFim) return false;
+    var fim = new Date(p.prazoFim).getTime();
+    return fim > agora && fim < agora + 24*3600000;
+  });
+  var abertos = planos.filter(function(p){ return !p.prazoFim || new Date(p.prazoFim).getTime() >= agora; });
+  var html = '';
+  if (vencidos.length) {
+    html += '<div style="background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:8px">'
+      +'<div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:8px">🚨 '+vencidos.length+' Plano(s) de Ação VENCIDO(S) — Envio de Checklist Bloqueado!</div>'
+      +vencidos.map(function(p){
+        var inf = _prazoInfo(p);
+        var temPendente = (p.prorrogacoes||[]).some(function(pr){ return pr.status==='pendente'; });
+        return '<div style="padding:6px 0;border-top:1px solid #fca5a580;font-size:12px;color:#7f1d1d">'
+          +'<strong>'+p.desc+'</strong>'
+          +(p.mensagem?' <em>— '+p.mensagem+'</em>':'')
+          +' <span style="color:var(--r);font-weight:600">('+inf.texto+')</span>'
+          +(temPendente
+            ? ' <span style="color:#b45309;font-size:11px">⏳ Prorrogação aguardando aprovação</span>'
+            : ' <button class="btn btn-s btn-sm" style="font-size:11px;padding:2px 8px;margin-left:6px" onclick="solicitarProrrogacao(\''+p.id+'\')">⏳ Prorrogar</button>')
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
+  if (urgentes.length) {
+    html += '<div style="background:#fff8e1;border:1.5px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:8px">'
+      +'<div style="font-size:12px;font-weight:700;color:#b45309;margin-bottom:4px">⚠️ '+urgentes.length+' plano(s) vencem em menos de 24h!</div>'
+      +urgentes.map(function(p){ var inf=_prazoInfo(p); return '<div style="font-size:12px;color:#78350f;padding:2px 0">• <strong>'+p.desc+'</strong> — <span style="color:#d68910">'+inf.texto+'</span></div>'; }).join('')
+      +'</div>';
+  }
+  if (!vencidos.length && abertos.length) {
+    html += '<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:10px 14px;margin-bottom:8px">'
+      +'<div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:4px">📋 '+abertos.length+' plano(s) de ação em aberto/andamento</div>'
+      +abertos.slice(0,3).map(function(p){ var inf=_prazoInfo(p); return '<div style="font-size:12px;color:#075985;padding:2px 0">• <strong>'+p.desc+'</strong>'+(inf?' <span style="color:'+inf.cor+'">'+inf.texto+'</span>':'')+'</div>'; }).join('')
+      +(abertos.length>3?'<div style="font-size:11px;color:#0369a1;margin-top:2px">...e mais '+(abertos.length-3)+' planos</div>':'')
+      +'</div>';
+  }
+  wrap.innerHTML = html;
+  wrap.style.display = html ? 'block' : 'none';
+}
+
+var _pendingProrrogacaoPlanoId = null;
+function solicitarProrrogacao(planoId) {
+  var plano = getPlanos().find(function(p){ return p.id === planoId; });
+  if (!plano) return;
+  _pendingProrrogacaoPlanoId = planoId;
+  document.getElementById('mprorrog-desc').textContent = plano.desc;
+  var m = document.getElementById('prorrog-motivo'); if (m) m.value = '';
+  var h = document.getElementById('prorrog-horas'); if (h) h.value = '48';
+  var e = document.getElementById('mprorrog-err'); if (e) e.style.display = 'none';
+  document.getElementById('modal-prorrogacao').style.display = 'flex';
+}
+
+function salvarProrrogacao() {
+  var motivo = (document.getElementById('prorrog-motivo')||{}).value || '';
+  var horas = parseInt((document.getElementById('prorrog-horas')||{}).value||'48');
+  var errEl = document.getElementById('mprorrog-err');
+  if (!motivo.trim()) { if(errEl){errEl.textContent='Informe o motivo.';errEl.style.display='block';} return; }
+  if (!_pendingProrrogacaoPlanoId) return;
+  var plano = getPlanos().find(function(p){ return p.id === _pendingProrrogacaoPlanoId; });
+  if (!plano) return;
+  document.getElementById('modal-prorrogacao').style.display = 'none';
+  var prorr = { id:genId(), solicitadoPor:S.currentUser?S.currentUser.nome:'—', motivo:motivo.trim(), horasExtras:horas, status:'pendente', solicitadoEm:new Date().toLocaleString('pt-BR') };
+  var updated = Object.assign({}, plano, { prorrogacoes:(plano.prorrogacoes||[]).concat([prorr]) });
+  var list = getPlanos().map(function(p){ return p.id===updated.id?updated:p; });
+  _planosCache = list;
+  try { localStorage.setItem(PLANO_KEY, JSON.stringify(list)); } catch(e) {}
+  db.collection('planos').doc(updated.id).set(updated).catch(function(){});
+  renderPlanos(planoFiltroAtual);
+  renderAlertaPlanos();
+  showToast('⏳ Solicitação enviada! Aguardando aprovação da Central.');
+}
+
+function avaliarProrrogacao(planoId, prorroId, aprovado) {
+  var plano = getPlanos().find(function(p){ return p.id===planoId; });
+  if (!plano) return;
+  var prorrog = (plano.prorrogacoes||[]).find(function(pr){ return pr.id===prorroId; });
+  var prorrogacoes = (plano.prorrogacoes||[]).map(function(pr){
+    if (pr.id!==prorroId) return pr;
+    return Object.assign({},pr,{status:aprovado?'aprovado':'rejeitado',avaliadoPor:S.currentUser?S.currentUser.nome:'—',avaliadoEm:new Date().toLocaleString('pt-BR')});
+  });
+  var updated = Object.assign({}, plano, { prorrogacoes:prorrogacoes });
+  if (aprovado && prorrog && plano.prazoFim) {
+    updated.prazoFim = new Date(new Date(plano.prazoFim).getTime() + prorrog.horasExtras*3600000).toISOString();
+  }
+  var list = getPlanos().map(function(p){ return p.id===updated.id?updated:p; });
+  _planosCache = list;
+  try { localStorage.setItem(PLANO_KEY, JSON.stringify(list)); } catch(e) {}
+  db.collection('planos').doc(updated.id).set(updated).catch(function(){});
+  renderPlanos(planoFiltroAtual);
+  if (centralTabAtual==='plano') renderCentralPlanos();
+  showToast(aprovado?'✅ Prorrogação aprovada! Prazo estendido.':'❌ Prorrogação rejeitada.');
 }
 
 // ===========================================

@@ -1735,17 +1735,23 @@ function adicionarLojaDiaria() {
   if (!pendingDiariaProdutos || !pendingDiariaProdutos.length) { showToast('Selecione o arquivo CSV primeiro'); return; }
   var hoje = new Date().toISOString().slice(0, 10);
   var clId = pendingCLId || editingCLId || genId();
-  var itemIdxDiaria = '_editor_'; // placeholder até o item ter índice real
+  // Descobre o índice real do item planilha diária em nclItens
+  var itemIdx = 0;
+  for (var ii = nclItens.length - 1; ii >= 0; ii--) {
+    if (nclItens[ii].tipo === 'planilha' && (nclItens[ii].modoPlanilha || 'fixa') === 'diaria') {
+      itemIdx = ii;
+      break;
+    }
+  }
   pendingDiariaLojas[loja] = pendingDiariaProdutos.slice();
-  // Salva imediatamente no Firebase para compartilhar com operadores
-  var docId = clId + '_diaria_0_' + loja + '_' + hoje;
+  var docId = clId + '_diaria_' + itemIdx + '_' + loja + '_' + hoje;
   db.collection('contagens').doc(docId).set({
     id: docId, tipo: 'planilha_diaria',
-    checklistId: clId, itemIdx: 0, loja: loja,
+    checklistId: clId, itemIdx: itemIdx, loja: loja,
     data: hoje, expireAt: proximaMeiaNoite(),
     produtos: pendingDiariaProdutos.slice()
   }).catch(function(){});
-  _planilhaTemplates[clId + '_0_' + loja] = pendingDiariaProdutos.slice();
+  _planilhaTemplates[clId + '_' + itemIdx + '_' + loja] = pendingDiariaProdutos.slice();
   pendingDiariaProdutos = null;
   if (lojaInput) lojaInput.value = '';
   var csvInput = document.getElementById('ncl-diaria-csv');

@@ -3883,21 +3883,54 @@ function salvarPlano() {
   showToast('Plano salvo!');
 }
 
+var _pendingStatusPlano = null; // {id, novoStatus}
+
 function atualizarStatusPlano(id, novoStatus) {
+  var plano = getPlanos().find(function(p){ return p.id === id; });
+  if (!plano) return;
+  _pendingStatusPlano = {id: id, novoStatus: novoStatus};
+  var iconMap = {andamento:'▶', resolvido:'✅', aberto:'🔄'};
+  var tituloMap = {andamento:'Iniciar este plano?', resolvido:'Marcar como resolvido?', aberto:'Reabrir este plano?'};
+  var descMap = {
+    andamento: 'O plano passará para <strong>Em Andamento</strong>.',
+    resolvido: 'O plano será marcado como <strong>Resolvido</strong>.',
+    aberto: 'O plano voltará para <strong>Aberto</strong>.'
+  };
+  document.getElementById('mcp-icon').textContent = iconMap[novoStatus] || '?';
+  document.getElementById('mcp-titulo').textContent = tituloMap[novoStatus] || 'Confirmar?';
+  document.getElementById('mcp-desc').innerHTML = '<strong style="font-size:13px;display:block;margin-bottom:4px">'+plano.desc+'</strong>' + (descMap[novoStatus]||'');
+  document.getElementById('modal-confirm-plano').style.display = 'flex';
+}
+
+function confirmarStatusPlano() {
+  document.getElementById('modal-confirm-plano').style.display = 'none';
+  if (!_pendingStatusPlano) return;
+  var id = _pendingStatusPlano.id;
+  var novoStatus = _pendingStatusPlano.novoStatus;
+  _pendingStatusPlano = null;
+
   var updatedPlano = null;
   var list = getPlanos().map(function(p){
     if (p.id !== id) return p;
-    updatedPlano = Object.assign({}, p, {status: novoStatus, resolvidoEm: novoStatus==='resolvido' ? new Date().toLocaleString('pt-BR') : p.resolvidoEm});
+    updatedPlano = Object.assign({}, p, {
+      status: novoStatus,
+      resolvidoEm: novoStatus==='resolvido' ? new Date().toLocaleString('pt-BR') : p.resolvidoEm
+    });
     return updatedPlano;
   });
   if (!updatedPlano) return;
+
   _planosCache = list;
   try { localStorage.setItem(PLANO_KEY, JSON.stringify(list)); } catch(e) {}
-  db.collection('planos').doc(id).set(updatedPlano).catch(function(err){
-    showToast('⚠ Erro ao salvar na nuvem: ' + (err && err.message ? err.message : 'sem conexão'));
+
+  db.collection('planos').doc(id).set(updatedPlano).then(function(){
+    var msgs = {andamento:'▶ Plano em andamento!', resolvido:'✅ Plano resolvido!', aberto:'🔄 Plano reaberto!'};
+    showToast(msgs[novoStatus] || 'Status atualizado');
+  }).catch(function(err){
+    showToast('⚠ Firebase: ' + (err && err.code ? err.code : 'erro ao salvar'));
+    console.error('Firebase plano erro:', err);
   });
-  var msgs = {andamento:'▶ Plano iniciado!', resolvido:'✅ Plano resolvido!', aberto:'🔄 Plano reaberto!'};
-  showToast(msgs[novoStatus] || 'Status atualizado');
+
   renderPlanos(planoFiltroAtual);
   atualizarBadgePlano();
 }

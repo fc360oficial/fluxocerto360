@@ -1059,6 +1059,19 @@
   </div>
 </div>
 
+<!-- MODAL CONFIRMAÇÃO STATUS PLANO -->
+<div class="modal-bg" id="modal-confirm-plano" style="display:none">
+  <div class="modal-box" style="max-width:380px;text-align:center">
+    <div style="font-size:32px;margin-bottom:8px" id="mcp-icon">▶</div>
+    <div class="modal-title" id="mcp-titulo" style="margin-bottom:8px">Iniciar plano?</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:20px" id="mcp-desc"></div>
+    <div class="btn-row" style="justify-content:center;gap:12px">
+      <button class="btn btn-p" id="mcp-sim" onclick="confirmarStatusPlano()">✔ Sim, confirmar</button>
+      <button class="btn btn-s" onclick="document.getElementById('modal-confirm-plano').style.display='none'">✖ Não</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ASSINATURA DIGITAL -->
 <div class="modal-bg" id="modal-assinatura" style="display:none">
   <div class="modal-box" style="width:460px">

@@ -3274,6 +3274,41 @@ function updateDash() {
     if (dopsEl) dopsEl.textContent = opsAtivos.length;
     if (dopsSubEl) dopsSubEl.textContent = opsAtivos.length===1 ? 'operador enviou hoje' : 'operadores enviaram hoje';
 
+    // Card: Operadores Ativos Hoje
+    var opsHojeWrap = document.getElementById('dash-ops-hoje');
+    var opsHojeCount = document.getElementById('dash-ops-hoje-count');
+    if (opsHojeWrap) {
+      if (!resultadosHoje.length) {
+        opsHojeWrap.innerHTML = '<div style="text-align:center;color:var(--t3);font-size:13px;padding:24px">Nenhum envio hoje</div>';
+        if (opsHojeCount) opsHojeCount.textContent = '';
+      } else {
+        var opMap = {};
+        resultadosHoje.forEach(function(r) {
+          if (!opMap[r.operador]) opMap[r.operador] = { nome: r.operador, loja: r.loja||'', envios: 0, totalPct: 0 };
+          opMap[r.operador].envios++;
+          opMap[r.operador].totalPct += (r.pct || 0);
+        });
+        var opList = Object.values(opMap).sort(function(a,b){ return (b.totalPct/b.envios) - (a.totalPct/a.envios); });
+        if (opsHojeCount) opsHojeCount.textContent = opList.length + ' ativo' + (opList.length > 1 ? 's' : '');
+        opsHojeWrap.innerHTML = opList.map(function(op) {
+          var media = Math.round(op.totalPct / op.envios);
+          var cor = media === 100 ? 'var(--g2)' : media >= 80 ? '#2d9e62' : media >= 60 ? 'var(--am)' : 'var(--r)';
+          var bg  = media === 100 ? 'var(--g3)' : media >= 60 ? 'var(--am2)' : 'var(--r2)';
+          return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:'+bg+';border:1.5px solid '+cor+'">'
+            + '<div style="width:9px;height:9px;border-radius:50%;background:'+cor+';flex-shrink:0"></div>'
+            + '<div style="flex:1;min-width:0">'
+            +   '<div style="font-size:12px;font-weight:700;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+op.nome+'</div>'
+            +   (op.loja ? '<div style="font-size:10px;color:var(--t3)">'+op.loja+'</div>' : '')
+            + '</div>'
+            + '<div style="text-align:right;flex-shrink:0">'
+            +   '<div style="font-size:16px;font-weight:800;color:'+cor+';line-height:1">'+media+'%</div>'
+            +   '<div style="font-size:10px;color:var(--t3)">'+op.envios+' envio'+(op.envios>1?'s':'')+'</div>'
+            + '</div>'
+            + '</div>';
+        }).join('');
+      }
+    }
+
     // Indicador de saúde
     var saudeDot = document.getElementById('dash-saude-dot');
     var saudeLabel = document.getElementById('dash-saude-label');

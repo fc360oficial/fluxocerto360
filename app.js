@@ -7061,6 +7061,7 @@ function renderInvList() {
       '<div style="display:flex;gap:8px;margin-top:12px">'+
         '<button class="btn btn-p btn-sm" onclick="abrirDetalheInv(\''+inv.id+'\')">Ver Detalhes</button>'+
         '<button class="btn btn-sm" style="color:var(--r);border:1.5px solid var(--r);background:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="encerrarInventario(\''+inv.id+'\')">Encerrar</button>'+
+        '<button class="btn btn-sm" style="background:var(--r);color:#fff;border:1.5px solid var(--r);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="abrirModalExcluirInv(\''+inv.id+'\')">🗑 Excluir</button>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -7097,7 +7098,10 @@ function renderInvHistorico() {
         '</div>'+
         '<span style="padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#f0f0f0;color:#666">ENCERRADO</span>'+
       '</div>'+
-      '<div style="margin-top:12px"><button class="btn btn-p btn-sm" onclick="_abrirHistInv(\''+inv.id+'\')">Ver Detalhes</button></div>'+
+      '<div style="margin-top:12px;display:flex;gap:8px">'+
+        '<button class="btn btn-p btn-sm" onclick="_abrirHistInv(\''+inv.id+'\')">Ver Detalhes</button>'+
+        '<button class="btn btn-sm" style="background:var(--r);color:#fff;border:1.5px solid var(--r);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="abrirModalExcluirInv(\''+inv.id+'\')">🗑 Excluir</button>'+
+      '</div>'+
     '</div>';
   }).join('');
 }
@@ -7586,6 +7590,78 @@ function gerarRelPDF() {
       doc.save((inv.nome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_relatorio.pdf');
     });
   });
+}
+
+// ── Excluir inventário (com reautenticação por senha) ─────────────────────
+var _excluirInvId = null;
+
+function abrirModalExcluirInv(invId) {
+  if (!invId) return;
+  var inv = (S.invsCache||[]).find(function(i){ return i.id===invId; });
+  if (!inv) return;
+  _excluirInvId = invId;
+  var nEl = document.getElementById('excluir-inv-nome');
+  if (nEl) nEl.textContent = inv.nome;
+  var sEl = document.getElementById('excluir-inv-senha');
+  if (sEl) sEl.value = '';
+  var errEl = document.getElementById('excluir-inv-err');
+  if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+  var btn = document.getElementById('btn-confirmar-excluir');
+  if (btn) { btn.textContent = '🗑 Excluir permanentemente'; btn.disabled = false; }
+  document.getElementById('modal-excluir-inv').style.display = 'flex';
+  setTimeout(function(){ if(sEl) sEl.focus(); }, 100);
+}
+
+function fecharModalExcluirInv() {
+  document.getElementById('modal-excluir-inv').style.display = 'none';
+  _excluirInvId = null;
+}
+
+function confirmarExcluirInv() {
+  var invId = _excluirInvId; if (!invId) return;
+  var senha = (document.getElementById('excluir-inv-senha')||{}).value || '';
+  var errEl = document.getElementById('excluir-inv-err');
+  if (!senha) { if(errEl){errEl.textContent='Informe sua senha.';errEl.style.display='block';} return; }
+  var authUser = firebase.auth().currentUser;
+  if (!authUser || !authUser.email) { if(errEl){errEl.textContent='Sessão inválida. Faça login novamente.';errEl.style.display='block';} return; }
+  var btn = document.getElementById('btn-confirmar-excluir');
+  if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
+  if (errEl) errEl.style.display = 'none';
+  var cred = firebase.auth.EmailAuthProvider.credential(authUser.email, senha);
+  authUser.reauthenticateWithCredential(cred).then(function() {
+    if (btn) btn.textContent = 'Excluindo...';
+    return _deletarInventario(invId);
+  }).then(function() {
+    fecharModalExcluirInv();
+    if (_invAtivo && _invAtivo.id === invId) voltarInvLista();
+    loadInventariosFromFirebase(function(){ renderInvList(); renderInvHistorico(); });
+  }).catch(function(err) {
+    if (btn) { btn.textContent = '🗑 Excluir permanentemente'; btn.disabled = false; }
+    var msg = (err.code==='auth/wrong-password'||err.code==='auth/invalid-credential')
+      ? 'Senha incorreta.'
+      : 'Erro: ' + (err.message || err);
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+  });
+}
+
+function _deletarInventario(invId) {
+  function deletarColecao(nome) {
+    function proxLote() {
+      return db.collection(nome).where('invId','==',invId).limit(450).get().then(function(snap){
+        if (snap.empty) return;
+        var batch = db.batch();
+        snap.docs.forEach(function(d){ batch.delete(d.ref); });
+        return batch.commit().then(function(){
+          if (snap.docs.length === 450) return proxLote();
+        });
+      });
+    }
+    return proxLote();
+  }
+  return deletarColecao('inv_bipagens')
+    .then(function(){ return deletarColecao('inv_catalogo'); })
+    .then(function(){ return deletarColecao('inv_auditlog'); })
+    .then(function(){ return db.collection('inv_inventarios').doc(invId).delete(); });
 }
 
 // Restaura sessao ao recarregar a pagina

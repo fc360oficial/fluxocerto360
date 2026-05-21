@@ -908,8 +908,9 @@
               <table><thead><tr><th>Endereço</th><th>Modo</th><th>Coletores</th><th>Bipagens</th><th></th></tr></thead>
               <tbody id="inv-end-tbody"></tbody></table>
             </div>
-            <div style="margin-top:14px;display:flex;justify-content:flex-end">
+            <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
               <button class="btn btn-sm" style="color:var(--r);border:1.5px solid var(--r);background:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="encerrarInventario(_invAtivo&&_invAtivo.id)">Encerrar Inventário</button>
+              <button class="btn btn-sm" style="background:var(--r);color:#fff;border:1.5px solid var(--r);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="abrirModalExcluirInv(_invAtivo&&_invAtivo.id)">🗑 Excluir</button>
             </div>
           </div>
 
@@ -1052,6 +1053,24 @@
     <div class="btn-row">
       <button class="btn btn-p" onclick="criarInventario()">Criar Inventário</button>
       <button class="btn btn-s" onclick="fecharModalInv()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR INVENTÁRIO -->
+<div class="modal-bg" id="modal-excluir-inv">
+  <div class="modal-box" style="width:440px">
+    <div class="modal-title" style="color:var(--r)">Excluir Inventário</div>
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px" id="excluir-inv-nome"></div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px">Esta ação é <strong>irreversível</strong>. Todas as bipagens, catálogo e trilha de auditoria serão apagados permanentemente.</p>
+    <div class="fg" style="margin-bottom:14px">
+      <label>Confirme sua senha de acesso</label>
+      <input type="password" id="excluir-inv-senha" placeholder="Sua senha" onkeydown="if(event.key==='Enter')confirmarExcluirInv()"/>
+    </div>
+    <div class="modal-err" id="excluir-inv-err"></div>
+    <div class="btn-row">
+      <button id="btn-confirmar-excluir" class="btn btn-sm" style="background:var(--r);color:#fff;border-color:var(--r);flex:1" onclick="confirmarExcluirInv()">🗑 Excluir permanentemente</button>
+      <button class="btn btn-s" onclick="fecharModalExcluirInv()">Cancelar</button>
     </div>
   </div>
 </div>

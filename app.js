@@ -7370,12 +7370,56 @@ function _encontrarAtribuicao() {
   return null;
 }
 
-// ── Override renderColeta — modoFila picker + back button ─────────────────
+// ── ID de Coletor (localStorage) ──────────────────────────────────────────
+var _COLETOR_KEY = 'fc360_coletor_id';
+
+function _getIdColetor() {
+  return (localStorage.getItem(_COLETOR_KEY)||'').trim();
+}
+
+function _setIdColetor(id) {
+  localStorage.setItem(_COLETOR_KEY, (id||'').trim().toUpperCase());
+}
+
+function _htmlIdColetorForm() {
+  var atual = _getIdColetor();
+  return '<div style="max-width:360px;margin:50px auto;padding:28px 24px;background:#fff;border-radius:16px;border:1px solid var(--gray2);box-shadow:var(--sh)">'+
+    '<div style="font-family:\'Syne\',sans-serif;font-size:19px;font-weight:800;margin-bottom:6px">Identificação</div>'+
+    '<div style="font-size:13px;color:var(--t2);margin-bottom:22px">Informe seu ID de coletor para começar.</div>'+
+    '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:8px">ID de Coletor</label>'+
+    '<input id="coletor-id-novo" type="text" value="'+atual+'" placeholder="Ex: 01, A1, JOAO" autocomplete="off" '+
+      'style="width:100%;padding:14px;border:2.5px solid var(--y);border-radius:10px;font-size:22px;font-weight:700;font-family:monospace;text-align:center;letter-spacing:3px;margin-bottom:16px;box-sizing:border-box" '+
+      'onkeydown="if(event.key===\'Enter\')_confirmarIdColetor()"/>'+
+    '<button onclick="_confirmarIdColetor()" style="width:100%;padding:14px;background:var(--y);color:#111;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Começar →</button>'+
+  '</div>';
+}
+
+function _confirmarIdColetor() {
+  var val = ((document.getElementById('coletor-id-novo')||{}).value||'').trim().toUpperCase();
+  if (!val) { alert('Informe seu ID de coletor.'); return; }
+  _setIdColetor(val);
+  renderColeta();
+}
+
+function _editarIdColetor() {
+  var wrap = document.getElementById('inv-coleta-wrap'); if(!wrap) return;
+  wrap.innerHTML = _htmlIdColetorForm();
+  setTimeout(function(){ var el=document.getElementById('coletor-id-novo'); if(el){el.focus();el.select();} }, 100);
+}
+
+// ── Override renderColeta — ID coletor + modoFila picker ──────────────────
 function renderColeta() {
   pararQRScan();
   var wrap=document.getElementById('inv-coleta-wrap'); if(!wrap) return;
   var u=S.currentUser;
   if (!u) { wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">Faça login.</div>'; return; }
+
+  // Exige ID de coletor antes de qualquer coisa
+  if (!_getIdColetor()) {
+    wrap.innerHTML = _htmlIdColetorForm();
+    setTimeout(function(){ var el=document.getElementById('coletor-id-novo'); if(el) el.focus(); }, 100);
+    return;
+  }
   var invs=S.invsCache||[];
   var filaInv=invs.find(function(i){ return i.status==='aberto'&&i.modoFila; });
   if (filaInv&&(!_filaEndAtual||_filaEndAtual.invId!==filaInv.id)) {
@@ -7429,7 +7473,12 @@ function renderColeta() {
       '<div style="margin-top:12px;display:flex;justify-content:flex-end">'+
         '<button onclick="finalizarRodada()" style="padding:8px 18px;background:#fff;border:1.5px solid var(--r);color:var(--r);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Finalizar Contagem</button>'+
       '</div>';
-  wrap.innerHTML=mudarBtn+
+  var coletorChip='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:9px 14px;background:#fff8e1;border:1.5px solid #f5c518;border-radius:10px">'+
+    '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#b38600">Coletor</span>'+
+    '<span style="font-size:17px;font-weight:800;font-family:monospace;flex:1;letter-spacing:2px">'+_getIdColetor()+'</span>'+
+    '<button onclick="_editarIdColetor()" style="padding:4px 10px;background:#fff;border:1.5px solid #ddd;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--t2)">✎ Mudar</button>'+
+  '</div>';
+  wrap.innerHTML=coletorChip+mudarBtn+
     '<div style="background:#fff;border-radius:14px;border:1px solid var(--gray2);padding:20px;box-shadow:var(--sh);margin-bottom:16px">'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'+
         '<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t3)">Endereço</div>'+
@@ -7724,6 +7773,39 @@ function _limparSubcolecoes(invId) {
   deletarColecao('inv_bipagens');
   deletarColecao('inv_catalogo');
   deletarColecao('inv_auditlog');
+}
+
+// ── Override registrarBipagem — usa ID de coletor do localStorage ─────────
+function registrarBipagem() {
+  if (_bipRegistrando) return;
+  if (!_invColetaAtual) return;
+  if (_invColetaAtual.concluido){ alert('Você já finalizou sua contagem.'); return; }
+  var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
+  if (!ei||!qi) return;
+  var ean=ei.value.trim(), qty=parseInt(qi.value)||1;
+  if (!ean){ ei.focus(); return; }
+  if (qty<1) qty=1;
+  var coletorId=_getIdColetor();
+  if (!coletorId){ _editarIdColetor(); return; }
+  var inv=_invColetaAtual.inv;
+  if (inv.status!=='aberto'){ alert('Inventário encerrado.'); return; }
+  var end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao', seq=_nextSeq;
+  _bipRegistrando=true;
+  db.collection('inv_bipagens').add({
+    invId:inv.id, loja:inv.loja||'', endereco:end, seq:seq, ean:ean, qty:qty,
+    rodada:rodada, modo:modo,
+    coletorId:coletorId, coletorNome:coletorId,
+    ts:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    db.collection('inv_inventarios').doc(inv.id).update({totalBipagens:firebase.firestore.FieldValue.increment(1)}).catch(function(){});
+    _nextSeq++;
+    var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
+    ei.value=''; qi.value='1';
+    var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent='';
+    ei.focus();
+    _carregarUltimasBipagens(inv.id,end,rodada,modo);
+    _bipRegistrando=false;
+  }).catch(function(e){ _bipRegistrando=false; alert('Erro: '+e.message); });
 }
 
 // Restaura sessao ao recarregar a pagina

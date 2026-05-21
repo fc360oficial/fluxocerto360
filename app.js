@@ -7003,29 +7003,61 @@ var _qrAnimFrame = null;
 function abrirModalNovoInv() {
   document.getElementById('ninv-nome').value = '';
   document.getElementById('ninv-enderecos').value = '';
+  var deEl=document.getElementById('ninv-end-de'); if(deEl) deEl.value='0';
+  var ateEl=document.getElementById('ninv-end-ate'); if(ateEl) ateEl.value='';
   var cb = document.getElementById('ninv-modoFila');
   if (cb) cb.checked = false;
+  // Reset tipo para Geral
+  var radioGeral = document.querySelector('input[name="ninv-tipo"][value="geral"]');
+  if (radioGeral) { radioGeral.checked = true; _ninvTipoChange(); }
   var err = document.getElementById('ninv-err');
   if (err) { err.textContent = ''; err.style.display = 'none'; }
   document.getElementById('modal-inv').style.display = 'flex';
   setTimeout(function(){ document.getElementById('ninv-nome').focus(); }, 100);
 }
 
-// ── Override criarInventario — adiciona modoFila ──────────────────────────
+function _ninvTipoChange() {
+  var val = (document.querySelector('input[name="ninv-tipo"]:checked')||{}).value||'geral';
+  ['geral','parcial','surpresa'].forEach(function(t){
+    var lbl=document.getElementById('ninv-tipo-'+t); if(!lbl) return;
+    var active=t===val;
+    lbl.style.background=active?'var(--y)':'#fff';
+    lbl.style.borderColor=active?'var(--y)':'var(--gray2)';
+    lbl.style.color=active?'#000':'var(--t2)';
+  });
+}
+
+function gerarEnderecosFaixa() {
+  var de=parseInt(document.getElementById('ninv-end-de').value);
+  var ate=parseInt(document.getElementById('ninv-end-ate').value);
+  var errEl=document.getElementById('ninv-err');
+  if (isNaN(de)||isNaN(ate)) { if(errEl){errEl.textContent='Preencha os campos "do" e "ao".';errEl.style.display='block';} return; }
+  if (ate<de) { if(errEl){errEl.textContent='O valor final deve ser maior ou igual ao inicial.';errEl.style.display='block';} return; }
+  if (ate-de>999) { if(errEl){errEl.textContent='Máximo 1000 endereços por vez.';errEl.style.display='block';} return; }
+  if (errEl) errEl.style.display='none';
+  var linhas=[];
+  for (var i=de; i<=ate; i++) linhas.push(String(i));
+  var ta=document.getElementById('ninv-enderecos');
+  var atual=ta.value.trim();
+  ta.value=atual?atual+'\n'+linhas.join('\n'):linhas.join('\n');
+}
+
+// ── Override criarInventario — tipo + modoFila ────────────────────────────
 function criarInventario() {
   var nome = document.getElementById('ninv-nome').value.trim();
   var endStr = document.getElementById('ninv-enderecos').value.trim();
   var cbEl = document.getElementById('ninv-modoFila');
   var modoFila = !!(cbEl && cbEl.checked);
+  var tipo = (document.querySelector('input[name="ninv-tipo"]:checked')||{}).value||'geral';
   var errEl = document.getElementById('ninv-err');
   if (errEl) errEl.style.display = 'none';
   if (!nome) { if(errEl){errEl.textContent='Informe o nome do inventário.';errEl.style.display='block';} return; }
-  if (!endStr) { if(errEl){errEl.textContent='Informe pelo menos um endereço.';errEl.style.display='block';} return; }
+  if (!endStr) { if(errEl){errEl.textContent='Informe pelo menos um endereço ou use o gerador.';errEl.style.display='block';} return; }
   var enderecos = endStr.split('\n').map(function(e){ return e.trim(); }).filter(function(e){ return e.length>0; });
   if (!enderecos.length) { if(errEl){errEl.textContent='Nenhum endereço válido.';errEl.style.display='block';} return; }
   var loja = (S.currentUser && S.currentUser.loja) ? S.currentUser.loja : '';
   db.collection('inv_inventarios').add({
-    nome: nome, loja: loja, status: 'aberto',
+    nome: nome, loja: loja, status: 'aberto', tipo: tipo,
     criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
     criadoPor: S.currentUser ? S.currentUser.id : '',
     enderecos: enderecos, atribuicoes: {},
@@ -7035,6 +7067,13 @@ function criarInventario() {
     fecharModalInv();
     loadInventariosFromFirebase(function(){ renderInvList(); });
   }).catch(function(e){ if(errEl){errEl.textContent='Erro: '+(e.message||'Tente novamente.');errEl.style.display='block';} });
+}
+
+// ── Helper: badge de tipo de inventário ───────────────────────────────────
+function _invTipoTag(tipo) {
+  if (tipo==='parcial') return '<span style="display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;background:#fff3e0;color:#e65100;margin-right:5px">PARCIAL</span>';
+  if (tipo==='surpresa') return '<span style="display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;background:#ede9fe;color:#5b21b6;margin-right:5px">SURPRESA</span>';
+  return '<span style="display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;background:#f0f0f0;color:#444;margin-right:5px">GERAL</span>';
 }
 
 // ── Override renderInvList — só ativos, badge FILA ────────────────────────
@@ -7050,11 +7089,12 @@ function renderInvList() {
     var endCount=(inv.enderecos||[]).length;
     var dataStr=inv.criadoEm?new Date(inv.criadoEm.seconds*1000).toLocaleDateString('pt-BR'):'--';
     var filaTag=inv.modoFila?'<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#e8f4ff;color:#1a5c9c;margin-left:6px;vertical-align:middle">FILA</span>':'';
+    var tipoTag=_invTipoTag(inv.tipo);
     return '<div class="card" style="margin-bottom:12px">'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'+
         '<div>'+
           '<div style="font-family:\'Syne\',sans-serif;font-size:15px;font-weight:700">'+inv.nome+filaTag+'</div>'+
-          '<div style="font-size:12px;color:var(--t3);margin-top:3px">Criado '+dataStr+' · '+endCount+' endereços · '+(inv.totalBipagens||0)+' bipagens</div>'+
+          '<div style="font-size:12px;color:var(--t3);margin-top:3px">'+tipoTag+'Criado '+dataStr+' · '+endCount+' endereços · '+(inv.totalBipagens||0)+' bipagens</div>'+
         '</div>'+
         '<span style="white-space:nowrap;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#d1f0e0;color:#1a5c34">ABERTO</span>'+
       '</div>'+
@@ -7090,11 +7130,12 @@ function renderInvHistorico() {
   el.innerHTML=invs.map(function(inv){
     var ends=(inv.enderecos||[]).length;
     var dt=inv.encerradoEm?new Date(inv.encerradoEm.seconds*1000).toLocaleDateString('pt-BR'):'—';
+    var tipoTag=_invTipoTag(inv.tipo);
     return '<div class="card" style="margin-bottom:12px">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'+
         '<div>'+
           '<div style="font-family:\'Syne\',sans-serif;font-size:15px;font-weight:700">'+inv.nome+'</div>'+
-          '<div style="font-size:12px;color:var(--t3);margin-top:3px">Encerrado '+dt+' · '+ends+' endereços · '+(inv.totalBipagens||0)+' bipagens</div>'+
+          '<div style="font-size:12px;color:var(--t3);margin-top:3px">'+tipoTag+'Encerrado '+dt+' · '+ends+' endereços · '+(inv.totalBipagens||0)+' bipagens</div>'+
         '</div>'+
         '<span style="padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#f0f0f0;color:#666">ENCERRADO</span>'+
       '</div>'+

@@ -7622,25 +7622,27 @@ function confirmarExcluirInv() {
   var senha = (document.getElementById('excluir-inv-senha')||{}).value || '';
   var errEl = document.getElementById('excluir-inv-err');
   if (!senha) { if(errEl){errEl.textContent='Informe sua senha.';errEl.style.display='block';} return; }
-  var authUser = firebase.auth().currentUser;
-  if (!authUser || !authUser.email) { if(errEl){errEl.textContent='Sessão inválida. Faça login novamente.';errEl.style.display='block';} return; }
+  var u = S.currentUser;
+  if (!u) { if(errEl){errEl.textContent='Sessão inválida. Faça login novamente.';errEl.style.display='block';} return; }
   var btn = document.getElementById('btn-confirmar-excluir');
   if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
   if (errEl) errEl.style.display = 'none';
-  var cred = firebase.auth.EmailAuthProvider.credential(authUser.email, senha);
-  authUser.reauthenticateWithCredential(cred).then(function() {
+  hashPassword(senha).then(function(senhaHash) {
+    var match = isHashed(u.senha) ? (u.senha === senhaHash) : (u.senha === senha);
+    if (!match) {
+      if (btn) { btn.textContent = '🗑 Excluir permanentemente'; btn.disabled = false; }
+      if (errEl) { errEl.textContent = 'Senha incorreta.'; errEl.style.display = 'block'; }
+      return;
+    }
     if (btn) btn.textContent = 'Excluindo...';
-    return _deletarInventario(invId);
-  }).then(function() {
-    fecharModalExcluirInv();
-    if (_invAtivo && _invAtivo.id === invId) voltarInvLista();
-    loadInventariosFromFirebase(function(){ renderInvList(); renderInvHistorico(); });
+    return _deletarInventario(invId).then(function() {
+      fecharModalExcluirInv();
+      if (_invAtivo && _invAtivo.id === invId) voltarInvLista();
+      loadInventariosFromFirebase(function(){ renderInvList(); renderInvHistorico(); });
+    });
   }).catch(function(err) {
     if (btn) { btn.textContent = '🗑 Excluir permanentemente'; btn.disabled = false; }
-    var msg = (err.code==='auth/wrong-password'||err.code==='auth/invalid-credential')
-      ? 'Senha incorreta.'
-      : 'Erro: ' + (err.message || err);
-    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+    if (errEl) { errEl.textContent = 'Erro: '+(err.message||err); errEl.style.display='block'; }
   });
 }
 

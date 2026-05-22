@@ -7320,12 +7320,13 @@ function _renderSelecaoEndereco(inv, bipCount) {
     var cnt=bipCount[e]||{total:0,coletores:{}};
     var coletoresStr=Object.keys(cnt.coletores).map(function(id){ return 'Coletor '+id+': '+cnt.coletores[id]+' bip'; }).join(', ');
     var quem,bg;
+    var concl=false;
     if (slot&&!slot.concluido) {
       quem='<span style="font-size:11px;color:#b38600;font-weight:600">👤 '+slot.nome+' — em andamento</span>';
       bg='background:#fffbe8;';
     } else if (slot&&slot.concluido) {
       quem='<span style="font-size:11px;color:#1a5c34;font-weight:600">✓ '+slot.nome+' — finalizado'+(cnt.total?' · '+cnt.total+' bip':'')+'</span>';
-      bg='background:#f0faf5;';
+      bg='background:#f0faf5;'; concl=true;
     } else if (cnt.total>0) {
       quem='<span style="font-size:11px;color:var(--t2);font-weight:600">disponível · '+cnt.total+' bip já registradas'+(coletoresStr?' ('+coletoresStr+')':'')+'</span>';
       bg='';
@@ -7334,6 +7335,10 @@ function _renderSelecaoEndereco(inv, bipCount) {
       bg='';
     }
     var safeE=e.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    if (concl) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--gray);cursor:not-allowed;opacity:.7;'+bg+'">'+
+        '<span style="font-weight:700;font-family:monospace;font-size:14px;color:#888">🔒 '+e+'</span>'+quem+'</div>';
+    }
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--gray);cursor:pointer;'+bg+'" onclick="selecionarEnderecoFila(\''+inv.id+'\',\''+safeE+'\')">'+
       '<span style="font-weight:700;font-family:monospace;font-size:14px">'+e+'</span>'+quem+'</div>';
   }).join('');
@@ -7367,6 +7372,11 @@ function selecionarEnderecoFila(invId, endereco) {
   var found=ends.find(function(e){ return e.toUpperCase()===endNorm; });
   if (!found) found=ends.find(function(e){ return e.toUpperCase().indexOf(endNorm)===0; });
   if (!found) { if(errEl) errEl.textContent='Endereço "'+endereco.trim()+'" não encontrado.'; return; }
+  var slot=(inv.fila||{})[found];
+  if (slot&&slot.concluido) {
+    if(errEl) errEl.innerHTML='<span style="font-size:13px">🔒 Endereço <strong>'+found+'</strong> já está encerrado.<br>Fale com o responsável pelo balanço para reabri-lo.</span>';
+    return;
+  }
   var u=S.currentUser;
   var coletorId=_getIdColetor(), nomeColetor=_getNomeColetor();
   var displayNome=coletorId+(nomeColetor?' - '+nomeColetor:'');

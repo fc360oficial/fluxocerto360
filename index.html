@@ -92,6 +92,9 @@
       <div class="sb-item" id="nav-inv-coleta" style="display:none" onclick="nav('inv-coleta',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h1v6H9M13 9l3 3-3 3"/></svg>Minha Coleta
       </div>
+      <div class="sb-item" id="nav-inv-avulsa" style="display:none" onclick="nav('inv-avulsa',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Coleta Avulsa
+      </div>
 
       <div class="sb-sec" id="sb-adm-sec" style="display:none">Administração</div>
       <div class="sb-item" id="nav-central" style="display:none" onclick="nav('central',this)">
@@ -974,6 +977,18 @@
               <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Relatório completo com resumo, endereços, coletores e divergências.</p>
               <button class="btn btn-s" onclick="gerarRelPDF()">📄 Baixar Relatório PDF</button>
             </div>
+            <div class="card" style="max-width:520px;margin-top:14px">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Itens Não Coletados</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Lista produtos do catálogo que não receberam nenhuma bipagem neste inventário.</p>
+              <button class="btn btn-s" onclick="mostrarItensNaoColetados()">🔍 Verificar Itens Não Coletados</button>
+              <div id="inv-nao-coletados-wrap" style="margin-top:14px"></div>
+            </div>
+            <div class="card" style="max-width:520px;margin-top:14px">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Produtividade por Coletor</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Bipagens por hora de cada coletor ativo neste inventário.</p>
+              <button class="btn btn-s" onclick="renderProdutividade()">📊 Calcular Produtividade</button>
+              <div id="inv-produtividade-wrap" style="margin-top:14px"></div>
+            </div>
           </div>
         </div>
       </div><!-- /panel-inv -->
@@ -982,6 +997,15 @@
       <div id="panel-inv-coleta" class="panel">
         <div id="inv-coleta-wrap"></div>
       </div><!-- /panel-inv-coleta -->
+
+      <!-- === FC360 INVENTÁRIO — COLETA AVULSA === -->
+      <div id="panel-inv-avulsa" class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Coleta Avulsa</div>
+          <span style="padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:#e8f4ff;color:#1a5c9c">Sem endereço fixo</span>
+        </div>
+        <div id="inv-avulsa-wrap"></div>
+      </div><!-- /panel-inv-avulsa -->
 
     </div>
   </div>

@@ -770,6 +770,7 @@ function setupRole() {
   show('sb-inv-sec', isAdmin);
   show('nav-inv-gestao', isAdmin);
   show('nav-inv-coleta', false); // Atualizado dinamicamente após carregar inventários
+  show('nav-inv-avulsa', false); // Atualizado dinamicamente após carregar inventários
   // Inicia verificação periódica de pendências para gestores e supervisor
   if (isAdmOrGer || isSup) {
     pedirPermissaoNotificacao();
@@ -828,7 +829,7 @@ var PAGE_TITLES = {
   perdas:'Lançar Perdas',central:'Central de Resultados',
   relatorios:'Relatórios',usuarios:'Cadastro de Usuários',
   plano:'Plano de Ação',
-  inv:'FC360 Inventário','inv-coleta':'Minha Coleta',
+  inv:'FC360 Inventário','inv-coleta':'Minha Coleta','inv-avulsa':'Coleta Avulsa',
 };
 
 function nav(page, el) {
@@ -878,6 +879,11 @@ function nav(page, el) {
   if (page==='inv-coleta') {
     loadInventariosFromFirebase(function(){
       renderColeta();
+    });
+  }
+  if (page==='inv-avulsa') {
+    loadInventariosFromFirebase(function(){
+      renderColetaAvulsa();
     });
   }
   updateDash();
@@ -7119,12 +7125,48 @@ function switchInvListTab(tab, btn) {
   if (tab==='comparativo') renderInvComparativo();
 }
 
-// ── Histórico ─────────────────────────────────────────────────────────────
+// ── Histórico com filtros ─────────────────────────────────────────────────
+var _histFiltros={nome:'',tipo:''};
+
 function renderInvHistorico() {
   var el=document.getElementById('inv-lista-historico'); if(!el) return;
+  var ss='padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit;background:#fff';
+  el.innerHTML=
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;padding:12px;background:var(--gray);border-radius:10px">'+
+      '<input id="hist-f-nome" placeholder="Buscar por nome..." style="flex:1;min-width:140px;'+ss+'" value="" oninput="_histFiltrar()"/>'+
+      '<select id="hist-f-tipo" style="'+ss+'" onchange="_histFiltrar()">'+
+        '<option value="">Todos os tipos</option>'+
+        '<option value="geral">Geral</option>'+
+        '<option value="parcial">Parcial</option>'+
+        '<option value="surpresa">Surpresa</option>'+
+      '</select>'+
+      '<button class="btn btn-s btn-sm" onclick="_histLimparFiltros()" style="white-space:nowrap">Limpar</button>'+
+    '</div>'+
+    '<div id="hist-lista-items"></div>';
+  _histRenderLista();
+}
+
+function _histFiltrar() {
+  _histFiltros.nome=(document.getElementById('hist-f-nome')||{}).value||'';
+  _histFiltros.tipo=(document.getElementById('hist-f-tipo')||{}).value||'';
+  _histRenderLista();
+}
+
+function _histLimparFiltros() {
+  _histFiltros={nome:'',tipo:''};
+  renderInvHistorico();
+}
+
+function _histRenderLista() {
+  var el=document.getElementById('hist-lista-items'); if(!el) return;
   var invs=(S.invsCache||[]).filter(function(i){ return i.status==='encerrado'; });
+  if (_histFiltros.nome) {
+    var q=_histFiltros.nome.toLowerCase();
+    invs=invs.filter(function(i){ return (i.nome||'').toLowerCase().indexOf(q)>=0; });
+  }
+  if (_histFiltros.tipo) invs=invs.filter(function(i){ return (i.tipo||'geral')===_histFiltros.tipo; });
   if (!invs.length) {
-    el.innerHTML='<div style="text-align:center;padding:50px 20px;color:var(--t3)"><div style="font-size:40px;margin-bottom:12px">📁</div><div style="font-size:15px;font-weight:600;margin-bottom:6px">Nenhum inventário encerrado</div></div>';
+    el.innerHTML='<div style="text-align:center;padding:50px 20px;color:var(--t3)"><div style="font-size:40px;margin-bottom:12px">📁</div><div style="font-size:15px;font-weight:600;margin-bottom:6px">Nenhum inventário encontrado</div></div>';
     return;
   }
   el.innerHTML=invs.map(function(inv){
@@ -7490,8 +7532,10 @@ function renderColeta() {
           '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Bipe ou digite o código..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
           '<div id="inv-desc-preview" style="font-size:12px;margin-top:5px;min-height:18px"></div>'+
         '</div>'+
-        '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
-          '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()"/></div>'+
+        '<div style="width:72px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
+          '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\'){var fi=document.getElementById(\'inv-fator-input\');if(fi){fi.focus();fi.select();}}"/></div>'+
+        '<div style="width:62px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">× Fator</label>'+
+          '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()"/></div>'+
         '<button onclick="registrarBipagem()" style="padding:13px 22px;background:#FFC600;color:#111;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Registrar</button>'+
       '</div>'+
       '<div style="margin-top:12px;display:flex;justify-content:flex-end">'+
@@ -7902,6 +7946,8 @@ function atualizarNavColeta() {
   // sb-inv-sec e nav-inv-gestao são controlados por setupRole() — não mexer aqui
   var temAberto=(S.invsCache||[]).some(function(i){ return i.status==='aberto'; });
   colItem.style.display=temAberto?'flex':'none';
+  var avulsaItem=document.getElementById('nav-inv-avulsa');
+  if (avulsaItem) avulsaItem.style.display=temAberto?'flex':'none';
 
   // Restaura detalhe de inventário após reload
   var raw=sessionStorage.getItem('inv_detalhe_state');
@@ -7975,7 +8021,9 @@ function registrarBipagem() {
   if (_invColetaAtual.concluido){ alert('Você já finalizou sua contagem.'); return; }
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
   if (!ei||!qi) return;
-  var ean=ei.value.trim(), qty=parseInt(qi.value)||1;
+  var fi=document.getElementById('inv-fator-input');
+  var ean=ei.value.trim(), qty=parseInt(qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
+  var qtyTotal=qty*fator;
   if (!ean){ ei.focus(); return; }
   if (qty<1) qty=1;
   var coletorId=_getIdColetor();
@@ -7993,7 +8041,8 @@ function registrarBipagem() {
   var end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao', seq=_nextSeq;
   _bipRegistrando=true;
   db.collection('inv_bipagens').add({
-    invId:inv.id, loja:inv.loja||'', endereco:end, seq:seq, ean:ean, qty:qty,
+    invId:inv.id, loja:inv.loja||'', endereco:end, seq:seq, ean:ean, qty:qtyTotal,
+    fator:fator>1?fator:undefined,
     rodada:rodada, modo:modo,
     coletorId:coletorId, coletorNome:coletorId,
     ts:firebase.firestore.FieldValue.serverTimestamp()
@@ -8001,12 +8050,246 @@ function registrarBipagem() {
     db.collection('inv_inventarios').doc(inv.id).update({totalBipagens:firebase.firestore.FieldValue.increment(1)}).catch(function(){});
     _nextSeq++;
     var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
-    ei.value=''; qi.value='1';
+    ei.value=''; qi.value='1'; if(fi) fi.value='1';
     var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent='';
     ei.focus();
     _carregarUltimasBipagens(inv.id,end,rodada,modo);
     _bipRegistrando=false;
   }).catch(function(e){ _bipRegistrando=false; alert('Erro: '+e.message); });
+}
+
+// ── Feature 2: Itens não coletados ───────────────────────────────────────
+function mostrarItensNaoColetados() {
+  if (!_invAtivo) return;
+  var wrap=document.getElementById('inv-nao-coletados-wrap'); if(!wrap) return;
+  wrap.innerHTML='<div style="color:var(--t3);font-size:13px;padding:10px 0">⏳ Carregando...</div>';
+  loadCatalogoByInv(_invAtivo.id,function(cat){
+    var eans=Object.keys(cat);
+    if (!eans.length) {
+      wrap.innerHTML='<div style="font-size:13px;color:var(--t3);padding:10px 0">Nenhum catálogo importado para este inventário.</div>';
+      return;
+    }
+    db.collection('inv_bipagens').where('invId','==',_invAtivo.id).get().then(function(snap){
+      var bipados={};
+      snap.docs.forEach(function(d){ bipados[d.data().ean]=true; });
+      var naoCol=eans.filter(function(e){ return !bipados[e]; });
+      if (!naoCol.length) {
+        wrap.innerHTML='<div style="padding:14px;background:#f0faf5;border-radius:10px;color:#1a5c34;font-weight:700;font-size:13px">✓ Todos os '+eans.length+' produtos foram coletados!</div>';
+        return;
+      }
+      var rows=naoCol.map(function(ean){
+        var p=cat[ean]||{};
+        return '<tr><td style="font-family:monospace;font-size:12px">'+ean+'</td><td>'+(p.desc||'—')+'</td><td style="color:var(--t3)">'+(p.un||'')+'</td></tr>';
+      }).join('');
+      wrap.innerHTML=
+        '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+naoCol.length+' de '+eans.length+' produtos sem coleta</div>'+
+        '<div style="overflow-x:auto"><table><thead><tr><th>EAN</th><th>Descrição</th><th>Un</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+        '<button class="btn btn-s btn-sm" style="margin-top:10px" onclick="_exportarNaoColetadosCsv()">⬇ CSV</button>';
+      window._naoColetadosCache={eans:naoCol,cat:cat,invNome:_invAtivo.nome};
+    }).catch(function(e){ wrap.innerHTML='<div style="color:var(--r);font-size:13px">Erro: '+e.message+'</div>'; });
+  });
+}
+
+function _exportarNaoColetadosCsv() {
+  var c=window._naoColetadosCache; if(!c) return;
+  var lines=['EAN;DESCRICAO;UNIDADE'];
+  c.eans.forEach(function(ean){ var p=c.cat[ean]||{}; lines.push([ean,p.desc||'',p.un||''].join(';')); });
+  var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url;
+  a.download=(c.invNome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_nao_coletados.csv';
+  a.click(); setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+}
+
+// ── Feature 4: Relatório de produtividade por coletor ─────────────────────
+function renderProdutividade() {
+  if (!_invAtivo) return;
+  var wrap=document.getElementById('inv-produtividade-wrap'); if(!wrap) return;
+  wrap.innerHTML='<div style="color:var(--t3);font-size:13px;padding:10px 0">⏳ Calculando...</div>';
+  db.collection('inv_bipagens').where('invId','==',_invAtivo.id).orderBy('ts','asc').get().then(function(snap){
+    if (snap.empty) { wrap.innerHTML='<div style="font-size:13px;color:var(--t3);padding:10px 0">Nenhuma bipagem registrada.</div>'; return; }
+    var por={};
+    snap.docs.forEach(function(d){
+      var b=d.data();
+      var id=b.coletorId||'?';
+      if (!por[id]) por[id]={nome:b.coletorNome||id,bips:0,firstTs:null,lastTs:null};
+      por[id].bips++;
+      var ts=b.ts&&b.ts.seconds?b.ts.seconds*1000:null;
+      if (ts) {
+        if (!por[id].firstTs||ts<por[id].firstTs) por[id].firstTs=ts;
+        if (!por[id].lastTs||ts>por[id].lastTs) por[id].lastTs=ts;
+      }
+    });
+    var rows=Object.keys(por).sort().map(function(id){
+      var p=por[id];
+      var durMin=p.firstTs&&p.lastTs?(p.lastTs-p.firstTs)/60000:0;
+      var bph=durMin>1?Math.round(p.bips/(durMin/60)):p.bips;
+      var durStr=durMin<1?'< 1 min':(durMin<60?Math.round(durMin)+' min':Math.round(durMin/60)+'h '+Math.round(durMin%60)+'min');
+      return '<tr>'+
+        '<td style="font-family:monospace;font-weight:700">'+id+'</td>'+
+        '<td style="text-align:right">'+p.bips+'</td>'+
+        '<td style="text-align:right">'+durStr+'</td>'+
+        '<td style="text-align:right;font-weight:700;color:var(--y-dark,#b38600)">'+bph+'/h</td>'+
+      '</tr>';
+    }).join('');
+    wrap.innerHTML=
+      '<div style="overflow-x:auto"><table>'+
+        '<thead><tr><th>Coletor</th><th style="text-align:right">Bipagens</th><th style="text-align:right">Tempo ativo</th><th style="text-align:right">Bip/hora</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>';
+  }).catch(function(e){ wrap.innerHTML='<div style="color:var(--r);font-size:13px">Erro: '+e.message+'</div>'; });
+}
+
+// ── Feature 5: Modo Coleta Avulsa ─────────────────────────────────────────
+var _avulsaInvId=null;
+
+function renderColetaAvulsa() {
+  var wrap=document.getElementById('inv-avulsa-wrap'); if(!wrap) return;
+  var invs=(S.invsCache||[]).filter(function(i){ return i.status==='aberto'; });
+  if (!invs.length) {
+    wrap.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--t3)"><div style="font-size:40px;margin-bottom:12px">📦</div><div style="font-size:15px;font-weight:600;margin-bottom:8px">Nenhum inventário ativo</div><div style="font-size:13px">Crie ou abra um inventário para usar a coleta avulsa.</div></div>';
+    return;
+  }
+  var coletorId=_getIdColetor();
+  if (!coletorId) {
+    var atual=_getIdColetor();
+    wrap.innerHTML='<div style="max-width:360px;margin:50px auto;padding:28px 24px;background:#fff;border-radius:16px;border:1px solid var(--gray2);box-shadow:var(--sh)">'+
+      '<div style="font-family:\'Syne\',sans-serif;font-size:19px;font-weight:800;margin-bottom:6px">Identificação</div>'+
+      '<div style="font-size:13px;color:var(--t2);margin-bottom:22px">Informe seu ID de coletor para começar.</div>'+
+      '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:8px">ID de Coletor</label>'+
+      '<input id="avulsa-coletor-id" type="text" value="'+(atual||'')+'" placeholder="Ex: 01, A1, JOAO" autocomplete="off" '+
+        'style="width:100%;padding:14px;border:2.5px solid var(--y);border-radius:10px;font-size:22px;font-weight:700;font-family:monospace;text-align:center;letter-spacing:3px;margin-bottom:16px;box-sizing:border-box" '+
+        'onkeydown="if(event.key===\'Enter\')_confirmarIdColetorAvulsa()"/>'+
+      '<button onclick="_confirmarIdColetorAvulsa()" style="width:100%;padding:14px;background:var(--y);color:#111;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Começar →</button>'+
+    '</div>';
+    setTimeout(function(){ var el=document.getElementById('avulsa-coletor-id'); if(el){el.focus();el.select();} },100);
+    return;
+  }
+  var optsInv=invs.map(function(i){ return '<option value="'+i.id+'"'+(i.id===_avulsaInvId?' selected':'')+'>'+i.nome+'</option>'; }).join('');
+  if (!_avulsaInvId) _avulsaInvId=invs[0].id;
+  var coletorChip='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:9px 14px;background:#fff8e1;border:1.5px solid #f5c518;border-radius:10px">'+
+    '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#b38600">Coletor</span>'+
+    '<span style="font-size:17px;font-weight:800;font-family:monospace;flex:1;letter-spacing:2px">'+coletorId+'</span>'+
+    '<button onclick="_editarIdColetor()" style="padding:4px 10px;background:#fff;border:1.5px solid #ddd;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--t2)">✎ Mudar</button>'+
+  '</div>';
+  wrap.innerHTML=coletorChip+
+    '<div class="card" style="margin-bottom:14px">'+
+      '<div style="margin-bottom:12px">'+
+        '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Inventário</label>'+
+        '<select id="avulsa-inv-sel" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-family:inherit" onchange="_avulsaSelInv(this.value)">'+optsInv+'</select>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+
+        '<div style="flex:1;min-width:180px">'+
+          '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">EAN / Código de Barras</label>'+
+          '<input id="avulsa-ean-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Bipe ou digite o código..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\'){var qi=document.getElementById(\'avulsa-qty-input\');if(qi){qi.focus();qi.select();}}"/>'+
+          '<div id="avulsa-desc-preview" style="font-size:12px;margin-top:5px;min-height:18px"></div>'+
+        '</div>'+
+        '<div style="width:72px">'+
+          '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
+          '<input id="avulsa-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagemAvulsa()"/>'+
+        '</div>'+
+        '<button onclick="registrarBipagemAvulsa()" style="padding:13px 22px;background:#FFC600;color:#111;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Registrar</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div style="font-family:\'Syne\',sans-serif;font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">'+
+        'Bipagens Avulsas'+
+        '<button class="btn btn-s btn-sm" onclick="_exportarAvulsaCsv()">⬇ CSV</button>'+
+      '</div>'+
+      '<div id="avulsa-lista-wrap"><div style="text-align:center;padding:24px;color:var(--t3);font-size:13px">Nenhuma bipagem ainda.</div></div>'+
+    '</div>';
+  var ei=document.getElementById('avulsa-ean-input');
+  if (ei) {
+    loadCatalogoByInv(_avulsaInvId,function(cat){
+      ei.addEventListener('input',function(){
+        var val=this.value.trim();
+        var pr=document.getElementById('avulsa-desc-preview'); if(!pr) return;
+        var p=cat[val]||{};
+        pr.textContent=p.desc?'📦 '+p.desc+(p.un?' — '+p.un:''):'';
+        pr.style.color='var(--g)';
+      });
+    });
+    setTimeout(function(){ ei.focus(); },150);
+  }
+  _carregarAvulsaLista();
+}
+
+function _confirmarIdColetorAvulsa() {
+  var val=((document.getElementById('avulsa-coletor-id')||{}).value||'').trim().toUpperCase();
+  if (!val){ alert('Informe seu ID de coletor.'); return; }
+  _setIdColetor(val);
+  renderColetaAvulsa();
+}
+
+function _avulsaSelInv(invId) {
+  _avulsaInvId=invId;
+  renderColetaAvulsa();
+}
+
+var _avulsaRegistrando=false;
+
+function registrarBipagemAvulsa() {
+  if (_avulsaRegistrando) return;
+  var ei=document.getElementById('avulsa-ean-input'), qi=document.getElementById('avulsa-qty-input');
+  if (!ei||!qi) return;
+  var ean=ei.value.trim(), qty=parseInt(qi.value)||1;
+  if (!ean){ ei.focus(); return; }
+  if (qty<1) qty=1;
+  var coletorId=_getIdColetor();
+  if (!coletorId){ _editarIdColetor(); return; }
+  if (!_avulsaInvId) return;
+  var inv=(S.invsCache||[]).find(function(i){ return i.id===_avulsaInvId; });
+  if (!inv||inv.status!=='aberto'){ alert('Inventário não está aberto.'); return; }
+  _avulsaRegistrando=true;
+  db.collection('inv_bipagens').add({
+    invId:_avulsaInvId, loja:inv.loja||'', endereco:'_AVULSO', seq:Date.now(), ean:ean, qty:qty,
+    rodada:1, modo:'avulso',
+    coletorId:coletorId, coletorNome:coletorId,
+    ts:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    db.collection('inv_inventarios').doc(_avulsaInvId).update({totalBipagens:firebase.firestore.FieldValue.increment(1)}).catch(function(){});
+    ei.value=''; qi.value='1';
+    var pr=document.getElementById('avulsa-desc-preview'); if(pr) pr.textContent='';
+    ei.focus();
+    _avulsaRegistrando=false;
+    _carregarAvulsaLista();
+  }).catch(function(e){ _avulsaRegistrando=false; alert('Erro: '+e.message); });
+}
+
+function _carregarAvulsaLista() {
+  if (!_avulsaInvId) return;
+  var wrap=document.getElementById('avulsa-lista-wrap'); if(!wrap) return;
+  db.collection('inv_bipagens')
+    .where('invId','==',_avulsaInvId)
+    .where('endereco','==','_AVULSO')
+    .orderBy('ts','desc').limit(30)
+    .get().then(function(snap){
+      if (snap.empty){ wrap.innerHTML='<div style="text-align:center;padding:24px;color:var(--t3);font-size:13px">Nenhuma bipagem avulsa ainda.</div>'; return; }
+      var rows=snap.docs.map(function(d){
+        var b=d.data();
+        var ts=b.ts&&b.ts.seconds?new Date(b.ts.seconds*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
+        return '<tr><td style="font-family:monospace;font-size:12px">'+b.ean+'</td><td style="text-align:right;font-weight:700">'+b.qty+'</td><td style="font-size:11px;color:var(--t3)">'+ts+'</td><td style="font-size:11px;color:var(--t3)">'+b.coletorId+'</td></tr>';
+      }).join('');
+      wrap.innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>EAN</th><th style="text-align:right">Qtd</th><th>Hora</th><th>Coletor</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }).catch(function(){});
+}
+
+function _exportarAvulsaCsv() {
+  if (!_avulsaInvId) return;
+  var inv=(S.invsCache||[]).find(function(i){ return i.id===_avulsaInvId; });
+  db.collection('inv_bipagens').where('invId','==',_avulsaInvId).where('endereco','==','_AVULSO').get().then(function(snap){
+    var lines=['EAN;QUANTIDADE;COLETOR;TIMESTAMP'];
+    snap.docs.forEach(function(d){
+      var b=d.data();
+      var ts=b.ts&&b.ts.seconds?new Date(b.ts.seconds*1000).toISOString():'';
+      lines.push([b.ean,b.qty,b.coletorId,ts].join(';'));
+    });
+    var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a'); a.href=url;
+    a.download=((inv&&inv.nome)||'inventario').replace(/[^a-z0-9]/gi,'_')+'_avulso.csv';
+    a.click(); setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+  }).catch(function(e){ alert('Erro: '+e.message); });
 }
 
 // Restaura sessao ao recarregar a pagina

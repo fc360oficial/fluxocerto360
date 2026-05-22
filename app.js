@@ -6301,11 +6301,11 @@ function encerrarInventario(invId) {
 }
 
 // ── Bipagens tab ──────────────────────────────────────────────────
-function renderInvBipagens(filtroEnd) {
+function renderInvBipagens(filtroEnd, filtroCol) {
   if (!_invAtivo) return;
   loadBipagensByInv(_invAtivo.id, function(bips){
     loadCatalogoByInv(_invAtivo.id, function(cat){
-      // Popular filtro de endereços (uma vez)
+      // Filtro de endereços (uma vez)
       var filterSel = document.getElementById('inv-bip-filter');
       if (filterSel && !filterSel.dataset.built) {
         var enderecos = _invAtivo.enderecos || [];
@@ -6314,7 +6314,39 @@ function renderInvBipagens(filtroEnd) {
         filterSel.dataset.built = '1';
         if (filtroEnd) filterSel.value = filtroEnd;
       }
-      var filtrados = filtroEnd ? bips.filter(function(b){ return b.endereco===filtroEnd; }) : bips;
+      // Filtro de coletores — rebuilda sempre que o endereço muda
+      var colSel = document.getElementById('inv-bip-col-filter');
+      if (colSel) {
+        if (filtroEnd) {
+          var bipsEnd = bips.filter(function(b){ return b.endereco===filtroEnd && b.modo!=='correcao'; });
+          var colMap = {};
+          bipsEnd.forEach(function(b){
+            if (!b.coletorId) return;
+            if (!colMap[b.coletorId]) colMap[b.coletorId] = {nome: b.coletorNome||b.coletorId, count: 0};
+            colMap[b.coletorId].count++;
+          });
+          var colIds = Object.keys(colMap);
+          if (colIds.length > 1) {
+            colSel.innerHTML = '<option value="">Todos os coletores ('+colIds.length+')</option>'+
+              colIds.map(function(id){
+                var c=colMap[id];
+                return '<option value="'+id+'"'+(filtroCol===id?' selected':'')+'>'+c.nome+' — '+c.count+' bip</option>';
+              }).join('');
+            colSel.style.display = '';
+          } else {
+            colSel.style.display = 'none';
+            filtroCol = null;
+          }
+        } else {
+          colSel.style.display = 'none';
+          filtroCol = null;
+        }
+      }
+      var filtrados = bips.filter(function(b){
+        if (filtroEnd && b.endereco !== filtroEnd) return false;
+        if (filtroCol && b.coletorId !== filtroCol) return false;
+        return true;
+      });
       var tbody = document.getElementById('inv-bip-tbody');
       if (!tbody) return;
       if (!filtrados.length) {

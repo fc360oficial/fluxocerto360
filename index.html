@@ -903,8 +903,8 @@
 
           <!-- Tab Endereços -->
           <div id="inv-tab-enderecos" style="margin-top:14px">
-            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-              <button class="btn btn-s btn-sm" onclick="abrirImportCat()">📥 Importar Catálogo TXT</button>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+              <div id="inv-cat-status"><button class="btn btn-s btn-sm" onclick="abrirImportCat()">📥 Importar Catálogo TXT</button></div>
               <input type="file" id="inv-import-file" accept=".txt,.csv" style="display:none" onchange="importarCatalogo(event)"/>
             </div>
             <div class="card">

@@ -6198,6 +6198,23 @@ function atribuirColetor(invId, endereco, selectEl) {
 }
 
 // ── Import catálogo TXT ───────────────────────────────────────────
+function _renderImportCatStatus(invId, forceReload) {
+  var wrap=document.getElementById('inv-cat-status'); if(!wrap) return;
+  if (forceReload) delete _catCache[invId];
+  loadCatalogoByInv(invId,function(cat){
+    var n=Object.keys(cat).length;
+    if (n>0) {
+      wrap.innerHTML=
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+          '<span style="padding:4px 12px;background:#e8f5ee;border:1.5px solid #c8e6c9;border-radius:8px;font-size:12px;font-weight:700;color:#1a5c34">✓ Catálogo: '+n+' produtos importados</span>'+
+          '<button class="btn btn-s btn-sm" onclick="abrirImportCat()">↩ Reenviar arquivo</button>'+
+        '</div>';
+    } else {
+      wrap.innerHTML='<button class="btn btn-s btn-sm" onclick="abrirImportCat()">📥 Importar Catálogo TXT</button>';
+    }
+  });
+}
+
 function abrirImportCat() {
   document.getElementById('inv-import-file').click();
 }
@@ -6260,9 +6277,8 @@ function importarCatalogo(event) {
       });
     });
     p.then(function(){
-      _catCache[invId] = null; // invalida cache
-      alert(produtos.length+' produtos importados com sucesso!');
       event.target.value='';
+      _renderImportCatStatus(invId, true); // forceReload: invalida cache e busca contagem atual
     }).catch(function(err){ alert('Erro ao importar: '+(err.message||err)); event.target.value=''; });
   };
   reader.readAsText(file,'ISO-8859-1');
@@ -7912,6 +7928,7 @@ function renderInvEnderecos() {
     var cnt={}; bips.forEach(function(b){ cnt[b.endereco]=(cnt[b.endereco]||0)+1; });
     enderecos.forEach(function(end){ var el=document.getElementById('inv-ec-'+end.replace(/[^a-z0-9]/gi,'_')); if(el) el.textContent=cnt[end]||0; });
   });
+  _renderImportCatStatus(invId);
 }
 
 // ── Override _iniciarDashboardRealtime — listener duplo (bips + inv doc) ──

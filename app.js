@@ -7463,8 +7463,8 @@ function renderColeta() {
     :'<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:14px">'+
         '<div style="flex:1;min-width:200px">'+
           '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">EAN / Código de Barras</label>'+
-          '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Bipe ou digite o código..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')registrarBipagem()"/>'+
-          '<div id="inv-desc-preview" style="font-size:12px;color:var(--t3);margin-top:5px;min-height:18px"></div>'+
+          '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Bipe ou digite o código..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
+          '<div id="inv-desc-preview" style="font-size:12px;margin-top:5px;min-height:18px"></div>'+
         '</div>'+
         '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
           '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()"/></div>'+
@@ -7495,10 +7495,29 @@ function renderColeta() {
   if (!concluido) {
     loadCatalogoByInv(inv.id,function(cat){
       var ei=document.getElementById('inv-ean-input');
-      if (ei) {
-        ei.addEventListener('input',function(){ var p=cat[this.value.trim()]||{}; var pr=document.getElementById('inv-desc-preview'); if(pr)pr.textContent=p.desc?'📦 '+p.desc+(p.un?' — '+p.un:''):''; });
-        setTimeout(function(){ ei.focus(); },150);
-      }
+      if (!ei) return;
+      var hasCat=Object.keys(cat).length>0;
+      ei.addEventListener('input',function(){
+        var val=this.value.trim();
+        var pr=document.getElementById('inv-desc-preview');
+        if (!pr) return;
+        var p=cat[val];
+        var completo=/^\d{8}$|^\d{13}$/.test(val);
+        if (p&&p.desc) {
+          pr.textContent='📦 '+p.desc+(p.un?' — '+p.un:'');
+          pr.style.color='var(--g)';
+          if (completo) {
+            var qi=document.getElementById('inv-qty-input');
+            if (qi){ qi.focus(); qi.select(); }
+          }
+        } else if (completo&&hasCat) {
+          pr.textContent='⚠ Produto não está na base';
+          pr.style.color='var(--r)';
+        } else {
+          pr.textContent='';
+        }
+      });
+      setTimeout(function(){ ei.focus(); },150);
     });
   }
   _carregarUltimasBipagens(inv.id,end,rodada,modo);
@@ -7784,7 +7803,24 @@ function atualizarNavColeta() {
   if(sec) sec.style.display=temAberto?'block':'none';
 }
 
-// ── Override registrarBipagem — usa ID de coletor do localStorage ─────────
+// ── _eanEnterKey — Enter no campo EAN: vai pra qty se reconhecido ─────────
+function _eanEnterKey() {
+  var ei=document.getElementById('inv-ean-input'); if(!ei) return;
+  var val=ei.value.trim();
+  var inv=_invColetaAtual?_invColetaAtual.inv:null;
+  var cat=inv?(_catCache[inv.id]||{}):{};
+  var hasCat=Object.keys(cat).length>0;
+  var pr=document.getElementById('inv-desc-preview');
+  if (!val){ ei.focus(); return; }
+  if (hasCat&&!cat[val]) {
+    if(pr){ pr.textContent='⚠ Produto não está na base'; pr.style.color='var(--r)'; }
+    ei.focus(); return;
+  }
+  var qi=document.getElementById('inv-qty-input');
+  if (qi){ qi.focus(); qi.select(); }
+}
+
+// ── Override registrarBipagem — ID coletor + validação de base ────────────
 function registrarBipagem() {
   if (_bipRegistrando) return;
   if (!_invColetaAtual) return;
@@ -7798,6 +7834,14 @@ function registrarBipagem() {
   if (!coletorId){ _editarIdColetor(); return; }
   var inv=_invColetaAtual.inv;
   if (inv.status!=='aberto'){ alert('Inventário encerrado.'); return; }
+  // Valida contra catálogo se houver base importada
+  var cat=_catCache[inv.id]||{};
+  var hasCat=Object.keys(cat).length>0;
+  if (hasCat&&!cat[ean]) {
+    var pr=document.getElementById('inv-desc-preview');
+    if(pr){ pr.textContent='⚠ Produto não está na base'; pr.style.color='var(--r)'; }
+    ei.focus(); return;
+  }
   var end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao', seq=_nextSeq;
   _bipRegistrando=true;
   db.collection('inv_bipagens').add({

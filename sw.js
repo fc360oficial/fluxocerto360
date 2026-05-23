@@ -1,6 +1,6 @@
 // Fluxo Certo 360 — Service Worker
 // Atualiza este número de versão sempre que publicar novos arquivos
-var CACHE_NAME = 'cahu360-v95';
+var CACHE_NAME = 'cahu360-v96';
 
 var SHELL_ASSETS = [
   './',
@@ -12,6 +12,13 @@ var SHELL_ASSETS = [
   './icon-512.png',
   './manifest.json'
 ];
+
+// Responde ao postMessage SKIP_WAITING enviado pelo app
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // Instala e faz cache dos arquivos do app
 self.addEventListener('install', function(event) {

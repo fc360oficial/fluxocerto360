@@ -29,23 +29,40 @@ function _swBanner() {
 }
 
 if ('serviceWorker' in navigator) {
-  // Guarda o controller atual antes de registrar (null = primeira instalação)
   var _prevController = navigator.serviceWorker.controller;
 
-  // updateViaCache:'none' garante que sw.js é sempre buscado da rede (ignora cache HTTP)
+  function _ativarSwWaiting(reg) {
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+  }
+
   navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function(reg) {
+    // Se já tem um SW esperando (update baixado mas não ativado), força agora
+    _ativarSwWaiting(reg);
+
+    reg.addEventListener('updatefound', function() {
+      var novo = reg.installing;
+      if (!novo) return;
+      novo.addEventListener('statechange', function() {
+        if (novo.state === 'installed') {
+          _ativarSwWaiting(reg);
+        }
+      });
+    });
+
     reg.update();
-    // Verifica update toda vez que o usuário volta ao app (mobile PWA)
     document.addEventListener('visibilitychange', function() {
-      if (document.visibilityState === 'visible') reg.update();
+      if (document.visibilityState === 'visible') {
+        reg.update().then(function() { _ativarSwWaiting(reg); });
+      }
     });
   }).catch(function(err) {
     console.warn('SW registro falhou:', err);
   });
 
-  // controllerchange: novo SW assumiu o controle (mais confiável que postMessage)
   navigator.serviceWorker.addEventListener('controllerchange', function() {
-    if (!_prevController) return; // primeira instalação — não recarregar
+    if (!_prevController) return;
     if (_swRefreshing) return;
     _swRefreshing = true;
     _swBanner();

@@ -62,11 +62,11 @@
       <img src="logo.png" alt="Fluxo Certo 360" style="width:100%;max-width:150px;height:auto;mix-blend-mode:multiply;display:block;"/>
     </div>
     <div class="sb-nav">
-      <div class="sb-sec">FC360 Checklist</div>
+      <div class="sb-sec" id="nav-sec-checklist">FC360 Checklist</div>
       <div class="sb-item active" id="nav-dashboard" onclick="nav('dashboard',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
       </div>
-      <div class="sb-item" onclick="nav('checklist',this)">
+      <div class="sb-item" id="nav-checklist" onclick="nav('checklist',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Checklist
       </div>
       <div class="sb-item" id="nav-plano" style="display:none;position:relative" onclick="nav('plano',this)">
@@ -1159,7 +1159,7 @@
     <div class="frow c2"><div class="fg"><label>Nome completo</label><input id="u-nome" type="text" placeholder="Ex: João Silva"/></div><div class="fg"><label>E-mail (login)</label><input id="u-email" type="text" placeholder="joao@fluxocerto360.com"/></div></div>
     <div class="frow c2"><div class="fg"><label>Senha <span id="senha-hint" style="font-size:11px;color:var(--t3);font-weight:400"></span></label><input id="u-senha" type="password" placeholder="Mínimo 4 caracteres"/></div><div class="fg"><label>Confirmar senha</label><input id="u-senha2" type="password" placeholder="Repita a senha"/></div></div>
     <div class="frow c2">
-      <div class="fg"><label>Perfil</label><select id="u-perfil"><option value="gerencia">👔 Gerência de Loja</option><option value="supervisor">🔎 Supervisor</option><option value="operator">🛒 Operador</option><option value="prevencao">🔍 Aux. Prevenção</option></select></div>
+      <div class="fg"><label>Perfil</label><select id="u-perfil"><option value="gerencia">👔 Gerência de Loja</option><option value="supervisor">🔎 Supervisor</option><option value="operator">🛒 Operador</option><option value="prevencao">🔍 Aux. Prevenção</option><option value="coletor">📦 Coletor (Inventário)</option></select></div>
       <div class="fg"><label>Setor</label><select id="u-setor"><option>Gerência</option><option>Mercearia</option><option>Perecíveis</option><option>Frios</option><option>Hortifruti</option><option>Açougue</option><option>Padaria</option><option>Bebidas</option><option>Caixa</option><option>Prevenção</option><option>Geral</option></select></div>
     </div>
     <div class="frow c2"><div class="fg"><label>Cargo / Observação</label><input id="u-cargo" type="text" placeholder="Ex: Encarregado de Mercearia"/></div><div class="fg"><label>Loja</label><input id="u-loja" type="text" placeholder="Ex: Loja Centro, Filial Norte"/></div></div>

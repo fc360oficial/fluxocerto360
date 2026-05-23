@@ -622,7 +622,7 @@ function finalizarLogin(found) {
   setupRole();
   setDate();
   checkMobile();
-  var isOpOrPrev2 = S.role==='operator'||S.role==='prevencao';
+  var isOpOrPrev2 = S.role==='operator'||S.role==='prevencao'||S.role==='coletor';
 
   // Mostrar tela de carregamento
   document.getElementById('app').style.opacity='0.6';
@@ -660,12 +660,15 @@ function finalizarLogin(found) {
       gerencia:   ['dashboard','checklist','relatorios','plano','inv-coleta'],
       supervisor: ['dashboard','checklist','relatorios','plano','inv-coleta'],
       operator:   ['checklist','inv-coleta'],
-      prevencao:  ['checklist','inv-coleta']
+      prevencao:  ['checklist','inv-coleta'],
+      coletor:    ['inv-coleta']
     };
     var allowed = pagesForRole[S.role] || ['checklist'];
     if (lastPage && allowed.indexOf(lastPage) >= 0) {
       var sbEl = document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]');
       nav(lastPage, sbEl);
+    } else if (S.role==='coletor') {
+      nav('inv-coleta', document.querySelector('.sb-item[onclick*="\'inv-coleta\'"]'));
     } else if (isOpOrPrev2) {
       nav('checklist', document.querySelector('.sb-item[onclick*="\'checklist\'"]'));
     } else {
@@ -743,9 +746,9 @@ function doLogout() {
 
 function setupRole() {
   var r = S.role;
-  var roleNames = {admin:'Administrador',gerencia:'Gerência de Loja',supervisor:'Supervisor',operator:'Operador',prevencao:'Aux. Prevenção'};
-  var badgeCls = {admin:'badge-admin',gerencia:'badge-admin',supervisor:'badge-sup',operator:'badge-op',prevencao:'badge-prev'};
-  var badgeTxt = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção'};
+  var roleNames = {admin:'Administrador',gerencia:'Gerência de Loja',supervisor:'Supervisor',operator:'Operador',prevencao:'Aux. Prevenção',coletor:'Coletor'};
+  var badgeCls = {admin:'badge-admin',gerencia:'badge-admin',supervisor:'badge-sup',operator:'badge-op',prevencao:'badge-prev',coletor:'badge-op'};
+  var badgeTxt = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção',coletor:'Coletor'};
   document.getElementById('sbName').textContent = S.currentUser ? S.currentUser.nome : '-';
   document.getElementById('sbRole').textContent = roleNames[r]||r;
   var tb = document.getElementById('tbBadge');
@@ -754,21 +757,24 @@ function setupRole() {
   var isAdmin = r==='admin';
   var isAdmOrGer = r==='admin'||r==='gerencia';
   var isSup = r==='supervisor';
-  show('sb-adm-sec', isAdmOrGer);
+  var isColetor = r==='coletor';
+  show('sb-adm-sec', isAdmOrGer && !isColetor);
   // Show/hide gerenciar tab in checklist (supervisor não gerencia checklists)
   var tabGer = document.getElementById('tab-gerenciar');
   if (tabGer) tabGer.style.display = isAdmin ? '' : 'none';
   // Dashboard só para admin e gerência
-  show('nav-dashboard', isAdmOrGer || isSup);
-  show('nav-central', isAdmin);
-  show('nav-relat', isAdmin || isSup || r==='gerencia');
-  show('nav-users', isAdmin);
+  show('nav-dashboard', (isAdmOrGer || isSup) && !isColetor);
+  show('nav-central', isAdmin && !isColetor);
+  show('nav-relat', (isAdmin || isSup || r==='gerencia') && !isColetor);
+  show('nav-users', isAdmin && !isColetor);
   // Alertas visível para admin e gerência (não supervisor)
-  show('nav-alertas', isAdmOrGer || isSup);
-  show('nav-plano', isAdmOrGer || isSup);
+  show('nav-alertas', (isAdmOrGer || isSup) && !isColetor);
+  show('nav-plano', (isAdmOrGer || isSup) && !isColetor);
+  show('nav-checklist', !isColetor);
+  show('nav-sec-checklist', !isColetor);
   // FC360 Inventário — só admin por enquanto
-  show('sb-inv-sec', isAdmin);
-  show('nav-inv-gestao', isAdmin);
+  show('sb-inv-sec', isAdmin && !isColetor);
+  show('nav-inv-gestao', isAdmin && !isColetor);
   show('nav-inv-coleta', false); // Atualizado dinamicamente após carregar inventários
   // Inicia verificação periódica de pendências para gestores e supervisor
   if (isAdmOrGer || isSup) {
@@ -3230,7 +3236,7 @@ function filtrarUsers(f,btn) {
   renderUsers();
 }
 
-var UPLABEL={admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção'};
+var UPLABEL={admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção',coletor:'Coletor'};
 var UPCLS={admin:'st-info',gerencia:'st-info',supervisor:'st-warn',operator:'st-ok',prevencao:'st-err'};
 
 function renderUsers() {
@@ -7576,7 +7582,8 @@ function selecionarEnderecoFila(invId, endereco) {
   var u=S.currentUser;
   var coletorId=_getIdColetor(), nomeColetor=_getNomeColetor();
   var displayNome=coletorId+(nomeColetor?' - '+nomeColetor:'');
-  var upd={}; upd['fila.'+found]={userId:u.id,nome:displayNome,desde:firebase.firestore.FieldValue.serverTimestamp(),concluido:false};
+  // Usa coletorId como chave de identidade (compatível com login compartilhado)
+  var upd={}; upd['fila.'+found]={userId:u.id,coletorId:coletorId,nome:displayNome,desde:firebase.firestore.FieldValue.serverTimestamp(),concluido:false};
   db.collection('inv_inventarios').doc(invId).update(upd).then(function(){
     _filaEndAtual={invId:invId,endereco:found};
     loadInventariosFromFirebase(function(){ renderColeta(); });
@@ -7716,7 +7723,8 @@ function _confirmarIdColetor() {
   if(activeInv) {
     localStorage.setItem(_COLETOR_INV_KEY, activeInv.id);
     if(S.currentUser) {
-      var upd={}; upd['coletoresReg.'+S.currentUser.id]={coletorId:val,nome:nome||val,userNome:S.currentUser.nome||'',registradoEm:firebase.firestore.FieldValue.serverTimestamp()};
+      var regKey='col_'+val; // chave por coletorId — funciona com login compartilhado
+      var upd={}; upd['coletoresReg.'+regKey]={coletorId:val,nome:nome||val,userNome:S.currentUser.nome||'',registradoEm:firebase.firestore.FieldValue.serverTimestamp()};
       db.collection('inv_inventarios').doc(activeInv.id).update(upd).catch(function(){});
     }
   }
@@ -7757,8 +7765,8 @@ function renderColeta() {
   var filaInv=invs.find(function(i){ return i.status==='aberto'&&i.modoFila; });
   if (filaInv&&(!_filaEndAtual||_filaEndAtual.invId!==filaInv.id)) {
     // Auto-restaura sessão após F5: se o usuário tem slot ativo na fila, retoma direto
-    var filaMap=filaInv.fila||{}, uid=u.id;
-    var myEnd=Object.keys(filaMap).find(function(e){ var s=filaMap[e]; return s&&s.userId===uid&&!s.concluido; });
+    var filaMap=filaInv.fila||{}, myColId=_getIdColetor();
+    var myEnd=Object.keys(filaMap).find(function(e){ var s=filaMap[e]; return s&&!s.concluido&&(s.coletorId===myColId||(s.userId===u.id&&!myColId)); });
     if (myEnd) { _filaEndAtual={invId:filaInv.id,endereco:myEnd}; }
     else {
     db.collection('inv_inventarios').doc(filaInv.id).get().then(function(snap){

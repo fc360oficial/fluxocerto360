@@ -695,7 +695,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '114';
+    var _BUILD = '115';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -7715,8 +7715,10 @@ function _confirmarSetorFila(invId, found, setor) {
   var u=S.currentUser;
   var coletorId=_getIdColetor(), nomeColetor=_getNomeColetor();
   var displayNome=coletorId+(nomeColetor?' - '+nomeColetor:'');
-  var upd={}; upd['fila.'+found]={userId:u.id,coletorId:coletorId,nome:displayNome,setor:setor,desde:firebase.firestore.FieldValue.serverTimestamp(),concluido:false};
-  db.collection('inv_inventarios').doc(invId).update(upd).then(function(){
+  db.collection('inv_inventarios').doc(invId).update(
+    new firebase.firestore.FieldPath('fila',found),
+    {userId:u.id,coletorId:coletorId,nome:displayNome,setor:setor,desde:firebase.firestore.FieldValue.serverTimestamp(),concluido:false}
+  ).then(function(){
     _filaEndAtual={invId:invId,endereco:found,setor:setor};
     // Garante que o inv está marcado no localStorage para a verificação de troca de inventário
     if (!localStorage.getItem(_COLETOR_INV_KEY)) localStorage.setItem(_COLETOR_INV_KEY, invId);
@@ -7725,8 +7727,9 @@ function _confirmarSetorFila(invId, found, setor) {
 }
 
 function liberarEnderecoFila(invId, endereco) {
-  var upd={}; upd['fila.'+endereco]=firebase.firestore.FieldValue.delete();
-  db.collection('inv_inventarios').doc(invId).update(upd).catch(function(){});
+  db.collection('inv_inventarios').doc(invId).update(
+    new firebase.firestore.FieldPath('fila',endereco), firebase.firestore.FieldValue.delete()
+  ).catch(function(){});
   _filaEndAtual=null;
 }
 
@@ -8164,8 +8167,10 @@ function _confirmarFinalizarRodada() {
   if (!_invColetaAtual) return;
   var info=_invColetaAtual, inv=info.inv, invId=inv.id, end=info.endereco, rodada=info.rodada||1;
   if (inv.modoFila) {
-    var upd={}; upd['fila.'+end+'.concluido']=true; upd['fila.'+end+'.concluidoEm']=firebase.firestore.FieldValue.serverTimestamp();
-    db.collection('inv_inventarios').doc(invId).update(upd).then(function(){
+    db.collection('inv_inventarios').doc(invId).update(
+      new firebase.firestore.FieldPath('fila',end,'concluido'), true,
+      new firebase.firestore.FieldPath('fila',end,'concluidoEm'), firebase.firestore.FieldValue.serverTimestamp()
+    ).then(function(){
       info.concluido=true;
       var idx=(S.invsCache||[]).findIndex(function(i){ return i.id===invId; });
       if (idx>=0&&S.invsCache[idx].fila) S.invsCache[idx].fila[end]=Object.assign({},S.invsCache[idx].fila[end],{concluido:true});
@@ -8640,8 +8645,9 @@ function reabrirEndereco(invId, endereco) {
   if (inv.modoFila) {
     var slot=(inv.fila||{})[endereco];
     if (!slot) return;
-    var upd={}; upd['fila.'+endereco+'.concluido']=false;
-    db.collection('inv_inventarios').doc(invId).update(upd).then(function(){
+    db.collection('inv_inventarios').doc(invId).update(
+      new firebase.firestore.FieldPath('fila',endereco,'concluido'), false
+    ).then(function(){
       loadInventariosFromFirebase(function(){ renderInvEnderecos(); });
     }).catch(function(e){ alert('Erro: '+e.message); });
   } else {

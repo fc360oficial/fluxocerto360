@@ -7736,6 +7736,11 @@ function renderColeta() {
   var invs=S.invsCache||[];
   var filaInv=invs.find(function(i){ return i.status==='aberto'&&i.modoFila; });
   if (filaInv&&(!_filaEndAtual||_filaEndAtual.invId!==filaInv.id)) {
+    // Auto-restaura sessão após F5: se o usuário tem slot ativo na fila, retoma direto
+    var filaMap=filaInv.fila||{}, uid=u.id;
+    var myEnd=Object.keys(filaMap).find(function(e){ var s=filaMap[e]; return s&&s.userId===uid&&!s.concluido; });
+    if (myEnd) { _filaEndAtual={invId:filaInv.id,endereco:myEnd}; }
+    else {
     db.collection('inv_inventarios').doc(filaInv.id).get().then(function(snap){
       if (!snap.exists) return;
       var fresh=Object.assign({id:snap.id},snap.data());
@@ -7757,6 +7762,7 @@ function renderColeta() {
       });
     });
     return;
+    } // end else (sem slot próprio)
   }
   var info=_encontrarAtribuicao();
   if (!info||!info.endereco) {
@@ -8214,6 +8220,8 @@ var _sbMapEnd={
 };
 function renderInvEnderecos() {
   if (!_invAtivo) return;
+  var fresh=(S.invsCache||[]).find(function(i){ return i.id===_invAtivo.id; });
+  if(fresh) _invAtivo=fresh;
   var inv=_invAtivo, invId=inv.id, enderecos=inv.enderecos||[];
   var tbody=document.getElementById('inv-end-tbody'); if(!tbody) return;
   var isAdmin=S.role==='admin'||S.role==='gerencia'||S.role==='supervisor';

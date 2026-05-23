@@ -8236,7 +8236,112 @@ function gerarRelPDF() {
         doc.text('Divergências de Auditoria',14,y); y+=3;
         doc.autoTable({startY:y,head:[['Endereço','Itens divergentes','Resolução','Resolvido por']],body:divRows,theme:'striped',headStyles:{fillColor:[220,53,69],textColor:[255,255,255],fontStyle:'bold'},styles:{fontSize:8},margin:{left:14,right:14}});
       }
-      doc.save((inv.nome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_relatorio.pdf');
+      _baixarPDF(doc, (inv.nome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_relatorio.pdf');
+    });
+  });
+}
+
+// Helper: faz download do PDF no mobile e desktop
+function _baixarPDF(doc, filename) {
+  var blob = doc.output('blob');
+  try {
+    if (navigator.share) {
+      var file = new File([blob], filename, {type:'application/pdf'});
+      navigator.share({files:[file], title:filename}).catch(function(){
+        _triggerDownload(blob, filename);
+      });
+      return;
+    }
+  } catch(e) {}
+  _triggerDownload(blob, filename);
+}
+function _triggerDownload(blob, filename) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+}
+
+// ── PDF de Bipagens por Endereço ───────────────────────────────────────────
+function gerarPDFBipagens() {
+  if (!_invAtivo) return;
+  var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  if (!jsPDFCtor) { alert('PDF não carregou. Verifique sua conexão.'); return; }
+  var inv = _invAtivo;
+  var now = new Date();
+  var dtStr = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+  loadBipagensByInv(inv.id, function(bips) {
+    if (!bips.length) { alert('Nenhuma bipagem registrada neste inventário.'); return; }
+    loadCatalogoByInv(inv.id, function(cat) {
+      var doc = new jsPDFCtor({orientation:'portrait', unit:'mm', format:'a4'});
+
+      doc.setFillColor(255, 198, 0);
+      doc.rect(0, 0, 210, 28, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(17, 17, 17);
+      doc.text('FC360 — Bipagens por Endereço', 14, 12);
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+      doc.text(inv.nome, 14, 19);
+      doc.text('Gerado: ' + dtStr + '  |  Total: ' + bips.length + ' bipagens', 14, 25);
+
+      // Agrupa por endereço → EAN → qty somada
+      var endMap = {};
+      bips.forEach(function(b) {
+        var end = b.endereco || '(sem endereço)';
+        if (!endMap[end]) endMap[end] = {setor:'', eans:{}, coletores:{}};
+        var slot = endMap[end];
+        if (b.setor && !slot.setor) slot.setor = b.setor;
+        var ean = b.ean || '—';
+        slot.eans[ean] = (slot.eans[ean] || 0) + (b.qty || 1);
+        if (b.coletorId) slot.coletores[b.coletorId] = b.coletorNome || b.coletorId;
+      });
+
+      var enderecos = Object.keys(endMap).sort();
+      var grandTotal = 0;
+
+      enderecos.forEach(function(end) {
+        var slot = endMap[end];
+        var setor = slot.setor;
+        var coletores = Object.keys(slot.coletores).map(function(id){ return slot.coletores[id]; }).join(', ') || '—';
+        var eanRows = Object.keys(slot.eans).sort().map(function(ean) {
+          var qty = slot.eans[ean];
+          var desc = (cat[ean] && cat[ean].desc) ? cat[ean].desc : '—';
+          return [ean, desc, qty];
+        });
+        var sub = eanRows.reduce(function(s, r) { return s + r[2]; }, 0);
+        grandTotal += sub;
+
+        var headFill = setor === 'ESTOQUE' ? [232, 240, 255] : setor === 'LOJA' ? [255, 248, 225] : [240, 240, 240];
+        var headLabel = end + (setor ? '  [' + setor + ']' : '') + '\nColetores: ' + coletores;
+
+        doc.autoTable({
+          startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 3 : 36,
+          head: [
+            [{content: headLabel, colSpan: 3, styles: {fillColor: headFill, textColor: [17,17,17], fontStyle: 'bold', fontSize: 9, halign: 'left', cellPadding: 3}}],
+            ['EAN', 'Descrição', 'Qtd']
+          ],
+          body: eanRows.concat([[' ', 'Subtotal', sub]]),
+          theme: 'striped',
+          headStyles: {fillColor: [210, 210, 210], textColor: [17,17,17], fontStyle: 'bold', fontSize: 8},
+          bodyStyles: {fontSize: 8},
+          columnStyles: {0:{cellWidth: 38, font: 'courier', fontSize: 7}, 2:{halign: 'center', cellWidth: 14}},
+          didParseCell: function(data) {
+            if (data.section === 'body' && data.row.index === eanRows.length) {
+              data.cell.styles.fillColor = [245, 245, 245];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          },
+          margin: {left: 14, right: 14}
+        });
+      });
+
+      var finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 6 : 40;
+      if (finalY > 272) { doc.addPage(); finalY = 20; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(17, 17, 17);
+      doc.text('TOTAL GERAL: ' + grandTotal + ' unidades  |  ' + enderecos.length + ' endereços', 14, finalY);
+
+      _baixarPDF(doc, (inv.nome||'inventario').replace(/[^a-z0-9]/gi,'_') + '_bipagens.pdf');
     });
   });
 }

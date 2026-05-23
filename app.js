@@ -8198,6 +8198,8 @@ function renderDashboardRealtime(bips) {
 // ── Relatorio PDF (HTML, abre impressao + fica visivel no browser) ─────────
 function gerarRelPDF() {
   if (!_invAtivo) return;
+  var logoEl=document.querySelector('.sb-logo img');
+  var logoSrc=logoEl?logoEl.src:'';
   var inv=_invAtivo, enderecos=inv.enderecos||[], resolucoes=inv.resolucoes||{}, filaMap=inv.fila||{};
   var isModoFila=!!inv.modoFila;
   var now=new Date();
@@ -8239,9 +8241,11 @@ function gerarRelPDF() {
     }
     var css='*{box-sizing:border-box;margin:0;padding:0}'
       +'body{font-family:Arial,sans-serif;font-size:12px;color:#111}'
-      +'.ph{background:#FFC600;padding:14px 20px 12px}'
-      +'.ph h1{font-size:17px;font-weight:700;margin-bottom:4px}'
-      +'.ph p{font-size:11px;color:#333}'
+      +'.ph{background:#FFC600;padding:14px 20px;display:flex;align-items:center;gap:14px}'
+      +'.ph img{height:52px;width:auto}'
+      +'.ph-fb{font-size:18px;font-weight:800;color:#111}'
+      +'.ph-info h1{font-size:16px;font-weight:700;margin-bottom:3px;color:#111}'
+      +'.ph-info p{font-size:11px;color:#333}'
       +'.ct{padding:14px 20px}'
       +'.stats{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}'
       +'.sb{flex:1;min-width:90px;background:#f8f8f8;border:1px solid #e0e0e0;border-radius:6px;padding:8px 12px;text-align:center}'
@@ -8253,8 +8257,10 @@ function gerarRelPDF() {
       +'td{padding:4px 8px;border-bottom:1px solid #eee}'
       +'@media print{@page{margin:12mm}}';
     var html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatorio - '+inv.nome+'</title><style>'+css+'</style></head>'
-      +'<body><div class="ph"><h1>FC360 &mdash; Relatorio de Inventario</h1>'
-      +'<p>'+inv.nome+' &nbsp;|&nbsp; Status: '+inv.status.toUpperCase()+' &nbsp;|&nbsp; Gerado: '+dtStr+'</p></div>'
+      +'<body><div class="ph">'
+      +(logoSrc?'<img src="'+logoSrc+'" alt="Logo"/>':'<div class="ph-fb">FC360</div>')
+      +'<div class="ph-info"><h1>Relatorio de Inventario</h1>'
+      +'<p>'+inv.nome+' &nbsp;|&nbsp; Status: '+inv.status.toUpperCase()+' &nbsp;|&nbsp; Gerado: '+dtStr+'</p></div></div>'
       +'<div class="ct">'
       +'<div class="stats">'
       +'<div class="sb"><strong>'+enderecos.length+'</strong><span>Enderecos</span></div>'
@@ -8276,6 +8282,8 @@ function gerarRelPDF() {
 // ── PDF Bipagens por Endereco — respeita filtros ativos ────────────────────
 function gerarPDFBipagens() {
   if (!_invAtivo) return;
+  var logoEl=document.querySelector('.sb-logo img');
+  var logoSrc=logoEl?logoEl.src:'';
   var inv=_invAtivo;
   var filtroEnd=(document.getElementById('inv-bip-filter')||{}).value||null;
   var filtroCol=(document.getElementById('inv-bip-col-filter')||{}).value||null;
@@ -8334,12 +8342,16 @@ function gerarPDFBipagens() {
       }).join('');
       var html='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Bipagens - '+inv.nome+'</title>'
         +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#111}'
-        +'.ph{background:#FFC600;padding:14px 20px 12px}.ph h1{font-size:17px;font-weight:700;margin-bottom:4px}'
-        +'.ph p{font-size:11px;color:#333}.fi{background:#f0f0f0;padding:6px 20px;font-size:11px;color:#555;border-bottom:1px solid #ddd}'
+        +'.ph{background:#FFC600;padding:14px 20px;display:flex;align-items:center;gap:14px}'
+        +'.ph img{height:52px;width:auto}.ph-fb{font-size:18px;font-weight:800;color:#111}'
+        +'.ph-info h1{font-size:16px;font-weight:700;margin-bottom:3px;color:#111}.ph-info p{font-size:11px;color:#333}'
+        +'.fi{background:#f0f0f0;padding:6px 20px;font-size:11px;color:#555;border-bottom:1px solid #ddd}'
         +'.ct{padding:14px 20px}td{padding:4px 8px;border-bottom:1px solid #eee}'
         +'@media print{@page{margin:12mm}}</style></head>'
-        +'<body><div class="ph"><h1>FC360 &mdash; Bipagens por Endereco</h1>'
-        +'<p>'+inv.nome+' &nbsp;|&nbsp; Gerado: '+dtStr+' &nbsp;|&nbsp; '+bipsFilt.length+' bipagens</p></div>'
+        +'<body><div class="ph">'
+        +(logoSrc?'<img src="'+logoSrc+'" alt="Logo"/>':'<div class="ph-fb">FC360</div>')
+        +'<div class="ph-info"><h1>Bipagens por Endereco</h1>'
+        +'<p>'+inv.nome+' &nbsp;|&nbsp; Gerado: '+dtStr+' &nbsp;|&nbsp; '+bipsFilt.length+' bipagens</p></div></div>'
         +'<div class="fi">Filtro: '+filtroStr+'</div>'
         +'<div class="ct">'+bodyHtml
         +'<div style="margin-top:16px;padding:10px 14px;background:#111;color:#FFC600;font-size:14px;font-weight:700;border-radius:4px">'

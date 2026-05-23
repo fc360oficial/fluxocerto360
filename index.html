@@ -80,6 +80,13 @@
         <span id="badge-alertas" style="display:none;position:absolute;top:6px;right:10px;background:#c0392b;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;line-height:1">0</span>
       </div>
 
+      <div class="sb-item" id="nav-central" style="display:none" onclick="nav('central',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Central de Resultados
+      </div>
+      <div class="sb-item" id="nav-relat" style="display:none" onclick="nav('relatorios',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Relatórios
+      </div>
+
       <!-- Módulos futuros (ocultos até ativação) -->
       <div class="sb-item" onclick="nav('perdas',this)" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Lançar Perdas
@@ -94,12 +101,6 @@
       </div>
 
       <div class="sb-sec" id="sb-adm-sec" style="display:none">Administração</div>
-      <div class="sb-item" id="nav-central" style="display:none" onclick="nav('central',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Central de Resultados
-      </div>
-      <div class="sb-item" id="nav-relat" style="display:none" onclick="nav('relatorios',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Relatórios
-      </div>
       <div class="sb-item" id="nav-users" style="display:none" onclick="nav('usuarios',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>Usuários
       </div>

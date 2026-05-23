@@ -779,7 +779,7 @@ function setupRole() {
   var isAdmOrGer = r==='admin'||r==='gerencia';
   var isSup = r==='supervisor';
   var isColetor = r==='coletor';
-  show('sb-adm-sec', isAdmOrGer && !isColetor);
+  show('sb-adm-sec', isAdmin && !isColetor);
   // Show/hide gerenciar tab in checklist (supervisor não gerencia checklists)
   var tabGer = document.getElementById('tab-gerenciar');
   if (tabGer) tabGer.style.display = isAdmin ? '' : 'none';

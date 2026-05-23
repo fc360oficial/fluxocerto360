@@ -6313,8 +6313,11 @@ function encerrarInventario(invId) {
           'O inventário ficará disponível apenas para consulta no Histórico.'+
         '</div>'+
         '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:8px">Confirme sua senha para continuar</label>'+
-        '<input id="encerrar-inv-senha" type="password" placeholder="Digite sua senha" autocomplete="off" '+
+        '<input type="text" style="display:none" aria-hidden="true"/>'+
+        '<input type="password" style="display:none" aria-hidden="true"/>'+
+        '<input id="encerrar-inv-senha" type="password" placeholder="Digite sua senha" autocomplete="new-password" readonly '+
           'style="width:100%;padding:13px;border:2px solid var(--r);border-radius:10px;font-size:15px;box-sizing:border-box;font-family:inherit;margin-bottom:6px" '+
+          'onfocus="this.removeAttribute(\'readonly\')" '+
           'onkeydown="if(event.key===\'Enter\')_confirmarEncerrarInv(\''+invId+'\')"/>'+
         '<div id="encerrar-inv-err" style="color:var(--r);font-size:12px;font-weight:600;min-height:18px;margin-bottom:14px"></div>'+
         '<div style="display:flex;gap:10px">'+

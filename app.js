@@ -751,7 +751,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '122';
+    var _BUILD = '123';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -4325,8 +4325,10 @@ function switchRankView(view, btn) {
   document.getElementById('rank-view-gerencia').style.display  = view === 'gerencia'   ? 'block' : 'none';
   document.getElementById('rank-view-prevencao').style.display = view === 'prevencao'  ? 'block' : 'none';
   document.getElementById('rank-view-lojas').style.display     = view === 'lojas'      ? 'block' : 'none';
+  document.getElementById('rank-view-extrato').style.display   = view === 'extrato'    ? 'block' : 'none';
   document.querySelectorAll('#rel-cl-ranking .tabs .tab').forEach(function(t){ t.classList.remove('on'); });
   if (btn) btn.classList.add('on');
+  if (view === 'extrato') renderRelRankExtrato();
 }
 
 function buildPodio(elId, rankList) {
@@ -4432,6 +4434,193 @@ function renderRelRanking() {
 
   buildPodio('rank-lojas-podio', lojaList);
   buildRankTable('rank-lojas-tbody', lojaList, 'Nenhum dado — cadastre a loja nos usuários');
+}
+
+// ── Extrato diário de pontuação por loja ─────────────────────────
+function renderRelRankExtrato() {
+  var resultados = getResultados();
+  var users      = getUsers();
+  var cls        = getCustomCLs();
+  var mesRaw     = document.getElementById('rank-mes') ? document.getElementById('rank-mes').value : '';
+  var anoSel     = document.getElementById('rank-ano') ? parseInt(document.getElementById('rank-ano').value) : new Date().getFullYear();
+  var mesSel     = mesRaw !== '' ? parseInt(mesRaw) : new Date().getMonth();
+
+  // Popula dropdown de lojas
+  var lojaSet = {};
+  users.forEach(function(u){ if (u.loja && u.loja.trim()) lojaSet[u.loja.trim()] = true; });
+  var lojas = Object.keys(lojaSet).sort();
+  var lojaEl = document.getElementById('rank-extrato-loja');
+  if (lojaEl) {
+    var prevVal = lojaEl.value;
+    lojaEl.innerHTML = '<option value="">Selecione a loja</option>'
+      + lojas.map(function(l){ return '<option value="'+l+'"'+(l===prevVal?' selected':'')+'>'+l+'</option>'; }).join('');
+    if (!prevVal && lojas.length) { lojaEl.value = lojas[0]; prevVal = lojas[0]; }
+  }
+  var lojaSel = lojaEl ? lojaEl.value : '';
+  if (!lojaSel) return;
+
+  var MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  var tituloEl = document.getElementById('rank-extrato-titulo');
+  if (tituloEl) tituloEl.textContent = 'Extrato — '+lojaSel+' — '+MESES_PT[mesSel]+'/'+anoSel;
+
+  // Mapa nome→loja para resultados que não guardam o campo loja
+  var opLojaMap = {};
+  users.forEach(function(u){ if (u.nome) opLojaMap[u.nome] = (u.loja||'').trim(); });
+
+  // Filtra resultados do mês/loja
+  var resMes = resultados.filter(function(r){
+    if (!r.dataHora || r.resetado) return false;
+    var p = r.dataHora.split(' ')[0].split('/');
+    if (p.length < 3) return false;
+    var d = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+    if (d.getFullYear() !== anoSel || d.getMonth() !== mesSel) return false;
+    var rLoja = ((r.loja||'').trim()) || opLojaMap[r.operador] || '';
+    return rLoja.toLowerCase() === lojaSel.toLowerCase();
+  });
+
+  // Agrupa resultados por dia do mês
+  var resPorDia = {};
+  resMes.forEach(function(r){
+    var dia = parseInt(r.dataHora.split(' ')[0].split('/')[0]);
+    if (!resPorDia[dia]) resPorDia[dia] = [];
+    resPorDia[dia].push(r);
+  });
+
+  var diasNoMes = new Date(anoSel, mesSel+1, 0).getDate();
+  var totalPontos = 0, totalMaximo = 0, diasCompletos = 0, diasFalta = 0;
+  var rows = [];
+
+  for (var d = 1; d <= diasNoMes; d++) {
+    var dataDia    = new Date(anoSel, mesSel, d);
+    var diaSemana  = dataDia.getDay();
+    var resDia     = resPorDia[d] || [];
+
+    // Checklists esperados neste dia da semana
+    var clEsp = cls.filter(function(cl){
+      return (cl.diasObrigatorios||[]).indexOf(diaSemana) >= 0;
+    });
+
+    var pontosObtidos = 0, clEnviados = 0, clPerdidos = 0;
+    var detalhe = [];
+
+    clEsp.forEach(function(cl){
+      var sent = resDia.find(function(r){ return r.checklistId === cl.id; });
+      if (sent) {
+        var pts = calcPontos(sent.pct);
+        pontosObtidos += pts;
+        clEnviados++;
+        detalhe.push({nome:cl.nome, pct:sent.pct, pts:pts, ok:true});
+      } else {
+        clPerdidos++;
+        detalhe.push({nome:cl.nome, pct:null, pts:0, ok:false});
+      }
+    });
+
+    // Pontos extras de envios fora do esperado (checklists sem diasObrigatorios neste dia)
+    resDia.forEach(function(r){
+      var jaContado = clEsp.some(function(cl){ return cl.id === r.checklistId; });
+      if (!jaContado) {
+        pontosObtidos += calcPontos(r.pct);
+        clEnviados++;
+      }
+    });
+
+    var pontosPerdidos = clPerdidos * 10;
+    var maxDia = clEsp.length * 10;
+    totalPontos += pontosObtidos;
+    totalMaximo += maxDia;
+
+    var status, bgRow;
+    if (!clEsp.length && !resDia.length) {
+      status = '—'; bgRow = '';
+    } else if (clPerdidos === 0) {
+      status = '✅'; bgRow = '';
+      diasCompletos++;
+    } else if (clEnviados === 0) {
+      status = '🔴'; bgRow = 'background:#fef2f2;';
+      diasFalta++;
+    } else {
+      status = '⚠️'; bgRow = 'background:#fffbe6;';
+      diasFalta++;
+    }
+
+    rows.push({d:d, dow:diaSemana, clEnviados:clEnviados, clEsp:clEsp.length, clPerdidos:clPerdidos,
+               pts:pontosObtidos, maxDia:maxDia, pontosPerdidos:pontosPerdidos,
+               status:status, bgRow:bgRow, detalhe:detalhe});
+  }
+
+  var aprov = totalMaximo ? Math.round(totalPontos/totalMaximo*100) : 0;
+  var aprovCor = aprov>=80?'var(--g)':aprov>=60?'#b45309':'var(--r)';
+
+  // Cards de resumo
+  var resumoEl = document.getElementById('rank-extrato-resumo');
+  if (resumoEl) {
+    resumoEl.innerHTML = [
+      {lbl:'Total de Pontos',  val:totalPontos,    max:'de '+totalMaximo+' possíveis', cor:'var(--g)'},
+      {lbl:'Aproveitamento',   val:aprov+'%',       max:'do potencial do mês',          cor:aprovCor},
+      {lbl:'Dias Completos',   val:diasCompletos,   max:'todos os CLs enviados',        cor:'var(--g)'},
+      {lbl:'Dias com Falta',   val:diasFalta,       max:'algum CL não enviado',         cor:'var(--r)'}
+    ].map(function(c){
+      return '<div style="background:#fff;border-radius:12px;border:1px solid var(--gray2);padding:14px 16px;box-shadow:var(--sh)">'
+        +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:6px">'+c.lbl+'</div>'
+        +'<div style="font-size:22px;font-weight:800;color:'+c.cor+';line-height:1.1">'+c.val+'</div>'
+        +'<div style="font-size:11px;color:var(--t3);margin-top:4px">'+c.max+'</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  // Tabela
+  var tabelaEl = document.getElementById('rank-extrato-tabela');
+  if (!tabelaEl) return;
+
+  var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:500px">'
+    +'<thead><tr style="background:var(--gray)">'
+    +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700">Dia</th>'
+    +'<th style="padding:9px 10px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700">Enviados</th>'
+    +'<th style="padding:9px 10px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--r)">Perdidos</th>'
+    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--g)">+Pontos</th>'
+    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--r)">−Perdido</th>'
+    +'<th style="padding:9px 10px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700">Status</th>'
+    +'</tr></thead><tbody>';
+
+  rows.forEach(function(r){
+    var dStr = String(r.d).padStart(2,'0')+' <span style="font-size:11px;color:var(--t3);font-weight:400">'+DIAS_PT[r.dow]+'</span>';
+    var envStr = r.clEsp>0
+      ? '<span style="color:var(--g);font-weight:700">'+r.clEnviados+'</span><span style="color:var(--t3)">/'+r.clEsp+'</span>'
+      : '<span style="color:var(--t3)">'+r.clEnviados+(r.clEnviados?' extra':'—')+'</span>';
+    var perdStr = r.clPerdidos>0
+      ? '<span style="color:var(--r);font-weight:700">'+r.clPerdidos+'</span>'
+      : '<span style="color:var(--t3)">—</span>';
+    var ptsStr = r.pts>0 ? '<span style="color:var(--g);font-weight:700">+'+r.pts+'</span>' : '<span style="color:var(--t3)">—</span>';
+    var perdPtsStr = r.pontosPerdidos>0 ? '<span style="color:var(--r);font-weight:600">−'+r.pontosPerdidos+'</span>' : '<span style="color:var(--t3)">—</span>';
+
+    // Tooltip de detalhe (title)
+    var detTitle = r.detalhe.map(function(dl){
+      return (dl.ok?'✓':'✗')+' '+dl.nome+(dl.pct!==null?' ('+dl.pct+'%)':'');
+    }).join(' | ');
+
+    html += '<tr style="border-bottom:1px solid var(--gray2);'+r.bgRow+'" title="'+detTitle.replace(/"/g,'&quot;')+'">'
+      +'<td style="padding:8px 10px;font-weight:600">'+dStr+'</td>'
+      +'<td style="padding:8px 10px;text-align:center">'+envStr+'</td>'
+      +'<td style="padding:8px 10px;text-align:center">'+perdStr+'</td>'
+      +'<td style="padding:8px 10px;text-align:right">'+ptsStr+'</td>'
+      +'<td style="padding:8px 10px;text-align:right">'+perdPtsStr+'</td>'
+      +'<td style="padding:8px 10px;text-align:center;font-size:15px">'+r.status+'</td>'
+      +'</tr>';
+  });
+
+  html += '<tr style="background:var(--gray);border-top:2px solid var(--gray2)">'
+    +'<td style="padding:9px 10px;font-weight:700">Total</td>'
+    +'<td colspan="2" style="padding:9px 10px;text-align:center;font-size:12px;color:var(--t3)">'+diasCompletos+' completo(s) · '+diasFalta+' incompleto(s)</td>'
+    +'<td style="padding:9px 10px;text-align:right;font-weight:800;color:var(--g)">+'+totalPontos+'</td>'
+    +'<td style="padding:9px 10px;text-align:right;font-weight:700;color:var(--r)">−'+(totalMaximo-totalPontos)+'</td>'
+    +'<td style="padding:9px 10px;text-align:center;font-size:13px;font-weight:800;color:'+aprovCor+'">'+aprov+'%</td>'
+    +'</tr>';
+
+  html += '</tbody></table></div>';
+  tabelaEl.innerHTML = html;
 }
 
 // Clona elemento substituindo <canvas> por <img> com o conteúdo desenhado

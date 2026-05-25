@@ -599,7 +599,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
               <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                 <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800">Ranking</div>
-                <div class="tabs" style="margin:0"><div class="tab" id="rank-tab-op" onclick="switchRankView('operadores',this)">Operadores</div><div class="tab" id="rank-tab-gerencia" onclick="switchRankView('gerencia',this)">Gerência</div><div class="tab on" id="rank-tab-prevencao" onclick="switchRankView('prevencao',this)">Prevenção</div><div class="tab" id="rank-tab-loja" onclick="switchRankView('lojas',this)">Lojas</div></div>
+                <div class="tabs" style="margin:0"><div class="tab" id="rank-tab-op" onclick="switchRankView('operadores',this)">Operadores</div><div class="tab" id="rank-tab-gerencia" onclick="switchRankView('gerencia',this)">Gerência</div><div class="tab on" id="rank-tab-prevencao" onclick="switchRankView('prevencao',this)">Prevenção</div><div class="tab" id="rank-tab-loja" onclick="switchRankView('lojas',this)">Lojas</div><div class="tab" id="rank-tab-extrato" onclick="switchRankView('extrato',this)">Extrato</div></div>
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <select id="rank-mes" onchange="renderRelRanking()" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit">
@@ -645,6 +645,21 @@
                 <div class="card-hdr"><div class="card-title">Ranking de Lojas</div><div style="font-size:11px;color:var(--t3)">Soma de todos os setores por loja</div></div>
                 <table><thead><tr><th>#</th><th>Loja</th><th>Pontos</th><th>Enviados</th><th>100%</th><th>Media %</th></tr></thead>
                 <tbody id="rank-lojas-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+              </div>
+            </div>
+            <!-- VIEW EXTRATO POR LOJA -->
+            <div id="rank-view-extrato" style="display:none">
+              <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <label style="font-size:12px;font-weight:700;color:var(--t2)">Loja:</label>
+                <select id="rank-extrato-loja" onchange="renderRelRankExtrato()" style="padding:7px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;min-width:180px"><option value="">Selecione a loja</option></select>
+              </div>
+              <div id="rank-extrato-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px"></div>
+              <div class="card">
+                <div class="card-hdr">
+                  <div class="card-title" id="rank-extrato-titulo">Extrato Diário de Pontuação</div>
+                  <div style="font-size:11px;color:var(--t3)">100%=10pts &middot; 80-99%=7pts &middot; 60-79%=4pts &middot; abaixo=1pt</div>
+                </div>
+                <div id="rank-extrato-tabela"><div class="erow" style="padding:20px;text-align:center;color:var(--t3)">Selecione uma loja para visualizar</div></div>
               </div>
             </div>
           </div>
@@ -1607,7 +1622,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="app.js?v=122" defer></script>
+<script src="app.js?v=123" defer></script>
 
 
 </body>

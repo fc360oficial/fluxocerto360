@@ -751,7 +751,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '123';
+    var _BUILD = '124';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -2437,19 +2437,34 @@ function editarCL(id) {
 }
 
 function excluirCL(id) {
-  // Store pending id and show confirm panel
   pendingExcluirId = id;
   var cl = getCustomCLs().find(function(x){return x.id===id;});
   var nome = cl ? cl.nome : 'este checklist';
   document.getElementById('excluir-nome').textContent = nome;
+  var errEl = document.getElementById('excluir-senha-err'); if(errEl) errEl.style.display='none';
+  var senhaEl = document.getElementById('excluir-senha'); if(senhaEl) senhaEl.value='';
   document.getElementById('modal-excluir').style.display = 'flex';
+  setTimeout(function(){ var s=document.getElementById('excluir-senha'); if(s) s.focus(); },80);
 }
 
 function confirmarExcluir() {
   if (!pendingExcluirId) return;
+  var senhaEl  = document.getElementById('excluir-senha');
+  var errEl    = document.getElementById('excluir-senha-err');
+  var digitada = senhaEl ? senhaEl.value : '';
+  if (!digitada) { if(errEl){errEl.textContent='Digite sua senha.';errEl.style.display='block';} if(senhaEl)senhaEl.focus(); return; }
+  var u = S.currentUser;
+  var hash = hashPassword(digitada);
+  if (!u || (u.senha && u.senha !== hash && u.senha !== digitada)) {
+    if (errEl) { errEl.textContent='Senha incorreta.'; errEl.style.display='block'; }
+    if (senhaEl) { senhaEl.value=''; senhaEl.focus(); }
+    return;
+  }
   saveCustomCLs(getCustomCLs().filter(function(cl){return cl.id!==pendingExcluirId;}));
   pendingExcluirId = null;
   document.getElementById('modal-excluir').style.display = 'none';
+  if (senhaEl) senhaEl.value = '';
+  if (errEl)   errEl.style.display = 'none';
   renderCLGrid();
   buildCLTabs();
 }
@@ -2457,6 +2472,8 @@ function confirmarExcluir() {
 function cancelarExcluir() {
   pendingExcluirId = null;
   document.getElementById('modal-excluir').style.display = 'none';
+  var senhaEl = document.getElementById('excluir-senha'); if(senhaEl) senhaEl.value='';
+  var errEl   = document.getElementById('excluir-senha-err'); if(errEl) errEl.style.display='none';
 }
 
 function filtrarCL(f, btn) {
@@ -3383,6 +3400,54 @@ function addHist(tipo,desc,setor,stCls,stLabel) {
   S.historico.unshift({hora,tipo,desc,setor,stCls,stLabel,op:S.currentUser?S.currentUser.nome:'-'});
 }
 
+var _dashEquipePerfilAtivo = 'todos';
+
+function _dashEquipeTab(perfil, btn) {
+  _dashEquipePerfilAtivo = perfil;
+  document.querySelectorAll('#dash-equipe-tabs .tab').forEach(function(t){ t.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  _renderDashEquipe();
+}
+
+function _renderDashEquipe() {
+  var dashEquipe     = document.getElementById('dash-equipe');
+  var dashResumo     = document.getElementById('dash-equipe-resumo');
+  if (!dashEquipe) return;
+  var resultadosHoje = window._dashEquipeResultadosHoje || [];
+  var perfisLabel    = {gerencia:'Gerência', operator:'Operador', prevencao:'Prevenção', supervisor:'Supervisão', admin:'Admin'};
+  var todosUsers     = getUsers().filter(function(u){ return u.id!=='admin' && u.ativo; });
+  var users = _dashEquipePerfilAtivo === 'todos'
+    ? todosUsers
+    : todosUsers.filter(function(u){ return u.perfil === _dashEquipePerfilAtivo; });
+
+  if (!users.length) {
+    dashEquipe.innerHTML = '<div style="text-align:center;color:var(--t3);font-size:13px;padding:20px;grid-column:1/-1">Nenhum usuário nesta categoria</div>';
+    if (dashResumo) dashResumo.textContent = '';
+    return;
+  }
+  var enviados = 0;
+  dashEquipe.innerHTML = users.map(function(u){
+    var urs   = resultadosHoje.filter(function(r){ return r.operador===u.nome; });
+    var enviou = urs.length > 0;
+    var media  = enviou ? Math.round(urs.reduce(function(s,r){ return s+r.pct; },0)/urs.length) : null;
+    if (enviou) enviados++;
+    var cor = !enviou?'#9ca3af':media===100?'var(--g2)':media>=80?'#2d9e62':media>=60?'var(--am)':'var(--r)';
+    var bg  = !enviou?'var(--gray)':media===100?'var(--g3)':media>=60?'var(--am2)':'var(--r2)';
+    return '<div style="padding:10px 12px;border-radius:10px;background:'+bg+';border:1.5px solid '+cor+'">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+      +'<div style="width:8px;height:8px;border-radius:50%;background:'+cor+';flex-shrink:0"></div>'
+      +'<div style="font-size:12px;font-weight:600;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+u.nome+'</div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--t3);margin-bottom:4px">'+(perfisLabel[u.perfil]||u.perfil)+'</div>'
+      +(enviou
+        ?'<div style="font-size:14px;font-weight:800;color:'+cor+'">'+media+'%</div>'
+         +'<div style="font-size:10px;color:var(--t3)">'+urs.length+' envio'+(urs.length>1?'s':'')+'</div>'
+        :'<div style="font-size:11px;color:#9ca3af;font-weight:600">Pendente</div>')
+      +'</div>';
+  }).join('');
+  if (dashResumo) dashResumo.textContent = enviados+' de '+users.length+' enviaram';
+}
+
 function updateDash() {
   var isAdmin = S.role==='admin';
   var isGer = S.role==='gerencia';
@@ -3503,37 +3568,8 @@ function updateDash() {
     }
 
     // Status da equipe
-    var dashEquipe = document.getElementById('dash-equipe');
-    var dashEquipeResumo = document.getElementById('dash-equipe-resumo');
-    if (dashEquipe) {
-      var users = getUsers().filter(function(u){ return u.id!=='admin' && u.ativo; });
-      if (!users.length) {
-        dashEquipe.innerHTML='<div style="text-align:center;color:var(--t3);font-size:13px;padding:20px;grid-column:1/-1">Nenhum usuário cadastrado</div>';
-      } else {
-        var enviados=0;
-        var perfisLabel={gerencia:'Gerência',operator:'Operador',prevencao:'Prevenção'};
-        dashEquipe.innerHTML = users.map(function(u){
-          var urs = resultadosHoje.filter(function(r){return r.operador===u.nome;});
-          var enviou = urs.length>0;
-          var media = enviou ? Math.round(urs.reduce(function(s,r){return s+r.pct;},0)/urs.length) : null;
-          if (enviou) enviados++;
-          var cor = !enviou?'#9ca3af':media===100?'var(--g2)':media>=80?'#2d9e62':media>=60?'var(--am)':'var(--r)';
-          var bg  = !enviou?'var(--gray)':media===100?'var(--g3)':media>=60?'var(--am2)':'var(--r2)';
-          return '<div style="padding:10px 12px;border-radius:10px;background:'+bg+';border:1.5px solid '+cor+'">'
-            +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-            +'<div style="width:8px;height:8px;border-radius:50%;background:'+cor+';flex-shrink:0"></div>'
-            +'<div style="font-size:12px;font-weight:600;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+u.nome+'</div>'
-            +'</div>'
-            +'<div style="font-size:10px;color:var(--t3);margin-bottom:4px">'+(perfisLabel[u.perfil]||u.perfil)+'</div>'
-            +(enviou
-              ?'<div style="font-size:14px;font-weight:800;color:'+cor+'">'+media+'%</div>'
-               +'<div style="font-size:10px;color:var(--t3)">'+urs.length+' envio'+(urs.length>1?'s':'')+'</div>'
-              :'<div style="font-size:11px;color:#9ca3af;font-weight:600">Pendente</div>')
-            +'</div>';
-        }).join('');
-        if (dashEquipeResumo) dashEquipeResumo.textContent = enviados+' de '+users.length+' enviaram';
-      }
-    }
+    window._dashEquipeResultadosHoje = resultadosHoje;
+    _renderDashEquipe();
 
     // Atualizar gráfico de perdas com dados reais
     if (S.dashCharts && S.dashCharts.perdas) {

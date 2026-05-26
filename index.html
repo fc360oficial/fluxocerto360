@@ -188,6 +188,13 @@
             <div class="card-title">Status da Equipe — Hoje</div>
             <div id="dash-equipe-resumo" style="font-size:12px;color:var(--t3)"></div>
           </div>
+          <div class="tabs" style="margin:0 0 12px 0" id="dash-equipe-tabs">
+            <div class="tab on" id="dash-eq-tab-todos"      onclick="_dashEquipeTab('todos',this)">Todos</div>
+            <div class="tab"    id="dash-eq-tab-operador"   onclick="_dashEquipeTab('operator',this)">Operadores</div>
+            <div class="tab"    id="dash-eq-tab-gerencia"   onclick="_dashEquipeTab('gerencia',this)">Gerência</div>
+            <div class="tab"    id="dash-eq-tab-supervisor" onclick="_dashEquipeTab('supervisor',this)">Supervisão</div>
+            <div class="tab"    id="dash-eq-tab-prevencao"  onclick="_dashEquipeTab('prevencao',this)">Prevenção</div>
+          </div>
           <div id="dash-equipe" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px">
             <div style="text-align:center;color:var(--t3);font-size:13px;padding:20px;grid-column:1/-1">Nenhum envio hoje</div>
           </div>
@@ -1450,7 +1457,14 @@
   <div class="modal-box" style="width:380px;text-align:center">
     <div style="font-size:36px;margin-bottom:12px">🗑️</div>
     <div class="modal-title" style="justify-content:center">Excluir Checklist?</div>
-    <div style="font-size:14px;color:var(--t2);margin-bottom:20px">Você está prestes a excluir:<br><strong id="excluir-nome"></strong><br><span style="font-size:12px;color:var(--t3)">Esta ação não pode ser desfeita.</span></div>
+    <div style="font-size:14px;color:var(--t2);margin-bottom:16px">Você está prestes a excluir:<br><strong id="excluir-nome"></strong><br><span style="font-size:12px;color:var(--t3)">Esta ação não pode ser desfeita.</span></div>
+    <div style="margin-bottom:16px;text-align:left">
+      <label style="font-size:12px;font-weight:700;color:var(--t2);display:block;margin-bottom:6px">Digite sua senha para confirmar:</label>
+      <input id="excluir-senha" type="password" placeholder="Sua senha" autocomplete="current-password"
+        style="width:100%;padding:11px 13px;border:2px solid var(--gray2);border-radius:9px;font-size:14px;box-sizing:border-box;font-family:inherit"
+        onkeydown="if(event.key==='Enter')confirmarExcluir()"/>
+      <div id="excluir-senha-err" style="display:none;color:var(--r);font-size:12px;margin-top:5px;font-weight:600">Senha incorreta.</div>
+    </div>
     <div style="display:flex;gap:10px;justify-content:center">
       <button class="btn btn-d" onclick="confirmarExcluir()">Sim, excluir</button>
       <button class="btn btn-s" onclick="cancelarExcluir()">Cancelar</button>
@@ -1622,7 +1636,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="app.js?v=123" defer></script>
+<script src="app.js?v=124" defer></script>
 
 
 </body>

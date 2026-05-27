@@ -758,7 +758,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '128';
+    var _BUILD = '129';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -2753,8 +2753,153 @@ function verDetalhe(idx) {
       +'</div>'
     : '';
 
+  window._detAtual = r;
   document.getElementById('modal-det').style.display='block';
   document.getElementById('modal-det').scrollTop = 0;
+}
+
+function exportarDetalhePDF() {
+  var r = window._detAtual;
+  if (!r) return;
+  var logoEl = document.querySelector('.sb-logo img');
+  var logoSrc = logoEl ? logoEl.src : '';
+  var PLABEL = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção'};
+  var pctColor = r.pct===100?'#2d9e62':r.pct>=50?'#d68910':'#e74c3c';
+  var statusTxt = r.reprovado?'REPROVADO':r.pct===100?'APROVADO':r.pct+'% concluído';
+  var statusCor = r.reprovado?'#e74c3c':r.pct===100?'#2d9e62':r.pct>=50?'#d68910':'#e74c3c';
+
+  var naoConformItens = (r.itens||[]).filter(function(it){
+    return (it.tipo==='simNao'&&it.resposta==='nao') || (it.tipo!=='planilha'&&it.tipo!=='simNao'&&!it.feito);
+  });
+  var itensNormais = (r.itens||[]).filter(function(it){ return (it.tipo||'checkbox') !== 'planilha'; });
+  var itensPlanilha = (r.itens||[]).filter(function(it){ return it.tipo === 'planilha'; });
+  var fotoCount = (r.itens||[]).reduce(function(n,it){ return n+(it.fotoAntes?1:0)+(it.fotoDepois?1:0); },0);
+
+  // ── Seção: itens normais ──
+  var itensHtml = itensNormais.length ? itensNormais.map(function(item){
+    var tipo = item.tipo || 'checkbox';
+    var icon = tipo==='simNao'?(item.resposta==='sim'?'✅':item.resposta==='nao'?'❌':'☐'):(item.feito?'✅':'☐');
+    var respTxt = '';
+    if (tipo==='simNao') respTxt = ' — '+(item.resposta==='sim'?'Sim':item.resposta==='nao'?'Não':'—');
+    else if (tipo==='nota') respTxt = ' — Nota: '+(parseInt(item.resposta)||0)+'/5';
+    else if (tipo==='texto'&&item.resposta) respTxt = ' — '+item.resposta;
+    var obs = item.obs ? '<div style="font-size:10px;color:#888;margin-top:2px">'+item.obs+'</div>' : '';
+    var just = item.justificativa ? '<div style="font-size:10px;color:#e74c3c;margin-top:2px;padding:4px 8px;background:#fdecea;border-radius:4px">📋 '+item.justificativa+'</div>' : '';
+    var critico = item.critico ? ' <span style="font-size:9px;font-weight:800;color:#e74c3c;background:#fdecea;padding:1px 5px;border-radius:10px;border:1px solid #e74c3c">⚠ CRÍTICO</span>' : '';
+    var fotosHtml = '';
+    if (item.fotoAntes) fotosHtml += '<img src="'+item.fotoAntes+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;margin-top:6px;margin-right:4px" title="Foto Antes"/>';
+    if (item.fotoDepois) fotosHtml += '<img src="'+item.fotoDepois+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;margin-top:6px" title="Foto Depois"/>';
+    var bg = !item.feito?'#fff':(tipo==='simNao'&&item.resposta==='nao')?'#fdecea':'#f0faf3';
+    return '<tr style="background:'+bg+';border-bottom:1px solid #eee">'
+      +'<td style="width:28px;text-align:center;font-size:14px;padding:8px 4px">'+icon+'</td>'
+      +'<td style="padding:8px 10px">'
+        +'<div style="font-size:11.5px;font-weight:600;color:#111">'+item.texto+critico+respTxt+'</div>'
+        +obs+just
+        +(fotosHtml?'<div>'+fotosHtml+'</div>':'')
+      +'</td></tr>';
+  }).join('') : '';
+
+  // ── Seção: planilha de estoque ──
+  var planilhaHtml = itensPlanilha.map(function(item){
+    if (!item.produtos||!item.produtos.length) return '';
+    var preenchidos = item.produtos.filter(function(p){return p.quantidade&&p.quantidade!=='';}).length;
+    return '<div class="section"><div class="section-title">📊 '+item.texto+' <span style="font-size:10px;font-weight:400;color:#666">('+preenchidos+'/'+item.produtos.length+' preenchidos)</span></div>'
+      +'<table><thead><tr><th>Código</th><th>Descrição</th><th>Setor</th><th style="text-align:center">Qtd</th></tr></thead><tbody>'
+      +item.produtos.map(function(p,pi){
+        var semQtd = !p.quantidade||p.quantidade==='';
+        return '<tr style="background:'+(pi%2===0?'#fff':'#fafafa')+';border-bottom:1px solid #eee">'
+          +'<td style="font-family:monospace;font-size:10px;color:#666">'+p.codigo+'</td>'
+          +'<td>'+p.descricao+'</td>'
+          +'<td style="font-size:10px;color:#888">'+(p.setor||'—')+'</td>'
+          +'<td style="text-align:center;font-weight:800;color:'+(semQtd?'#bbb':'#2d9e62')+'">'+(semQtd?'—':p.quantidade)+'</td>'
+          +'</tr>';
+      }).join('')
+      +'</tbody></table></div>';
+  }).join('');
+
+  // ── Não conformidades ──
+  var nconformHtml = naoConformItens.length
+    ? '<div class="section"><div class="section-title" style="color:#e74c3c;border-color:#e74c3c">⚠ Não Conformidades ('+naoConformItens.length+')</div>'
+      +'<table><tbody>'
+      +naoConformItens.map(function(it){
+        return '<tr style="background:#fdecea;border-bottom:1px solid #f5c6cb">'
+          +'<td style="padding:8px 10px;font-size:11px;font-weight:600;color:#e74c3c">'+it.texto
+            +(it.justificativa?'<div style="font-size:10px;color:#c0392b;margin-top:4px">📋 '+it.justificativa+'</div>':'')
+          +'</td></tr>';
+      }).join('')
+      +'</tbody></table></div>'
+    : '';
+
+  var assinaturaHtml = r.assinatura
+    ? '<div class="section"><div class="section-title">✍ Assinatura Digital</div><img src="'+r.assinatura+'" style="max-width:260px;border:1px solid #ddd;border-radius:8px;background:#fff"/></div>'
+    : '';
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><title>'+r.checklistNome+' — '+r.dataHora+'</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}'
+    +'body{padding:32px;color:#111;font-size:12px;background:#fff}'
+    +'.header{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #FFC600;padding-bottom:16px;margin-bottom:24px}'
+    +'.header img{height:70px;object-fit:contain}'
+    +'.header-r{text-align:right}'
+    +'.header-r h1{font-size:16px;font-weight:700;color:#111}'
+    +'.header-r p{font-size:10.5px;color:#666;margin-top:3px}'
+    +'.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:20px}'
+    +'.meta span{font-size:11px;background:#f5f5f5;border-radius:20px;padding:4px 12px;font-weight:500;color:#333}'
+    +'.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}'
+    +'.kpi{background:#f8f9fa;border-radius:8px;padding:12px;border-left:4px solid #FFC600}'
+    +'.kpi .k-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:4px}'
+    +'.kpi .k-val{font-size:20px;font-weight:800}'
+    +'.prog-bar{background:#eee;border-radius:4px;height:8px;margin:6px 0 16px}'
+    +'.prog-fill{height:100%;border-radius:4px;background:'+pctColor+'}'
+    +'.section{margin-bottom:22px}'
+    +'.section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#333;border-bottom:2px solid #FFC600;padding-bottom:5px;margin-bottom:10px}'
+    +'table{width:100%;border-collapse:collapse;font-size:11px}'
+    +'th{background:#FFC600;padding:7px 10px;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#111}'
+    +'.status-pill{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;background:'+statusCor+'}'
+    +'.footer{margin-top:24px;padding-top:8px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:9.5px;color:#aaa}'
+    +'@media print{body{padding:20px}}'
+    +'</style></head><body>'
+
+    +'<div class="header">'
+    +(logoSrc?'<img src="'+logoSrc+'" alt="Logo"/>':'<div style="font-size:16px;font-weight:800">Fluxo Certo 360</div>')
+    +'<div class="header-r">'
+    +'<h1>'+r.checklistNome+'</h1>'
+    +'<p>'+r.dataHora+(r.loja?' &nbsp;|&nbsp; '+r.loja:'')+'</p>'
+    +'<p>Operador: <strong>'+r.operador+'</strong> &nbsp;|&nbsp; '+( PLABEL[r.perfil]||r.perfil)+' &nbsp;|&nbsp; <span class="status-pill">'+statusTxt+'</span></p>'
+    +'</div></div>'
+
+    +'<div class="meta">'
+    +(r.loja?'<span>🏪 '+r.loja+'</span>':'')
+    +'<span>👤 '+r.operador+'</span>'
+    +'<span>📂 '+r.setor+'</span>'
+    +'<span>🕐 '+r.dataHora+'</span>'
+    +'</div>'
+
+    +'<div class="kpis">'
+    +'<div class="kpi"><div class="k-lbl">Conformidade</div><div class="k-val" style="color:'+pctColor+'">'+r.pct+'%</div></div>'
+    +'<div class="kpi"><div class="k-lbl">Itens Concluídos</div><div class="k-val">'+r.feitos+'/'+r.total+'</div></div>'
+    +'<div class="kpi"><div class="k-lbl">Fotos Registradas</div><div class="k-val">'+fotoCount+'</div></div>'
+    +'<div class="kpi"><div class="k-lbl">Não Conformes</div><div class="k-val" style="color:'+(naoConformItens.length?'#e74c3c':'#2d9e62')+'">'+naoConformItens.length+'</div></div>'
+    +'</div>'
+
+    +'<div class="prog-bar"><div class="prog-fill" style="width:'+r.pct+'%"></div></div>'
+
+    +nconformHtml
+
+    +(itensNormais.length
+      ? '<div class="section"><div class="section-title">☑ Itens do Checklist</div>'
+        +'<table><tbody>'+itensHtml+'</tbody></table></div>'
+      : '')
+
+    +planilhaHtml
+    +assinaturaHtml
+
+    +'<div class="footer"><span>Fluxo Certo 360 — '+r.checklistNome+'</span><span>Gerado em '+new Date().toLocaleString('pt-BR')+'</span></div>'
+    +'<script>window.onload=function(){ setTimeout(function(){ window.print(); },400); };<\/script>'
+    +'</body></html>';
+
+  var win = window.open('','_blank');
+  if (win) { win.document.write(html); win.document.close(); }
 }
 
 // ── Fotos pendentes ──

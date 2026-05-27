@@ -1479,7 +1479,10 @@
   <div style="position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--gray2);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px">
     <button onclick="document.getElementById('modal-det').style.display='none'" class="btn btn-s btn-sm">← Voltar</button>
     <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--t);flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="det-titulo"></div>
-    <span id="det-badge" class="st" style="white-space:nowrap;font-size:12px"></span>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button onclick="exportarDetalhePDF()" class="btn btn-p btn-sm" style="white-space:nowrap">📄 PDF</button>
+      <span id="det-badge" class="st" style="white-space:nowrap;font-size:12px"></span>
+    </div>
   </div>
   <!-- Conteúdo -->
   <div style="max-width:860px;margin:0 auto;padding:24px 16px 40px">
@@ -1637,7 +1640,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="app.js?v=128" defer></script>
+<script src="app.js?v=129" defer></script>
 
 
 </body>

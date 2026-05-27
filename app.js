@@ -758,7 +758,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '129';
+    var _BUILD = '130';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -869,9 +869,9 @@ function setupRole() {
   var isSup = r==='supervisor';
   var isColetor = r==='coletor';
   show('sb-adm-sec', isAdmin && !isColetor);
-  // Show/hide gerenciar tab in checklist (supervisor não gerencia checklists)
+  // Gerenciar tab: admin e supervisor
   var tabGer = document.getElementById('tab-gerenciar');
-  if (tabGer) tabGer.style.display = isAdmin ? '' : 'none';
+  if (tabGer) tabGer.style.display = (isAdmin || isSup) ? '' : 'none';
   // Dashboard só para admin e gerência
   show('nav-dashboard', (isAdmOrGer || isSup) && !isColetor);
   show('nav-central', isAdmin && !isColetor);
@@ -1013,7 +1013,7 @@ function setCLMode(mode, btn) {
   btn.classList.add('on');
   document.getElementById('cl-mode-executar').style.display = mode==='executar' ? 'block' : 'none';
   document.getElementById('cl-mode-gerenciar').style.display = mode==='gerenciar' ? 'block' : 'none';
-  document.getElementById('cl-add-btn').style.display = (mode==='gerenciar' && S.role==='admin') ? 'block' : 'none';
+  document.getElementById('cl-add-btn').style.display = (mode==='gerenciar' && (S.role==='admin'||S.role==='supervisor')) ? 'block' : 'none';
   if (mode==='gerenciar') renderCLGrid();
   // When switching to executar, sync fresh state from Firebase
   if (mode==='executar') {
@@ -1374,7 +1374,7 @@ function buildCLBlock(cl) {
     + '</div></div>'
     + '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
     + (jaConcluido ? '<button class="btn btn-s btn-sm" disabled style="opacity:.5;cursor:not-allowed">Ja enviado</button>' : '<button class="btn btn-p btn-sm" onclick="enviarCL(\'' + clId + '\',\'' + clLabel.replace(/'/g, '') + '\')">Enviar</button>')
-    + (S.role==='admin' ? '<button class="btn btn-s btn-sm" onclick="abrirModalReset(\'' + clId + '\')" style="margin-top:4px">Resetar itens</button>' : '')
+    + (S.role==='admin'||S.role==='supervisor' ? '<button class="btn btn-s btn-sm" onclick="abrirModalReset(\'' + clId + '\')" style="margin-top:4px">Resetar itens</button>' : '')
     + '</div></div>'
     + '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--gray);border-radius:8px;margin-bottom:14px">'
     + '<span style="font-size:12px;font-weight:600;color:var(--t2)">' + done + '/' + total + ' concluídos</span>'

@@ -758,7 +758,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '132';
+    var _BUILD = '133';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -6695,33 +6695,6 @@ function fecharModalInv() {
   document.getElementById('modal-inv').style.display = 'none';
 }
 
-function criarInventario() {
-  var nome = document.getElementById('ninv-nome').value.trim();
-  var endStr = document.getElementById('ninv-enderecos').value.trim();
-  var errEl = document.getElementById('ninv-err');
-  errEl.style.display = 'none';
-  if (!nome) { errEl.textContent='Informe o nome do inventário.'; errEl.style.display='block'; return; }
-  if (!endStr) { errEl.textContent='Informe pelo menos um endereço.'; errEl.style.display='block'; return; }
-
-  var enderecos = endStr.split('\n').map(function(e){ return e.trim(); }).filter(function(e){ return e.length>0; });
-  if (!enderecos.length) { errEl.textContent='Nenhum endereço válido.'; errEl.style.display='block'; return; }
-
-  var loja = (S.currentUser && S.currentUser.loja) ? S.currentUser.loja : '';
-  db.collection('inv_inventarios').add({
-    nome: nome,
-    loja: loja,
-    status: 'aberto',
-    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-    criadoPor: S.currentUser ? S.currentUser.id : '',
-    enderecos: enderecos,
-    atribuicoes: {},
-    totalBipagens: 0
-  }).then(function(){
-    fecharModalInv();
-    loadInventariosFromFirebase(function(){ renderInvList(); });
-  }).catch(function(e){ errEl.textContent='Erro: '+(e.message||'Tente novamente.'); errEl.style.display='block'; });
-}
-
 // ── Admin: lista de inventários ───────────────────────────────────
 function renderInvList() {
   var wrap = document.getElementById('inv-lista');
@@ -8259,6 +8232,9 @@ function criarInventario() {
   if (!endStr) { if(errEl){errEl.textContent='Informe pelo menos um endereço ou use o gerador.';errEl.style.display='block';} return; }
   var enderecos = endStr.split('\n').map(function(e){ return e.trim(); }).filter(function(e){ return e.length>0; });
   if (!enderecos.length) { if(errEl){errEl.textContent='Nenhum endereço válido.';errEl.style.display='block';} return; }
+  // Bloqueia duplo clique
+  var criarBtn = document.querySelector('#modal-inv-novo .btn.btn-p');
+  if (criarBtn) { criarBtn.disabled = true; criarBtn.textContent = 'Criando...'; }
   var loja = (S.currentUser && S.currentUser.loja) ? S.currentUser.loja : '';
   db.collection('inv_inventarios').add({
     nome: nome, loja: loja, status: 'aberto', tipo: tipo,
@@ -8272,7 +8248,10 @@ function criarInventario() {
   }).then(function(){
     fecharModalInv();
     loadInventariosFromFirebase(function(){ renderInvList(); });
-  }).catch(function(e){ if(errEl){errEl.textContent='Erro: '+(e.message||'Tente novamente.');errEl.style.display='block';} });
+  }).catch(function(e){
+    if (criarBtn) { criarBtn.disabled = false; criarBtn.textContent = 'Criar Inventário'; }
+    if(errEl){errEl.textContent='Erro: '+(e.message||'Tente novamente.');errEl.style.display='block';}
+  });
 }
 
 // ── Helper: badge de tipo de inventário ───────────────────────────────────

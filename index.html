@@ -1639,9 +1639,37 @@
   </div>
 </div>
 
+<script>
+// Bloqueia sugestões de senha/usuário fora do login
+(function(){
+  var LOGIN_IDS = ['lEmail','lPass'];
+  function _aoOff(n){
+    if(!n||!n.setAttribute) return;
+    if(LOGIN_IDS.indexOf(n.id)>=0) return;
+    n.setAttribute('autocomplete','off');
+    n.setAttribute('autocorrect','off');
+    n.setAttribute('autocapitalize','off');
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('input').forEach(_aoOff);
+    new MutationObserver(function(ms){
+      ms.forEach(function(m){
+        m.addedNodes.forEach(function(n){
+          if(!n||n.nodeType!==1) return;
+          if(n.tagName==='INPUT') _aoOff(n);
+          if(n.querySelectorAll) n.querySelectorAll('input').forEach(_aoOff);
+        });
+      });
+    }).observe(document.body,{childList:true,subtree:true});
+    // login fields: hint explícito pro browser
+    var le=document.getElementById('lEmail'); if(le) le.autocomplete='username';
+    var lp=document.getElementById('lPass');  if(lp) lp.autocomplete='current-password';
+  });
+})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="app.js?v=136" defer></script>
+<script src="app.js?v=137" defer></script>
 
 
 </body>

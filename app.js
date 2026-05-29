@@ -745,6 +745,9 @@ function finalizarLogin(found) {
     // FC360 Inventário: carrega e atualiza nav de coleta para usuários atribuídos
     loadInventariosFromFirebase(function(){
       atualizarNavColeta();
+      // Se o coletor recarregou na tela inv-coleta, re-renderiza agora que os dados chegaram
+      var panelColeta=document.getElementById('panel-inv-coleta');
+      if (panelColeta&&panelColeta.classList.contains('active')) renderColeta();
     });
     if (!isOpOrPrev2) initDashCharts();
     // buildCLTabs só após planilhas diárias carregadas para que _planilhaTemplates esteja populado
@@ -758,7 +761,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '136';
+    var _BUILD = '137';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');

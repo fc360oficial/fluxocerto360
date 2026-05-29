@@ -761,7 +761,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '138';
+    var _BUILD = '139';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -779,20 +779,7 @@ function finalizarLogin(found) {
     var allowed = pagesForRole[S.role] || ['checklist'];
     if (lastPage && allowed.indexOf(lastPage) >= 0) {
       var sbEl = document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]');
-      // inv + detalhe salvo: ativa painel diretamente sem nav() para evitar
-      // que renderInvList() sobrescreva o detalhe que atualizarNavColeta vai restaurar
-      if (lastPage === 'inv' && localStorage.getItem('inv_detalhe_state')) {
-        document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-        document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active');});
-        var _invP = document.getElementById('panel-inv');
-        if (_invP) _invP.classList.add('active');
-        if (sbEl) sbEl.classList.add('active');
-        document.getElementById('pageTitle').textContent = 'FC360 Inventário';
-        sessionStorage.setItem('eco_last_page','inv');
-        localStorage.setItem('eco_last_page','inv');
-      } else {
-        nav(lastPage, sbEl);
-      }
+      nav(lastPage, sbEl);
     } else if (S.role==='coletor') {
       nav('inv-coleta', document.querySelector('.sb-item[onclick*="\'inv-coleta\'"]'));
     } else if (isOpOrPrev2) {
@@ -1006,6 +993,20 @@ function nav(page, el) {
   }
   if (page==='inv') {
     loadInventariosFromFirebase(function(){
+      var _raw=localStorage.getItem('inv_detalhe_state');
+      if (_raw) {
+        try {
+          var _st=JSON.parse(_raw);
+          if (_st&&_st.invId) {
+            var _inv=(S.invsCache||[]).find(function(i){ return i.id===_st.invId; });
+            if (_inv) {
+              localStorage.removeItem('inv_detalhe_state');
+              abrirDetalheInv(_st.invId, _st.tab||'enderecos');
+              return;
+            }
+          }
+        } catch(e){}
+      }
       renderInvList();
     });
   }
@@ -9625,23 +9626,6 @@ function atualizarNavColeta() {
   var isAdminOrColetor=S.role==='admin'||S.role==='coletor';
   colItem.style.display=(temAberto&&isAdminOrColetor)?'flex':'none';
 
-  // Restaura detalhe de inventário após reload
-  var raw=localStorage.getItem('inv_detalhe_state');
-  if (!raw) return;
-  try {
-    var st=JSON.parse(raw);
-    if (!st||!st.invId) return;
-    var inv=(S.invsCache||[]).find(function(i){ return i.id===st.invId; });
-    if (!inv) return;
-    localStorage.removeItem('inv_detalhe_state');
-    // Garante que estamos no painel inv
-    var panel=document.getElementById('panel-inv');
-    if (panel&&!panel.classList.contains('active')) {
-      var navEl=document.querySelector('.sb-item[onclick*="\'inv\'"]');
-      nav('inv',navEl);
-    }
-    abrirDetalheInv(st.invId, st.tab||'enderecos');
-  } catch(e){}
 }
 
 // ── Realtime listener para aba Endereços ─────────────────────────────────────

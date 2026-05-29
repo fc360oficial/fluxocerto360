@@ -761,7 +761,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '137';
+    var _BUILD = '138';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -779,7 +779,20 @@ function finalizarLogin(found) {
     var allowed = pagesForRole[S.role] || ['checklist'];
     if (lastPage && allowed.indexOf(lastPage) >= 0) {
       var sbEl = document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]');
-      nav(lastPage, sbEl);
+      // inv + detalhe salvo: ativa painel diretamente sem nav() para evitar
+      // que renderInvList() sobrescreva o detalhe que atualizarNavColeta vai restaurar
+      if (lastPage === 'inv' && localStorage.getItem('inv_detalhe_state')) {
+        document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+        document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active');});
+        var _invP = document.getElementById('panel-inv');
+        if (_invP) _invP.classList.add('active');
+        if (sbEl) sbEl.classList.add('active');
+        document.getElementById('pageTitle').textContent = 'FC360 Inventário';
+        sessionStorage.setItem('eco_last_page','inv');
+        localStorage.setItem('eco_last_page','inv');
+      } else {
+        nav(lastPage, sbEl);
+      }
     } else if (S.role==='coletor') {
       nav('inv-coleta', document.querySelector('.sb-item[onclick*="\'inv-coleta\'"]'));
     } else if (isOpOrPrev2) {

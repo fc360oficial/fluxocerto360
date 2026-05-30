@@ -761,7 +761,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '152';
+    var _BUILD = '153';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -10366,9 +10366,49 @@ function enviarMensagemIA(textoFixo) {
     ctx += '  • ' + op + ': ' + o.total + ' checklist(s), ' + o.reprov + ' reprovado(s), média ' + media + '%\n';
   });
 
-  // Inventários
+  // ── Equipe e mapa de usuários (declarado antes para uso no inventário) ──
+  var todosUsuarios = (typeof getUsers==='function') ? getUsers() : (S.usersCache||[]);
+  var roleNames2 = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção',coletor:'Coletor'};
+  var usersMapIA = {};
+  todosUsuarios.forEach(function(usr){ usersMapIA[usr.id||''] = usr.nome||'?'; });
+
+  // ── Inventários: endereços, coletores, divergências (dados em cache) ──
+  var todosInvs = S.invsCache || [];
   ctx += '\n>> INVENTÁRIOS (' + invsAbertos.length + ' em andamento | ' + invsEncerrados.length + ' encerrados)\n';
-  invsAbertos.forEach(function(i){ ctx += '  🔄 ' + (i.nome||i.id) + ' — iniciado ' + (i.dataInicio||'?') + '\n'; });
+  todosInvs.slice(0,6).forEach(function(inv) {
+    var ends = inv.enderecos || [];
+    var atribs = inv.atribuicoes || {};
+    var resolucoes = inv.resolucoes || {};
+    var statusLabel = inv.status==='aberto' ? '🔄 EM ANDAMENTO' : '✅ Encerrado';
+    ctx += '  ' + statusLabel + ': ' + (inv.nome||inv.id) + ' (' + ends.length + ' endereços | ' + (inv.totalBipagens||0) + ' bipagens)\n';
+    // Coletores atribuídos por endereço
+    var coletorMap = {};
+    ends.forEach(function(e) {
+      var atrib = _normalizeAtrib(atribs[e]);
+      (atrib.coletores||[]).forEach(function(c) {
+        var cnome = c.nome || usersMapIA[c.userId||''] || c.userId || '?';
+        if (!coletorMap[cnome]) coletorMap[cnome] = {ends:0,concl:0};
+        coletorMap[cnome].ends++;
+        if (c.concluido) coletorMap[cnome].concl++;
+      });
+    });
+    var cNomes = Object.keys(coletorMap);
+    if (cNomes.length) {
+      ctx += '    Coletores: ' + cNomes.map(function(n){ return n+' ('+coletorMap[n].concl+'/'+coletorMap[n].ends+' concluídos)'; }).join(', ') + '\n';
+    } else if (ends.length) {
+      ctx += '    Coletores: nenhum atribuído ainda\n';
+    }
+    // Divergências resolvidas (resolucoes vem do doc Firestore)
+    var divKeys = Object.keys(resolucoes);
+    if (divKeys.length) {
+      ctx += '    Divergências resolvidas: ' + divKeys.length + ' endereço(s)\n';
+      divKeys.slice(0,4).forEach(function(e) {
+        var res = resolucoes[e];
+        ctx += '      • ' + e + ' → Rodada ' + (res.rodada||'?') + ' aprovada (por ' + (res.resolvidoPor||'admin') + ')\n';
+      });
+      if (divKeys.length>4) ctx += '      ... e mais ' + (divKeys.length-4) + '\n';
+    }
+  });
 
   // Perdas
   if(perdas.length){
@@ -10383,7 +10423,6 @@ function enviarMensagemIA(textoFixo) {
   var todosOsCLs = (typeof getCustomCLs==='function') ? getCustomCLs() : [];
   if(todosOsCLs.length){
     ctx += '\n>> CHECKLISTS CADASTRADOS NO SISTEMA (' + todosOsCLs.length + ' customizados)\n';
-    // Agrupa por loja
     var clPorLoja = {};
     todosOsCLs.forEach(function(cl){
       var lojaKey = cl.loja || 'Todas as lojas';
@@ -10399,8 +10438,6 @@ function enviarMensagemIA(textoFixo) {
   }
 
   // ── Equipe cadastrada por loja ────────────────────────
-  var todosUsuarios = (typeof getUsers==='function') ? getUsers() : (S.usersCache||[]);
-  var roleNames2 = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção',coletor:'Coletor'};
   if(todosUsuarios.length){
     ctx += '\n>> EQUIPE CADASTRADA POR LOJA\n';
     var usersPorLoja = {};
@@ -10432,52 +10469,86 @@ function enviarMensagemIA(textoFixo) {
     Object.keys(resultPorLoja).forEach(function(lojaKey){
       var rl = resultPorLoja[lojaKey];
       var media = rl.total ? Math.round(rl.pctSum/rl.total) : 0;
-      // Quem é o gerente/supervisor dessa loja
       var gestores = todosUsuarios.filter(function(u2){ return u2.loja===lojaKey && (u2.perfil==='gerencia'||u2.perfil==='supervisor'||u2.perfil==='admin'); });
-      var nomeGestores = gestores.map(function(g){ return g.nome+'('+( roleNames2[g.perfil]||g.perfil)+')'; }).join(', ') || 'N/A';
+      var nomeGestores = gestores.map(function(g){ return g.nome+'('+(roleNames2[g.perfil]||g.perfil)+')'; }).join(', ') || 'N/A';
       ctx += '  📍 ' + lojaKey + ': ' + rl.total + ' checklists | ' + rl.reprov + ' reprovados | média ' + media + '% | Gestão: ' + nomeGestores + '\n';
     });
   }
 
-  var sp = 'Você é um assistente de gestão integrado ao Fluxo Certo 360, sistema para supermercados e varejo.\n' +
-    'Responda SEMPRE em português brasileiro. Seja objetivo, prático e direto ao ponto.\n' +
-    'Use os dados reais abaixo para análises precisas. Quando identificar problemas, sugira ações concretas.' + ctx;
+  // ── Finaliza: carrega bipagens do inv ativo, depois chama Gemini ──
+  function _finalizaIA(bips) {
+    // Produtos coletados no inventário ativo (via bipagens do Firestore)
+    if (bips && bips.length && invsAbertos[0]) {
+      var invAct = invsAbertos[0];
+      var eanMap = {};
+      var endColeta = {};
+      bips.forEach(function(b) {
+        if (!b.ean) return;
+        eanMap[b.ean] = (eanMap[b.ean]||0) + (b.qty||1);
+        if (!endColeta[b.endereco]) endColeta[b.endereco] = 0;
+        endColeta[b.endereco] += (b.qty||1);
+      });
+      var topEans = Object.keys(eanMap).sort(function(a,b){ return eanMap[b]-eanMap[a]; }).slice(0,10);
+      var endsComColeta = Object.keys(endColeta).length;
+      var totalEnds = (invAct.enderecos||[]).length;
+      ctx += '\n>> PRODUTOS COLETADOS — ' + (invAct.nome||invAct.id) + '\n';
+      ctx += '   Endereços com coleta: ' + endsComColeta + '/' + totalEnds + '\n';
+      ctx += '   EANs únicos registrados: ' + Object.keys(eanMap).length + '\n';
+      if (topEans.length) {
+        ctx += '   Top produtos por quantidade:\n';
+        topEans.forEach(function(ean){ ctx += '     • EAN ' + ean + ': ' + eanMap[ean] + ' un\n'; });
+      }
+      var endsSem = (invAct.enderecos||[]).filter(function(e){ return !endColeta[e]; });
+      if (endsSem.length) {
+        ctx += '   Endereços sem coleta (' + endsSem.length + '): ' + endsSem.slice(0,6).join(', ') + (endsSem.length>6?'...':'') + '\n';
+      }
+    }
 
-  // Garante que contents começa com mensagem do usuário (requisito da API)
-  var allMsgs = _iaHist.slice(0, placeholderIdx);
-  var firstUserIdx = -1;
-  for (var i = 0; i < allMsgs.length; i++) { if (allMsgs[i].r === 'u') { firstUserIdx = i; break; } }
-  var contents = (firstUserIdx >= 0 ? allMsgs.slice(firstUserIdx) : allMsgs).map(function(m) {
-    return {role: m.r === 'u' ? 'user' : 'model', parts: [{text: m.t}]};
-  });
+    var sp = 'Você é um assistente de gestão integrado ao Fluxo Certo 360, sistema para supermercados e varejo.\n' +
+      'Responda SEMPRE em português brasileiro. Seja objetivo, prático e direto ao ponto.\n' +
+      'Use os dados reais abaixo para análises precisas. Quando identificar problemas, sugira ações concretas.' + ctx;
 
-  _iaGetModel(function(model) {
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + _GK, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        system_instruction: {parts: [{text: sp}]},
-        contents: contents
-      })
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var resp = 'Não consegui gerar uma resposta. Tente novamente.';
-      try {
-        if (data.error) resp = '⚠️ Erro da API: ' + data.error.message;
-        else resp = data.candidates[0].content.parts[0].text;
-      } catch(e){ console.error('Gemini response:', JSON.stringify(data)); }
-      _iaHist[placeholderIdx] = {r:'bot', t:resp};
-      _iaLoading = false;
-      _iaRender();
-    })
-    .catch(function(e){
-      console.error('Gemini fetch error:', e);
-      _iaHist[placeholderIdx] = {r:'bot', t:'⚠️ Erro de conexão. Verifique a internet e tente novamente.'};
-      _iaLoading = false;
-      _iaRender();
+    var allMsgs = _iaHist.slice(0, placeholderIdx);
+    var firstUserIdx = -1;
+    for (var i = 0; i < allMsgs.length; i++) { if (allMsgs[i].r === 'u') { firstUserIdx = i; break; } }
+    var contents = (firstUserIdx >= 0 ? allMsgs.slice(firstUserIdx) : allMsgs).map(function(m) {
+      return {role: m.r === 'u' ? 'user' : 'model', parts: [{text: m.t}]};
     });
-  });
+
+    _iaGetModel(function(model) {
+      fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + _GK, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          system_instruction: {parts: [{text: sp}]},
+          contents: contents
+        })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var resp = 'Não consegui gerar uma resposta. Tente novamente.';
+        try {
+          if (data.error) resp = '⚠️ Erro da API: ' + data.error.message;
+          else resp = data.candidates[0].content.parts[0].text;
+        } catch(e){ console.error('Gemini response:', JSON.stringify(data)); }
+        _iaHist[placeholderIdx] = {r:'bot', t:resp};
+        _iaLoading = false;
+        _iaRender();
+      })
+      .catch(function(e){
+        console.error('Gemini fetch error:', e);
+        _iaHist[placeholderIdx] = {r:'bot', t:'⚠️ Erro de conexão. Verifique a internet e tente novamente.'};
+        _iaLoading = false;
+        _iaRender();
+      });
+    });
+  }
+
+  if (invsAbertos.length) {
+    loadBipagensByInv(invsAbertos[0].id, _finalizaIA);
+  } else {
+    _finalizaIA(null);
+  }
 }
 
 // Nav override para assistente

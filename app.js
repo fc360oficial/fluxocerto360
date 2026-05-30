@@ -761,7 +761,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '154';
+    var _BUILD = '155';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -880,7 +880,7 @@ function setupRole() {
   show('nav-dashboard', (isAdmOrGer || isSup) && !isColetor);
   show('nav-central', isAdmin && !isColetor);
   show('nav-relat', (isAdmin || isSup || r==='gerencia') && !isColetor);
-  show('nav-assistente', (isAdmOrGer || isSup) && !isColetor);
+  show('nav-assistente', isAdmin);
   show('nav-users', isAdmin && !isColetor);
   show('nav-alertas', (isAdmin || isSup) && !isColetor);
   show('nav-plano', (isAdmOrGer || isSup) && !isColetor);

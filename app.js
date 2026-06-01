@@ -77,39 +77,48 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
 var _swRefreshing = false;
 
 function zerarRelatoriosEPlanos() {
-  if (!confirm('⚠️ ATENÇÃO: Isso vai apagar PERMANENTEMENTE todos os resultados de checklist e todos os planos de ação do sistema.\n\nEssa ação não pode ser desfeita.\n\nDeseja continuar?')) return;
-  if (!confirm('Confirmar: apagar TODOS os dados de relatórios e planos de ação?')) return;
+  var senha = prompt('Digite sua senha de admin para confirmar:');
+  if (senha === null) return;
+  if (!senha) { alert('Senha não pode ser vazia.'); return; }
 
-  var el = document.getElementById('btn-zerar-dados');
-  if (el) { el.textContent = '⏳ Apagando...'; el.disabled = true; }
+  hashPassword(senha).then(function(hash) {
+    var u = S.currentUser || {};
+    var senhaCorreta = isHashed(u.senha) ? u.senha === hash : u.senha === senha;
+    if (!senhaCorreta) { alert('❌ Senha incorreta. Operação cancelada.'); return; }
 
-  function deletarTudo(colecao) {
-    function proxLote() {
-      return db.collection(colecao).limit(400).get().then(function(snap) {
-        if (snap.empty) return;
-        var batch = db.batch();
-        snap.docs.forEach(function(d) { batch.delete(d.ref); });
-        return batch.commit().then(function() {
-          if (snap.docs.length === 400) return proxLote();
+    if (!confirm('⚠️ ATENÇÃO: Isso vai apagar PERMANENTEMENTE todos os resultados de checklist e planos de ação.\n\nEssa ação não pode ser desfeita.\n\nConfirmar?')) return;
+
+    var el = document.getElementById('btn-zerar-dados');
+    if (el) { el.textContent = '⏳ Apagando...'; el.disabled = true; }
+
+    function deletarTudo(colecao) {
+      function proxLote() {
+        return db.collection(colecao).limit(400).get().then(function(snap) {
+          if (snap.empty) return;
+          var batch = db.batch();
+          snap.docs.forEach(function(d) { batch.delete(d.ref); });
+          return batch.commit().then(function() {
+            if (snap.docs.length === 400) return proxLote();
+          });
         });
-      });
+      }
+      return proxLote();
     }
-    return proxLote();
-  }
 
-  Promise.all([deletarTudo('resultados'), deletarTudo('planos')])
-    .then(function() {
-      localStorage.removeItem(PLANO_KEY);
-      _planosCache = null;
-      S.resultadosCache = [];
-      alert('✅ Dados apagados com sucesso!\nO app será recarregado.');
-      window.location.reload();
-    })
-    .catch(function(e) {
-      console.error('Erro ao zerar dados:', e);
-      if (el) { el.textContent = '🗑 Zerar Relatórios e Planos'; el.disabled = false; }
-      alert('Erro ao apagar dados: ' + e.message);
-    });
+    Promise.all([deletarTudo('resultados'), deletarTudo('planos')])
+      .then(function() {
+        localStorage.removeItem(PLANO_KEY);
+        _planosCache = null;
+        S.resultadosCache = [];
+        alert('✅ Dados apagados com sucesso!\nO app será recarregado.');
+        window.location.reload();
+      })
+      .catch(function(e) {
+        console.error('Erro ao zerar dados:', e);
+        if (el) { el.textContent = '🗑 Zerar Relatórios e Planos'; el.disabled = false; }
+        alert('Erro ao apagar dados: ' + e.message);
+      });
+  });
 }
 
 function forcarAtualizacao() {
@@ -797,7 +806,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '158';
+    var _BUILD = '159';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');

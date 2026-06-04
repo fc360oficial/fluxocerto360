@@ -155,7 +155,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--t1);font-famil
       </div>
     </div>
     <div class="card">
-      <div class="card-title">🏆 Ranking de Operadores</div>
+      <div class="card-title">🏆 Ranking por Loja — Hoje</div>
       <div class="rank-list" id="ranking"><div class="empty-state"><div class="icon">👤</div>Aguardando dados...</div></div>
     </div>
     <div class="card">
@@ -360,57 +360,69 @@ function updateChecklistScreen() {
     }
   }
 
-  // Ranking
-  var opMap = {};
+  // Ranking por loja
+  var lojaMap = {};
   res.forEach(function(r){
-    if(!r.operador) return;
-    if(!opMap[r.operador]) opMap[r.operador]={soma:0,cnt:0};
-    opMap[r.operador].soma += r.pct;
-    opMap[r.operador].cnt++;
+    var loja = (r.loja||'').trim() || 'Sem loja';
+    if(!lojaMap[loja]) lojaMap[loja]={soma:0,cnt:0,ops:{}};
+    lojaMap[loja].soma += r.pct;
+    lojaMap[loja].cnt++;
+    if(r.operador) lojaMap[loja].ops[r.operador]=1;
   });
-  var ranking = Object.keys(opMap).map(function(nome){
-    return {nome:nome, media:Math.round(opMap[nome].soma/opMap[nome].cnt), cnt:opMap[nome].cnt};
+  var ranking = Object.keys(lojaMap).map(function(loja){
+    var o=lojaMap[loja];
+    return {nome:loja, media:Math.round(o.soma/o.cnt), cnt:o.cnt, ops:Object.keys(o.ops).length};
   }).sort(function(a,b){return b.media-a.media;}).slice(0,5);
 
   var posCls=['p1','p2','p3','pn','pn'];
   var rankEl = document.getElementById('ranking');
   if (rankEl) {
     if (!ranking.length) {
-      rankEl.innerHTML='<div class="empty-state"><div class="icon">👤</div>Aguardando dados...</div>';
+      rankEl.innerHTML='<div class="empty-state"><div class="icon">🏪</div>Aguardando dados...</div>';
     } else {
       rankEl.innerHTML = ranking.map(function(r,i){
         var sc=r.media>=85?'var(--g)':r.media>=70?'var(--am)':'var(--r)';
         return '<div class="rank-item"><div class="rank-pos '+(posCls[i]||'pn')+'">'+(i+1)+'º</div>'
-          +'<div class="rank-info"><div class="rank-nome">'+r.nome+'</div><div class="rank-sub">'+r.cnt+' checklist'+(r.cnt>1?'s':'')+'</div>'
+          +'<div class="rank-info"><div class="rank-nome">'+r.nome+'</div>'
+          +'<div class="rank-sub">'+r.cnt+' checklist'+(r.cnt>1?'s':'')+' · '+r.ops+' operador'+(r.ops>1?'es':'')+'</div>'
           +'<div class="rank-bar-wrap"><div class="rank-bar" style="width:'+r.media+'%;background:'+sc+'"></div></div></div>'
           +'<div class="rank-score" style="color:'+sc+'">'+r.media+'%</div></div>';
       }).join('');
     }
   }
 
-  // NCs
-  var ncMap = {};
-  res.forEach(function(r){
+  // NCs — mais recentes primeiro, com contexto completo
+  var ncs = [];
+  var resSorted = res.slice().sort(function(a,b){return (b.dataHora||'').localeCompare(a.dataHora||'');});
+  resSorted.forEach(function(r){
     if(!r.itens) return;
     r.itens.forEach(function(item){
-      if(item.feito===false){
-        var k=item.texto||'(sem texto)';
-        if(!ncMap[k]) ncMap[k]={cnt:0,setor:r.setor||'',op:r.operador||''};
-        ncMap[k].cnt++;
-        ncMap[k].setor=r.setor||ncMap[k].setor;
+      if((item.feito===false || item.feito===0 || item.feito==='nao') && (item.texto||item.t)){
+        ncs.push({
+          texto:  item.texto || item.t || '(sem texto)',
+          setor:  r.setor || '',
+          op:     r.operador || '',
+          hora:   r.dataHora ? (r.dataHora.split(' ')[1] || '') : '',
+          cl:     r.checklistNome || ''
+        });
       }
     });
   });
-  var ncs = Object.keys(ncMap).map(function(t){return Object.assign({texto:t},ncMap[t]);})
-    .sort(function(a,b){return b.cnt-a.cnt;}).slice(0,5);
+  ncs = ncs.slice(0,6);
+
   var ncEl = document.getElementById('nc-list');
   if (ncEl) {
     if (!ncs.length) {
-      ncEl.innerHTML='<div class="empty-state"><div class="icon">✅</div>Nenhuma não conformidade</div>';
+      ncEl.innerHTML='<div class="empty-state"><div class="icon">✅</div>Nenhuma não conformidade hoje</div>';
     } else {
       ncEl.innerHTML = ncs.map(function(n){
-        var grave = n.cnt>=3?'':'warn';
-        return '<div class="nc-item '+grave+'"><div class="nc-texto">'+n.texto+'</div><div class="nc-meta">'+n.setor+(n.op?' · '+n.op:'')+'</div></div>';
+        var isGrave = !n.setor || n.texto.length < 60;
+        return '<div class="nc-item '+(isGrave?'':'warn')+'">'
+          +'<div class="nc-texto">'+n.texto+'</div>'
+          +'<div class="nc-meta">'
+          +(n.cl?'<span style="opacity:.8">'+n.cl+'</span> · ':'')
+          +(n.setor||'—')+(n.op?' · '+n.op:'')+(n.hora?' · '+n.hora:'')
+          +'</div></div>';
       }).join('');
     }
   }

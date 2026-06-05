@@ -468,7 +468,7 @@ function updateChecklistScreen() {
           +'</div></div>';
       }).join('');
       // Duplica para loop contínuo
-      var speed = Math.max(ncs.length * 3, 10);
+      var speed = Math.max(ncs.length * 5, 15);
       ncEl.innerHTML = '<div class="nc-ticker'+(ncs.length>3?' running':'')+'" id="nc-ticker" style="animation-duration:'+speed+'s">'
         + ncHtml + (ncs.length>3 ? ncHtml : '') + '</div>';
     }
@@ -482,23 +482,36 @@ function updateChecklistScreen() {
     var mo = ('0'+(dt.getMonth()+1)).slice(-2);
     var key = dd+'/'+mo+'/'+dt.getFullYear();
     var dayRes = allResultados.filter(function(r){ return r.dataHora && r.dataHora.split(' ')[0]===key; });
-    t7Labels.push(di===0 ? 'Hoje' : dd+'/'+mo);
-    t7Data.push(dayRes.length ? Math.round(dayRes.reduce(function(s,r){return s+r.pct;},0)/dayRes.length) : null);
+    if (dayRes.length) {
+      t7Labels.push(di===0 ? 'Hoje' : dd+'/'+mo);
+      t7Data.push(Math.round(dayRes.reduce(function(s,r){return s+r.pct;},0)/dayRes.length));
+    }
   }
   var t7Canvas = document.getElementById('chartTend7');
   if (t7Canvas) {
     if (!tend7Chart) {
-      var ctx7 = t7Canvas.getContext('2d');
-      var grad = ctx7.createLinearGradient(0,0,0,90);
-      grad.addColorStop(0,'rgba(255,198,0,.3)'); grad.addColorStop(1,'rgba(255,198,0,0)');
-      tend7Chart = new Chart(ctx7, {
+      tend7Chart = new Chart(t7Canvas.getContext('2d'), {
         type:'line',
-        data:{labels:t7Labels,datasets:[{data:t7Data,borderColor:'#FFC600',borderWidth:2,backgroundColor:grad,fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#FFC600',spanGaps:true}]},
+        data:{labels:t7Labels,datasets:[{
+          data:t7Data,
+          borderColor:'#FFC600',
+          borderWidth:2.5,
+          backgroundColor:'transparent',
+          fill:false,
+          tension:.35,
+          pointRadius:5,
+          pointBackgroundColor:'#FFC600',
+          pointBorderColor:'#0d0d0d',
+          pointBorderWidth:2,
+          spanGaps:true
+        }]},
         options:{responsive:true,maintainAspectRatio:false,
-          plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw!==null?c.raw+'%':'—';}}}},
+          plugins:{legend:{display:false},
+            datalabels:{display:false},
+            tooltip:{callbacks:{label:function(c){return c.raw+'%';}}}},
           scales:{
-            y:{min:0,max:100,ticks:{color:'rgba(255,255,255,.4)',callback:function(v){return v+'%';},font:{size:10},maxTicksLimit:4},grid:{color:'rgba(255,255,255,.05)'}},
-            x:{ticks:{color:'rgba(255,255,255,.5)',font:{size:10}},grid:{display:false}}
+            y:{min:0,max:100,ticks:{color:'rgba(255,255,255,.4)',callback:function(v){return v+'%';},font:{size:10},maxTicksLimit:5},grid:{color:'rgba(255,255,255,.05)'}},
+            x:{ticks:{color:'rgba(255,255,255,.55)',font:{size:10,weight:'600'}},grid:{display:false}}
           }
         }
       });

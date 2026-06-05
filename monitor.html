@@ -165,7 +165,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--t1);font-famil
         <div class="empty-state" id="setor-empty" style="display:none"><div class="icon">📋</div>Nenhum checklist enviado hoje</div>
       </div>
       <div class="card-title" style="margin-top:10px;margin-bottom:6px">Tendência — 7 dias</div>
-      <div style="flex:1;min-height:100px;position:relative"><canvas id="chartTend7" style="position:absolute;inset:0"></canvas></div>
+      <div id="tend7-wrap" style="display:flex;align-items:flex-end;gap:5px;height:110px;flex-shrink:0;padding-top:12px"></div>
     </div>
     <div class="card">
       <div class="card-title">🏆 Ranking por Loja — Mês</div>
@@ -273,7 +273,6 @@ var planosLista     = [];
 var invAtivo        = null;
 var invBipagens     = [];
 var setorChart      = null;
-var tend7Chart      = null;
 var bipListener     = null;
 
 // ── Utilities ──
@@ -478,47 +477,32 @@ function updateChecklistScreen() {
   var t7Labels = [], t7Data = [];
   for (var di = 6; di >= 0; di--) {
     var dt = new Date(); dt.setDate(dt.getDate() - di);
-    var dd = ('0'+dt.getDate()).slice(-2);
-    var mo = ('0'+(dt.getMonth()+1)).slice(-2);
-    var key = dd+'/'+mo+'/'+dt.getFullYear();
+    var dd2 = ('0'+dt.getDate()).slice(-2);
+    var mo2 = ('0'+(dt.getMonth()+1)).slice(-2);
+    var key = dd2+'/'+mo2+'/'+dt.getFullYear();
     var dayRes = allResultados.filter(function(r){ return r.dataHora && r.dataHora.split(' ')[0]===key; });
     if (dayRes.length) {
-      t7Labels.push(di===0 ? 'Hoje' : dd+'/'+mo);
+      t7Labels.push(di===0 ? 'Hoje' : dd2+'/'+mo2);
       t7Data.push(Math.round(dayRes.reduce(function(s,r){return s+r.pct;},0)/dayRes.length));
     }
   }
-  var t7Canvas = document.getElementById('chartTend7');
-  if (t7Canvas) {
-    if (!tend7Chart) {
-      tend7Chart = new Chart(t7Canvas.getContext('2d'), {
-        type:'line',
-        data:{labels:t7Labels,datasets:[{
-          data:t7Data,
-          borderColor:'#FFC600',
-          borderWidth:2.5,
-          backgroundColor:'transparent',
-          fill:false,
-          tension:.35,
-          pointRadius:5,
-          pointBackgroundColor:'#FFC600',
-          pointBorderColor:'#0d0d0d',
-          pointBorderWidth:2,
-          spanGaps:true
-        }]},
-        options:{responsive:true,maintainAspectRatio:false,
-          plugins:{legend:{display:false},
-            datalabels:{display:false},
-            tooltip:{callbacks:{label:function(c){return c.raw+'%';}}}},
-          scales:{
-            y:{min:0,max:100,ticks:{color:'rgba(255,255,255,.4)',callback:function(v){return v+'%';},font:{size:10},maxTicksLimit:5},grid:{color:'rgba(255,255,255,.05)'}},
-            x:{ticks:{color:'rgba(255,255,255,.55)',font:{size:10,weight:'600'}},grid:{display:false}}
-          }
-        }
-      });
+  var t7Wrap = document.getElementById('tend7-wrap');
+  if (t7Wrap) {
+    if (!t7Data.length) {
+      t7Wrap.innerHTML='<div class="empty-state" style="font-size:11px">Sem dados</div>';
     } else {
-      tend7Chart.data.labels = t7Labels;
-      tend7Chart.data.datasets[0].data = t7Data;
-      tend7Chart.update();
+      var barAreaH = 68;
+      t7Wrap.innerHTML = t7Labels.map(function(lbl,i){
+        var val = t7Data[i];
+        var barH = Math.max(Math.round(val/100*barAreaH), 3);
+        var col = val>=85?'var(--g)':val>=70?'var(--am)':'var(--r)';
+        var isToday = lbl==='Hoje';
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px">'
+          +'<span style="font-size:10px;font-weight:700;color:'+col+'">'+val+'%</span>'
+          +'<div style="width:100%;max-width:38px;height:'+barH+'px;background:'+col+';border-radius:3px 3px 0 0;opacity:'+(isToday?'1':'.65')+'"></div>'
+          +'<span style="font-size:'+(isToday?'10':'9')+'px;font-weight:'+(isToday?'700':'400')+';color:rgba(255,255,255,'+(isToday?'.9':'.5')+')">'+lbl+'</span>'
+          +'</div>';
+      }).join('');
     }
   }
 

@@ -50,7 +50,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--t1);font-famil
 .card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:10px;flex-shrink:0}
 
 /* Screen 1 — Checklist */
-#screen-check .body{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+#screen-check .body{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:10px}
 .setor-wrap{flex:1;position:relative;min-height:0}
 .rank-list{flex:1;display:flex;flex-direction:column;gap:7px;overflow:hidden}
 .rank-item{display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:9px;padding:9px 12px}
@@ -67,6 +67,14 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--t1);font-famil
 .nc-item.warn{border-left-color:var(--am)}
 .nc-texto{font-size:12px;font-weight:600;line-height:1.3}
 .nc-meta{font-size:10px;color:var(--t3);margin-top:3px}
+.plano-list{flex:1;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+.plano-item{background:var(--bg3);border-left:3px solid var(--r);border-radius:0 9px 9px 0;padding:9px 12px}
+.plano-item.and{border-left-color:var(--am)}
+.plano-titulo{font-size:12px;font-weight:600;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.plano-meta{font-size:10px;color:var(--t3);margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.plano-badge{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:10px}
+.plano-badge.ab{background:rgba(192,57,43,.25);color:#e74c3c}
+.plano-badge.and{background:rgba(214,137,16,.25);color:var(--am)}
 
 /* Screen 2 — Inventário */
 #screen-inv .body{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px}
@@ -162,6 +170,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--t1);font-famil
       <div class="card-title">⚠️ Não Conformidades Recentes</div>
       <div class="nc-list" id="nc-list"><div class="empty-state"><div class="icon">✅</div>Nenhuma não conformidade</div></div>
     </div>
+    <div class="card">
+      <div class="card-title">📋 Planos de Ação</div>
+      <div class="plano-list" id="plano-list"><div class="empty-state"><div class="icon">✅</div>Nenhum plano em aberto</div></div>
+    </div>
   </div>
 
   <div class="feed-bar">
@@ -252,6 +264,7 @@ var INTERVALO = parseInt(params.get('t') || '20') || 20;
 var allResultados   = [];
 var checkResultados = [];
 var planosAbertos   = 0;
+var planosLista     = [];
 var invAtivo        = null;
 var invBipagens     = [];
 var setorChart      = null;
@@ -285,10 +298,13 @@ db.collection('resultados').onSnapshot(function(snap) {
 }, function(err){ console.warn('resultados:', err); });
 
 db.collection('planos').onSnapshot(function(snap) {
-  planosAbertos = snap.docs.filter(function(d){
+  var ativos = snap.docs.filter(function(d){
     var s=d.data().status; return s==='aberto'||s==='andamento';
-  }).length;
+  });
+  planosAbertos = ativos.length;
+  planosLista = ativos.map(function(d){return Object.assign({id:d.id},d.data());});
   setText('kpi-planos', planosAbertos);
+  updateChecklistScreen();
 }, function(err){ console.warn('planos:', err); });
 
 if (MODO !== 'checklist') {
@@ -445,6 +461,32 @@ function updateChecklistScreen() {
           +'<div class="nc-meta">'
           +(n.cl?'<span style="opacity:.8">'+n.cl+'</span> · ':'')
           +(n.setor||'—')+(n.op?' · '+n.op:'')+(n.hora?' · '+n.hora:'')
+          +'</div></div>';
+      }).join('');
+    }
+  }
+
+  // Planos de ação
+  var planoEl = document.getElementById('plano-list');
+  if (planoEl) {
+    if (!planosLista.length) {
+      planoEl.innerHTML='<div class="empty-state"><div class="icon">✅</div>Nenhum plano em aberto</div>';
+    } else {
+      var planSort = planosLista.slice().sort(function(a,b){
+        if(a.status===b.status) return 0;
+        return a.status==='aberto'?-1:1;
+      }).slice(0,5);
+      planoEl.innerHTML = planSort.map(function(p){
+        var isAnd = p.status==='andamento';
+        var titulo = p.titulo||p.descricao||p.acao||'(sem título)';
+        var loja = p.loja||'';
+        var resp = p.responsavel||'';
+        return '<div class="plano-item '+(isAnd?'and':'')+'">'
+          +'<div class="plano-titulo">'+titulo+'</div>'
+          +'<div class="plano-meta">'
+          +(loja?'<span>'+loja+'</span>':'')
+          +(resp?'<span>'+resp+'</span>':'')
+          +'<span class="plano-badge '+(isAnd?'and':'ab')+'">'+(isAnd?'Em andamento':'Aberto')+'</span>'
           +'</div></div>';
       }).join('');
     }

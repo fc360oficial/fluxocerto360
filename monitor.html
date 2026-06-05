@@ -62,7 +62,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--t1);font-famil
 .rank-bar-wrap{height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:5px}
 .rank-bar{height:3px;border-radius:2px;transition:width .6s}
 .rank-score{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
-.nc-list{flex:1;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+.nc-list{flex:1;overflow:hidden;position:relative;mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent)}
+.nc-ticker{display:flex;flex-direction:column;gap:7px}
+.nc-ticker.running{animation:ncScroll linear infinite}
+@keyframes ncScroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
 .nc-item{background:var(--bg3);border-left:3px solid var(--r);border-radius:0 9px 9px 0;padding:9px 12px}
 .nc-item.warn{border-left-color:var(--am)}
 .nc-texto{font-size:12px;font-weight:600;line-height:1.3}
@@ -450,22 +453,24 @@ function updateChecklistScreen() {
       }
     });
   });
-  ncs = ncs.slice(0,6);
-
   var ncEl = document.getElementById('nc-list');
   if (ncEl) {
     if (!ncs.length) {
       ncEl.innerHTML='<div class="empty-state"><div class="icon">✅</div>Nenhuma não conformidade hoje</div>';
     } else {
-      ncEl.innerHTML = ncs.map(function(n){
+      var ncHtml = ncs.map(function(n){
         var isGrave = !n.setor || n.texto.length < 60;
-        return '<div class="nc-item '+(isGrave?'':'warn')+'">'
+        return '<div class="nc-item '+(isGrave?'':'warn')+'" style="flex-shrink:0">'
           +'<div class="nc-texto">'+n.texto+'</div>'
           +'<div class="nc-meta">'
           +(n.cl?'<span style="opacity:.8">'+n.cl+'</span> · ':'')
           +(n.setor||'—')+(n.op?' · '+n.op:'')+(n.hora?' · '+n.hora:'')
           +'</div></div>';
       }).join('');
+      // Duplica para loop contínuo
+      var speed = Math.max(ncs.length * 3, 10);
+      ncEl.innerHTML = '<div class="nc-ticker'+(ncs.length>3?' running':'')+'" id="nc-ticker" style="animation-duration:'+speed+'s">'
+        + ncHtml + (ncs.length>3 ? ncHtml : '') + '</div>';
     }
   }
 

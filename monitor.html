@@ -161,6 +161,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--t1);font-famil
         <canvas id="chartSetor"></canvas>
         <div class="empty-state" id="setor-empty" style="display:none"><div class="icon">📋</div>Nenhum checklist enviado hoje</div>
       </div>
+      <div class="card-title" style="margin-top:10px;margin-bottom:6px">Tendência — 7 dias</div>
+      <div style="height:90px;position:relative;flex-shrink:0"><canvas id="chartTend7"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">🏆 Ranking por Loja — Mês</div>
@@ -268,6 +270,7 @@ var planosLista     = [];
 var invAtivo        = null;
 var invBipagens     = [];
 var setorChart      = null;
+var tend7Chart      = null;
 var bipListener     = null;
 
 // ── Utilities ──
@@ -463,6 +466,41 @@ function updateChecklistScreen() {
           +(n.setor||'—')+(n.op?' · '+n.op:'')+(n.hora?' · '+n.hora:'')
           +'</div></div>';
       }).join('');
+    }
+  }
+
+  // Tendência 7 dias
+  var t7Labels = [], t7Data = [];
+  for (var di = 6; di >= 0; di--) {
+    var dt = new Date(); dt.setDate(dt.getDate() - di);
+    var dd = ('0'+dt.getDate()).slice(-2);
+    var mo = ('0'+(dt.getMonth()+1)).slice(-2);
+    var key = dd+'/'+mo+'/'+dt.getFullYear();
+    var dayRes = allResultados.filter(function(r){ return r.dataHora && r.dataHora.split(' ')[0]===key; });
+    t7Labels.push(di===0 ? 'Hoje' : dd+'/'+mo);
+    t7Data.push(dayRes.length ? Math.round(dayRes.reduce(function(s,r){return s+r.pct;},0)/dayRes.length) : null);
+  }
+  var t7Canvas = document.getElementById('chartTend7');
+  if (t7Canvas) {
+    if (!tend7Chart) {
+      var ctx7 = t7Canvas.getContext('2d');
+      var grad = ctx7.createLinearGradient(0,0,0,90);
+      grad.addColorStop(0,'rgba(255,198,0,.3)'); grad.addColorStop(1,'rgba(255,198,0,0)');
+      tend7Chart = new Chart(ctx7, {
+        type:'line',
+        data:{labels:t7Labels,datasets:[{data:t7Data,borderColor:'#FFC600',borderWidth:2,backgroundColor:grad,fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#FFC600',spanGaps:true}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw!==null?c.raw+'%':'—';}}}},
+          scales:{
+            y:{min:0,max:100,ticks:{color:'rgba(255,255,255,.4)',callback:function(v){return v+'%';},font:{size:10},maxTicksLimit:4},grid:{color:'rgba(255,255,255,.05)'}},
+            x:{ticks:{color:'rgba(255,255,255,.5)',font:{size:10}},grid:{display:false}}
+          }
+        }
+      });
+    } else {
+      tend7Chart.data.labels = t7Labels;
+      tend7Chart.data.datasets[0].data = t7Data;
+      tend7Chart.update();
     }
   }
 

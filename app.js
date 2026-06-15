@@ -354,16 +354,15 @@ function loadCheckState() {
 
 function saveCheckState() {
   try {
-    localStorage.setItem(getStateKey(), JSON.stringify(S.checkState));
-    var userId = S.currentUser ? S.currentUser.id : 'guest';
-    var today = getLocalDate();
-    // Salvar no Firebase SEM as fotos (base64 e muito grande)
+    // Salvar no localStorage SEM fotos (evita quota exceeded)
     var stateParaSalvar = {};
     Object.keys(S.checkState).forEach(function(k){
-      // Ignorar chaves de foto (base64 enorme)
       if (k.indexOf('_foto_') >= 0) return;
       stateParaSalvar[k] = S.checkState[k];
     });
+    localStorage.setItem(getStateKey(), JSON.stringify(stateParaSalvar));
+    var userId = S.currentUser ? S.currentUser.id : 'guest';
+    var today = getLocalDate();
     db.collection('checkstates').doc(userId+'_'+today).set({
       userId: userId,
       date: today,
@@ -380,19 +379,34 @@ function loadCheckStateFromFirebase(callback) {
     if (doc.exists && doc.data().state) {
       try {
         var fbState = JSON.parse(doc.data().state);
-        // Merge with localStorage (Firebase wins)
         var localState = loadCheckState();
         S.checkState = Object.assign(localState, fbState);
-        localStorage.setItem(getStateKey(), JSON.stringify(S.checkState));
       } catch(e) { S.checkState = loadCheckState(); }
     } else {
       S.checkState = loadCheckState();
     }
-    if (callback) callback();
+    // Restaurar fotos do Firestore (não ficam no localStorage)
+    carregarFotosFirebase(function(){ if (callback) callback(); });
   }).catch(function(){
     S.checkState = loadCheckState();
     if (callback) callback();
   });
+}
+
+function carregarFotosFirebase(callback) {
+  var userId = S.currentUser ? S.currentUser.id : 'guest';
+  var today = getLocalDate();
+  db.collection('fotos').where('userId','==',userId).where('date','==',today).get()
+    .then(function(snap){
+      snap.docs.forEach(function(doc){
+        var d = doc.data();
+        if (d.base64) {
+          var key = d.clId + '_foto_' + d.tipo + '_' + d.idx;
+          S.checkState[key] = d.base64;
+        }
+      });
+      if (callback) callback();
+    }).catch(function(){ if (callback) callback(); });
 }
 var CLKEY = 'eco_cl_custom';
 var RESKEY = 'eco_resultados';
@@ -947,7 +961,8 @@ function finalizarLogin(found) {
       });
     })()
   ]).then(function(){
-    iniciarApp();
+    // Restaurar fotos do dia do Firestore antes de iniciar
+    carregarFotosFirebase(function(){ iniciarApp(); });
   }).catch(function(err){
     console.error('Firebase erro:', err);
     // Tentar mesmo assim com o que carregou
@@ -1610,14 +1625,15 @@ function salvarFotoTipo(clId, idx, tipo, input) {
   var objectUrl = URL.createObjectURL(input.files[0]);
   img.onload = function() {
     var canvas = document.createElement('canvas');
-    var MAX = 800;
+    var MAX = 500;
     var w = img.width, h = img.height;
     if (w > MAX) { h = Math.round(h*MAX/w); w = MAX; }
     if (h > MAX) { w = Math.round(w*MAX/h); h = MAX; }
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var base64 = canvas.toDataURL('image/jpeg', 0.6);
+    var base64 = canvas.toDataURL('image/jpeg', 0.4);
     URL.revokeObjectURL(objectUrl);
+    img.src = ''; // libera memória da imagem original
 
     var fotoKey = clId+'_foto_'+tipo+'_'+idx;
     S.checkState[fotoKey] = base64;

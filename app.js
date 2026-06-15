@@ -934,10 +934,15 @@ function finalizarLogin(found) {
       var userId = found.id;
       var hoje = getLocalDate();
       return db.collection('checkstates').doc(userId+'_'+hoje).get().then(function(doc){
+        var localState = loadCheckState();
         if (doc.exists && doc.data().state && doc.data().localDate === getLocalDate()) {
-          try { S.checkState = JSON.parse(doc.data().state); } catch(e){ S.checkState={}; }
+          try {
+            var fbState = JSON.parse(doc.data().state);
+            // Firebase wins para respostas; localStorage mantém as fotos (base64)
+            S.checkState = Object.assign(localState, fbState);
+          } catch(e){ S.checkState = localState; }
         } else {
-          S.checkState = {};
+          S.checkState = localState;
         }
       });
     })()
@@ -1165,15 +1170,16 @@ function sincronizarEstadoFirebase() {
   // Load BOTH checkstate and resultados fresh from Firebase, then rebuild UI
   var promiseState = db.collection('checkstates').doc(userId+'_'+hoje).get()
     .then(function(doc){
+      var localState = loadCheckState();
       if (doc.exists && doc.data().state && doc.data().localDate === getLocalDate()) {
         try {
           var fbState = JSON.parse(doc.data().state);
-          S.checkState = fbState;
-          localStorage.setItem('eco_clstate_'+userId+'_'+hoje, JSON.stringify(fbState));
-        } catch(e){ S.checkState = {}; }
+          // Firebase wins para respostas; localStorage mantém as fotos (base64)
+          S.checkState = Object.assign(localState, fbState);
+          localStorage.setItem(getStateKey(), JSON.stringify(S.checkState));
+        } catch(e){ S.checkState = localState; }
       } else {
-        S.checkState = {};
-        localStorage.removeItem('eco_clstate_'+userId+'_'+hoje);
+        S.checkState = localState;
       }
     }).catch(function(){});
 

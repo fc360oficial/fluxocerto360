@@ -452,12 +452,6 @@
 
           <!-- VISAO GERAL -->
           <div id="rel-cl-geral">
-            <div class="g4" style="margin-bottom:20px">
-              <div class="mc"><div class="lbl">Total Enviados</div><div class="val up" id="rel-checklists">0</div></div>
-              <div class="mc"><div class="lbl">Taxa 100%</div><div class="val up" id="rel-taxa">0%</div></div>
-              <div class="mc"><div class="lbl">Media Geral</div><div class="val" id="rel-media">—</div></div>
-              <div class="mc"><div class="lbl">Operadores Ativos</div><div class="val" id="rel-ops-ativos">0</div></div>
-            </div>
             <div class="card" style="margin-bottom:14px">
               <div class="card-hdr">
                 <div class="card-title">Resumo do Dia — Status por Operador</div>
@@ -483,34 +477,10 @@
               <div class="card-hdr"><div class="card-title">Envios por Dia — Ultimos 7 dias</div></div>
               <div style="position:relative;height:220px"><canvas id="chartEvolDiaria"></canvas></div>
             </div>
-            <div class="g2" style="margin-bottom:14px">
-              <div class="card">
-                <div class="card-hdr" style="flex-direction:column;align-items:flex-start;gap:8px">
-                  <div class="card-title">Ranking por Setor</div>
-                  <div class="tabs" style="margin:0;font-size:12px">
-                    <div class="tab" id="geral-rank-tab-op" onclick="switchGeralRank('op',this)">Operadores</div>
-                    <div class="tab" id="geral-rank-tab-ger" onclick="switchGeralRank('ger',this)">Gerência</div>
-                    <div class="tab on" id="geral-rank-tab-prev" onclick="switchGeralRank('prev',this)">Prevenção</div>
-                  </div>
-                </div>
-                <div id="geral-rank-view-op" style="display:none">
-                  <table><thead><tr><th>#</th><th>Nome</th><th>Enviados</th><th>100%</th><th>Media</th></tr></thead>
-                  <tbody id="rel-ranking-op-tbody"><tr class="erow"><td colspan="5">Nenhum dado</td></tr></tbody></table>
-                </div>
-                <div id="geral-rank-view-ger" style="display:none">
-                  <table><thead><tr><th>#</th><th>Nome</th><th>Enviados</th><th>100%</th><th>Media</th></tr></thead>
-                  <tbody id="rel-ranking-ger-tbody"><tr class="erow"><td colspan="5">Nenhum dado</td></tr></tbody></table>
-                </div>
-                <div id="geral-rank-view-prev">
-                  <table><thead><tr><th>#</th><th>Nome</th><th>Enviados</th><th>100%</th><th>Media</th></tr></thead>
-                  <tbody id="rel-ranking-prev-tbody"><tr class="erow"><td colspan="5">Nenhum dado</td></tr></tbody></table>
-                </div>
-              </div>
-              <div class="card">
-                <div class="card-hdr"><div class="card-title">Checklists com Menor Conclusao</div></div>
-                <table><thead><tr><th>Checklist</th><th>Envios</th><th>Media %</th><th>Alerta</th></tr></thead>
-                <tbody id="rel-problemas-tbody"><tr class="erow"><td colspan="4">Nenhum dado</td></tr></tbody></table>
-              </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Checklists com Menor Conclusao</div></div>
+              <table><thead><tr><th>Checklist</th><th>Envios</th><th>Media %</th><th>Alerta</th></tr></thead>
+              <tbody id="rel-problemas-tbody"><tr class="erow"><td colspan="4">Nenhum dado</td></tr></tbody></table>
             </div>
             <div class="card">
               <div class="card-hdr"><div class="card-title">Desempenho Completo da Equipe</div></div>
@@ -701,7 +671,7 @@
           <div class="tabs" id="rel-corp-subtabs" style="margin-bottom:16px;flex-wrap:wrap">
             <div class="tab on" onclick="switchRelCorpTab('adesao',this)">📋 Adesão</div>
             <div class="tab" onclick="switchRelCorpTab('tendencia',this)">📈 Tendência</div>
-            <div class="tab" onclick="switchRelCorpTab('naoconf',this)">⚠️ Não Conformidades</div>
+            <div class="tab" onclick="switchRelCorpTab('naoconf',this)">⚠️ Não Conf. por Loja</div>
             <div class="tab" onclick="switchRelCorpTab('comparativo',this)">🏪 Comparativo Lojas</div>
             <div class="tab" onclick="switchRelCorpTab('pontualidade',this)">⏰ Pontualidade</div>
             <div class="tab" onclick="switchRelCorpTab('perdasxcl',this)" style="display:none">📉 Perdas×CL</div>

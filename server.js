@@ -1453,12 +1453,13 @@ app.get('/api/precificacao/margens-criticas', async (req, res) => {
       try {
         const rows = await q(`
           SELECT z.Codigo, TRIM(i.Descricao) as descricao,
-                 i.P${ln} as preco, c.Custo as custo
+                 i.P${ln} as preco,
+                 SUM(z.Custo) / NULLIF(SUM(z.QtdNovo), 0) as custo
           FROM \`ln${ln}${mm}\`.zcupomitens z
           INNER JOIN central.itens i ON i.CodigoBarra = z.Codigo AND i.CodDesativado = 0
-          INNER JOIN central.custoloja${ln} c ON c.CodigoBarra = z.Codigo
-          WHERE z.Data = ? AND z.IndCancel = 'N' AND c.Custo > 0
-          GROUP BY z.Codigo, i.Descricao, i.P${ln}, c.Custo
+          WHERE z.Data = ? AND z.IndCancel = 'N'
+          GROUP BY z.Codigo, i.Descricao, i.P${ln}
+          HAVING custo > 0
         `, [hoje]);
         result[ln] = rows
           .map(r => {

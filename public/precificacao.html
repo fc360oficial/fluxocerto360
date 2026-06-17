@@ -74,9 +74,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
 }
 .item.neg{background:rgba(239,68,68,.10);border-left:3px solid var(--red)}
 .item.baixo{background:rgba(249,115,22,.08);border-left:3px solid var(--orange)}
-.item-desc{flex:1;font-size:10px;font-weight:500;color:var(--text2);
+.item-info{flex:1;min-width:0}
+.item-desc{font-size:10px;font-weight:500;color:var(--text2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item-pct{font-size:11px;font-weight:800;min-width:44px;text-align:right}
+.item-cod{font-size:9px;color:var(--text3);font-weight:600;margin-top:1px}
+.item-pct{font-size:11px;font-weight:800;min-width:44px;text-align:right;flex-shrink:0}
 .item.neg .item-pct{color:var(--red)}
 .item.baixo .item-pct{color:var(--orange)}
 
@@ -159,7 +161,10 @@ async function load() {
       } else {
         body = items.map(i => `
           <div class="item ${i.margem < 0 ? 'neg' : 'baixo'}" title="${i.descricao} | R$ ${i.preco.toFixed(2)} | Custo R$ ${i.custo.toFixed(2)}">
-            <span class="item-desc">${i.descricao}</span>
+            <div class="item-info">
+              <div class="item-desc">${i.descricao}</div>
+              <div class="item-cod">${i.codigo}</div>
+            </div>
             <span class="item-pct">${i.margem}%</span>
           </div>`).join('');
       }

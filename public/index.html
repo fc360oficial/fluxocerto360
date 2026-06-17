@@ -215,7 +215,10 @@
     <div class="kpi-card blue">
       <div class="kpi-icon">💰</div>
       <div class="kpi-label">Faturamento do Mês</div>
-      <div class="kpi-value" id="kpi-fat-mes">...</div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <div class="kpi-value" id="kpi-fat-mes">...</div>
+        <span id="kpi-fat-var" style="font-size:13px;font-weight:700"></span>
+      </div>
       <div class="kpi-prog-wrap"><div class="kpi-prog-bar" id="kpi-prog-mes"></div></div>
       <div class="kpi-dias" id="kpi-dias-mes">—</div>
       <div class="kpi-sub" id="kpi-fat-sub">carregando...</div>
@@ -355,6 +358,9 @@ async function carregarKPIs() {
     const pctMes  = +(diaAte / diasNoMes * 100).toFixed(1);
 
     document.getElementById('kpi-fat-mes').textContent = fmt(d.faturamento_mes);
+    const vAnoFat = d.variacao_percentual;
+    document.getElementById('kpi-fat-var').innerHTML =
+      `<span class="${vAnoFat >= 0 ? 'kpi-up' : 'kpi-down'}">${vAnoFat >= 0 ? '▲' : '▼'} ${Math.abs(vAnoFat)}%</span>`;
     document.getElementById('kpi-prog-mes').style.width = pctMes + '%';
     document.getElementById('kpi-dias-mes').textContent = `Dia ${diaAte} de ${diasNoMes} · ${pctMes}% do mês`;
     document.getElementById('kpi-fat-sub').innerHTML =

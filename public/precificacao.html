@@ -57,11 +57,16 @@ header{
 /* GRID */
 .grid{
   display:grid;grid-template-columns:repeat(6,1fr);
-  gap:8px;padding:8px;flex:1;overflow:hidden;min-height:0;
+  gap:8px;padding:8px 8px 52px;flex:1;overflow:hidden;min-height:0;
 }
 .col{
   background:var(--card);border:1px solid var(--border);
   border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;
+  transition:border-color .4s,box-shadow .4s;
+}
+.col.ativo{
+  border-color:rgba(250,204,21,.5);
+  box-shadow:0 0 24px rgba(250,204,21,.12);
 }
 .col-head{
   padding:7px 10px;text-align:center;flex-shrink:0;
@@ -70,9 +75,20 @@ header{
 .col-loja{font-family:'Syne',sans-serif;font-size:14px;font-weight:900;
   color:var(--yellow);letter-spacing:2px;text-transform:uppercase}
 .col-sub{font-size:9px;color:var(--text3);font-weight:600;margin-top:1px}
-.col-body{flex:1;overflow-y:auto;padding:4px;min-height:0}
-.col-body::-webkit-scrollbar{width:2px}
-.col-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:1px}
+.col-body{flex:1;overflow-y:hidden;padding:4px;min-height:0}
+
+/* BARRA MARGEM GERAL */
+.mg-bar{
+  position:fixed;bottom:0;left:0;right:0;height:44px;z-index:500;
+  background:rgba(8,17,31,.96);border-top:1px solid var(--border-md);
+  backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:center;gap:20px;
+}
+.mg-label{font-size:11px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1.5px}
+.mg-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:900;
+  font-variant-numeric:tabular-nums}
+.mg-sub{font-size:10px;color:var(--text3)}
 
 .item{
   display:flex;align-items:center;gap:5px;
@@ -146,6 +162,12 @@ header{
   <div class="loading">Carregando...</div>
 </div>
 
+<div class="mg-bar">
+  <span class="mg-label">Margem Geral do Dia (MSC)</span>
+  <span class="mg-val" id="mg-val">—</span>
+  <span class="mg-sub" id="mg-sub"></span>
+</div>
+
 <script>
 const LOJAS = {1:'Loja 1',2:'Loja 2',3:'Loja 3',4:'Loja 4',5:'Loja 5',6:'Loja 6'};
 
@@ -156,6 +178,40 @@ function tick() {
 }
 setInterval(tick, 1000); tick();
 
+// ── CARROSSEL ──────────────────────────────────────
+const PX_POR_SEG = 18; // velocidade de scroll (px/s)
+let carTimer = null;
+let colBodies = [];
+
+function pararCarrossel() {
+  if (carTimer) { clearInterval(carTimer); carTimer = null; }
+}
+
+function iniciarCarrossel(idx) {
+  pararCarrossel();
+  document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === idx));
+  const body = colBodies[idx];
+  if (!body) return;
+  body.scrollTop = 0;
+  const maxScroll = body.scrollHeight - body.clientHeight;
+
+  if (maxScroll <= 0) {
+    setTimeout(() => iniciarCarrossel((idx + 1) % 6), 2000);
+    return;
+  }
+
+  const tickMs = 50;
+  const pxTick = PX_POR_SEG * tickMs / 1000;
+  carTimer = setInterval(() => {
+    body.scrollTop += pxTick;
+    if (body.scrollTop >= maxScroll - 1) {
+      pararCarrossel();
+      setTimeout(() => iniciarCarrossel((idx + 1) % 6), 1800);
+    }
+  }, tickMs);
+}
+
+// ── LOAD ───────────────────────────────────────────
 async function load() {
   try {
     const r = await fetch('/api/precificacao/margens-criticas');
@@ -163,7 +219,9 @@ async function load() {
 
     let totNeg = 0, totBaixo = 0;
     const grid = document.getElementById('grid');
+    pararCarrossel();
     grid.innerHTML = '';
+    colBodies = [];
 
     for (let ln = 1; ln <= 6; ln++) {
       const items = data[ln] || [];
@@ -198,14 +256,26 @@ async function load() {
           <div class="col-loja">${LOJAS[ln]}</div>
           <div class="col-sub">${neg.length} neg · ${baixo.length} baixo</div>
         </div>
-        <div class="col-body">${body}</div>`;
+        <div class="col-body" id="body-${ln}">${body}</div>`;
       grid.appendChild(col);
+      colBodies.push(col.querySelector('.col-body'));
     }
 
     document.getElementById('tot-neg').textContent   = totNeg;
     document.getElementById('tot-baixo').textContent = totBaixo;
     document.getElementById('tot-total').textContent = totNeg + totBaixo;
     document.getElementById('last-upd').textContent  = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+
+    // Margem geral
+    const resumo = data.resumo || {};
+    const msc = resumo.margemMSC ?? 0;
+    const mgVal = document.getElementById('mg-val');
+    mgVal.textContent = msc.toFixed(1) + '%';
+    mgVal.style.color = msc < 0 ? 'var(--red)' : msc < 20 ? 'var(--orange)' : '#22c55e';
+    document.getElementById('mg-sub').textContent =
+      resumo.totalVenda ? `Vda R$${Number(resumo.totalVenda).toLocaleString('pt-BR',{minimumFractionDigits:2})} · Cst R$${Number(resumo.totalCusto).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '';
+
+    iniciarCarrossel(0);
   } catch(e) {
     document.getElementById('grid').innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
   }

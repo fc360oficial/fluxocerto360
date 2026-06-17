@@ -1473,6 +1473,24 @@ app.get('/api/precificacao/margens-criticas', async (req, res) => {
           .sort((a, b) => a.margem - b.margem);
       } catch(e) { result[ln] = []; }
     }
+    // Margem geral do dia — todos os itens de todas as lojas
+    let totalVenda = 0, totalCusto = 0;
+    for (const ln of [1,2,3,4,5,6]) {
+      try {
+        const [r] = await q(`
+          SELECT SUM(ValorTotalNovo) as venda, SUM(Custo) as custo
+          FROM \`ln${ln}${mm}\`.zcupomitens
+          WHERE Data = ? AND IndCancel = 'N'
+        `, [hoje]);
+        totalVenda += parseFloat(r?.venda || 0);
+        totalCusto += parseFloat(r?.custo  || 0);
+      } catch(e) {}
+    }
+    result.resumo = {
+      margemMSC: totalCusto > 0 ? +((totalVenda - totalCusto) / totalCusto * 100).toFixed(1) : 0,
+      totalVenda: +totalVenda.toFixed(2),
+      totalCusto: +totalCusto.toFixed(2)
+    };
     res.json(result);
   } catch(err) { res.status(500).json({ error: err.message }); }
 });

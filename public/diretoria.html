@@ -93,6 +93,7 @@ header{
 /* ── CHARTS ROW ── */
 .charts-row{
   flex:1;display:grid;grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr;
   gap:8px;padding:0 12px 10px;overflow:hidden;
   position:relative;z-index:1;min-height:0;
 }
@@ -100,7 +101,7 @@ header{
   background:linear-gradient(160deg,var(--card2) 0%,var(--card) 100%);
   border:1px solid var(--border-md);border-radius:var(--r);
   padding:14px 16px;display:flex;flex-direction:column;
-  box-shadow:var(--sh);overflow:hidden;min-height:0;
+  box-shadow:var(--sh);overflow:hidden;
 }
 .chart-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0}
 .chart-icon{font-size:14px}

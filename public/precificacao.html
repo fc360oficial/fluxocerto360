@@ -213,8 +213,13 @@ function proximaCol(idx) {
     aplicarRefresh();
     return;
   }
-  currentIdx = (idx + 1) % colBodies.length;
-  carTimeout = setTimeout(() => iniciarCarrossel(currentIdx, 0), 1800);
+  const proximo = (idx + 1) % colBodies.length;
+  currentIdx = proximo;
+  // Ciclo completo: voltou para a coluna 1 após passar pela 6
+  if (proximo === 0) {
+    try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
+  }
+  carTimeout = setTimeout(() => iniciarCarrossel(proximo, 0), 1800);
 }
 
 function iniciarCarrossel(idx, startAt) {

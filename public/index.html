@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Economico Relatórios</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #F9C200;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { height: 46px; width: auto; display: block; }
+  .logo h1 { font-size: 20px; font-weight: 700; color: #F9C200; letter-spacing: 1px; text-transform: uppercase; }
+  .logo span { font-size: 12px; color: #94a3b8; display: block; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .datetime { text-align: right; font-size: 13px; color: #94a3b8; }
+  .datetime strong { display: block; font-size: 15px; color: #F9C200; }
+  .btn-refresh {
+    background: #F9C200; border: none; color: #0f0f1a; padding: 8px 16px;
+    border-radius: 6px; cursor: pointer; font-size: 13px; display: flex;
+    align-items: center; gap: 6px; transition: background 0.2s; font-weight: 800;
+  }
+  .btn-refresh:hover { background: #e0ae00; }
+  .btn-refresh.loading { opacity: 0.6; pointer-events: none; }
+  .nav-links { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
+  .nav-links a { color: #F9C200; text-decoration: none; font-size: 12px; padding: 6px 12px; border-radius: 5px; border: 1px solid #F9C200; transition: all 0.15s; font-weight: 600; white-space: nowrap; }
+  .nav-links a:hover { background: #F9C200; color: #0f0f1a; }
+
+  main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+  /* Filtros KPI */
+  .kpi-filters {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .kpi-filters label { font-size: 12px; color: #64748b; }
+  .kpi-filters select {
+    background: #1e293b; border: 1px solid #334155; color: #e2e8f0;
+    padding: 7px 12px; border-radius: 7px; font-size: 13px; cursor: pointer; outline: none;
+  }
+  .kpi-filters select:focus { border-color: #3b82f6; }
+  .kpi-filter-tag {
+    font-size: 11px; background: #1e3a8a; color: #93c5fd;
+    padding: 3px 10px; border-radius: 20px; font-weight: 600;
+  }
+
+  /* KPI Cards */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: #1e293b; border-radius: 12px; padding: 20px 24px;
+    border: 1px solid #334155; position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; border-radius: 12px 12px 0 0;
+  }
+  .kpi-card.blue::before { background: #3b82f6; }
+  .kpi-card.green::before { background: #10b981; }
+  .kpi-card.amber::before { background: #f59e0b; }
+  .kpi-card.purple::before { background: #8b5cf6; }
+  .kpi-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: #f1f5f9; }
+  .kpi-sub { font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+  .kpi-up { color: #10b981; }
+  .kpi-down { color: #ef4444; }
+  .kpi-icon { position: absolute; right: 20px; top: 20px; font-size: 28px; opacity: 0.15; }
+
+  /* Charts Grid */
+  .charts-row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .charts-row.two { grid-template-columns: 2fr 1fr; }
+  .charts-row.one { grid-template-columns: 1fr; }
+  .charts-row.two-equal { grid-template-columns: 1fr 1fr; }
+
+  .chart-card {
+    background: #1e293b; border-radius: 12px; padding: 20px 24px;
+    border: 1px solid #334155;
+  }
+  .chart-title {
+    font-size: 14px; font-weight: 600; color: #e2e8f0;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+  }
+  .chart-subtitle { font-size: 12px; color: #64748b; margin-bottom: 16px; }
+  .chart-wrap { position: relative; min-height: 280px; }
+  .chart-wrap canvas { max-height: 280px; }
+  .chart-wrap.tall { min-height: 320px; }
+  .chart-wrap.tall canvas { max-height: 320px; }
+
+  .loading-overlay {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: #475569; font-size: 13px; gap: 8px;
+  }
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid #334155;
+    border-top-color: #3b82f6; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-blue { background: #1e3a8a; color: #93c5fd; }
+  .badge-green { background: #064e3b; color: #6ee7b7; }
+
+  @media (max-width: 1024px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row.two, .charts-row.two-equal { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    header { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+    .logo-icon { height: 34px; }
+    .logo h1 { font-size: 15px; letter-spacing: 0.5px; }
+    .logo span { font-size: 10px; }
+    .header-right { width: 100%; flex-direction: column; gap: 8px; align-items: stretch; }
+    .nav-links { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .nav-links a { font-size: 11px; padding: 8px 6px; text-align: center; border-radius: 8px; }
+    .datetime { display: none; }
+    #refresh-countdown { display: none; }
+    .btn-refresh { width: 100%; justify-content: center; padding: 9px; font-size: 13px; border-radius: 8px; }
+    main { padding: 12px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi-card { padding: 14px 16px; }
+    .kpi-label { font-size: 10px; }
+    .kpi-value { font-size: 21px; }
+    .kpi-sub { font-size: 11px; }
+    .kpi-icon { font-size: 22px; right: 12px; top: 12px; }
+    .kpi-filters { gap: 6px; }
+    .kpi-filters select { font-size: 16px; padding: 6px 8px; }
+    .chart-card { padding: 14px 16px; }
+    .chart-title { font-size: 13px; }
+    .chart-wrap canvas { max-height: 220px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img src="/logo.png" class="logo-icon" alt="Econômico" style="filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+    <div>
+      <h1>ECONOMICO RELATÓRIOS</h1>
+      <span>Análise de Vendas em Tempo Real</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <nav class="nav-links">
+      <a href="/consulta.html">🔍 Consulta Vendas</a>
+      <a href="/itens.html">📂 Mercadológico</a>
+
+      <a href="/fornecedores.html">📋 Lista de Compra</a>
+      <a href="/pendencias.html">⚠️ Pendências</a>
+      <span style="width:1px;height:18px;background:#334155;display:inline-block;margin:0 4px"></span>
+      <a href="/compras.html" style="color:#F9C200;border-color:rgba(249,194,0,.4);background:rgba(249,194,0,.07)">📊 Painéis</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+      <span style="color:#64748b" id="hdr-user">👤 ...</span>
+      <a href="/api/logout" style="color:#f87171;font-weight:700;text-decoration:none;border:1px solid #7f1d1d;padding:5px 10px;border-radius:6px;background:#450a0a22;transition:background .15s" onmouseover="this.style.background='#450a0a'" onmouseout="this.style.background='#450a0a22'">🚪 Sair</a>
+    </div>
+    <div class="datetime">
+      <strong id="clock">--:--:--</strong>
+      <span id="date-display"></span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <button class="btn-refresh" id="btn-refresh" onclick="carregarTudo()">
+        <span>↺</span> Atualizar
+      </button>
+      <span id="refresh-countdown" style="font-size:10px;color:#64748b">↺ 180:00</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Filtros dos KPIs -->
+  <div class="kpi-filters">
+    <label>Loja:</label>
+    <select id="fil-loja" onchange="carregarKPIs(); carregarProdutosSemana(); carregarFaturamentoMensal(); carregarTopVendidos(); carregarFormasPagamento(); carregarMercadologico()">
+      <option value="todas">Todas as Lojas</option>
+      <option value="1">Loja 1</option>
+      <option value="2">Loja 2</option>
+      <option value="3">Loja 3</option>
+      <option value="4">Loja 4</option>
+      <option value="5">Loja 5</option>
+      <option value="6">Loja 6</option>
+    </select>
+    <label>Mês:</label>
+    <select id="fil-mes" onchange="carregarKPIs(); carregarTopVendidos(); carregarFormasPagamento(); carregarMercadologico()">
+      <option value="1">Janeiro</option>
+      <option value="2">Fevereiro</option>
+      <option value="3">Março</option>
+      <option value="4">Abril</option>
+      <option value="5">Maio</option>
+      <option value="6">Junho</option>
+      <option value="7">Julho</option>
+      <option value="8">Agosto</option>
+      <option value="9">Setembro</option>
+      <option value="10">Outubro</option>
+      <option value="11">Novembro</option>
+      <option value="12">Dezembro</option>
+    </select>
+    <span class="kpi-filter-tag" id="kpi-filter-tag">Todas · Mês atual</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Faturamento do Mês</div>
+      <div class="kpi-value" id="kpi-fat-mes">...</div>
+      <div class="kpi-sub" id="kpi-fat-sub">carregando...</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Mês Anterior</div>
+      <div class="kpi-value" id="kpi-fat-ant">...</div>
+      <div class="kpi-sub" id="kpi-variacao">variação</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-label">Ticket Médio</div>
+      <div class="kpi-value" id="kpi-ticket-medio">...</div>
+      <div class="kpi-sub" style="color:#94a3b8" id="kpi-ticket-sub">cupons do mês</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Margem S/V — NFC-e</div>
+      <div class="kpi-value" id="kpi-margem-sc">...</div>
+      <div class="kpi-sub" style="color:#94a3b8" id="kpi-margem-sv-sub">S/C: ...%</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Produtos Semana + Formas Pagamento -->
+  <div class="charts-row two">
+    <div class="chart-card">
+      <div class="chart-title">🏆 Top Produtos Mais Vendidos <span class="badge badge-blue">Semana</span></div>
+      <div class="chart-subtitle">Quantidade vendida nos últimos 7 dias</div>
+      <div class="chart-wrap" id="wrap-semana">
+        <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💳 Formas de Pagamento <span class="badge badge-blue" id="badge-pagto">2026</span></div>
+      <div class="chart-subtitle">Distribuição do faturamento por tipo</div>
+      <div class="chart-wrap" id="wrap-pagto">
+        <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Faturamento Mensal -->
+  <div class="charts-row one">
+    <div class="chart-card">
+      <div class="chart-title">📅 Faturamento Mensal <span class="badge badge-green">2026</span></div>
+      <div class="chart-subtitle">Evolução do faturamento mês a mês no ano atual</div>
+      <div class="chart-wrap" id="wrap-mensal">
+        <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Faturamento por Loja -->
+  <div class="charts-row one">
+    <div class="chart-card">
+      <div class="chart-title">🏪 Faturamento por Loja <span class="badge badge-blue">Mês a Mês</span></div>
+      <div class="chart-subtitle">Evolução mensal do faturamento separado por loja</div>
+      <div class="chart-wrap tall" id="wrap-lojas">
+        <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Top Vendidos + Mercadológico -->
+  <div class="charts-row one">
+    <div class="chart-card">
+      <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>🏆 Top 10 Produtos Mais Vendidos <span class="badge badge-green" id="badge-top-vendidos">Mês · Loja</span></span>
+        <div style="display:flex;gap:4px">
+          <button id="btn-top-qtd" onclick="setModoTop('qtd')" style="border:1px solid #F9C200;background:#F9C200;color:#0f0f1a;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Qtd</button>
+          <button id="btn-top-val" onclick="setModoTop('val')" style="border:1px solid #334155;background:transparent;color:#64748b;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Valor R$</button>
+        </div>
+      </div>
+      <div class="chart-subtitle" id="sub-top-vendidos">Quantidade vendida no mês e loja selecionados</div>
+      <div class="chart-wrap tall" id="wrap-top-vendidos">
+        <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 5: Ranking Mercadológico -->
+  <div class="charts-row one">
+    <div class="chart-card">
+      <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>📂 Top 15 Mercadológico <span class="badge badge-blue" id="badge-merc">Mês · Loja</span></span>
+        <div style="display:flex;gap:4px">
+          <button id="btn-merc-val" onclick="setModoMerc('val')" style="border:1px solid #F9C200;background:#F9C200;color:#0f0f1a;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Valor R$</button>
+          <button id="btn-merc-qtd" onclick="setModoMerc('qtd')" style="border:1px solid #334155;background:transparent;color:#64748b;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Qtd</button>
+        </div>
+      </div>
+      <div class="chart-subtitle">Faturamento por grupo mercadológico no mês e loja selecionados</div>
+      <div class="chart-wrap tall" id="wrap-merc">
+        <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="/chart.min.js"></script>
+<script>
+const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }).format(v);
+const fmtN = v => new Intl.NumberFormat('pt-BR').format(v);
+
+const charts = {};
+
+function loading(id) {
+  document.getElementById(id).innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Carregando...</div>';
+}
+
+function erro(id, msg) {
+  document.getElementById(id).innerHTML = `<div class="loading-overlay" style="color:#ef4444">⚠ ${msg}</div>`;
+}
+
+const mesesNomes = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+async function carregarKPIs() {
+  const loja = document.getElementById('fil-loja').value;
+  const mes = document.getElementById('fil-mes').value;
+
+  // Atualizar tag de filtro
+  const lojaLabel = loja === 'todas' ? 'Todas as Lojas' : 'Loja ' + loja;
+  document.getElementById('kpi-filter-tag').textContent = lojaLabel + ' · ' + mesesNomes[parseInt(mes)];
+
+  try {
+    const r = await fetch(`/api/kpis?loja=${loja}&mes=${mes}`);
+    const d = await r.json();
+    if (d.error) return;
+
+    document.getElementById('kpi-fat-mes').textContent = fmt(d.faturamento_mes);
+    document.getElementById('kpi-fat-ant').textContent = fmt(d.faturamento_anterior);
+    document.getElementById('kpi-ticket-medio').textContent = fmt(d.ticket_medio);
+    document.getElementById('kpi-ticket-sub').textContent = fmtN(d.total_cupons) + ' cupons no mês';
+    document.getElementById('kpi-margem-sc').textContent = (d.margem_sv ?? 0).toFixed(1) + '%';
+    document.getElementById('kpi-margem-sv-sub').textContent = 'S/C: ' + (d.margem_sc ?? 0).toFixed(1) + '%';
+
+    const v = d.variacao_percentual;
+    const el = document.getElementById('kpi-variacao');
+    const mesPrevNome = mesesNomes[parseInt(mes) === 1 ? 12 : parseInt(mes) - 1];
+    el.innerHTML = `<span class="${v >= 0 ? 'kpi-up' : 'kpi-down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v)}%</span> vs ${mesPrevNome}`;
+
+    document.getElementById('kpi-fat-sub').innerHTML =
+      `<span style="color:#64748b">${mesesNomes[parseInt(mes)]} · ${lojaLabel}</span>`;
+  } catch(e) {}
+}
+
+async function carregarProdutosSemana() {
+  const wid = 'wrap-semana';
+  loading(wid);
+  try {
+    const loja = document.getElementById('fil-loja').value;
+    const r = await fetch(`/api/produtos-semana?loja=${loja}`);
+    const data = await r.json();
+    if (!data.length) { erro(wid, 'Sem dados para esta semana'); return; }
+
+    const labels = data.map(d => d.descricao?.substring(0, 25) || d.codigobarras);
+    const values = data.map(d => d.total_semana);
+
+    const canvas = document.createElement('canvas');
+    document.getElementById(wid).innerHTML = '';
+    document.getElementById(wid).appendChild(canvas);
+
+    if (charts.semana) charts.semana.destroy();
+    charts.semana = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Qtd Vendida',
+          data: values,
+          backgroundColor: values.map((_, i) => `hsla(${210 + i * 8}, 80%, 60%, 0.85)`),
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${fmtN(ctx.raw)} unidades` } }
+        },
+        scales: {
+          x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+          y: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { size: 11 } } }
+        }
+      }
+    });
+  } catch (e) { erro(wid, 'Erro ao carregar'); }
+}
+
+async function carregarFaturamentoMensal() {
+  const wid = 'wrap-mensal';
+  loading(wid);
+  try {
+    const loja = document.getElementById('fil-loja').value;
+    const r = await fetch(`/api/faturamento-mensal?loja=${loja}`);
+    const data = await r.json();
+    if (!data.length) { erro(wid, 'Sem dados de faturamento'); return; }
+
+    const canvas = document.createElement('canvas');
+    document.getElementById(wid).innerHTML = '';
+    document.getElementById(wid).appendChild(canvas);
+
+    if (charts.mensal) charts.mensal.destroy();
+    charts.mensal = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.mes),
+        datasets: [{
+          label: 'Faturamento',
+          data: data.map(d => d.total),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.12)',
+          pointBackgroundColor: '#3b82f6',
+          pointRadius: 5,
+          tension: 0.4,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } }
+        },
+        scales: {
+          x: { grid: { color: '#1e293b44' }, ticks: { color: '#94a3b8' } },
+          y: {
+            grid: { color: '#1e293b' }, ticks: {
+              color: '#94a3b8',
+              callback: v => 'R$ ' + (v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v)
+            }
+          }
+        }
+      }
+    });
+  } catch (e) { erro(wid, 'Erro ao carregar'); }
+}
+
+async function carregarFaturamentoLojas() {
+  const wid = 'wrap-lojas';
+  loading(wid);
+  try {
+    const r = await fetch('/api/faturamento-lojas');
+    const d = await r.json();
+    if (d.error || !d.meses?.length) { erro(wid, d.error || 'Sem dados por loja'); return; }
+
+    const coresLojas = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+    const nomesLojas = ['Loja 1','Loja 2','Loja 3','Loja 4','Loja 5','Loja 6'];
+
+    const datasets = d.lojas.map((ln, idx) => ({
+      label: nomesLojas[idx],
+      data: d.meses.map(m => d.dados[m]?.[ln] || 0),
+      backgroundColor: coresLojas[idx] + 'cc',
+      borderColor: coresLojas[idx],
+      borderWidth: 1,
+      borderRadius: 4,
+      borderSkipped: false,
+    }));
+
+    const canvas = document.createElement('canvas');
+    document.getElementById(wid).innerHTML = '';
+    document.getElementById(wid).appendChild(canvas);
+
+    if (charts.lojas) charts.lojas.destroy();
+    charts.lojas = new Chart(canvas, {
+      type: 'bar',
+      data: { labels: d.meses, datasets },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12, boxWidth: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` } }
+        },
+        scales: {
+          x: { grid: { color: '#1e293b44' }, ticks: { color: '#94a3b8' } },
+          y: {
+            grid: { color: '#1e293b' },
+            ticks: {
+              color: '#94a3b8',
+              callback: v => 'R$ ' + (v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v)
+            }
+          }
+        }
+      }
+    });
+  } catch (e) { erro(wid, 'Erro ao carregar'); }
+}
+
+let _topData = [];
+let _topModo = 'qtd';
+
+function setModoTop(modo) {
+  _topModo = modo;
+  const ativo   = 'border:1px solid #F9C200;background:#F9C200;color:#0f0f1a;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer';
+  const inativo = 'border:1px solid #334155;background:transparent;color:#64748b;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer';
+  document.getElementById('btn-top-qtd').style.cssText = modo==='qtd' ? ativo : inativo;
+  document.getElementById('btn-top-val').style.cssText = modo==='val' ? ativo : inativo;
+  renderTopVendidos(_topData);
+}
+
+function renderTopVendidos(data) {
+  const wid = 'wrap-top-vendidos';
+  const isVal = _topModo === 'val';
+  const sorted = [...data].sort((a,b) => isVal ? b.faturamento - a.faturamento : b.qtd - a.qtd);
+
+  document.getElementById('sub-top-vendidos').textContent = isVal
+    ? 'Faturamento em R$ no mês e loja selecionados'
+    : 'Quantidade vendida no mês e loja selecionados';
+
+  const canvas = document.createElement('canvas');
+  document.getElementById(wid).innerHTML = '';
+  document.getElementById(wid).appendChild(canvas);
+
+  if (charts.topVendidos) charts.topVendidos.destroy();
+  charts.topVendidos = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(d => d.descricao),
+      datasets: [{
+        label: isVal ? 'Faturamento' : 'Qtd Vendida',
+        data: sorted.map(d => isVal ? d.faturamento : d.qtd),
+        backgroundColor: sorted.map((_, i) => `hsla(${210 + i * 8}, 80%, 60%, 0.85)`),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const d = sorted[ctx.dataIndex];
+            return isVal
+              ? [` ${fmt(ctx.raw)}`, ` ${fmtN(d.qtd)} unidades`]
+              : [` ${fmtN(ctx.raw)} unidades`, ` ${fmt(d.faturamento)}`];
+          }
+        }}
+      },
+      scales: {
+        x: {
+          grid: { color: '#1e293b' },
+          ticks: { color: '#94a3b8', callback: v => isVal ? 'R$'+fmtN(v) : fmtN(v) }
+        },
+        y: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+async function carregarTopVendidos() {
+  const wid = 'wrap-top-vendidos';
+  loading(wid);
+  try {
+    const loja = document.getElementById('fil-loja').value;
+    const mes  = document.getElementById('fil-mes').value;
+    const lojaLabel = loja === 'todas' ? 'Todas' : 'Loja ' + loja;
+    document.getElementById('badge-top-vendidos').textContent = mesesNomes[parseInt(mes)] + ' · ' + lojaLabel;
+    const ano = new Date().getFullYear();
+    const r = await fetch(`/api/top-vendidos?loja=${loja}&mes=${mes}&ano=${ano}`);
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) { erro(wid, 'Sem dados para este período'); return; }
+    _topData = data;
+    renderTopVendidos(data);
+  } catch (e) { erro(wid, 'Erro ao carregar'); }
+}
+
+async function carregarFormasPagamento() {
+  const wid = 'wrap-pagto';
+  loading(wid);
+  try {
+    const loja = document.getElementById('fil-loja').value;
+    const mes  = document.getElementById('fil-mes').value;
+    const ano  = new Date().getFullYear();
+    const mesesNomes = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const badge = document.getElementById('badge-pagto');
+    if (badge) badge.textContent = `${mesesNomes[+mes]}/${ano}`;
+    const r = await fetch(`/api/formas-pagamento?loja=${loja}&mes=${mes}&ano=${ano}`);
+    const data = await r.json();
+    if (!data.length) { erro(wid, 'Sem dados'); return; }
+
+    const cores = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899'];
+
+    const canvas = document.createElement('canvas');
+    document.getElementById(wid).innerHTML = '';
+    document.getElementById(wid).appendChild(canvas);
+
+    if (charts.pagto) charts.pagto.destroy();
+    charts.pagto = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: data.map(d => d.tipo),
+        datasets: [{
+          data: data.map(d => d.total),
+          backgroundColor: cores,
+          borderColor: '#1e293b',
+          borderWidth: 3,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12, boxWidth: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)} (${(ctx.parsed / ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1)}%)` } }
+        }
+      }
+    });
+  } catch (e) { erro(wid, 'Erro ao carregar'); }
+}
+
+async function carregarTudo() {
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('loading');
+  btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Atualizando...';
+  try {
+    await Promise.all([
+      carregarKPIs(),
+      carregarProdutosSemana(),
+      carregarFaturamentoMensal(),
+      carregarFaturamentoLojas(),
+      carregarTopVendidos(),
+      carregarFormasPagamento(),
+      carregarMercadologico(),
+    ]);
+    ultimaAtualizacao = Date.now();
+  } catch(e) {
+    console.error('carregarTudo erro:', e);
+  } finally {
+    btn.classList.remove('loading');
+    btn.innerHTML = '<span>↺</span> Atualizar';
+  }
+}
+
+// ── MERCADOLÓGICO ─────────────────────────────────
+let _mercData = [];
+let _mercModo = 'val';
+
+function setModoMerc(modo) {
+  _mercModo = modo;
+  const at = 'border:1px solid #F9C200;background:#F9C200;color:#0f0f1a;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer';
+  const in_ = 'border:1px solid #334155;background:transparent;color:#64748b;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer';
+  document.getElementById('btn-merc-val').style.cssText = modo==='val' ? at : in_;
+  document.getElementById('btn-merc-qtd').style.cssText = modo==='qtd' ? at : in_;
+  renderMercadologico(_mercData);
+}
+
+function renderMercadologico(data) {
+  const wid = 'wrap-merc';
+  const isVal = _mercModo === 'val';
+  const sorted = [...data].sort((a,b) => isVal ? b.valor - a.valor : b.qtd - a.qtd);
+  const canvas = document.createElement('canvas');
+  document.getElementById(wid).innerHTML = '';
+  document.getElementById(wid).appendChild(canvas);
+  if (charts.merc) charts.merc.destroy();
+  charts.merc = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(d => d.descricao),
+      datasets: [{
+        label: isVal ? 'Faturamento' : 'Qtd',
+        data: sorted.map(d => isVal ? d.valor : d.qtd),
+        backgroundColor: sorted.map((_, i) => i === 0 ? '#F9C200' : `hsla(${200 + i * 10}, 70%, 55%, 0.8)`),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => {
+            const d = sorted[ctx.dataIndex];
+            return isVal
+              ? [` ${fmt(ctx.raw)}`, ` ${fmtN(d.qtd)} unidades`]
+              : [` ${fmtN(ctx.raw)} unidades`, ` ${fmt(d.valor)}`];
+          }
+        }}
+      },
+      scales: {
+        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', callback: v => isVal ? 'R$'+fmtN(v) : fmtN(v) } },
+        y: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+async function carregarMercadologico() {
+  const wid = 'wrap-merc';
+  loading(wid);
+  try {
+    const loja = document.getElementById('fil-loja').value;
+    const mes  = document.getElementById('fil-mes').value;
+    const ano  = new Date().getFullYear();
+    const lojaLabel = loja === 'todas' ? 'Todas' : 'Loja ' + loja;
+    document.getElementById('badge-merc').textContent = mesesNomes[parseInt(mes)] + ' · ' + lojaLabel;
+    const r = await fetch(`/api/top-mercadologico?loja=${loja}&mes=${mes}&ano=${ano}`);
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) { erro(wid, 'Sem dados'); return; }
+    _mercData = data;
+    renderMercadologico(data);
+  } catch(e) { erro(wid, 'Erro ao carregar'); }
+}
+
+// ── CLOCK & AUTO-REFRESH ──────────────────────────
+let ultimaAtualizacao = Date.now();
+const INTERVALO_MS = 180 * 60 * 1000; // 180 minutos
+
+function atualizarRelogio() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('pt-BR');
+  document.getElementById('date-display').textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  // Contador regressivo
+  const restante = Math.max(0, INTERVALO_MS - (Date.now() - ultimaAtualizacao));
+  const mm = String(Math.floor(restante / 60000)).padStart(2,'0');
+  const ss = String(Math.floor((restante % 60000) / 1000)).padStart(2,'0');
+  const el = document.getElementById('refresh-countdown');
+  if (el) el.textContent = `↺ ${mm}:${ss}`;
+}
+setInterval(atualizarRelogio, 1000);
+atualizarRelogio();
+setInterval(() => { ultimaAtualizacao = Date.now(); carregarTudo(); }, INTERVALO_MS);
+
+document.getElementById('fil-mes').value = new Date().getMonth() + 1;
+
+carregarTudo();
+fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('hdr-user').textContent='👤 '+u.nome}).catch(()=>{});
+</script>
+</body>
+</html>

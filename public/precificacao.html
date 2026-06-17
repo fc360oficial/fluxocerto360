@@ -194,25 +194,33 @@ function tick() {
 setInterval(tick, 1000); tick();
 
 // ── CARROSSEL ──────────────────────────────────────
-const PX_POR_SEG = 18; // velocidade de scroll (px/s)
+const PX_POR_SEG = 18;
 let carTimer = null;
+let carTimeout = null;
 let colBodies = [];
 
 function pararCarrossel() {
-  if (carTimer) { clearInterval(carTimer); carTimer = null; }
+  if (carTimer)   { clearInterval(carTimer);  carTimer = null; }
+  if (carTimeout) { clearTimeout(carTimeout); carTimeout = null; }
+}
+
+function proximaCol(idx) {
+  carTimeout = setTimeout(() => iniciarCarrossel((idx + 1) % colBodies.length), 1800);
 }
 
 function iniciarCarrossel(idx) {
   pararCarrossel();
+  const total = colBodies.length;
+  if (!total) return;
   document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === idx));
-  colBodies.forEach((b, i) => { if (i !== idx) b.scrollTop = 0; });
+  colBodies.forEach((b, i) => { if (b && i !== idx) b.scrollTop = 0; });
   const body = colBodies[idx];
-  if (!body) return;
+  if (!body) { proximaCol(idx); return; }
   body.scrollTop = 0;
   const maxScroll = body.scrollHeight - body.clientHeight;
 
   if (maxScroll <= 0) {
-    setTimeout(() => iniciarCarrossel((idx + 1) % 6), 2000);
+    proximaCol(idx);
     return;
   }
 
@@ -222,7 +230,7 @@ function iniciarCarrossel(idx) {
     body.scrollTop += pxTick;
     if (body.scrollTop >= maxScroll - 1) {
       pararCarrossel();
-      setTimeout(() => iniciarCarrossel((idx + 1) % 6), 1800);
+      proximaCol(idx);
     }
   }, tickMs);
 }

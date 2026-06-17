@@ -79,16 +79,29 @@ header{
 
 /* BARRA MARGEM GERAL */
 .mg-bar{
-  position:fixed;bottom:0;left:0;right:0;height:44px;z-index:500;
+  position:fixed;bottom:0;left:0;right:0;height:48px;z-index:500;
   background:rgba(8,17,31,.96);border-top:1px solid var(--border-md);
   backdrop-filter:blur(12px);
-  display:flex;align-items:center;justify-content:center;gap:20px;
+  display:flex;align-items:center;gap:0;
 }
-.mg-label{font-size:11px;font-weight:700;color:var(--text3);
-  text-transform:uppercase;letter-spacing:1.5px}
-.mg-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:900;
-  font-variant-numeric:tabular-nums}
-.mg-sub{font-size:10px;color:var(--text3)}
+.mg-geral{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 20px;border-right:1px solid var(--border-md);height:100%;flex-shrink:0;
+}
+.mg-geral-label{font-size:9px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1px}
+.mg-geral-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:900;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.mg-lojas{display:grid;grid-template-columns:repeat(6,1fr);flex:1;height:100%}
+.mg-loja{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-right:1px solid var(--border);
+}
+.mg-loja:last-child{border-right:none}
+.mg-loja-nome{font-size:9px;color:var(--text3);font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px}
+.mg-loja-val{font-family:'Syne',sans-serif;font-size:17px;font-weight:900;
+  font-variant-numeric:tabular-nums;line-height:1.1}
 
 .item{
   display:flex;align-items:center;gap:5px;
@@ -163,9 +176,11 @@ header{
 </div>
 
 <div class="mg-bar">
-  <span class="mg-label">Margem Geral do Dia (MSC)</span>
-  <span class="mg-val" id="mg-val">—</span>
-  <span class="mg-sub" id="mg-sub"></span>
+  <div class="mg-geral">
+    <div class="mg-geral-label">MSC Geral</div>
+    <div class="mg-geral-val" id="mg-val">—</div>
+  </div>
+  <div class="mg-lojas" id="mg-lojas"></div>
 </div>
 
 <script>
@@ -266,14 +281,22 @@ async function load() {
     document.getElementById('tot-total').textContent = totNeg + totBaixo;
     document.getElementById('last-upd').textContent  = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
 
-    // Margem geral
+    // Margem geral + por loja
     const resumo = data.resumo || {};
     const msc = resumo.margemMSC ?? 0;
     const mgVal = document.getElementById('mg-val');
     mgVal.textContent = msc.toFixed(1) + '%';
     mgVal.style.color = msc < 0 ? 'var(--red)' : msc < 20 ? 'var(--orange)' : '#22c55e';
-    document.getElementById('mg-sub').textContent =
-      resumo.totalVenda ? `Vda R$${Number(resumo.totalVenda).toLocaleString('pt-BR',{minimumFractionDigits:2})} · Cst R$${Number(resumo.totalCusto).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '';
+
+    const mgLojas = document.getElementById('mg-lojas');
+    mgLojas.innerHTML = [1,2,3,4,5,6].map(ln => {
+      const d = resumo.porLoja?.[ln] || { msc: 0 };
+      const cor = d.msc < 0 ? 'var(--red)' : d.msc < 20 ? 'var(--orange)' : '#22c55e';
+      return `<div class="mg-loja">
+        <div class="mg-loja-nome">Loja ${ln}</div>
+        <div class="mg-loja-val" style="color:${cor}">${d.msc.toFixed(1)}%</div>
+      </div>`;
+    }).join('');
 
     iniciarCarrossel(0);
   } catch(e) {

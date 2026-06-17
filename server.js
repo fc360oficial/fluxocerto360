@@ -1473,8 +1473,9 @@ app.get('/api/precificacao/margens-criticas', async (req, res) => {
           .sort((a, b) => a.margem - b.margem);
       } catch(e) { result[ln] = []; }
     }
-    // Margem geral do dia — todos os itens de todas as lojas
+    // Margem geral e por loja
     let totalVenda = 0, totalCusto = 0;
+    const porLoja = {};
     for (const ln of [1,2,3,4,5,6]) {
       try {
         const [r] = await q(`
@@ -1482,14 +1483,18 @@ app.get('/api/precificacao/margens-criticas', async (req, res) => {
           FROM \`ln${ln}${mm}\`.zcupomitens
           WHERE Data = ? AND IndCancel = 'N'
         `, [hoje]);
-        totalVenda += parseFloat(r?.venda || 0);
-        totalCusto += parseFloat(r?.custo  || 0);
-      } catch(e) {}
+        const v = parseFloat(r?.venda || 0);
+        const c = parseFloat(r?.custo  || 0);
+        totalVenda += v;
+        totalCusto += c;
+        porLoja[ln] = { msc: c > 0 ? +((v - c) / c * 100).toFixed(1) : 0, venda: +v.toFixed(2), custo: +c.toFixed(2) };
+      } catch(e) { porLoja[ln] = { msc: 0, venda: 0, custo: 0 }; }
     }
     result.resumo = {
       margemMSC: totalCusto > 0 ? +((totalVenda - totalCusto) / totalCusto * 100).toFixed(1) : 0,
       totalVenda: +totalVenda.toFixed(2),
-      totalCusto: +totalCusto.toFixed(2)
+      totalCusto: +totalCusto.toFixed(2),
+      porLoja
     };
     res.json(result);
   } catch(err) { res.status(500).json({ error: err.message }); }

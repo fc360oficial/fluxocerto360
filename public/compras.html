@@ -3,303 +3,356 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Execução de Compras — FC360</title>
+<title>Central de Compras — FC360</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-:root {
-  --bg: #08111F; --bg2: #0B1220;
-  --card: #121B2E; --card2: #172033;
-  --brand: #FACC15; --brand2: #FFC72C;
-  --brand-glow: rgba(250,204,21,.18); --brand-dim: rgba(250,204,21,.08);
-  --green: #22C55E; --green-bg: rgba(34,197,94,.10); --green-glow: rgba(34,197,94,.30);
-  --amber: #F59E0B; --amber-bg: rgba(245,158,11,.10); --amber-glow: rgba(245,158,11,.30);
-  --red: #EF4444; --red-bg: rgba(239,68,68,.10); --red-glow: rgba(239,68,68,.30);
-  --blue: #3B82F6; --blue-bg: rgba(59,130,246,.10);
-  --text: #FFFFFF; --text2: #94A3B8; --text3: #64748B;
-  --border: rgba(255,255,255,.06); --border-md: rgba(255,255,255,.10);
-  --radius: 20px; --radius-sm: 12px;
-  --shadow: 0 8px 32px rgba(0,0,0,.35); --shadow-lg: 0 20px 60px rgba(0,0,0,.50);
-  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#08111F;--bg2:#0B1220;
+  --card:#121B2E;--card2:#172033;
+  --brand:#FACC15;--brand2:#FFC72C;
+  --brand-glow:rgba(250,204,21,.20);--brand-dim:rgba(250,204,21,.08);
+  --green:#22C55E;--green-bg:rgba(34,197,94,.12);--green-glow:rgba(34,197,94,.35);
+  --amber:#F59E0B;--amber-bg:rgba(245,158,11,.12);--amber-glow:rgba(245,158,11,.35);
+  --red:#EF4444;--red-bg:rgba(239,68,68,.12);--red-glow:rgba(239,68,68,.35);
+  --blue:#3B82F6;--blue-bg:rgba(59,130,246,.12);
+  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
+  --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);--border-hi:rgba(255,255,255,.16);
+  --r:20px;--r-sm:12px;--r-xs:8px;
+  --sh:0 8px 32px rgba(0,0,0,.35);--sh-lg:0 20px 60px rgba(0,0,0,.55);
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
 }
-
-html, body { height:100%; overflow:hidden; }
-body { font-family:var(--font); background:var(--bg); color:var(--text); }
-body::before {
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text)}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(ellipse 50% 60% at 8% 50%, rgba(59,130,246,.04) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 92% 15%, rgba(250,204,21,.04) 0%, transparent 60%),
-    radial-gradient(ellipse 30% 50% at 50% 100%, rgba(34,197,94,.03) 0%, transparent 50%);
+    radial-gradient(ellipse 55% 70% at 5% 50%,rgba(59,130,246,.04) 0%,transparent 60%),
+    radial-gradient(ellipse 45% 45% at 95% 10%,rgba(250,204,21,.05) 0%,transparent 60%),
+    radial-gradient(ellipse 35% 55% at 50% 105%,rgba(34,197,94,.03) 0%,transparent 50%),
+    radial-gradient(ellipse 25% 35% at 80% 80%,rgba(239,68,68,.03) 0%,transparent 50%);
 }
 
-/* ══ HEADER ══ */
-header {
-  position:relative; z-index:100; height:80px;
-  background:linear-gradient(180deg,rgba(18,27,46,.99),rgba(18,27,46,.95));
+/* ═══════════════════════════════════
+   HEADER
+═══════════════════════════════════ */
+header{
+  position:relative;z-index:100;height:80px;
+  background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
   backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border-md);
-  box-shadow:0 4px 32px rgba(0,0,0,.5);
+  box-shadow:0 4px 40px rgba(0,0,0,.55),0 1px 0 rgba(250,204,21,.08);
   padding:0 32px;
-  display:flex; align-items:center; justify-content:space-between; gap:20px;
+  display:flex;align-items:center;gap:24px;
 }
-.h-left { display:flex; align-items:center; gap:14px; flex-shrink:0; }
-.h-logo { height:40px; filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg); }
-.h-brand h1 { font-size:13px; font-weight:900; color:var(--brand); letter-spacing:1.5px; text-transform:uppercase; }
-.h-brand p  { font-size:8px; color:var(--text3); letter-spacing:2.5px; text-transform:uppercase; margin-top:3px; }
-.h-div { width:1px; height:44px; background:var(--border-md); flex-shrink:0; }
+.h-logo{height:40px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);flex-shrink:0}
+.h-brand{flex-shrink:0}
+.h-brand h1{font-size:12px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
+.h-brand p{font-size:8px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
+.h-sep{width:1px;height:44px;background:var(--border-md);flex-shrink:0}
 
 /* Clock */
-.h-clock { text-align:center; flex-shrink:0; }
-.clock-time { font-size:56px; font-weight:900; color:#fff; letter-spacing:4px; font-variant-numeric:tabular-nums; line-height:1; }
-.clock-sub  { display:flex; gap:10px; justify-content:center; margin-top:3px; }
-.clock-date  { font-size:10px; color:var(--text3); }
-.clock-semana{ font-size:10px; color:var(--brand); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+.h-clock{text-align:center;flex-shrink:0}
+.clock-time{font-size:58px;font-weight:900;color:#fff;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;
+  text-shadow:0 0 40px rgba(255,255,255,.15)}
+.clock-sub{display:flex;gap:12px;justify-content:center;margin-top:3px}
+.clock-date{font-size:10px;color:var(--text3)}
+.clock-semana{font-size:10px;color:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
 
-/* KPIs */
-.h-kpis { display:flex; gap:8px; align-items:center; flex-shrink:0; }
-.hk {
-  background:linear-gradient(180deg,var(--card2),var(--card));
-  border:1px solid var(--border-md); border-radius:var(--radius-sm);
-  padding:8px 18px; text-align:center; min-width:86px;
+/* Header KPIs */
+.h-kpis{display:flex;gap:8px;flex:1;justify-content:flex-end}
+.hk{
+  background:linear-gradient(160deg,var(--card2),var(--card));
+  border:1px solid var(--border-md);border-radius:var(--r-sm);
+  padding:8px 16px;text-align:center;min-width:90px;
+  transition:box-shadow .3s;
 }
-.hk-val { font-size:40px; font-weight:900; line-height:1; }
-.hk-lbl { font-size:8px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-top:3px; }
-.hk.total .hk-val   { color:#93c5fd; }
-.hk.verde .hk-val   { color:var(--green); }
-.hk.amber .hk-val   { color:var(--amber); }
-.hk.vermelho .hk-val{ color:var(--red); }
-.hk.execucao {
-  background:linear-gradient(180deg,rgba(250,204,21,.14),rgba(250,204,21,.06));
-  border-color:rgba(250,204,21,.30); min-width:110px;
-  box-shadow:0 0 20px rgba(250,204,21,.08);
+.hk:hover{box-shadow:0 0 20px rgba(250,204,21,.10)}
+.hk-icon{font-size:14px;margin-bottom:2px;display:block}
+.hk-val{font-size:40px;font-weight:900;line-height:1}
+.hk-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.hk.total .hk-val{color:#93c5fd;text-shadow:0 0 20px rgba(147,197,253,.25)}
+.hk.verde .hk-val{color:var(--green);text-shadow:0 0 20px var(--green-glow)}
+.hk.amber .hk-val{color:var(--amber);text-shadow:0 0 20px var(--amber-glow)}
+.hk.verm  .hk-val{color:var(--red);text-shadow:0 0 20px var(--red-glow)}
+.hk.exec{
+  background:linear-gradient(160deg,rgba(250,204,21,.14),rgba(250,204,21,.06));
+  border-color:rgba(250,204,21,.30);min-width:110px;
+  box-shadow:0 0 24px rgba(250,204,21,.10);
 }
-.hk.execucao .hk-val { font-size:44px; color:var(--brand); }
+.hk.exec .hk-val{font-size:44px;color:var(--brand);text-shadow:0 0 24px var(--brand-glow)}
 
-/* Live + close */
-.h-live  { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-.rdot    { width:8px; height:8px; border-radius:50%; background:var(--green); animation:pglow 2s infinite; }
-@keyframes pglow{ 0%,100%{opacity:1;box-shadow:0 0 6px var(--green)} 50%{opacity:.4;box-shadow:0 0 14px var(--green)} }
-.live-lbl{ font-size:10px; color:var(--text3); font-weight:600; }
-.h-close {
-  display:flex; align-items:center; gap:5px; color:var(--text3); text-decoration:none;
-  font-size:11px; font-weight:700; padding:7px 14px;
-  border-radius:var(--radius-sm); border:1px solid var(--border-md);
-  background:rgba(255,255,255,.04); transition:all .2s;
+.h-live{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.rdot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pglow 2s infinite}
+@keyframes pglow{0%,100%{opacity:1;box-shadow:0 0 6px var(--green)}50%{opacity:.4;box-shadow:0 0 14px var(--green)}}
+.live-lbl{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px}
+.h-close{
+  display:flex;align-items:center;gap:5px;color:var(--text3);text-decoration:none;
+  font-size:11px;font-weight:700;padding:7px 14px;
+  border-radius:var(--r-sm);border:1px solid var(--border-md);
+  background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0;
 }
-.h-close:hover { border-color:var(--red); color:var(--red); background:var(--red-bg); }
+.h-close:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
 
-/* ══ MAIN ══ */
-main {
+/* ═══════════════════════════════════
+   MAIN
+═══════════════════════════════════ */
+main{
   height:calc(100vh - 80px - 40px);
-  padding:14px 32px 0;
-  display:flex; flex-direction:column; gap:10px;
-  position:relative; z-index:1; overflow:hidden;
+  padding:12px 32px 0;
+  display:flex;flex-direction:column;gap:10px;
+  position:relative;z-index:1;overflow:hidden;
 }
 
-/* ══ RANKING STRIP ══ */
-.ranking-strip {
-  display:flex; align-items:center; gap:10px;
+/* ═══════════════════════════════════
+   RANKING + HEATMAP BAR
+═══════════════════════════════════ */
+.ops-bar{
+  display:flex;gap:10px;flex-shrink:0;height:56px;
+}
+.ranking-panel{
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,rgba(250,204,21,.08),rgba(250,204,21,.03));
+  border:1px solid rgba(250,204,21,.20);border-radius:var(--r-sm);
+  padding:0 20px;flex:1;position:relative;overflow:hidden;
+}
+.ranking-panel::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(250,204,21,.04),transparent);pointer-events:none;
+}
+.rank-title{
+  font-size:9px;font-weight:900;color:var(--brand);
+  text-transform:uppercase;letter-spacing:2.5px;white-space:nowrap;flex-shrink:0;
+  display:flex;align-items:center;gap:6px;
+}
+.rank-div{width:1px;height:28px;background:rgba(250,204,21,.20);flex-shrink:0}
+.rank-items{display:flex;gap:6px;flex:1}
+.rank-item{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:var(--r-xs);padding:5px 14px;white-space:nowrap;flex:1;
+  transition:all .25s;
+}
+.rank-item.r1{background:rgba(250,204,21,.10);border-color:rgba(250,204,21,.28)}
+.rank-item:hover{transform:translateY(-2px);box-shadow:var(--sh)}
+.rank-med{font-size:18px}
+.rank-nome{font-size:15px;font-weight:800;color:var(--text);flex:1}
+.rank-pct{font-size:16px;font-weight:900;color:var(--green)}
+.rank-item.r1 .rank-pct{color:var(--brand)}
+
+.heatmap-panel{
+  display:flex;align-items:center;gap:12px;
   background:linear-gradient(180deg,var(--card2),var(--card));
-  border:1px solid var(--border-md); border-radius:var(--radius-sm);
-  padding:0 20px; height:50px; flex-shrink:0; position:relative; overflow:hidden;
+  border:1px solid var(--border-md);border-radius:var(--r-sm);
+  padding:0 20px;flex-shrink:0;
 }
-.ranking-strip::after {
-  content:''; position:absolute; top:0; left:20px; right:20px; height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);
-}
-.rank-title {
-  font-size:9px; font-weight:800; color:var(--brand);
-  text-transform:uppercase; letter-spacing:2px; white-space:nowrap; flex-shrink:0;
-}
-.rank-div { width:1px; height:26px; background:var(--border-md); flex-shrink:0; }
-.rank-items { display:flex; gap:6px; flex:1; }
-.rank-item {
-  display:flex; align-items:center; gap:8px;
-  background:rgba(255,255,255,.04); border:1px solid var(--border);
-  border-radius:8px; padding:5px 14px; white-space:nowrap; flex:1; max-width:220px;
-  transition:all .2s;
-}
-.rank-item.r1 { background:rgba(250,204,21,.08); border-color:rgba(250,204,21,.25); }
-.rank-item.r2 { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.10); }
-.rank-pos     { font-size:13px; font-weight:900; color:var(--text3); width:18px; text-align:center; }
-.rank-item.r1 .rank-pos { color:var(--brand); }
-.rank-nome { font-size:15px; font-weight:800; color:var(--text); flex:1; }
-.rank-pct  { font-size:15px; font-weight:900; color:var(--green); }
-.rank-item.r1 .rank-pct { color:var(--brand); }
+.hm-title{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:2px;white-space:nowrap}
+.hm-grid{display:flex;gap:6px;align-items:center}
+.hm-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.hm-lbl{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.hm-dot{width:16px;height:16px;border-radius:5px}
+.hm-dot.g{background:var(--green);box-shadow:0 0 6px var(--green-glow)}
+.hm-dot.a{background:var(--amber);box-shadow:0 0 6px var(--amber-glow)}
+.hm-dot.r{background:var(--red);box-shadow:0 0 6px var(--red-glow)}
+.hm-dot.x{background:var(--border-md)}
 
-/* ══ CARDS GRID ══ */
-.grid-compradores {
-  display:grid; grid-template-columns:repeat(5,1fr);
-  gap:12px; flex:1; min-height:0;
+/* ═══════════════════════════════════
+   CARDS GRID
+═══════════════════════════════════ */
+.grid-compradores{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:10px;flex:1;min-height:0;
 }
 
-/* ══ CARD COMPRADORA ══ */
-.card-c {
-  background:linear-gradient(180deg,var(--card2),var(--card));
-  border:1px solid var(--border-md); border-radius:var(--radius);
-  display:flex; flex-direction:column;
-  transition:transform .25s ease, box-shadow .25s ease;
-  position:relative; overflow:hidden;
-  box-shadow:var(--shadow);
-  animation:cardIn .5s ease both;
+/* ═══════════════════════════════════
+   CARD COMPRADORA
+═══════════════════════════════════ */
+.card-c{
+  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 60%,rgba(8,17,31,.9) 100%);
+  border:1px solid var(--border-md);border-radius:var(--r);
+  display:flex;flex-direction:column;
+  transition:transform .25s ease,box-shadow .25s ease,border-color .25s;
+  position:relative;overflow:hidden;
+  box-shadow:var(--sh);
+  animation:cardIn .55s cubic-bezier(.22,1,.36,1) both;
   cursor:pointer;
 }
 .card-c:nth-child(1){animation-delay:.04s}
-.card-c:nth-child(2){animation-delay:.08s}
-.card-c:nth-child(3){animation-delay:.12s}
-.card-c:nth-child(4){animation-delay:.16s}
-.card-c:nth-child(5){animation-delay:.20s}
-@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-.card-c::before {
-  content:''; position:absolute; top:0; left:20px; right:20px; height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+.card-c:nth-child(2){animation-delay:.09s}
+.card-c:nth-child(3){animation-delay:.14s}
+.card-c:nth-child(4){animation-delay:.19s}
+.card-c:nth-child(5){animation-delay:.24s}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.card-c::before{
+  content:'';position:absolute;top:0;left:20px;right:20px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
 }
-.card-c:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
-.card-c.all-done {
-  border-color:rgba(250,204,21,.35);
-  box-shadow:0 0 32px rgba(250,204,21,.12),var(--shadow);
+.card-c::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(160deg,rgba(255,255,255,.025) 0%,rgba(255,255,255,0) 50%);
+  pointer-events:none;
 }
+.card-c:hover{transform:translateY(-4px);box-shadow:var(--sh-lg)}
+.card-c.all-done{border-color:rgba(250,204,21,.40);box-shadow:0 0 40px rgba(250,204,21,.14),var(--sh)}
+.card-c.atrasado{border-color:rgba(239,68,68,.35);box-shadow:0 0 24px rgba(239,68,68,.10),var(--sh)}
 
-.card-accent { height:4px; width:100%; position:relative; z-index:1; flex-shrink:0; }
+/* Accent top bar */
+.card-accent{height:4px;width:100%;position:relative;z-index:2;flex-shrink:0}
 
-/* Card header */
-.ch { padding:13px 16px 11px; border-bottom:1px solid var(--border); position:relative; z-index:1; flex-shrink:0; }
-.ch-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.ch-nome { font-size:26px; font-weight:900; letter-spacing:.3px; }
-.badge-done {
-  font-size:8px; font-weight:800; color:#000;
-  background:var(--brand); padding:3px 10px; border-radius:20px;
-  text-transform:uppercase; letter-spacing:1px;
+/* Warning badge (comprador atrasado) */
+.warn-badge{
+  position:absolute;top:12px;right:14px;z-index:10;
+  background:var(--red-bg);border:1px solid var(--red-glow);
+  color:var(--red);font-size:8px;font-weight:800;
+  padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:1px;
+  animation:warnPulse 2s ease-in-out infinite;
 }
-.trophy-box {
-  background:linear-gradient(135deg,rgba(250,204,21,.12),rgba(250,204,21,.04));
-  border:1px solid rgba(250,204,21,.28); border-radius:var(--radius-sm);
-  padding:6px 12px; text-align:center; margin-bottom:8px;
+@keyframes warnPulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* Card Header */
+.ch{padding:14px 16px 11px;border-bottom:1px solid var(--border);position:relative;z-index:2;flex-shrink:0}
+.ch-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
+.ch-nome{font-size:26px;font-weight:900;letter-spacing:.3px;line-height:1}
+.badge-done{
+  font-size:8px;font-weight:800;color:#000;
+  background:var(--brand);padding:3px 10px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:1px;white-space:nowrap;margin-top:4px;
+}
+.ch-categoria{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+
+.trophy-box{
+  background:linear-gradient(135deg,rgba(250,204,21,.14),rgba(250,204,21,.04));
+  border:1px solid rgba(250,204,21,.30);border-radius:var(--r-sm);
+  padding:7px 12px;text-align:center;margin-bottom:10px;
   animation:tglow 2.5s ease-in-out infinite;
 }
-@keyframes tglow{0%,100%{box-shadow:0 0 10px rgba(250,204,21,.15)}50%{box-shadow:0 0 24px rgba(250,204,21,.45)}}
-.trophy-box span { font-size:12px; font-weight:800; color:var(--brand); letter-spacing:1px; }
+@keyframes tglow{0%,100%{box-shadow:0 0 10px rgba(250,204,21,.15)}50%{box-shadow:0 0 28px rgba(250,204,21,.50)}}
+.trophy-box span{font-size:12px;font-weight:800;color:var(--brand);letter-spacing:1px}
 
-/* Progress */
-.prog-label { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-.prog-lbl-txt{ font-size:9px; color:var(--text3); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
-.prog-pct   { font-size:20px; font-weight:900; color:var(--brand); line-height:1; }
-.prog-bar   { height:7px; background:rgba(255,255,255,.06); border-radius:99px; overflow:hidden; position:relative; }
-.prog-fill  {
-  height:100%; border-radius:99px;
+/* Progress bar */
+.prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.prog-lbl{font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+.prog-pct{font-size:22px;font-weight:900;color:var(--brand);line-height:1}
+.prog-bar{height:8px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;position:relative}
+.prog-fill{
+  height:100%;border-radius:99px;
   background:linear-gradient(90deg,var(--brand),#FFF176);
-  box-shadow:0 0 10px rgba(250,204,21,.5);
-  transition:width 1.2s cubic-bezier(.4,0,.2,1);
-  position:relative; overflow:hidden;
+  box-shadow:0 0 12px rgba(250,204,21,.55);
+  transition:width 1.4s cubic-bezier(.4,0,.2,1);
+  position:relative;overflow:hidden;
 }
-.prog-fill::after {
-  content:''; position:absolute; top:0; left:-60%; width:60%; height:100%;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+.prog-fill::after{
+  content:'';position:absolute;top:0;left:-60%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
   animation:shimmer 2.5s ease-in-out infinite;
 }
 @keyframes shimmer{0%{left:-60%}100%{left:160%}}
-.ch-mini { display:flex; gap:10px; margin-top:8px; }
-.ch-mini span { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text2); font-weight:600; }
-.dm { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+.ch-mini{display:flex;gap:10px;margin-top:8px}
+.ch-mini span{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);font-weight:600}
+.dm{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .dm.g{background:var(--green)}.dm.a{background:var(--amber)}.dm.r{background:var(--red)}
 
-/* Card body */
-.cb { padding:10px 16px; flex:1; overflow:hidden; position:relative; z-index:1; }
+/* Card Body */
+.cb{padding:10px 16px;flex:1;overflow:hidden;position:relative;z-index:2}
 
-/* Category */
-.cat { margin-bottom:8px; }
-.cat-nome {
-  font-size:8px; font-weight:800; color:var(--text3);
-  text-transform:uppercase; letter-spacing:2px;
-  margin-bottom:4px; display:flex; align-items:center; gap:6px;
+.cat{margin-bottom:8px}
+.cat-nome{
+  font-size:8px;font-weight:800;color:var(--text3);
+  text-transform:uppercase;letter-spacing:2px;
+  margin-bottom:5px;display:flex;align-items:center;gap:6px;
 }
-.cat-nome::after { content:''; flex:1; height:1px; background:var(--border); }
+.cat-nome::after{content:'';flex:1;height:1px;background:var(--border)}
 
-.forn { display:flex; align-items:center; gap:6px; padding:4px 7px; border-radius:7px; margin-bottom:2px; transition:background .15s; }
+.forn{display:flex;align-items:center;gap:7px;padding:4px 8px;border-radius:var(--r-xs);margin-bottom:2px;transition:background .15s}
 .forn:hover{background:rgba(255,255,255,.04)}
-.sdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.sdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .sdot.g{background:var(--green);box-shadow:0 0 6px var(--green-glow)}
 .sdot.a{background:var(--amber);box-shadow:0 0 6px var(--amber-glow);animation:bpa 2s infinite}
 .sdot.r{background:var(--red);box-shadow:0 0 6px var(--red-glow);animation:bpr 2s infinite}
 @keyframes bpa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 @keyframes bpr{0%,100%{opacity:1}50%{opacity:.3}}
 
-.forn-nome { font-size:13px; flex:1; color:var(--text2); font-weight:500; }
-.stag {
-  font-size:8px; font-weight:800; padding:2px 7px; border-radius:5px;
-  text-transform:uppercase; letter-spacing:.5px; white-space:nowrap;
-}
+.forn-nome{font-size:14px;flex:1;color:var(--text2);font-weight:500}
+.stag{font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .stag.g{background:var(--green-bg);color:var(--green)}
 .stag.a{background:var(--amber-bg);color:var(--amber)}
 .stag.r{background:var(--red-bg);color:var(--red)}
 
-/* Atividades */
-.ativ-sec { border-top:1px solid var(--border); padding-top:7px; margin-top:7px; }
-.ativ-tit { font-size:8px; font-weight:800; color:var(--text3); text-transform:uppercase; letter-spacing:2px; margin-bottom:4px; }
-.ativ { display:flex; align-items:flex-start; gap:6px; padding:3px 0; }
-.ativ-icon { font-size:11px; flex-shrink:0; margin-top:1px; }
-.ativ-nome { font-size:12px; color:var(--text2); line-height:1.3; font-weight:500; }
+.ativ-sec{border-top:1px solid var(--border);padding-top:8px;margin-top:8px}
+.ativ-tit{font-size:8px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:5px}
+.ativ{display:flex;align-items:flex-start;gap:6px;padding:3px 0}
+.ativ-icon{font-size:11px;flex-shrink:0;margin-top:1px}
+.ativ-nome{font-size:13px;color:var(--text2);line-height:1.3;font-weight:500}
 
-/* Card footer */
-.cf {
-  border-top:1px solid var(--border); padding:8px 16px;
-  display:flex; justify-content:space-between; align-items:center;
-  position:relative; z-index:1; flex-shrink:0;
+/* Card Footer */
+.cf{
+  border-top:1px solid var(--border);padding:8px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+  position:relative;z-index:2;flex-shrink:0;
 }
-.cf-cob { font-size:10px; color:var(--text3); }
-.cf-cob strong { color:#93c5fd; font-weight:700; }
-.cf-counts { display:flex; gap:10px; font-size:12px; font-weight:800; }
+.cf-left{display:flex;align-items:center;gap:8px}
+.cf-cob{font-size:10px;color:var(--text3)}
+.cf-cob strong{color:#93c5fd;font-weight:800}
+.cf-sla{
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;
+  background:var(--green-bg);color:var(--green);
+}
+.cf-sla.late{background:var(--red-bg);color:var(--red)}
+.cf-counts{display:flex;gap:10px;font-size:12px;font-weight:800}
 .cf-g{color:var(--green)}.cf-r{color:var(--red)}
 
-/* ══ ALERT BAR ══ */
-.alert-bar {
-  height:48px; flex-shrink:0;
-  background:linear-gradient(180deg,rgba(22,12,12,.96),rgba(14,7,7,.96));
-  border:1px solid rgba(239,68,68,.18); border-radius:var(--radius-sm);
-  display:flex; align-items:center; overflow:hidden;
-  box-shadow:0 0 20px rgba(239,68,68,.06);
+/* ═══════════════════════════════════
+   ALERT BAR
+═══════════════════════════════════ */
+.alert-bar{
+  height:52px;flex-shrink:0;
+  background:linear-gradient(180deg,rgba(24,10,10,.97),rgba(16,6,6,.97));
+  border:1px solid rgba(239,68,68,.18);border-radius:var(--r-sm);
+  display:flex;align-items:center;overflow:hidden;
+  box-shadow:0 0 24px rgba(239,68,68,.07);
 }
-.alert-badge {
-  display:flex; align-items:center; gap:7px;
-  font-size:10px; font-weight:800; color:var(--red);
-  text-transform:uppercase; letter-spacing:2px; white-space:nowrap; flex-shrink:0;
-  padding:0 20px; border-right:1px solid rgba(239,68,68,.18); height:100%;
+.alert-badge{
+  display:flex;align-items:center;gap:7px;
+  font-size:10px;font-weight:900;color:var(--red);
+  text-transform:uppercase;letter-spacing:2.5px;white-space:nowrap;flex-shrink:0;
+  padding:0 20px;border-right:1px solid rgba(239,68,68,.20);height:100%;
 }
 .alert-badge::before{content:'⚠';animation:blink 1s step-end infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-.alert-scroll { flex:1; overflow:hidden; position:relative; height:100%; display:flex; align-items:center; }
-.alert-scroll::before{content:'';position:absolute;left:0;top:0;bottom:0;width:30px;background:linear-gradient(90deg,rgba(14,7,7,.96),transparent);z-index:1}
-.alert-scroll::after{content:'';position:absolute;right:0;top:0;bottom:0;width:30px;background:linear-gradient(-90deg,rgba(14,7,7,.96),transparent);z-index:1}
-.alert-ticker { display:flex; white-space:nowrap; animation:ticker 45s linear infinite; }
-.alert-item { font-size:13px; color:#fca5a5; padding:0 28px; }
-.alert-sep  { color:rgba(239,68,68,.3); }
+.alert-scroll{flex:1;overflow:hidden;position:relative;height:100%;display:flex;align-items:center}
+.alert-scroll::before{content:'';position:absolute;left:0;top:0;bottom:0;width:32px;background:linear-gradient(90deg,rgba(16,6,6,.97),transparent);z-index:1}
+.alert-scroll::after{content:'';position:absolute;right:0;top:0;bottom:0;width:32px;background:linear-gradient(-90deg,rgba(16,6,6,.97),transparent);z-index:1}
+.alert-ticker{display:flex;white-space:nowrap;animation:ticker 48s linear infinite}
+.alert-item{font-size:14px;color:#fca5a5;padding:0 28px;font-weight:500}
+.alert-sep{color:rgba(239,68,68,.3)}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-/* ══ BOTTOM BAR ══ */
-.fixed-bar {
-  position:fixed; bottom:0; left:0; right:0; height:40px;
-  background:rgba(8,17,31,.98); backdrop-filter:blur(10px);
+/* ═══════════════════════════════════
+   BOTTOM BAR
+═══════════════════════════════════ */
+.fixed-bar{
+  position:fixed;bottom:0;left:0;right:0;height:40px;
+  background:rgba(8,17,31,.98);backdrop-filter:blur(12px);
   border-top:1px solid var(--border-md);
-  display:flex; align-items:center; justify-content:space-between;
-  padding:0 32px; z-index:300;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;z-index:300;
 }
-.fb-left { display:flex; align-items:center; gap:20px; font-size:11px; color:var(--text3); }
-.fb-right{ font-size:11px; color:var(--text3); }
-.countdown{ color:var(--brand); font-weight:800; font-variant-numeric:tabular-nums; }
+.fb-left{display:flex;align-items:center;gap:20px;font-size:11px;color:var(--text3)}
+.fb-right{font-size:11px;color:var(--text3)}
+.countdown{color:var(--brand);font-weight:800;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
 
+<!-- ══ HEADER ══ -->
 <header>
-  <div class="h-left">
-    <img src="/logo.png" class="h-logo" alt="FC360">
-    <div class="h-brand">
-      <h1>Execução de Compras</h1>
-      <p>Monitoramento Operacional em Tempo Real</p>
-    </div>
+  <img src="/logo.png" class="h-logo" alt="FC360">
+  <div class="h-brand">
+    <h1>Central de Compras</h1>
+    <p>Monitoramento Operacional em Tempo Real</p>
   </div>
 
-  <div class="h-div"></div>
+  <div class="h-sep"></div>
 
   <div class="h-clock">
     <div class="clock-time" id="clock">00:00:00</div>
@@ -309,17 +362,37 @@ main {
     </div>
   </div>
 
-  <div class="h-div"></div>
+  <div class="h-sep"></div>
 
   <div class="h-kpis">
-    <div class="hk total">   <div class="hk-val" id="kpi-total">—</div>  <div class="hk-lbl">Fornecedores</div></div>
-    <div class="hk verde">   <div class="hk-val" id="kpi-done">—</div>   <div class="hk-lbl">Concluídos</div></div>
-    <div class="hk amber">   <div class="hk-val" id="kpi-and">—</div>    <div class="hk-lbl">Andamento</div></div>
-    <div class="hk vermelho"><div class="hk-val" id="kpi-pend">—</div>   <div class="hk-lbl">Pendentes</div></div>
-    <div class="hk execucao"><div class="hk-val" id="kpi-pct">—%</div>   <div class="hk-lbl">Execução Geral</div></div>
+    <div class="hk exec">
+      <span class="hk-icon">⚡</span>
+      <div class="hk-val" id="kpi-pct">—%</div>
+      <div class="hk-lbl">Execução Geral</div>
+    </div>
+    <div class="hk verde">
+      <span class="hk-icon">✅</span>
+      <div class="hk-val" id="kpi-done">—</div>
+      <div class="hk-lbl">Concluídos</div>
+    </div>
+    <div class="hk amber">
+      <span class="hk-icon">🔄</span>
+      <div class="hk-val" id="kpi-and">—</div>
+      <div class="hk-lbl">Andamento</div>
+    </div>
+    <div class="hk verm">
+      <span class="hk-icon">🔴</span>
+      <div class="hk-val" id="kpi-pend">—</div>
+      <div class="hk-lbl">Pendentes</div>
+    </div>
+    <div class="hk total">
+      <span class="hk-icon">📦</span>
+      <div class="hk-val" id="kpi-total">—</div>
+      <div class="hk-lbl">Fornecedores</div>
+    </div>
   </div>
 
-  <div class="h-div"></div>
+  <div class="h-sep"></div>
 
   <div class="h-live">
     <span class="rdot"></span>
@@ -329,21 +402,33 @@ main {
   <a href="/" class="h-close">✕ Fechar</a>
 </header>
 
+<!-- ══ MAIN ══ -->
 <main>
-  <div class="ranking-strip">
-    <div class="rank-title">🏆 Ranking do Dia</div>
-    <div class="rank-div"></div>
-    <div class="rank-items" id="rank-items"></div>
+
+  <!-- Ranking + Heatmap bar -->
+  <div class="ops-bar">
+    <div class="ranking-panel">
+      <div class="rank-title">🏆 Ranking do Dia</div>
+      <div class="rank-div"></div>
+      <div class="rank-items" id="rank-items"></div>
+    </div>
+    <div class="heatmap-panel" id="heatmap-panel">
+      <div class="hm-title">Semana</div>
+      <div class="hm-grid" id="hm-grid"></div>
+    </div>
   </div>
 
+  <!-- Cards compradores -->
   <div class="grid-compradores" id="grid-compradores"></div>
 
+  <!-- Alert ticker -->
   <div class="alert-bar">
     <div class="alert-badge">Alertas</div>
     <div class="alert-scroll">
       <div class="alert-ticker" id="ticker"></div>
     </div>
   </div>
+
 </main>
 
 <div class="fixed-bar">
@@ -351,200 +436,80 @@ main {
     <span class="rdot"></span>
     <span>Sistema online — FC360 Relatórios</span>
     <span style="color:var(--brand);font-weight:700">Rotação automática ativa</span>
-    <span id="kpi-real"></span>
+    <span id="kpi-real" style="color:var(--text2)"></span>
   </div>
   <div class="fb-right">Próxima tela em <span class="countdown" id="countdown">30s</span></div>
 </div>
 
 <script>
-function grupoSemana(date) {
-  const d = date.getDate();
-  return (d <= 7 || (d >= 15 && d <= 21)) ? '1e3' : '2e4';
-}
-
+/* ══════════════════════════════════════
+   DADOS — CRONOGRAMA FÁTIMA
+══════════════════════════════════════ */
 function fatimaHoje() {
   const DIAS = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
-  const sig = DIAS[new Date().getDay()];
+  const sig  = DIAS[new Date().getDay()];
   const sched = {
-    SEG: {
-      categorias: [
-        { nome: 'Açúcar', fornecedores: [
-          { nome: 'Avile',         status: 'r', cod: 1347 },
-          { nome: 'Usina Ipojuca', status: 'r', cod: 123  },
-          { nome: 'Usina Petribú', status: 'r', cod: 1655 },
-        ]},
-        { nome: 'Arroz', fornecedores: [
-          { nome: 'Camil',        status: 'r', cod: 375  },
-          { nome: 'Tio João',     status: 'r', cod: 342  },
-          { nome: 'Emoções',      status: 'r', cod: null },
-          { nome: 'Urbano',       status: 'r', cod: 1079 },
-          { nome: 'Panelaco',     status: 'r', cod: 633  },
-          { nome: 'João Marcelo', status: 'r', cod: 1795 },
-          { nome: 'Rampinelli',   status: 'r', cod: 897  },
-        ]},
-        { nome: 'Café', fornecedores: [
-          { nome: 'São Braz',       status: 'r', cod: 51   },
-          { nome: 'Moinho Petinho', status: 'r', cod: 37   },
-          { nome: 'Três Corações',  status: 'r', cod: 1499 },
-        ]},
-        { nome: 'Farinha', fornecedores: [
-          { nome: 'Feira Nova',       status: 'r', cod: 1299 },
-          { nome: 'Do Sítio',         status: 'r', cod: null },
-          { nome: 'Kelly e Cordeiro', status: 'r', cod: 1105 },
-        ]},
-        { nome: 'Feijão', fornecedores: [
-          { nome: 'Pai Heleno',           status: 'r', cod: 396  },
-          { nome: 'Tá Gostoso',           status: 'r', cod: null },
-          { nome: 'Pernambucano',         status: 'r', cod: 736  },
-          { nome: 'Turquesa ⚠ fecha 14h', status: 'r', cod: null },
-          { nome: 'Grão de Minas',        status: 'r', cod: null },
-          { nome: 'Kicaldo',              status: 'r', cod: null },
-        ]},
-        { nome: 'Floção', fornecedores: [
-          { nome: 'Valeriano Valente', status: 'r', cod: 833 },
-        ]},
-      ],
-      atividades: [{ nome: 'Fechamento da Cotação de Alimentos (Club)', status: 'r' }],
-    },
-    TER: {
-      categorias: [
-        { nome: 'Farinha', fornecedores: [
-          { nome: 'Roniel J. Silva', status: 'r', cod: 1791 },
-        ]},
-      ],
-      atividades: [
-        { nome: 'Planilha de Preços de Cereais', status: 'r' },
-        { nome: 'Fechamento de Pedidos de Cereais', status: 'r' },
-        { nome: 'Alinhamento Encarte Final de Semana', status: 'r' },
-      ],
-    },
-    QUA: {
-      categorias: [
-        { nome: 'Laticínios & Derivados', fornecedores: [
-          { nome: 'ASA',      status: 'r', cod: 538 },
-          { nome: 'Coringa',  status: 'r', cod: 187 },
-          { nome: 'Leitesol', status: 'r', cod: 195 },
-          { nome: 'Lactalis', status: 'r', cod: 835 },
-          { nome: 'Alvoar',   status: 'r', cod: 293 },
-          { nome: 'Raça',     status: 'r', cod: null },
-        ]},
-      ],
-      atividades: [],
-    },
-    QUI: {
-      categorias: [],
-      atividades: [
-        { nome: 'Ofertas Semanais', status: 'r' },
-        { nome: 'Sem Giros das Lojas', status: 'r' },
-      ],
-    },
-    SEX: {
-      categorias: [
-        { nome: 'Cotação de Alimentos', fornecedores: [] },
-      ],
-      atividades: [
-        { nome: 'Pendências / Reuniões / Visitar Lojas', status: 'r' },
-      ],
-    },
+    SEG:{categorias:[
+      {nome:'Açúcar',fornecedores:[
+        {nome:'Avile',status:'r',cod:1347},{nome:'Usina Ipojuca',status:'r',cod:123},{nome:'Usina Petribú',status:'r',cod:1655}]},
+      {nome:'Arroz',fornecedores:[
+        {nome:'Camil',status:'r',cod:375},{nome:'Tio João',status:'r',cod:342},{nome:'Emoções',status:'r',cod:null},
+        {nome:'Urbano',status:'r',cod:1079},{nome:'Panelaco',status:'r',cod:633},{nome:'João Marcelo',status:'r',cod:1795},{nome:'Rampinelli',status:'r',cod:897}]},
+      {nome:'Café',fornecedores:[
+        {nome:'São Braz',status:'r',cod:51},{nome:'Moinho Petinho',status:'r',cod:37},{nome:'Três Corações',status:'r',cod:1499}]},
+      {nome:'Farinha',fornecedores:[
+        {nome:'Feira Nova',status:'r',cod:1299},{nome:'Do Sítio',status:'r',cod:null},{nome:'Kelly e Cordeiro',status:'r',cod:1105}]},
+      {nome:'Feijão',fornecedores:[
+        {nome:'Pai Heleno',status:'r',cod:396},{nome:'Tá Gostoso',status:'r',cod:null},{nome:'Pernambucano',status:'r',cod:736},
+        {nome:'Turquesa ⚠ fecha 14h',status:'r',cod:null},{nome:'Grão de Minas',status:'r',cod:null},{nome:'Kicaldo',status:'r',cod:null}]},
+      {nome:'Floção',fornecedores:[{nome:'Valeriano Valente',status:'r',cod:833}]}],
+     atividades:[{nome:'Fechamento da Cotação de Alimentos (Club)',status:'r'}]},
+    TER:{categorias:[
+      {nome:'Farinha',fornecedores:[{nome:'Roniel J. Silva',status:'r',cod:1791}]}],
+     atividades:[
+      {nome:'Planilha de Preços de Cereais',status:'r'},
+      {nome:'Fechamento de Pedidos de Cereais',status:'r'},
+      {nome:'Alinhamento Encarte Final de Semana',status:'r'}]},
+    QUA:{categorias:[
+      {nome:'Laticínios & Derivados',fornecedores:[
+        {nome:'ASA',status:'r',cod:538},{nome:'Coringa',status:'r',cod:187},{nome:'Leitesol',status:'r',cod:195},
+        {nome:'Lactalis',status:'r',cod:835},{nome:'Alvoar',status:'r',cod:293},{nome:'Raça',status:'r',cod:null}]}],
+     atividades:[]},
+    QUI:{categorias:[],atividades:[{nome:'Ofertas Semanais',status:'r'},{nome:'Sem Giros das Lojas',status:'r'}]},
+    SEX:{categorias:[{nome:'Cotação de Alimentos',fornecedores:[]}],
+     atividades:[{nome:'Pendências / Reuniões / Visitar Lojas',status:'r'}]},
   };
-  return sched[sig] || { categorias: [], atividades: [] };
+  return sched[sig] || {categorias:[],atividades:[]};
 }
 
-const _fatimaHoje = fatimaHoje();
+const _fat = fatimaHoje();
 
+/* ══ COMPRADORES ══ */
 const COMPRADORES = [
-  {
-    nome: 'FÁTIMA', cor: '#6366f1',
-    categorias: _fatimaHoje.categorias,
-    atividades: _fatimaHoje.atividades,
-    coberturaMedia: 40,
-  },
-  {
-    nome: 'FERNANDA', cor: '#f43f5e',
-    categorias: [
-      { nome: 'Higiene Pessoal', fornecedores: [
-        { nome: 'Unilever',          status: 'g' },
-        { nome: 'P&G',               status: 'a' },
-        { nome: 'Colgate-Palmolive', status: 'g' },
-      ]},
-      { nome: 'Limpeza', fornecedores: [
-        { nome: 'Ypê',              status: 'g' },
-        { nome: 'Brilhante / Omo', status: 'r' },
-        { nome: 'Veja / Flash Líder', status: 'r' },
-      ]},
-      { nome: 'Descartáveis', fornecedores: [
-        { nome: 'Santher', status: 'g' },
-        { nome: 'Mili',    status: 'r' },
-      ]},
-    ],
-    atividades: [
-      { nome: 'Cotação de Higiene e Limpeza', status: 'a' },
-      { nome: 'Análise de Estoque Crítico',   status: 'r' },
-    ],
-    coberturaMedia: 35,
-  },
-  {
-    nome: 'PRISCILA', cor: '#14b8a6',
-    categorias: [
-      { nome: 'Bebidas', fornecedores: [
-        { nome: 'Coca-Cola / Femsa', status: 'g' },
-        { nome: 'Ambev',             status: 'g' },
-        { nome: 'Del Valle / Ades',  status: 'g' },
-      ]},
-      { nome: 'Frios & Laticínios', fornecedores: [
-        { nome: 'Vigor / Italac', status: 'g' },
-        { nome: 'Danone',         status: 'a' },
-        { nome: 'Parmalat',       status: 'r' },
-      ]},
-    ],
-    atividades: [
-      { nome: 'Fechamento de Bebidas',         status: 'g' },
-      { nome: 'Negociação de Frios — Semana',  status: 'a' },
-    ],
-    coberturaMedia: 30,
-  },
-  {
-    nome: 'MARCOS', cor: '#f59e0b',
-    categorias: [
-      { nome: 'Hortifruti', fornecedores: [
-        { nome: 'Ceasa Norte',         status: 'g' },
-        { nome: 'Fazenda Verde Ltda',  status: 'g' },
-        { nome: 'Cooperativa Agrícola',status: 'g' },
-      ]},
-      { nome: 'Padaria & Panif.', fornecedores: [
-        { nome: 'Wickbold',          status: 'g' },
-        { nome: 'Pullman / Nutrella',status: 'g' },
-      ]},
-    ],
-    atividades: [
-      { nome: 'Programação Semanal de Hortifruti', status: 'g' },
-      { nome: 'Cotação Padaria — Pão Francês',     status: 'g' },
-    ],
-    coberturaMedia: 7,
-  },
-  {
-    nome: 'RENATA', cor: '#a855f7',
-    categorias: [
-      { nome: 'Bazar', fornecedores: [
-        { nome: 'Globimport',           status: 'g' },
-        { nome: 'Nobreza Distribuidora',status: 'r' },
-        { nome: 'Caza Nova Ind.',       status: 'r' },
-      ]},
-      { nome: 'Utilidades Domésticas', fornecedores: [
-        { nome: 'La Cuisine', status: 'r' },
-        { nome: 'Euro Home',  status: 'r' },
-      ]},
-      { nome: 'Papelaria', fornecedores: [
-        { nome: 'Tilibra',   status: 'g' },
-        { nome: 'BIC Brasil',status: 'a' },
-      ]},
-    ],
-    atividades: [
-      { nome: 'Cotação Bazar — Ciclo Mensal', status: 'r' },
-      { nome: 'Revisão de Planograma Bazar',  status: 'g' },
-    ],
-    coberturaMedia: 45,
-  },
+  {nome:'FÁTIMA',cor:'#6366f1',sla:'OK',coberturaMedia:40,
+   categorias:_fat.categorias,atividades:_fat.atividades},
+  {nome:'FERNANDA',cor:'#f43f5e',sla:'OK',coberturaMedia:35,
+   categorias:[
+    {nome:'Higiene Pessoal',fornecedores:[{nome:'Unilever',status:'g'},{nome:'P&G',status:'a'},{nome:'Colgate-Palmolive',status:'g'}]},
+    {nome:'Limpeza',fornecedores:[{nome:'Ypê',status:'g'},{nome:'Brilhante / Omo',status:'r'},{nome:'Veja / Flash Líder',status:'r'}]},
+    {nome:'Descartáveis',fornecedores:[{nome:'Santher',status:'g'},{nome:'Mili',status:'r'}]}],
+   atividades:[{nome:'Cotação de Higiene e Limpeza',status:'a'},{nome:'Análise de Estoque Crítico',status:'r'}]},
+  {nome:'PRISCILA',cor:'#14b8a6',sla:'OK',coberturaMedia:30,
+   categorias:[
+    {nome:'Bebidas',fornecedores:[{nome:'Coca-Cola / Femsa',status:'g'},{nome:'Ambev',status:'g'},{nome:'Del Valle / Ades',status:'g'}]},
+    {nome:'Frios & Laticínios',fornecedores:[{nome:'Vigor / Italac',status:'g'},{nome:'Danone',status:'a'},{nome:'Parmalat',status:'r'}]}],
+   atividades:[{nome:'Fechamento de Bebidas',status:'g'},{nome:'Negociação de Frios — Semana',status:'a'}]},
+  {nome:'MARCOS',cor:'#f59e0b',sla:'OK',coberturaMedia:7,
+   categorias:[
+    {nome:'Hortifruti',fornecedores:[{nome:'Ceasa Norte',status:'g'},{nome:'Fazenda Verde Ltda',status:'g'},{nome:'Cooperativa Agrícola',status:'g'}]},
+    {nome:'Padaria & Panif.',fornecedores:[{nome:'Wickbold',status:'g'},{nome:'Pullman / Nutrella',status:'g'}]}],
+   atividades:[{nome:'Programação Semanal de Hortifruti',status:'g'},{nome:'Cotação Padaria — Pão Francês',status:'g'}]},
+  {nome:'RENATA',cor:'#a855f7',sla:'LATE',coberturaMedia:45,
+   categorias:[
+    {nome:'Bazar',fornecedores:[{nome:'Globimport',status:'g'},{nome:'Nobreza Distribuidora',status:'r'},{nome:'Caza Nova Ind.',status:'r'}]},
+    {nome:'Utilidades Domésticas',fornecedores:[{nome:'La Cuisine',status:'r'},{nome:'Euro Home',status:'r'}]},
+    {nome:'Papelaria',fornecedores:[{nome:'Tilibra',status:'g'},{nome:'BIC Brasil',status:'a'}]}],
+   atividades:[{nome:'Cotação Bazar — Ciclo Mensal',status:'r'},{nome:'Revisão de Planograma Bazar',status:'g'}]},
 ];
 
 const ALERTAS = [
@@ -554,35 +519,38 @@ const ALERTAS = [
   '⚠ VEJA / FLASH LÍDER — Cobertura abaixo da meta: 12 dias (meta: 35 dias)',
   '⚠ MILI — Pedido atrasado em 1 dia (Fernanda / Descartáveis)',
   '⚠ PARMALAT — Pedido não realizado (Priscila / Frios)',
-  '⚠ P&G — Pedido em andamento há mais de 2 horas (Fernanda / Higiene)',
+  '⚠ P&G — Em andamento há mais de 2 horas (Fernanda / Higiene)',
   '⚠ NOBREZA — Sem pedido (Renata / Bazar)',
   '⚠ CAZA NOVA — Cobertura crítica: 8 dias (meta: 45 dias)',
   '⚠ LA CUISINE — Pedido não iniciado (Renata / Utilidades)',
   '⚠ EURO HOME — Pedido não iniciado (Renata / Utilidades)',
-  '⚠ ATIVIDADE NÃO CONCLUÍDA — Cotação Bazar Ciclo Mensal (Renata)',
-  '⚠ ATIVIDADE NÃO CONCLUÍDA — Análise de Estoque Crítico (Fernanda)',
+  '⚠ SLA VENCIDO — Cotação Bazar Ciclo Mensal (Renata)',
+  '⚠ ESTOQUE CRÍTICO — Análise pendente (Fernanda)',
 ];
 
-const STATUS_LABEL = { g:'Concluído', a:'Andamento', r:'Pendente' };
+const STATUS_LABEL = {g:'Concluído',a:'Andamento',r:'Pendente'};
 
+/* ══ STATS ══ */
 function calcStats(c) {
   const todos = c.categorias.flatMap(cat => cat.fornecedores);
-  const done  = todos.filter(f => f.status === 'g').length;
-  const and   = todos.filter(f => f.status === 'a').length;
-  const pend  = todos.filter(f => f.status === 'r').length;
+  const done  = todos.filter(f => f.status==='g').length;
+  const and   = todos.filter(f => f.status==='a').length;
+  const pend  = todos.filter(f => f.status==='r').length;
   const total = todos.length;
-  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
-  return { done, and, pend, total, pct };
+  const pct   = total > 0 ? Math.round((done/total)*100) : 0;
+  return {done,and,pend,total,pct};
 }
 
+/* ══ RENDER CARD ══ */
 function renderCard(c) {
-  const st = calcStats(c);
+  const st     = calcStats(c);
   const allDone = st.pct === 100;
+  const atrasado = st.pct === 0 && st.total > 0;
 
   const cats = c.categorias.map(cat => `
     <div class="cat">
       <div class="cat-nome">${cat.nome}</div>
-      ${cat.fornecedores.map(f => `
+      ${cat.fornecedores.map(f=>`
         <div class="forn">
           <span class="sdot ${f.status}"></span>
           <span class="forn-nome">${f.nome}</span>
@@ -590,44 +558,49 @@ function renderCard(c) {
         </div>`).join('')}
     </div>`).join('');
 
-  const ativs = c.atividades.map(a => {
-    const icon = a.status === 'g' ? '✅' : a.status === 'a' ? '🟡' : '❌';
+  const ativs = c.atividades.map(a=>{
+    const icon = a.status==='g'?'✅':a.status==='a'?'🟡':'❌';
     return `<div class="ativ"><span class="ativ-icon">${icon}</span><span class="ativ-nome">${a.nome}</span></div>`;
   }).join('');
 
   const trophy = allDone ? `<div class="trophy-box"><span>🏆 CRONOGRAMA CONCLUÍDO</span></div>` : '';
+  const warn   = atrasado ? `<div class="warn-badge">⚠ Atrasado</div>` : '';
   const nomeEnc = encodeURIComponent(c.nome);
 
   return `
-    <div class="card-c ${allDone ? 'all-done' : ''}" onclick="location.href='/comprador.html?nome=${nomeEnc}'" >
+    <div class="card-c ${allDone?'all-done':''} ${atrasado?'atrasado':''}" onclick="location.href='/comprador.html?nome=${nomeEnc}'">
       <div class="card-accent" style="background:${c.cor}"></div>
+      ${warn}
       <div class="ch">
         <div class="ch-top">
           <div class="ch-nome" style="color:${c.cor}">${c.nome}</div>
-          ${allDone ? '<span class="badge-done">✓ Concluído</span>' : ''}
+          ${allDone?'<span class="badge-done">✓ Concluído</span>':''}
         </div>
         ${trophy}
-        <div class="prog-label">
-          <span class="prog-lbl-txt">Progresso</span>
+        <div class="prog-row">
+          <span class="prog-lbl">Progresso</span>
           <span class="prog-pct">${st.pct}%</span>
         </div>
         <div class="prog-bar"><div class="prog-fill" style="width:${st.pct}%"></div></div>
         <div class="ch-mini">
-          <span><span class="dm g"></span>${st.done} concluído${st.done !== 1 ? 's' : ''}</span>
-          ${st.and > 0 ? `<span><span class="dm a"></span>${st.and} andamento</span>` : ''}
-          <span><span class="dm r"></span>${st.pend} pendente${st.pend !== 1 ? 's' : ''}</span>
+          <span><span class="dm g"></span>${st.done} concluído${st.done!==1?'s':''}</span>
+          ${st.and>0?`<span><span class="dm a"></span>${st.and} andamento</span>`:''}
+          <span><span class="dm r"></span>${st.pend} pendente${st.pend!==1?'s':''}</span>
         </div>
       </div>
       <div class="cb">
         ${cats}
-        ${c.atividades.length > 0 ? `
+        ${c.atividades.length>0?`
         <div class="ativ-sec">
           <div class="ativ-tit">Atividades Operacionais</div>
           ${ativs}
-        </div>` : ''}
+        </div>`:''}
       </div>
       <div class="cf">
-        <div class="cf-cob">Cobertura: <strong>${c.coberturaMedia}d</strong></div>
+        <div class="cf-left">
+          <div class="cf-cob">Cobertura: <strong>${c.coberturaMedia}d</strong></div>
+          <div class="cf-sla ${c.sla==='LATE'?'late':''}">SLA ${c.sla==='LATE'?'⚠ Vencido':'✓ OK'}</div>
+        </div>
         <div class="cf-counts">
           <span class="cf-g">✓ ${st.done}</span>
           <span class="cf-r">✗ ${st.pend}</span>
@@ -636,97 +609,110 @@ function renderCard(c) {
     </div>`;
 }
 
+/* ══ RENDER RANKING ══ */
 function renderRanking() {
+  const medals = ['🥇','🥈','🥉','4°','5°'];
   const ranked = [...COMPRADORES]
-    .map(c => ({ nome: c.nome, cor: c.cor, pct: calcStats(c).pct }))
-    .sort((a, b) => b.pct - a.pct);
-
-  const medals = ['🥇','🥈','🥉','4º','5º'];
-  document.getElementById('rank-items').innerHTML = ranked.map((r, i) => `
-    <div class="rank-item ${i === 0 ? 'r1' : i === 1 ? 'r2' : ''}">
-      <span class="rank-pos">${medals[i]}</span>
+    .map(c=>({nome:c.nome,cor:c.cor,pct:calcStats(c).pct}))
+    .sort((a,b)=>b.pct-a.pct);
+  document.getElementById('rank-items').innerHTML = ranked.map((r,i)=>`
+    <div class="rank-item ${i===0?'r1':i===1?'r2':''}">
+      <span class="rank-med">${medals[i]}</span>
       <span class="rank-nome" style="color:${r.cor}">${r.nome}</span>
       <span class="rank-pct">${r.pct}%</span>
     </div>`).join('');
 }
 
+/* ══ HEATMAP ══ */
+function renderHeatmap() {
+  const dias  = ['SEG','TER','QUA','QUI','SEX'];
+  const hoje  = new Date().getDay(); // 0=dom,1=seg...5=sex,6=sab
+  // Mapeando para índice 0-4 (SEG-SEX)
+  const diaIdx = hoje >= 1 && hoje <= 5 ? hoje - 1 : -1;
+  const cores  = ['g','g','a','g','g']; // mock histórico da semana
+  document.getElementById('hm-grid').innerHTML = dias.map((d,i)=>`
+    <div class="hm-col">
+      <div class="hm-lbl">${d}</div>
+      <div class="hm-dot ${i<diaIdx?cores[i]:i===diaIdx?'a':'x'}"></div>
+    </div>`).join('');
+}
+
+/* ══ RENDER ALL ══ */
 function renderAll() {
   document.getElementById('grid-compradores').innerHTML = COMPRADORES.map(renderCard).join('');
-
-  const todos = COMPRADORES.flatMap(c => c.categorias.flatMap(cat => cat.fornecedores));
-  const done  = todos.filter(f => f.status === 'g').length;
-  const and   = todos.filter(f => f.status === 'a').length;
-  const pend  = todos.filter(f => f.status === 'r').length;
+  const todos = COMPRADORES.flatMap(c=>c.categorias.flatMap(cat=>cat.fornecedores));
+  const done  = todos.filter(f=>f.status==='g').length;
+  const and   = todos.filter(f=>f.status==='a').length;
+  const pend  = todos.filter(f=>f.status==='r').length;
   const total = todos.length;
-  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+  const pct   = total>0?Math.round((done/total)*100):0;
   document.getElementById('kpi-total').textContent = total;
   document.getElementById('kpi-done').textContent  = done;
   document.getElementById('kpi-and').textContent   = and;
   document.getElementById('kpi-pend').textContent  = pend;
-  document.getElementById('kpi-pct').textContent   = pct + '%';
-
+  document.getElementById('kpi-pct').textContent   = pct+'%';
   renderRanking();
 }
 
+/* ══ TICKER ══ */
 function renderTicker() {
-  const items = [...ALERTAS, ...ALERTAS].map(a =>
+  const items = [...ALERTAS,...ALERTAS].map(a=>
     `<span class="alert-item">${a}</span><span class="alert-sep"> ◆ </span>`
   ).join('');
   document.getElementById('ticker').innerHTML = items;
 }
 
+/* ══ CLOCK ══ */
 function updateClock() {
   const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
+  const pad = n=>String(n).padStart(2,'0');
   document.getElementById('clock').textContent =
     `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-  const dias   = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-  const meses  = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const dias  = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   document.getElementById('clock-date').textContent =
     `${dias[now.getDay()]}, ${now.getDate()} de ${meses[now.getMonth()]} de ${now.getFullYear()}`;
-  const d = now.getDate();
+  const d   = now.getDate();
   const sem = d<=7?'1ª Semana':d<=14?'2ª Semana':d<=21?'3ª Semana':'4ª Semana';
-  document.getElementById('clock-semana').textContent = sem + ' do Mês';
+  document.getElementById('clock-semana').textContent = sem+' do Mês';
 }
 
+/* ══ AUTO-ROTAÇÃO ══ */
 const ORDEM = ['FÁTIMA','FERNANDA','PRISCILA','MARCOS','RENATA'];
 let countdown = 30;
 function updateCountdown() {
   countdown--;
-  document.getElementById('countdown').textContent = countdown + 's';
-  if (countdown <= 0) {
-    location.href = '/comprador.html?nome=' + encodeURIComponent(ORDEM[0]) + '&auto=1&idx=0';
-  }
+  document.getElementById('countdown').textContent = countdown+'s';
+  if (countdown<=0)
+    location.href='/comprador.html?nome='+encodeURIComponent(ORDEM[0])+'&auto=1&idx=0';
 }
 
+/* ══ ERP REAL ══ */
 async function atualizarStatusReal() {
   try {
     const resp = await fetch('/api/compras/pedidos-hoje');
     if (!resp.ok) return;
-    const { concluidos, total_pedidos } = await resp.json();
+    const {concluidos,total_pedidos} = await resp.json();
     const codsOk = new Set(concluidos);
-    for (const c of COMPRADORES) {
-      for (const cat of c.categorias) {
-        for (const f of cat.fornecedores) {
+    for (const c of COMPRADORES)
+      for (const cat of c.categorias)
+        for (const f of cat.fornecedores)
           if (f.cod) f.status = codsOk.has(parseInt(f.cod)) ? 'g' : 'r';
-        }
-      }
-    }
     renderAll();
     const el = document.getElementById('kpi-real');
     if (el) el.textContent = `${total_pedidos} pedidos hoje`;
-  } catch(e) {
-    console.warn('ERP offline:', e.message);
-  }
+  } catch(e) { console.warn('ERP offline:',e.message); }
 }
 
+/* ══ INIT ══ */
 renderAll();
 renderTicker();
+renderHeatmap();
 updateClock();
 atualizarStatusReal();
 setInterval(updateClock, 1000);
 setInterval(updateCountdown, 1000);
-setInterval(atualizarStatusReal, 2 * 60 * 1000);
+setInterval(atualizarStatusReal, 2*60*1000);
 </script>
 </body>
 </html>

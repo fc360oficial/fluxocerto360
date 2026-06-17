@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>Diretoria — Econômico Relatórios</title>
+<script src="/chart.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
   --bg:#08111F;--bg2:#0B1220;
   --card:#121B2E;--card2:#172033;
-  --brand:#FACC15;--brand2:#FFC72C;
-  --brand-glow:rgba(250,204,21,.20);--brand-dim:rgba(250,204,21,.08);
+  --brand:#FACC15;--brand-glow:rgba(250,204,21,.20);--brand-dim:rgba(250,204,21,.08);
   --green:#22C55E;--green-glow:rgba(34,197,94,.35);
   --red:#EF4444;--red-glow:rgba(239,68,68,.35);
   --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
@@ -31,7 +31,7 @@ body::before{
     radial-gradient(ellipse 35% 55% at 50% 105%,rgba(34,197,94,.03) 0%,transparent 50%);
 }
 
-/* HEADER */
+/* ── HEADER ── */
 header{
   position:relative;z-index:100;height:80px;flex-shrink:0;
   background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
@@ -56,83 +56,61 @@ header{
 .h-title h2{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2.5px;text-transform:uppercase;line-height:1}
 .h-title p{font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
 
-/* TIMER BAR */
+/* ── TIMER BAR ── */
 .timer-bar-wrap{height:3px;background:rgba(250,204,21,.12);flex-shrink:0;position:relative;z-index:1}
 .timer-bar{height:100%;background:var(--brand);width:100%}
 
-/* GRID */
-.grid{
-  flex:1;display:grid;
-  grid-template-columns:repeat(3,1fr);
-  grid-template-rows:repeat(2,1fr);
-  gap:12px;padding:12px;overflow:hidden;
+/* ── KPI ROW (6 lojas compactas) ── */
+.kpi-row{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:8px;padding:8px 12px;flex-shrink:0;
   position:relative;z-index:1;
 }
-
-/* CARD */
-.card{
-  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 60%,rgba(8,17,31,.9) 100%);
-  border:1px solid var(--border-md);border-radius:var(--r);
-  display:flex;flex-direction:column;
+.kcard{
+  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 100%);
+  border:1px solid var(--border-md);border-radius:var(--r-sm);
+  padding:10px 12px;position:relative;overflow:hidden;
   box-shadow:var(--sh);
-  position:relative;overflow:hidden;
-  animation:cardIn .5s cubic-bezier(.22,1,.36,1) both;
 }
-.card:nth-child(1){animation-delay:.04s}
-.card:nth-child(2){animation-delay:.08s}
-.card:nth-child(3){animation-delay:.12s}
-.card:nth-child(4){animation-delay:.16s}
-.card:nth-child(5){animation-delay:.20s}
-.card:nth-child(6){animation-delay:.24s}
-@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.card::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(160deg,rgba(255,255,255,.025) 0%,rgba(255,255,255,0) 50%);
-  pointer-events:none;
-}
-
-/* Accent bar no topo do card */
-.card-accent{height:4px;width:100%;flex-shrink:0;
-  background:linear-gradient(90deg,var(--brand),rgba(250,204,21,.25))}
-
-.card-body{padding:16px 20px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
-
-.card-loja{
-  font-size:9px;font-weight:900;color:var(--brand);
-  text-transform:uppercase;letter-spacing:2.5px;
-}
-.card-fat{
-  font-size:32px;font-weight:900;color:#fff;
-  letter-spacing:-0.5px;line-height:1;
-  text-shadow:0 0 30px rgba(255,255,255,.08);
-}
-.card-ant{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.card-ant-val{font-size:11px;color:var(--text2)}
-.badge{
-  display:inline-flex;align-items:center;gap:3px;
-  font-size:11px;font-weight:800;padding:1px 7px;border-radius:20px;
-}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--brand),rgba(250,204,21,.2))}
+.kc-loja{font-size:8px;font-weight:900;color:var(--brand);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+.kc-fat{font-size:18px;font-weight:900;color:#fff;line-height:1;letter-spacing:-0.3px}
+.kc-ant{font-size:10px;color:var(--text2);margin-top:3px;display:flex;align-items:center;gap:5px}
+.badge{font-size:10px;font-weight:800;padding:1px 6px;border-radius:20px;display:inline-flex;align-items:center;gap:2px}
 .badge.up{color:var(--green);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
 .badge.dn{color:var(--red);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25)}
+.kc-bottom{display:flex;gap:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.kc-kpi{flex:1}
+.kc-kpi-lbl{font-size:7px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.kc-kpi-val{font-size:13px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums}
+.kc-kpi-val.msv{color:var(--brand)}
 
-.card-sep{height:1px;background:var(--border);margin:2px 0}
-
-.card-kpis{display:flex;gap:0}
-.kpi{
-  flex:1;display:flex;flex-direction:column;gap:3px;
-  padding:8px 12px;border-right:1px solid var(--border);
+/* ── CHARTS ROW ── */
+.charts-row{
+  flex:1;display:grid;grid-template-columns:1fr 1fr;
+  gap:8px;padding:0 12px 10px;overflow:hidden;
+  position:relative;z-index:1;
 }
-.kpi:last-child{border-right:none}
-.kpi-label{font-size:8px;font-weight:900;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px}
-.kpi-val{font-size:20px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;line-height:1.1}
-.kpi-val.msv{color:var(--brand);text-shadow:0 0 20px var(--brand-glow)}
+.chart-panel{
+  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 100%);
+  border:1px solid var(--border-md);border-radius:var(--r);
+  padding:14px 16px;display:flex;flex-direction:column;
+  box-shadow:var(--sh);overflow:hidden;
+}
+.chart-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0}
+.chart-icon{font-size:14px}
+.chart-title{font-size:12px;font-weight:800;color:var(--text)}
+.chart-badge{
+  font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;
+  background:rgba(250,204,21,.15);color:var(--brand);border:1px solid rgba(250,204,21,.3);
+}
+.chart-wrap{flex:1;position:relative;min-height:0}
+.chart-wrap canvas{width:100%!important;height:100%!important}
 
-.card-prog-wrap{height:3px;background:rgba(255,255,255,.06);margin:0 20px 14px;border-radius:2px}
-.card-prog{height:100%;border-radius:2px;background:linear-gradient(90deg,#3B82F6,var(--brand))}
-
-.loading{
+.loading-chart{
   display:flex;align-items:center;justify-content:center;
-  color:var(--text3);font-size:14px;grid-column:1/-1;grid-row:1/-1;
+  color:var(--text3);font-size:12px;height:100%;
 }
 </style>
 </head>
@@ -140,10 +118,7 @@ header{
 
 <header>
   <img class="h-logo" src="/logo.png" alt="Econômico">
-  <div class="h-brand">
-    <h1>FC360</h1>
-    <p>Relatórios</p>
-  </div>
+  <div class="h-brand"><h1>Econômico</h1><p>Relatórios</p></div>
   <div class="h-sep"></div>
   <div class="h-clock">
     <div class="clock-time" id="clock">00:00:00</div>
@@ -155,23 +130,46 @@ header{
   <div class="h-fill"></div>
   <div class="h-title">
     <h2>Visão Diretoria</h2>
-    <p>KPIs do mês por loja</p>
+    <p>KPIs do mês · todas as lojas</p>
   </div>
 </header>
 
 <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
 
-<div class="grid" id="grid">
-  <div class="loading">Carregando...</div>
+<div class="kpi-row" id="kpi-row">
+  <div class="kcard" style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px">Carregando...</div>
+</div>
+
+<div class="charts-row">
+  <!-- Top produtos -->
+  <div class="chart-panel">
+    <div class="chart-head">
+      <span class="chart-icon">🏆</span>
+      <span class="chart-title">Top 10 Produtos Mais Vendidos</span>
+      <span class="chart-badge" id="badge-tv">Mês · Todas</span>
+    </div>
+    <div class="chart-wrap" id="wrap-tv"><div class="loading-chart">Carregando...</div></div>
+  </div>
+  <!-- Mercadológico -->
+  <div class="chart-panel">
+    <div class="chart-head">
+      <span class="chart-icon">📦</span>
+      <span class="chart-title">Top Mercadológico</span>
+      <span class="chart-badge" id="badge-merc">Mês · Todas</span>
+    </div>
+    <div class="chart-wrap" id="wrap-merc"><div class="loading-chart">Carregando...</div></div>
+  </div>
 </div>
 
 <script>
-const LOJAS = {1:'Loja 1',2:'Loja 2',3:'Loja 3',4:'Loja 4',5:'Loja 5',6:'Loja 6'};
-const TEMPO_TELA = 25000;
+const LOJAS    = {1:'Loja 1',2:'Loja 2',3:'Loja 3',4:'Loja 4',5:'Loja 5',6:'Loja 6'};
+const TEMPO_TELA = 30000; // 30s na tela
+let chartTV = null, chartMerc = null;
 
 // ── RELÓGIO ──
-const SEMANAS   = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-const MESES_EX  = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const SEMANAS  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MESES_EX = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MESES_N  = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 function atualizarRelogio() {
   const n = new Date();
   document.getElementById('clock').textContent =
@@ -182,12 +180,11 @@ function atualizarRelogio() {
 setInterval(atualizarRelogio, 1000);
 atualizarRelogio();
 
-// ── TIMER BAR ──
+// ── TIMER ──
 let timerAnim = null;
 function iniciarTimer() {
   const bar = document.getElementById('timer-bar');
-  bar.style.transition = 'none';
-  bar.style.width = '100%';
+  bar.style.transition = 'none'; bar.style.width = '100%';
   void bar.offsetWidth;
   bar.style.transition = `width ${TEMPO_TELA}ms linear`;
   bar.style.width = '0%';
@@ -197,72 +194,134 @@ function iniciarTimer() {
   }, TEMPO_TELA);
 }
 
-// ── RENDER ──
-function fmt(v) {
-  return v.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
-}
+// ── UTILS ──
+function fmt(v)  { return (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtN(v) { return (+v).toLocaleString('pt-BR'); }
 
-function renderGrid(data) {
-  const grid = document.getElementById('grid');
+// ── KPI CARDS ──
+function renderKPIs(data) {
   const hoje = new Date();
   const pctMes = Math.round(hoje.getDate() / new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate() * 100);
-
-  grid.innerHTML = '';
+  const row = document.getElementById('kpi-row');
+  row.innerHTML = '';
   for (const lj of data.lojas) {
-    const up   = lj.variacao >= 0;
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="card-accent"></div>
-      <div class="card-body">
-        <div class="card-loja">${LOJAS[lj.loja] || 'Loja '+lj.loja}</div>
-        <div class="card-fat">R$ ${fmt(lj.faturamento)}</div>
-        <div class="card-ant">
-          <span class="card-ant-val">Mesmo período ${data.ano_ant}: R$ ${fmt(lj.fat_ant_ate_dia)}</span>
-          <span class="badge ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(lj.variacao).toFixed(1)}%</span>
-        </div>
-        <div class="card-sep"></div>
-        <div class="card-kpis">
-          <div class="kpi">
-            <div class="kpi-label">Ticket Médio</div>
-            <div class="kpi-val">R$ ${fmt(lj.ticket)}</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Margem S/V</div>
-            <div class="kpi-val msv">${lj.msv.toFixed(1)}%</div>
-          </div>
-          <div class="kpi">
-            <div class="kpi-label">Cupons</div>
-            <div class="kpi-val">${lj.cupons.toLocaleString('pt-BR')}</div>
-          </div>
-        </div>
+    const up = lj.variacao >= 0;
+    const d  = document.createElement('div');
+    d.className = 'kcard';
+    d.innerHTML = `
+      <div class="kc-loja">${LOJAS[lj.loja]||'Loja '+lj.loja}</div>
+      <div class="kc-fat">R$ ${fmt(lj.faturamento)}</div>
+      <div class="kc-ant">
+        ${data.ano_ant}: R$ ${fmt(lj.fat_ant_ate_dia)}
+        <span class="badge ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(lj.variacao).toFixed(1)}%</span>
       </div>
-      <div class="card-prog-wrap"><div class="card-prog" style="width:${pctMes}%"></div></div>
-    `;
-    grid.appendChild(card);
+      <div class="kc-bottom">
+        <div class="kc-kpi"><div class="kc-kpi-lbl">Ticket</div><div class="kc-kpi-val">R$ ${fmt(lj.ticket)}</div></div>
+        <div class="kc-kpi"><div class="kc-kpi-lbl">MSV</div><div class="kc-kpi-val msv">${lj.msv.toFixed(1)}%</div></div>
+        <div class="kc-kpi"><div class="kc-kpi-lbl">Cupons</div><div class="kc-kpi-val">${fmtN(lj.cupons)}</div></div>
+      </div>`;
+    row.appendChild(d);
   }
 }
 
-// ── DADOS ──
-async function buscarDados() {
-  try {
-    const r = await fetch('/api/diretoria/kpis');
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    const data = await r.json();
-    renderGrid(data);
-  } catch(e) {
-    document.getElementById('grid').innerHTML =
-      `<div class="loading" style="color:#ef4444">Erro ao carregar (${e.message})</div>`;
-  }
+// ── GRÁFICO TOP VENDIDOS ──
+function renderTopVendidos(data) {
+  const wid = 'wrap-tv';
+  document.getElementById(wid).innerHTML = '';
+  const canvas = document.createElement('canvas');
+  document.getElementById(wid).appendChild(canvas);
+  if (chartTV) chartTV.destroy();
+  const sorted = [...data].sort((a,b) => b.qtd - a.qtd).slice(0, 10);
+  chartTV = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(d => d.descricao),
+      datasets: [{
+        data: sorted.map(d => d.qtd),
+        backgroundColor: sorted.map((_,i) => `hsla(${210+i*8},80%,60%,0.85)`),
+        borderRadius: 6, borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${fmtN(ctx.raw)} unidades` } }
+      },
+      scales: {
+        x: { grid:{color:'#1e293b'}, ticks:{color:'#94a3b8',callback:v=>fmtN(v)} },
+        y: { grid:{display:false}, ticks:{color:'#e2e8f0',font:{size:11}} }
+      }
+    }
+  });
+}
+
+// ── GRÁFICO MERCADOLÓGICO ──
+function renderMercadologico(data) {
+  const wid = 'wrap-merc';
+  document.getElementById(wid).innerHTML = '';
+  const canvas = document.createElement('canvas');
+  document.getElementById(wid).appendChild(canvas);
+  if (chartMerc) chartMerc.destroy();
+  const top = data.slice(0, 12);
+  chartMerc = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: top.map(d => d.descricao),
+      datasets: [{
+        data: top.map(d => d.valor),
+        backgroundColor: top.map((_,i) => `hsla(${160+i*12},70%,55%,0.85)`),
+        borderRadius: 6, borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` R$ ${fmt(ctx.raw)}` } }
+      },
+      scales: {
+        x: { grid:{color:'#1e293b'}, ticks:{color:'#94a3b8',callback:v=>'R$'+fmtN(v)} },
+        y: { grid:{display:false}, ticks:{color:'#e2e8f0',font:{size:11}} }
+      }
+    }
+  });
+}
+
+// ── CARGA ──
+async function buscarTudo() {
+  const hoje = new Date();
+  const mes  = hoje.getMonth() + 1;
+  const ano  = hoje.getFullYear();
+  const mesLabel = MESES_N[mes] + '/' + ano;
+
+  const [kpis, tv, merc] = await Promise.allSettled([
+    fetch('/api/diretoria/kpis').then(r => r.ok ? r.json() : Promise.reject('kpis '+r.status)),
+    fetch(`/api/top-vendidos?loja=todas&mes=${mes}&ano=${ano}`).then(r => r.ok ? r.json() : Promise.reject()),
+    fetch(`/api/top-mercadologico?loja=todas&mes=${mes}&ano=${ano}`).then(r => r.ok ? r.json() : Promise.reject()),
+  ]);
+
+  if (kpis.status === 'fulfilled') renderKPIs(kpis.value);
+  else document.getElementById('kpi-row').innerHTML =
+    `<div style="grid-column:1/-1;color:#ef4444;font-size:12px;padding:8px">Erro ao carregar KPIs</div>`;
+
+  document.getElementById('badge-tv').textContent   = mesLabel + ' · Todas';
+  document.getElementById('badge-merc').textContent = mesLabel + ' · Todas';
+
+  if (tv.status === 'fulfilled' && Array.isArray(tv.value) && tv.value.length) renderTopVendidos(tv.value);
+  else document.getElementById('wrap-tv').innerHTML = '<div class="loading-chart" style="color:#ef4444">Sem dados</div>';
+
+  if (merc.status === 'fulfilled' && Array.isArray(merc.value) && merc.value.length) renderMercadologico(merc.value);
+  else document.getElementById('wrap-merc').innerHTML = '<div class="loading-chart" style="color:#ef4444">Sem dados</div>';
 }
 
 async function init() {
-  await buscarDados();
+  await buscarTudo();
   iniciarTimer();
 }
 
 init();
-setInterval(buscarDados, 3 * 60 * 1000);
+setInterval(buscarTudo, 3 * 60 * 1000);
 </script>
 </body>
 </html>

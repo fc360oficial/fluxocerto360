@@ -4,6 +4,7 @@ const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
+const { exec } = require('child_process');
 
 const app = express();
 app.use(express.json());
@@ -21,7 +22,7 @@ app.use(session({
 
 // Middleware de autenticação (antes do static)
 app.use((req, res, next) => {
-  const publico = ['/login.html', '/api/login', '/logo.png'];
+  const publico = ['/login.html', '/api/login', '/logo.png', '/deploy'];
   if (publico.includes(req.path)) return next();
   if (req.session && req.session.user) return next();
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado' });
@@ -53,7 +54,7 @@ app.get('/api/me', (req, res) => {
 });
 
 const dbConfig = {
-  host: 'localhost',
+  host: '192.168.2.252',
   port: 3306,
   user: 'root',
   password: '1900',
@@ -67,12 +68,21 @@ const pagtoLabels = {
 };
 
 async function q(sql, params = []) {
-  const conn = await mysql.createConnection(dbConfig);
+  let conn;
+  try {
+    conn = await mysql.createConnection(dbConfig);
+  } catch(connErr) {
+    console.error('[DB-CONN-ERR]', connErr.code, connErr.errno, connErr.message, connErr.sqlMessage);
+    throw new Error(connErr.message || connErr.code || JSON.stringify(connErr));
+  }
   try {
     const [rows] = await conn.query(sql, params);
     return rows;
+  } catch(queryErr) {
+    console.error('[DB-QUERY-ERR]', queryErr.code, queryErr.message, sql.substring(0,80));
+    throw new Error(queryErr.message || queryErr.code || JSON.stringify(queryErr));
   } finally {
-    await conn.end();
+    await conn.end().catch(()=>{});
   }
 }
 
@@ -1427,6 +1437,15 @@ app.get('/api/compras/pedidos-hoje', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/deploy', (req, res) => {
+  if (req.query.token !== 'fc360deploy2026') return res.status(403).send('Proibido');
+  res.send('Deploy iniciado. O servidor vai reiniciar em instantes...');
+  exec('git fetch origin && git reset --hard origin/main', { cwd: __dirname }, (err, stdout, stderr) => {
+    console.log('[DEPLOY]', stdout || stderr || err?.message);
+    setTimeout(() => process.exit(0), 500);
+  });
 });
 
 app.listen(3003, '0.0.0.0', () => {

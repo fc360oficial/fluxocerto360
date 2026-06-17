@@ -68,6 +68,9 @@
   .kpi-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
   .kpi-value { font-size: 26px; font-weight: 700; color: #f1f5f9; }
   .kpi-sub { font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+  .kpi-prog-wrap { height: 5px; background: rgba(255,255,255,.08); border-radius: 3px; margin: 8px 0 4px; overflow: hidden; }
+  .kpi-prog-bar { height: 100%; background: #3b82f6; border-radius: 3px; transition: width 1.2s ease; width: 0%; }
+  .kpi-dias { font-size: 11px; color: #64748b; margin-bottom: 2px; }
   .kpi-up { color: #10b981; }
   .kpi-down { color: #ef4444; }
   .kpi-icon { position: absolute; right: 20px; top: 20px; font-size: 28px; opacity: 0.15; }
@@ -213,6 +216,8 @@
       <div class="kpi-icon">💰</div>
       <div class="kpi-label">Faturamento do Mês</div>
       <div class="kpi-value" id="kpi-fat-mes">...</div>
+      <div class="kpi-prog-wrap"><div class="kpi-prog-bar" id="kpi-prog-mes"></div></div>
+      <div class="kpi-dias" id="kpi-dias-mes">—</div>
       <div class="kpi-sub" id="kpi-fat-sub">carregando...</div>
     </div>
     <div class="kpi-card green">
@@ -341,12 +346,19 @@ async function carregarKPIs() {
     const d = await r.json();
     if (d.error) return;
 
-    const mesSel = parseInt(mes);
+    const mesSel  = parseInt(mes);
     const mesNome = mesesNomes[mesSel];
+    const hoje2   = new Date();
+    const mesAtual = hoje2.getMonth() + 1;
+    const diasNoMes = new Date(hoje2.getFullYear(), mesSel, 0).getDate();
+    const diaAte  = mesSel === mesAtual ? hoje2.getDate() : (mesSel < mesAtual ? diasNoMes : 0);
+    const pctMes  = +(diaAte / diasNoMes * 100).toFixed(1);
 
     document.getElementById('kpi-fat-mes').textContent = fmt(d.faturamento_mes);
+    document.getElementById('kpi-prog-mes').style.width = pctMes + '%';
+    document.getElementById('kpi-dias-mes').textContent = `Dia ${diaAte} de ${diasNoMes} · ${pctMes}% do mês`;
     document.getElementById('kpi-fat-sub').innerHTML =
-      `<span style="color:#64748b">${mesNome} até dia ${d.dia_ate} · ${lojaLabel}</span>`;
+      `<span style="color:#64748b">${mesNome} até dia ${diaAte} · ${lojaLabel}</span>`;
 
     document.getElementById('kpi-fat-ant').textContent = fmt(d.fat_ano_ant_ate_dia ?? 0);
     document.getElementById('kpi-ant-label').textContent = `${mesNome}/${d.ano_ant} — até dia ${d.dia_ate}`;

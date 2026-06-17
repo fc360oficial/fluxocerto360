@@ -325,8 +325,8 @@ function trocarLoja(loja) {
   destacarCard(loja);
   iniciarTimerBarra();
 
-  if (cacheTV[loja])   renderTopVendidos(cacheTV[loja]);
-  if (cacheMerc[loja]) renderMercadologico(cacheMerc[loja]);
+  try { if (cacheTV[loja])   renderTopVendidos(cacheTV[loja]);   } catch(_) {}
+  try { if (cacheMerc[loja]) renderMercadologico(cacheMerc[loja]); } catch(_) {}
 
   lojaTimer = setTimeout(() => {
     const proxima = loja + 1;
@@ -341,45 +341,49 @@ function trocarLoja(loja) {
   }, TEMPO_POR_LOJA);
 }
 
-// ── PRÉ-CARREGA DADOS DE TODAS AS LOJAS ──
-async function preCarregarDados() {
+// ── BUSCA DADOS DE UMA LOJA ──
+async function buscarLoja(loja) {
   const hoje = new Date();
   const mes  = hoje.getMonth() + 1;
   const ano  = hoje.getFullYear();
-  mesLabel   = MESES_N[mes] + '/' + ano;
-
-  await Promise.allSettled([1,2,3,4,5,6].map(async loja => {
-    try {
-      const [tv, merc] = await Promise.all([
-        fetch(`/api/top-vendidos?loja=${loja}&mes=${mes}&ano=${ano}`).then(r=>r.json()),
-        fetch(`/api/top-mercadologico?loja=${loja}&mes=${mes}&ano=${ano}`).then(r=>r.json()),
-      ]);
-      if (Array.isArray(tv)   && tv.length)   cacheTV[loja]   = tv;
-      if (Array.isArray(merc) && merc.length) cacheMerc[loja] = merc;
-    } catch(_) {}
-  }));
+  try {
+    const [tv, merc] = await Promise.all([
+      fetch(`/api/top-vendidos?loja=${loja}&mes=${mes}&ano=${ano}`).then(r => r.ok ? r.json() : []),
+      fetch(`/api/top-mercadologico?loja=${loja}&mes=${mes}&ano=${ano}`).then(r => r.ok ? r.json() : []),
+    ]);
+    if (Array.isArray(tv)   && tv.length)   cacheTV[loja]   = tv;
+    if (Array.isArray(merc) && merc.length) cacheMerc[loja] = merc;
+  } catch(_) {}
 }
 
 // ── INIT ──
 async function init() {
-  const [kpisRes] = await Promise.allSettled([
-    fetch('/api/diretoria/kpis').then(r => r.ok ? r.json() : Promise.reject()),
-  ]);
-  if (kpisRes.status === 'fulfilled') renderKPIs(kpisRes.value);
+  const hoje = new Date();
+  mesLabel = MESES_N[hoje.getMonth() + 1] + '/' + hoje.getFullYear();
 
-  await preCarregarDados();
+  // KPIs e dados da Loja 1 carregam juntos
+  await Promise.allSettled([
+    fetch('/api/diretoria/kpis').then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) renderKPIs(d); }),
+    buscarLoja(1),
+  ]);
+
+  // Inicia ciclo imediatamente
   trocarLoja(1);
+
+  // Pré-carrega lojas 2-6 em background enquanto Loja 1 está na tela
+  for (let loja = 2; loja <= 6; loja++) buscarLoja(loja);
 }
 
 init();
 
-// Recarrega KPIs a cada 3 min (gráficos atualizam no próximo ciclo completo)
+// Recarrega a cada 3 min
 setInterval(async () => {
   try {
     const r = await fetch('/api/diretoria/kpis');
     if (r.ok) renderKPIs(await r.json());
   } catch(_) {}
-  await preCarregarDados();
+  for (let loja = 1; loja <= 6; loja++) buscarLoja(loja);
 }, 3 * 60 * 1000);
 </script>
 </body>

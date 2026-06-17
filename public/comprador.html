@@ -813,7 +813,7 @@ function renderCronograma(cronograma) {
         <span class="forn-status ${f.status}">${STATUS_LABEL[f.status]}</span>
       </div>
     `).join('');
-    return `<div class="cat"><div class="cat-title">${cat.nome}</div>${rows}</div>`;
+    return `<div class="cat">${rows}</div>`;
   }).join('');
 
   const ativs = cronograma.atividades.map(a => `

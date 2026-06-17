@@ -572,7 +572,6 @@ function renderCard(c) {
 
   const cats = c.categorias.map(cat => `
     <div class="cat">
-      <div class="cat-nome">${cat.nome}</div>
       ${cat.fornecedores.map(f=>`
         <div class="forn">
           <span class="sdot ${f.status}"></span>

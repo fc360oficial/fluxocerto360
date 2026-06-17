@@ -250,25 +250,29 @@ document.addEventListener('visibilitychange', () => {
 
 // ── LOAD ───────────────────────────────────────────
 async function load() {
+  let data;
   try {
     const r = await fetch('/api/precificacao/margens-criticas');
-    const data = await r.json();
+    data = await r.json();
+  } catch(e) {
+    document.getElementById('grid').innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
+    return;
+  }
 
-    let totNeg = 0, totBaixo = 0;
-    const grid = document.getElementById('grid');
-    pararCarrossel();
-    grid.innerHTML = '';
-    colBodies = [];
+  // ── Construir colunas (cada uma protegida individualmente) ──
+  const grid = document.getElementById('grid');
+  pararCarrossel();
+  grid.innerHTML = '';
+  colBodies = [];
+  let totNeg = 0, totBaixo = 0;
 
-    for (let ln = 1; ln <= 6; ln++) {
-      const items = data[ln] || [];
+  for (let ln = 1; ln <= 6; ln++) {
+    try {
+      const items = Array.isArray(data[ln]) ? data[ln] : [];
       const neg   = items.filter(i => i.margem < 0);
       const baixo = items.filter(i => i.margem >= 0);
       totNeg   += neg.length;
       totBaixo += baixo.length;
-
-      const col = document.createElement('div');
-      col.className = 'col';
 
       let itemsHtml = '';
       if (items.length === 0) {
@@ -278,57 +282,63 @@ async function load() {
           try {
             const preco = (+(i.preco || 0)).toFixed(2);
             const custo = (+(i.custo || 0)).toFixed(2);
-            return `
-            <div class="item ${i.margem < 0 ? 'neg' : 'baixo'}">
+            return `<div class="item ${i.margem < 0 ? 'neg' : 'baixo'}">
               <div class="item-info">
-                <div class="item-desc">${i.descricao || ''}</div>
+                <div class="item-desc">${String(i.descricao || '')}</div>
                 <div class="item-row2">
-                  <span class="item-cod">${i.codigo || ''}</span>
+                  <span class="item-cod">${String(i.codigo || '')}</span>
                   <span class="item-preco">Vda R$${preco}</span>
                   <span class="item-custo">Cst R$${custo}</span>
                 </div>
               </div>
               <span class="item-pct">${i.margem}%</span>
             </div>`;
-          } catch(e) { return ''; }
+          } catch(_) { return ''; }
         }).join('');
       }
 
+      const col = document.createElement('div');
+      col.className = 'col';
       col.innerHTML = `
         <div class="col-head">
-          <div class="col-loja">${LOJAS[ln]}</div>
+          <div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div>
           <div class="col-sub">${neg.length} neg · ${baixo.length} baixo</div>
         </div>
         <div class="col-body" id="body-${ln}">${itemsHtml}</div>`;
       grid.appendChild(col);
       colBodies.push(col.querySelector('.col-body'));
+    } catch(_) {
+      // garante que a coluna existe mesmo se der erro
+      const col = document.createElement('div');
+      col.className = 'col';
+      col.innerHTML = `<div class="col-head"><div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div></div><div class="col-body" id="body-${ln}"></div>`;
+      grid.appendChild(col);
+      colBodies.push(col.querySelector('.col-body'));
     }
+  }
 
+  // Sempre inicia carrossel após construir as 6 colunas
+  iniciarCarrossel(currentIdx < colBodies.length ? currentIdx : 0);
+
+  // Atualizar contadores e barra de margem (erros aqui não afetam o carrossel)
+  try {
     document.getElementById('tot-neg').textContent   = totNeg;
     document.getElementById('tot-baixo').textContent = totBaixo;
     document.getElementById('tot-total').textContent = totNeg + totBaixo;
     document.getElementById('last-upd').textContent  = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+  } catch(_) {}
 
-    // Margem geral + por loja
+  try {
     const resumo = data.resumo || {};
     const msv = resumo.margemMSV ?? 0;
     const mgVal = document.getElementById('mg-val');
     mgVal.textContent = msv.toFixed(1) + '%';
     mgVal.style.color = 'var(--brand)';
-
-    const mgLojas = document.getElementById('mg-lojas');
-    mgLojas.innerHTML = [1,2,3,4,5,6].map(ln => {
-      const d = resumo.porLoja?.[ln] || { msc: 0 };
-      return `<div class="mg-loja">
-        <div class="mg-loja-nome">Loja ${ln}</div>
-        <div class="mg-loja-val">${(d.msv ?? 0).toFixed(1)}%</div>
-      </div>`;
+    document.getElementById('mg-lojas').innerHTML = [1,2,3,4,5,6].map(ln => {
+      const d = resumo.porLoja?.[ln] || {};
+      return `<div class="mg-loja"><div class="mg-loja-nome">Loja ${ln}</div><div class="mg-loja-val">${(d.msv ?? 0).toFixed(1)}%</div></div>`;
     }).join('');
-
-    iniciarCarrossel(0);
-  } catch(e) {
-    document.getElementById('grid').innerHTML = '<div class="loading">Erro ao carregar dados.</div>';
-  }
+  } catch(_) {}
 }
 
 load();

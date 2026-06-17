@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detalhe Compradora — FC360</title>
+<style>
+/* ══════════════════════════════════════════════════
+   FC360 COMPRAS · TV PREMIUM v3
+   Dark Enterprise — SAP Fiori / Linear / ClickUp
+══════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  /* Fundo */
+  --bg:           #08111F;
+  --bg2:          #0B1220;
+  /* Cards */
+  --card:         #121B2E;
+  --card2:        #172033;
+  /* Brand */
+  --brand:        #FACC15;
+  --brand2:       #FFC72C;
+  --brand-glow:   rgba(250,204,21,.18);
+  --brand-dim:    rgba(250,204,21,.08);
+  /* Semânticas */
+  --green:        #22C55E;
+  --green-bg:     rgba(34,197,94,.10);
+  --green-glow:   rgba(34,197,94,.22);
+  --amber:        #F59E0B;
+  --amber-bg:     rgba(245,158,11,.10);
+  --red:          #EF4444;
+  --red-bg:       rgba(239,68,68,.10);
+  --red-glow:     rgba(239,68,68,.22);
+  --blue:         #3B82F6;
+  /* Texto */
+  --text:         #FFFFFF;
+  --text2:        #94A3B8;
+  --text3:        #64748B;
+  /* Bordas / raio / sombra */
+  --border:       rgba(255,255,255,.06);
+  --border-md:    rgba(255,255,255,.10);
+  --radius:       20px;
+  --radius-sm:    12px;
+  --shadow:       0 8px 32px rgba(0,0,0,.30);
+  --shadow-lg:    0 16px 48px rgba(0,0,0,.40);
+  --font-sans:    'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg); color: var(--text);
+  height: 100vh; overflow: hidden;
+  background-image: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(250,204,21,.03), transparent);
+}
+
+/* ══ HEADER ══ */
+header {
+  height: 72px;
+  background: linear-gradient(180deg, rgba(18,27,46,.98), rgba(18,27,46,.94));
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-md);
+  padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+}
+.h-left { display: flex; align-items: center; gap: 16px; }
+.h-logo { height: 36px; filter: brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg); }
+.h-back {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--text2); text-decoration: none;
+  font-size: 13px; font-weight: 600;
+  padding: 7px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-md);
+  background: rgba(255,255,255,.04); transition: all .2s ease;
+}
+.h-back:hover { color: var(--brand); border-color: rgba(250,204,21,.3); background: var(--brand-dim); }
+.h-divider { width: 1px; height: 30px; background: var(--border-md); }
+.h-compradora { display: flex; align-items: center; gap: 14px; }
+.h-avatar {
+  width: 46px; height: 46px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 800; flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.h-info h2 { font-size: 22px; font-weight: 800; letter-spacing: .3px; color: var(--text); }
+.h-info p  { font-size: 11px; color: var(--text2); letter-spacing: 1.2px; text-transform: uppercase; margin-top: 2px; font-weight: 500; }
+.h-clock { text-align: right; }
+.clock-time { font-size: 52px; font-weight: 800; color: #fff; letter-spacing: 3px; font-variant-numeric: tabular-nums; line-height: 1; }
+.clock-sub  { font-size: 11px; color: var(--text2); margin-top: 2px; text-align: right; font-weight: 500; }
+.h-close {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--text2); text-decoration: none;
+  font-size: 13px; font-weight: 600;
+  padding: 7px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-md);
+  background: rgba(255,255,255,.04); transition: all .2s;
+}
+.h-close:hover { color: var(--red); border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.06); }
+
+/* ══ MAIN ══ */
+main {
+  padding: 16px 32px 8px;
+  display: flex; flex-direction: column; gap: 12px;
+  height: calc(100vh - 72px - 40px); overflow: hidden;
+}
+
+/* ══ DAY BANNER ══ */
+.day-banner {
+  background: linear-gradient(135deg, var(--card2) 0%, var(--card) 100%);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.day-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0));
+  pointer-events: none;
+}
+.day-banner::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+  pointer-events: none;
+}
+.day-nome { font-size: 24px; font-weight: 900; color: var(--brand); letter-spacing: 2px; text-transform: uppercase; line-height: 1; }
+.day-data { font-size: 12px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+.day-semana-tag {
+  display: inline-flex; align-items: center;
+  background: var(--brand-dim); border: 1px solid rgba(250,204,21,.2);
+  color: var(--brand); font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-top: 7px; width: fit-content;
+}
+.day-prog { display: flex; align-items: center; gap: 8px; }
+.dp-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+  min-width: 84px;
+  transition: transform .2s, box-shadow .2s;
+}
+.dp-val { font-size: 38px; font-weight: 900; line-height: 1; }
+.dp-lbl { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; font-weight: 700; white-space: nowrap; }
+.dp-item.verde   { border-color: rgba(34,197,94,.2); }
+.dp-item.verde   .dp-val { color: var(--green); }
+.dp-item.verde:hover { box-shadow: 0 0 24px var(--green-glow); transform: translateY(-2px); }
+.dp-item.amber   { border-color: rgba(245,158,11,.2); }
+.dp-item.amber   .dp-val { color: var(--amber); }
+.dp-item.vermelho { border-color: rgba(239,68,68,.2); }
+.dp-item.vermelho .dp-val { color: var(--red); }
+.dp-item.vermelho:hover { box-shadow: 0 0 24px var(--red-glow); transform: translateY(-2px); }
+.dp-sep { width: 1px; height: 48px; background: var(--border-md); }
+.prog-bar-h {
+  min-width: 170px; padding: 10px 18px; border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+  border: 1px solid var(--border);
+}
+.pb-label { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
+.pb-label > span:first-child { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.pb-pct { font-size: 22px; font-weight: 900; color: var(--brand); line-height: 1; }
+.pb-lbl-txt { text-transform: uppercase; letter-spacing: .8px; }
+.pb-track { height: 6px; background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden; position: relative; }
+.pb-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--brand), #FFF176);
+  box-shadow: 0 0 10px rgba(250,204,21,.5);
+  transition: width 1.2s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.pb-fill::after {
+  content: ''; position: absolute; top: 0; left: -60%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent);
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+@keyframes shimmer { 0% { left: -60%; } 100% { left: 160%; } }
+
+/* ══ GRID ══ */
+.cols { display: grid; grid-template-columns: 1fr 290px; gap: 12px; flex: 1; min-height: 0; align-items: stretch; }
+
+/* ══ PANEL ══ */
+.panel {
+  background: linear-gradient(180deg, var(--card2), var(--card));
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column; min-height: 0;
+  box-shadow: var(--shadow); position: relative;
+}
+.panel::after {
+  content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+  pointer-events: none;
+}
+.panel-header {
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; background: rgba(255,255,255,.02);
+}
+.panel-title {
+  font-size: 10px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 2.5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-title::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--brand); flex-shrink: 0;
+}
+.panel-title-dot { display: none; }
+.panel-date { font-size: 12px; color: var(--text2); font-weight: 600; }
+.panel-body { padding: 14px 18px; flex: 1; overflow: hidden; position: relative; }
+
+/* ══ CATEGORY ══ */
+.cat { margin-bottom: 14px; }
+.cat:last-child { margin-bottom: 0; }
+.cat-title {
+  font-size: 9px; font-weight: 800; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.cat-title-tag { background: var(--brand-dim); color: var(--brand); padding: 2px 8px; border-radius: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.cat-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.05); }
+
+/* ══ FORNECEDOR ROW ══ */
+.forn-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 4px;
+  border-left: 3px solid transparent;
+  background: rgba(255,255,255,.025);
+  border: 1px solid transparent;
+  transition: all .2s ease;
+}
+.forn-row:hover { background: rgba(255,255,255,.05); transform: translateX(3px); }
+.forn-row.concluido { border-left: 3px solid var(--green); border-color: rgba(34,197,94,.1); }
+.forn-row.andamento { border-left: 3px solid var(--amber); border-color: rgba(245,158,11,.1); }
+.forn-row.pendente  { border-left: 3px solid var(--red);   border-color: rgba(239,68,68,.08); }
+.forn-icon { font-size: 14px; flex-shrink: 0; }
+.forn-nome { flex: 1; font-size: 17px; color: var(--text); font-weight: 600; }
+.forn-cat-tag { font-size: 9px; color: var(--text3); background: rgba(255,255,255,.05); padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+.forn-pedido { font-size: 11px; color: var(--text3); white-space: nowrap; font-weight: 500; }
+.forn-status { font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .8px; white-space: nowrap; }
+.forn-status.g { background: var(--green-bg); color: var(--green); }
+.forn-status.a { background: var(--amber-bg); color: var(--amber); }
+.forn-status.r { background: var(--red-bg);   color: var(--red); }
+
+/* ══ ATIVIDADES ══ */
+.ativ-section { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+.ativ-title {
+  font-size: 9px; font-weight: 800; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.ativ-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.05); }
+.ativ-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 4px;
+  background: rgba(255,255,255,.025); border-left: 3px solid transparent;
+  transition: background .2s;
+}
+.ativ-row:hover { background: rgba(255,255,255,.045); }
+.ativ-row.concluido { border-left-color: var(--green); }
+.ativ-row.pendente  { border-left-color: var(--red); }
+.ativ-icon { font-size: 13px; flex-shrink: 0; }
+.ativ-nome { flex: 1; font-size: 14px; color: var(--text2); font-weight: 500; }
+.ativ-status { font-size: 9px; font-weight: 800; }
+.ativ-status.g { color: var(--green); }
+.ativ-status.r { color: var(--red); }
+
+/* ══ PENDÊNCIAS PANEL ══ */
+.panel-pend {
+  background: linear-gradient(180deg, #16202E, #111A2B);
+  border: 1px solid rgba(239,68,68,.16);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column; min-height: 0;
+  box-shadow: var(--shadow); position: relative;
+}
+.panel-pend::after {
+  content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(239,68,68,.35), transparent);
+  pointer-events: none;
+}
+.panel-pend .panel-header { background: rgba(239,68,68,.05); border-bottom: 1px solid rgba(239,68,68,.1); flex-shrink: 0; }
+.panel-pend .panel-title::before { background: var(--red); }
+.panel-pend .panel-body { flex: 1; overflow: hidden; position: relative; padding: 0; }
+.panel-pend .panel-body::before,
+.panel-pend .panel-body::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 36px; z-index: 2; pointer-events: none;
+}
+.panel-pend .panel-body::before { top: 0; background: linear-gradient(to bottom, #16202E, transparent); }
+.panel-pend .panel-body::after  { bottom: 0; background: linear-gradient(to top, #111A2B, transparent); }
+.pend-scroll-wrap { overflow: hidden; height: 100%; }
+.pend-scroll-inner { padding: 12px 14px; }
+.pend-scroll-inner.animating { animation: scrollUp var(--dur, 20s) linear infinite; }
+@keyframes scrollUp { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+.pend-date-badge {
+  font-size: 10px; font-weight: 800; color: var(--red);
+  background: var(--red-bg); border: 1px solid rgba(239,68,68,.2);
+  padding: 3px 10px; border-radius: 20px;
+  animation: badgePulse 3s ease-in-out infinite;
+}
+@keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+.pend-empty { text-align: center; padding: 40px 16px; }
+.pend-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.pend-empty-txt { font-size: 14px; color: var(--green); font-weight: 700; }
+.pend-section-title {
+  font-size: 9px; font-weight: 800; color: rgba(239,68,68,.65);
+  text-transform: uppercase; letter-spacing: 2px;
+  padding: 8px 6px 4px; border-bottom: 1px solid rgba(239,68,68,.1); margin-bottom: 4px;
+}
+.pend-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px; border-radius: var(--radius-sm); margin-bottom: 3px;
+  border-left: 2px solid var(--red);
+  background: rgba(239,68,68,.05);
+  border: 1px solid rgba(239,68,68,.09);
+  transition: background .15s;
+}
+.pend-row:hover { background: rgba(239,68,68,.1); }
+.pend-row.ativ { border-left-color: var(--amber); background: rgba(245,158,11,.05); border-color: rgba(245,158,11,.09); }
+.pend-icon { font-size: 10px; flex-shrink: 0; color: var(--red); font-weight: 700; }
+.pend-row.ativ .pend-icon { color: var(--amber); }
+.pend-info { flex: 1; min-width: 0; }
+.pend-nome { font-size: 13px; color: #fca5a5; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pend-row.ativ .pend-nome { color: #fcd34d; }
+.pend-cat  { font-size: 9px; color: var(--text3); margin-top: 2px; }
+
+/* ══ MOBILE ══ */
+@media (max-width: 768px) {
+  header { height: auto; flex-wrap: wrap; padding: 10px 16px; gap: 8px; }
+  .h-left { order: 1; flex: 1; }
+  .h-compradora { order: 2; width: 100%; }
+  .h-clock { order: 3; display: none; }
+  .h-close { order: 4; }
+  .h-avatar { width: 36px; height: 36px; border-radius: 10px; font-size: 15px; }
+  .h-info h2 { font-size: 16px; }
+  main { padding: 10px 14px; gap: 8px; }
+  .day-banner { flex-direction: column; gap: 12px; padding: 14px 16px; }
+  .day-nome { font-size: 18px; }
+  .day-prog { gap: 6px; flex-wrap: wrap; }
+  .dp-val { font-size: 28px; }
+  .prog-bar-h { width: 100%; }
+  .cols { grid-template-columns: 1fr; }
+  .forn-pedido { display: none; }
+  .forn-nome { font-size: 14px; }
+}
+
+/* ══ BOTTOM BAR ══ */
+.fixed-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 40px;
+  background: rgba(8,17,31,.98); border-top: 1px solid var(--border-md);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; z-index: 200; backdrop-filter: blur(10px);
+}
+.rdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pglow 2.5s ease-in-out infinite; box-shadow: 0 0 6px var(--green); }
+@keyframes pglow { 0%,100%{opacity:1} 50%{opacity:.35} }
+.fb-txt { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.fb-auto { font-size: 11px; color: var(--brand); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-left">
+    <img src="/logo.png" class="h-logo" alt="FC360">
+    <div class="h-divider"></div>
+    <a href="/compras.html" class="h-back">← Voltar ao Painel</a>
+  </div>
+
+  <div class="h-compradora" id="h-compradora">
+    <div class="h-avatar" id="h-avatar"></div>
+    <div class="h-info">
+      <h2 id="h-nome">—</h2>
+      <p id="h-cargo">Compradora</p>
+    </div>
+  </div>
+
+  <div class="h-clock">
+    <div class="clock-time" id="clock">00:00:00</div>
+    <div class="clock-sub" id="clock-sub">—</div>
+  </div>
+
+  <a href="/compras.html" class="h-close">✕ Fechar</a>
+</header>
+
+<main>
+  <!-- Banner do dia -->
+  <div class="day-banner">
+    <div>
+      <div class="day-nome" id="day-nome">—</div>
+      <div class="day-data" id="day-data">—</div>
+    </div>
+    <div class="day-prog">
+      <div class="dp-item verde"><div class="dp-val" id="dp-done">0</div><div class="dp-lbl">Concluídos</div></div>
+      <div class="dp-item amber"><div class="dp-val" id="dp-and">0</div><div class="dp-lbl">Andamento</div></div>
+      <div class="dp-item vermelho"><div class="dp-val" id="dp-pend">0</div><div class="dp-lbl">Pendentes</div></div>
+      <div class="prog-bar-h">
+        <div class="pb-label"><span>Execução do Dia</span><span class="pb-pct" id="pb-pct">0%</span></div>
+        <div class="pb-track"><div class="pb-fill" id="pb-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Colunas: Hoje | Pendências -->
+  <div class="cols">
+    <!-- ESQUERDA: Cronograma de hoje -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📋 Cronograma de Hoje</div>
+        <div class="panel-date" id="panel-today-date">—</div>
+      </div>
+      <div class="panel-body" id="panel-hoje-outer">
+        <div id="panel-hoje"></div>
+      </div>
+    </div>
+
+    <!-- DIREITA: Pendências acumuladas da semana -->
+    <div class="panel panel-pend">
+      <div class="panel-header">
+        <div class="panel-title" style="color:#fca5a5">⚠ Pendências da Semana</div>
+        <div class="pend-date-badge" id="pend-date-badge">—</div>
+      </div>
+      <div class="panel-body">
+        <div class="pend-scroll-wrap">
+          <div class="pend-scroll-inner" id="panel-pend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="fixed-bar">
+  <div class="fb-txt"><span class="rdot"></span> Sistema online — FC360 Relatórios</div>
+  <div class="fb-txt" id="fb-auto" style="display:none;color:var(--brand);font-weight:600">Próxima tela em <span id="auto-cd">15s</span></div>
+</div>
+
+<script>
+// ── DADOS POR COMPRADORA + DIA ──
+const DIAS_SEMANA = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
+const DIAS_FULL = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+// Retorna '1e3' ou '2e4' conforme semana do mês
+function grupoSemana(date) {
+  const d = date.getDate();
+  const sem = d <= 7 ? 1 : d <= 14 ? 2 : d <= 21 ? 3 : 4;
+  return (sem === 1 || sem === 3) ? '1e3' : '2e4';
+}
+function labelGrupo(g) { return g === '1e3' ? '1ª e 3ª Semana' : '2ª e 4ª Semana'; }
+
+// Dados reais do CSV com CodFornec corretos do ERP
+function fatimaCronSeg() {
+  return {
+    categorias: [
+      { nome: 'Açúcar', itens: [
+        { nome: 'Avile',         status: 'r', pedido: null, cod: 1347 },
+        { nome: 'Usina Ipojuca', status: 'r', pedido: null, cod: 123  },
+        { nome: 'Usina Petribú', status: 'r', pedido: null, cod: 1655 },
+      ]},
+      { nome: 'Arroz', itens: [
+        { nome: 'Camil',        status: 'r', pedido: null, cod: 375  },
+        { nome: 'Tio João',     status: 'r', pedido: null, cod: 342  },
+        { nome: 'Emoções',      status: 'r', pedido: null, cod: null },
+        { nome: 'Urbano',       status: 'r', pedido: null, cod: 1079 },
+        { nome: 'Panelaco',     status: 'r', pedido: null, cod: 633  },
+        { nome: 'João Marcelo', status: 'r', pedido: null, cod: 1795 },
+        { nome: 'Rampinelli',   status: 'r', pedido: null, cod: 897  },
+      ]},
+      { nome: 'Café', itens: [
+        { nome: 'São Braz',       status: 'r', pedido: null, cod: 51   },
+        { nome: 'Moinho Petinho', status: 'r', pedido: null, cod: 37   },
+        { nome: 'Três Corações',  status: 'r', pedido: null, cod: 1499 },
+      ]},
+      { nome: 'Farinha', itens: [
+        { nome: 'Feira Nova',       status: 'r', pedido: null, cod: 1299 },
+        { nome: 'Do Sítio',         status: 'r', pedido: null, cod: null },
+        { nome: 'Kelly e Cordeiro', status: 'r', pedido: null, cod: 1105 },
+      ]},
+      { nome: 'Feijão', itens: [
+        { nome: 'Pai Heleno',          status: 'r', pedido: null, cod: 396 },
+        { nome: 'Tá Gostoso',          status: 'r', pedido: null, cod: null },
+        { nome: 'Pernambucano',        status: 'r', pedido: null, cod: 736 },
+        { nome: 'Turquesa ⚠ fecha 14h',status: 'r', pedido: null, cod: null },
+        { nome: 'Grão de Minas',       status: 'r', pedido: null, cod: null },
+        { nome: 'Kicaldo',             status: 'r', pedido: null, cod: null },
+      ]},
+      { nome: 'Floção', itens: [
+        { nome: 'Valeriano Valente', status: 'r', pedido: null, cod: 833 },
+      ]},
+    ],
+    atividades: [
+      { nome: 'Fechamento da Cotação de Alimentos (Club)', status: 'r' },
+    ],
+  };
+}
+function fatimaCronTer() {
+  return {
+    categorias: [
+      { nome: 'Farinha', itens: [
+        { nome: 'Roniel J. Silva', status: 'r', pedido: null, cod: 1791 },
+      ]},
+    ],
+    atividades: [
+      { nome: 'Planilha de Preços de Cereais', status: 'r' },
+      { nome: 'Fechamento de Pedidos de Cereais', status: 'r' },
+      { nome: 'Alinhamento Encarte Final de Semana', status: 'r' },
+    ],
+  };
+}
+function fatimaCronQua() {
+  return {
+    categorias: [
+      { nome: 'Laticínios & Derivados', itens: [
+        { nome: 'ASA',      status: 'r', pedido: null, cod: 538 },
+        { nome: 'Coringa',  status: 'r', pedido: null, cod: 187 },
+        { nome: 'Leitesol', status: 'r', pedido: null, cod: 195 },
+        { nome: 'Lactalis', status: 'r', pedido: null, cod: 835 },
+        { nome: 'Alvoar',   status: 'r', pedido: null, cod: 293 },
+        { nome: 'Raça',     status: 'r', pedido: null, cod: null },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaCronQui() {
+  return {
+    categorias: [],
+    atividades: [
+      { nome: 'Ofertas Semanais', status: 'r' },
+      { nome: 'Sem Giros das Lojas', status: 'r' },
+    ],
+  };
+}
+function fatimaCronSex() {
+  return {
+    categorias: [
+      { nome: 'Cotação', itens: [
+        { nome: 'Cotação de Alimentos', status: 'r', pedido: null, cod: '277' },
+      ]},
+    ],
+    atividades: [
+      { nome: 'Pendências / Reuniões / Visitar Lojas', status: 'r' },
+    ],
+  };
+}
+
+const DADOS = {
+  'FÁTIMA': {
+    cor: '#6366f1',
+    cargo: 'Compradora de Alimentos',
+    cronograma: {
+      '1e3': {
+        SEG: fatimaCronSeg(),
+        TER: fatimaCronTer(),
+        QUA: fatimaCronQua(),
+        QUI: fatimaCronQui(),
+        SEX: fatimaCronSex(),
+      },
+      '2e4': {
+        SEG: fatimaCronSeg(),
+        TER: fatimaCronTer(),
+        QUA: fatimaCronQua(),
+        QUI: fatimaCronQui(),
+        SEX: fatimaCronSex(),
+      },
+    },
+  },
+
+  'FERNANDA': {
+    cor: '#f43f5e',
+    cargo: 'Compradora de Higiene & Limpeza',
+    cronograma: { '1e3': {
+      SEG: { categorias: [
+        { nome: 'Higiene Pessoal', itens: [
+          { nome: 'Unilever',         status: 'g', pedido: '#47101 — R$ 42.800', cod: null },
+          { nome: 'P&G',              status: 'a', pedido: 'Em cotação',          cod: null },
+          { nome: 'Colgate-Palmolive',status: 'g', pedido: '#47102 — R$ 19.300', cod: null },
+          { nome: 'Reckitt',          status: 'r', pedido: null,                  cod: null },
+        ]},
+        { nome: 'Limpeza', itens: [
+          { nome: 'Ypê',             status: 'g', pedido: '#47103 — R$ 28.600', cod: null },
+          { nome: 'Brilhante / Omo', status: 'r', pedido: null,                  cod: null },
+          { nome: 'Veja / Flash',    status: 'r', pedido: null,                  cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Cotação de Higiene e Limpeza', status: 'a' },
+        { nome: 'Análise de Estoque Crítico',   status: 'r' },
+      ]},
+      TER: { categorias: [
+        { nome: 'Descartáveis', itens: [
+          { nome: 'Santher',  status: 'g', pedido: '#47201 — R$ 31.500', cod: null },
+          { nome: 'Mili',     status: 'r', pedido: null,                  cod: null },
+          { nome: 'Isabela',  status: 'a', pedido: 'Em negociação',       cod: null },
+          { nome: 'Procter',  status: 'g', pedido: '#47202 — R$ 14.900', cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Revisão de Cobertura — Descartáveis', status: 'r' },
+        { nome: 'Relatório de Ruptura Lojas',           status: 'r' },
+      ]},
+      QUA: { categorias: [
+        { nome: 'Cosméticos', itens: [
+          { nome: 'Natura',   status: 'g', pedido: '#47301 — R$ 22.100', cod: null },
+          { nome: "L'Oréal",  status: 'a', pedido: 'Em andamento',        cod: null },
+          { nome: 'Nívea',    status: 'r', pedido: null,                   cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Negociação de Verba de Gôndola', status: 'r' },
+      ]},
+      QUI: { categorias: [], atividades: [
+        { nome: 'Análise de Sell-Out Higiene',   status: 'g' },
+        { nome: 'Reunião de Fornecedores',        status: 'r' },
+      ]},
+      SEX: { categorias: [], atividades: [
+        { nome: 'Fechamento Semanal — Higiene', status: 'r' },
+        { nome: 'Relatório para Diretoria',      status: 'r' },
+      ]},
+    }, get '2e4'() { return this['1e3']; } },
+  },
+
+  'PRISCILA': {
+    cor: '#14b8a6',
+    cargo: 'Compradora de Bebidas & Frios',
+    cronograma: { '1e3': {
+      SEG: { categorias: [
+        { nome: 'Bebidas', itens: [
+          { nome: 'Coca-Cola / Femsa', status: 'g', pedido: '#47401 — R$ 87.300', cod: null },
+          { nome: 'Ambev',             status: 'g', pedido: '#47402 — R$ 65.200', cod: null },
+          { nome: 'Del Valle / Ades',  status: 'g', pedido: '#47403 — R$ 18.700', cod: null },
+          { nome: 'PepsiCo',           status: 'a', pedido: 'Em cotação',          cod: null },
+        ]},
+        { nome: 'Frios & Laticínios', itens: [
+          { nome: 'Vigor / Italac', status: 'g', pedido: '#47404 — R$ 29.600', cod: null },
+          { nome: 'Danone',         status: 'a', pedido: 'Em negociação',       cod: null },
+          { nome: 'Parmalat',       status: 'r', pedido: null,                  cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Fechamento de Bebidas — Semana',   status: 'g' },
+        { nome: 'Negociação de Frios — Ciclo',      status: 'a' },
+      ]},
+      TER: { categorias: [
+        { nome: 'Sucos & Energéticos', itens: [
+          { nome: 'Monster Energy', status: 'g', pedido: '#47501 — R$ 21.400', cod: null },
+          { nome: 'Red Bull',       status: 'a', pedido: 'Em cotação',          cod: null },
+          { nome: 'Big Fridge',     status: 'r', pedido: null,                  cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Cotação de Energéticos — Lojas', status: 'r' },
+      ]},
+      QUA: { categorias: [
+        { nome: 'Águas', itens: [
+          { nome: 'Minalba',     status: 'g', pedido: '#47601 — R$ 14.200', cod: null },
+          { nome: 'Crystal',     status: 'g', pedido: '#47602 — R$ 9.800',  cod: null },
+          { nome: 'Natural One', status: 'r', pedido: null,                  cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Cotação de Sucos Naturais', status: 'r' },
+      ]},
+      QUI: { categorias: [
+        { nome: 'Frios Especiais', itens: [
+          { nome: 'Bom Gosto', status: 'g', pedido: '#47701 — R$ 18.300', cod: null },
+          { nome: 'Frimesa',   status: 'a', pedido: 'Em andamento',        cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Revisão de Cobertura — Frios', status: 'r' },
+      ]},
+      SEX: { categorias: [], atividades: [
+        { nome: 'Fechamento Semanal — Bebidas', status: 'r' },
+        { nome: 'Análise de Ruptura Geral',      status: 'r' },
+      ]},
+    }, get '2e4'() { return this['1e3']; } },
+  },
+
+  'MARCOS': {
+    cor: '#f59e0b',
+    cargo: 'Comprador de Hortifruti & Padaria',
+    cronograma: { '1e3': {
+      SEG: { categorias: [
+        { nome: 'Hortifruti', itens: [
+          { nome: 'Ceasa Norte',         status: 'g', pedido: '#47801 — R$ 34.600', cod: null },
+          { nome: 'Fazenda Verde',        status: 'g', pedido: '#47802 — R$ 18.200', cod: null },
+          { nome: 'Cooperativa Agrícola', status: 'g', pedido: '#47803 — R$ 22.400', cod: null },
+          { nome: 'Hortifruti Express',   status: 'a', pedido: 'Em cotação',          cod: null },
+        ]},
+        { nome: 'Padaria & Panificação', itens: [
+          { nome: 'Wickbold',        status: 'g', pedido: '#47804 — R$ 12.700', cod: null },
+          { nome: 'Pullman / Nutrella',status: 'g', pedido: '#47805 — R$ 9.300',  cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Programação Semanal de Hortifruti', status: 'g' },
+        { nome: 'Cotação Padaria — Pão Francês',     status: 'g' },
+      ]},
+      TER: { categorias: [
+        { nome: 'Hortifruti', itens: [
+          { nome: 'Ceasa Norte',      status: 'g', pedido: '#47901 — R$ 28.100', cod: null },
+          { nome: 'JBS Alimentos',    status: 'g', pedido: '#47902 — R$ 15.600', cod: null },
+          { nome: 'Granja São Bento', status: 'r', pedido: null,                  cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Conferência de Qualidade — Frutas', status: 'g' },
+        { nome: 'Cotação Especiarias',                status: 'r' },
+      ]},
+      QUA: { categorias: [
+        { nome: 'Congelados', itens: [
+          { nome: 'Nutrimental', status: 'g', pedido: '#48001 — R$ 19.400', cod: null },
+          { nome: 'Sadia / BRF', status: 'a', pedido: 'Em andamento',       cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Revisão de Estoque Frios', status: 'r' },
+      ]},
+      QUI: { categorias: [], atividades: [
+        { nome: 'Análise de Giro — Hortifruti', status: 'r' },
+        { nome: 'Reunião com CEASA',             status: 'r' },
+      ]},
+      SEX: { categorias: [], atividades: [
+        { nome: 'Planejamento Semanal Hortifruti', status: 'r' },
+        { nome: 'Relatório de Perdas',              status: 'r' },
+      ]},
+    }, get '2e4'() { return this['1e3']; } },
+  },
+
+  'RENATA': {
+    cor: '#a855f7',
+    cargo: 'Compradora de Bazar & Utilidades',
+    cronograma: { '1e3': {
+      SEG: { categorias: [], atividades: [
+        { nome: 'Revisão Semanal de Bazar',    status: 'r' },
+        { nome: 'Análise de Sell-Out — Bazar', status: 'r' },
+      ]},
+      TER: { categorias: [
+        { nome: 'Bazar', itens: [
+          { nome: 'Globimport',          status: 'g', pedido: '#48101 — R$ 38.700', cod: null },
+          { nome: 'Nobreza Distribuidora',status: 'r', pedido: null,                  cod: null },
+          { nome: 'Caza Nova Ind.',       status: 'r', pedido: null,                  cod: null },
+          { nome: 'Makro Importados',     status: 'a', pedido: 'Em negociação',        cod: null },
+        ]},
+        { nome: 'Utilidades Domésticas', itens: [
+          { nome: 'La Cuisine',  status: 'r', pedido: null,                  cod: null },
+          { nome: 'Euro Home',   status: 'r', pedido: null,                  cod: null },
+          { nome: 'Tramontina',  status: 'g', pedido: '#48102 — R$ 24.500', cod: null },
+        ]},
+        { nome: 'Papelaria', itens: [
+          { nome: 'Tilibra',   status: 'g', pedido: '#48103 — R$ 8.900',  cod: null },
+          { nome: 'BIC Brasil', status: 'a', pedido: 'Em andamento',        cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Cotação Bazar — Ciclo Mensal',  status: 'r' },
+        { nome: 'Revisão de Planograma Bazar',    status: 'g' },
+      ]},
+      QUA: { categorias: [
+        { nome: 'Decoração & Sazonais', itens: [
+          { nome: 'Mimo Toys',       status: 'g', pedido: '#48201 — R$ 31.200', cod: null },
+          { nome: 'Creative Toys',   status: 'r', pedido: null,                  cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Negociação Sazonal — Festas Juninas', status: 'r' },
+      ]},
+      QUI: { categorias: [
+        { nome: 'Brinquedos & Festas', itens: [
+          { nome: 'Mimo Toys',  status: 'g', pedido: '#48301 — R$ 16.800', cod: null },
+          { nome: 'Festcolor',  status: 'r', pedido: null,                  cod: null },
+          { nome: 'Redley Ind.',status: 'a', pedido: 'Em cotação',          cod: null },
+        ]},
+      ], atividades: [
+        { nome: 'Cotação Sazonal — Festas', status: 'r' },
+      ]},
+      SEX: { categorias: [], atividades: [
+        { nome: 'Fechamento Semanal — Bazar', status: 'r' },
+        { nome: 'Relatório de Mix Inativo',    status: 'r' },
+      ]},
+    }, get '2e4'() { return this['1e3']; } },
+  },
+};
+
+// ── HELPERS ──
+const STATUS_ICON = { g: '✅', a: '🟡', r: '❌' };
+const STATUS_LABEL = { g: 'Concluído', a: 'Andamento', r: 'Pendente' };
+
+function padData(d) { return String(d).padStart(2,'0'); }
+
+function dateFmt(date) {
+  return `${padData(date.getDate())}/${padData(date.getMonth()+1)}/${date.getFullYear()}`;
+}
+
+function diaAnteriorUtil(diaIdx) {
+  // Pula fim de semana para trás
+  let ant = diaIdx - 1;
+  if (ant === 0) ant = 5; // domingo → sexta
+  if (ant < 0) ant = 5;
+  return DIAS_SEMANA[ant];
+}
+
+function calcStats(cronograma) {
+  const itens = cronograma.categorias.flatMap(c => c.itens);
+  const done = itens.filter(i => i.status === 'g').length;
+  const and  = itens.filter(i => i.status === 'a').length;
+  const pend = itens.filter(i => i.status === 'r').length;
+  return { done, and, pend, total: itens.length, pct: Math.round(done/itens.length*100)||0 };
+}
+
+function renderCronograma(cronograma) {
+  const cats = cronograma.categorias.map(cat => {
+    const rows = cat.itens.map(f => `
+      <div class="forn-row ${f.status === 'g' ? 'concluido' : f.status === 'a' ? 'andamento' : 'pendente'}">
+        <span class="forn-icon">${STATUS_ICON[f.status]}</span>
+        <span class="forn-nome">${f.nome}</span>
+        <span class="forn-pedido">${f.pedido || 'Sem pedido'}</span>
+        <span class="forn-status ${f.status}">${STATUS_LABEL[f.status]}</span>
+      </div>
+    `).join('');
+    return `<div class="cat"><div class="cat-title">${cat.nome}</div>${rows}</div>`;
+  }).join('');
+
+  const ativs = cronograma.atividades.map(a => `
+    <div class="ativ-row ${a.status === 'g' ? 'concluido' : 'pendente'}">
+      <span class="ativ-icon">${STATUS_ICON[a.status]}</span>
+      <span class="ativ-nome">${a.nome}</span>
+      <span class="ativ-status ${a.status}">${STATUS_LABEL[a.status]}</span>
+    </div>
+  `).join('');
+
+  return cats + `<div class="ativ-section"><div class="ativ-title">Atividades Operacionais</div>${ativs}</div>`;
+}
+
+function renderPendencias(cronograma) {
+  const pendForn = cronograma.categorias.flatMap(cat =>
+    cat.itens.filter(f => f.status !== 'g').map(f => ({ ...f, cat: cat.nome }))
+  );
+  const pendAtiv = cronograma.atividades.filter(a => a.status !== 'g');
+
+  if (pendForn.length === 0 && pendAtiv.length === 0) {
+    return `<div class="pend-empty">
+      <div class="pend-empty-icon">🏆</div>
+      <div class="pend-empty-txt">Tudo em dia!</div>
+      <div class="pend-empty-sub">Nenhuma pendência do dia anterior</div>
+    </div>`;
+  }
+
+  let html = '';
+  if (pendForn.length > 0) {
+    html += `<div class="pend-section-title">Fornecedores</div>`;
+    html += pendForn.map(f => `
+      <div class="pend-row">
+        <span class="pend-icon">${f.status === 'a' ? '🟡' : '❌'}</span>
+        <div class="pend-info">
+          <div class="pend-nome">${f.nome}</div>
+          <div class="pend-sub">${f.cat} — ${f.status === 'a' ? 'Em andamento' : 'Sem pedido'}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  if (pendAtiv.length > 0) {
+    html += `<div class="pend-section-title">Atividades</div>`;
+    html += pendAtiv.map(a => `
+      <div class="pend-row">
+        <span class="pend-icon">${a.status === 'a' ? '🟡' : '❌'}</span>
+        <div class="pend-info">
+          <div class="pend-nome">${a.nome}</div>
+          <div class="pend-sub">${a.status === 'a' ? 'Em andamento' : 'Não concluída'}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  return html;
+}
+
+// Estado global para atualização periódica
+let _cronHoje = null;
+let _dados    = null;
+
+function ativarCarrossel(elInner) {
+  if (!elInner || !elInner.textContent.trim()) return;
+  elInner.classList.remove('animating');
+  const original = elInner.innerHTML;
+  elInner.innerHTML = original + original;
+  requestAnimationFrame(() => {
+    // 35px/s fixo — mesma velocidade visual em todas as abas independente da qtd de itens
+    const height = elInner.scrollHeight / 2;
+    const dur = Math.max(10, Math.round(height / 35));
+    elInner.style.setProperty('--dur', dur + 's');
+    elInner.classList.add('animating');
+  });
+}
+
+function fitPainelTV() {
+  const inner = document.getElementById('panel-hoje');
+  const outer = document.getElementById('panel-hoje-outer');
+  if (!inner || !outer) return;
+  inner.style.zoom = '';
+  // Acesso síncrono a scrollHeight força reflow imediato — sem flash de layout errado
+  const avail = outer.clientHeight - 20;
+  const content = inner.scrollHeight;
+  if (content > avail && avail > 50) {
+    inner.style.zoom = Math.max(0.45, avail / content).toFixed(3);
+  }
+}
+
+function dataFmtISO(date) {
+  return date.toISOString().split('T')[0];
+}
+
+// ── ATUALIZAÇÃO DE STATUS ──
+async function atualizarStatusERP() {
+  try {
+    // ── Hoje ──
+    if (_cronHoje) {
+      const r = await fetch('/api/compras/pedidos-hoje');
+      if (r.ok) {
+        const { concluidos } = await r.json();
+        const codsOk = new Set(concluidos);
+        for (const cat of _cronHoje.categorias) {
+          for (const item of cat.itens) {
+            if (item.cod) item.status = codsOk.has(item.cod) ? 'g' : 'r';
+          }
+        }
+        const st = calcStats(_cronHoje);
+        document.getElementById('dp-done').textContent = st.done;
+        document.getElementById('dp-and').textContent  = st.and;
+        document.getElementById('dp-pend').textContent = st.pend;
+        document.getElementById('pb-pct').textContent  = st.pct + '%';
+        document.getElementById('pb-fill').style.width = st.pct + '%';
+        const _ph1 = document.getElementById('panel-hoje');
+        _ph1.style.visibility = 'hidden';
+        _ph1.innerHTML = renderCronograma(_cronHoje);
+        fitPainelTV();
+        _ph1.style.visibility = 'visible';
+      }
+    }
+
+    // ── Dias anteriores — acumula pendências da semana ──
+    if (!_dados) return;
+
+    const now = new Date();
+    const diaIdx = now.getDay(); // 0=Dom … 6=Sab
+
+    // Dias úteis desde segunda até ontem (inclusive)
+    const diasVerificar = [];
+    const diasAtras = diaIdx === 1 ? 7 : diaIdx === 0 ? 8 : diaIdx - 1;
+    for (let d = diasAtras; d >= 1; d--) {
+      const dia = new Date(now);
+      dia.setDate(now.getDate() - d);
+      const idx = dia.getDay();
+      if (idx === 0 || idx === 6) continue;
+      diasVerificar.push(dia);
+    }
+
+    if (diasVerificar.length === 0) return;
+
+    // Busca ERP para cada dia anterior em paralelo
+    const resultados = await Promise.all(diasVerificar.map(async (dia) => {
+      const iso  = dataFmtISO(dia);
+      const sig  = DIAS_SEMANA[dia.getDay()];
+      const grp  = grupoSemana(dia);
+      const cronGrp = _dados.cronograma[grp] || _dados.cronograma['1e3'];
+      const cron = cronGrp[sig];
+      if (!cron || !cron.categorias.length) return null;
+      try {
+        const r = await fetch('/api/compras/pedidos-hoje?data=' + iso);
+        if (!r.ok) return null;
+        const { concluidos } = await r.json();
+        const codsOk = new Set(concluidos);
+        for (const cat of cron.categorias) {
+          for (const item of cat.itens) {
+            if (item.cod) item.status = codsOk.has(item.cod) ? 'g' : 'r';
+          }
+        }
+        return { label: DIAS_FULL[dia.getDay()], data: dateFmt(dia), cron };
+      } catch (e) { return null; }
+    }));
+
+    // Monta HTML de pendências acumuladas
+    const elPend = document.getElementById('panel-pend');
+    if (!elPend) return;
+
+    let html = '';
+    let totalPend = 0;
+
+    for (const res of resultados) {
+      if (!res) continue;
+      // Inclui TODOS os itens não concluídos — com ou sem cod ERP
+      const pendForn = res.cron.categorias.flatMap(c =>
+        c.itens.filter(i => i.status !== 'g').map(i => ({ ...i, cat: c.nome }))
+      );
+      const pendAtiv = (res.cron.atividades || []).filter(a => a.status !== 'g');
+      if (!pendForn.length && !pendAtiv.length) continue;
+      totalPend += pendForn.length + pendAtiv.length;
+
+      html += `<div class="pend-section-title">${res.label} — ${res.data}</div>`;
+      html += pendForn.map(f => `
+        <div class="pend-row">
+          <span class="pend-icon">✕</span>
+          <div class="pend-info">
+            <div class="pend-nome">${f.nome}</div>
+            <div class="pend-cat">${f.cat}</div>
+          </div>
+        </div>`).join('');
+      html += pendAtiv.map(a => `
+        <div class="pend-row ativ">
+          <span class="pend-icon">◎</span>
+          <div class="pend-info">
+            <div class="pend-nome">${a.nome}</div>
+            <div class="pend-cat">Atividade</div>
+          </div>
+        </div>`).join('');
+    }
+
+    if (!html) {
+      html = `<div class="pend-empty"><div class="pend-empty-icon">✅</div><div class="pend-empty-txt">Nenhuma pendência na semana</div></div>`;
+    }
+
+    const badge = document.getElementById('pend-date-badge');
+    if (badge) badge.textContent = totalPend > 0 ? `${totalPend} pendência${totalPend !== 1 ? 's' : ''}` : '✓ Em dia';
+
+    elPend.innerHTML = html;
+    ativarCarrossel(elPend);
+  } catch (e) { console.warn('ERP:', e); }
+}
+
+function semAcento(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+}
+
+// ── INIT ──
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const nomeRaw = (params.get('nome') || '').toUpperCase();
+  // Busca com ou sem acento
+  let dados = DADOS[nomeRaw];
+  if (!dados) {
+    const chaveSemAcento = semAcento(nomeRaw);
+    const chave = Object.keys(DADOS).find(k => semAcento(k) === chaveSemAcento);
+    dados = chave ? DADOS[chave] : null;
+  }
+  const nome = nomeRaw;
+  if (!dados) {
+    document.body.innerHTML = '<div style="padding:40px;color:#ef4444;font-size:18px">Compradora não encontrada: ' + nomeRaw + '</div>';
+    return;
+  }
+  _dados = dados;
+
+  const now = new Date();
+  const diaIdx = now.getDay();
+  const diaSigla = DIAS_SEMANA[diaIdx];
+
+  // Grupo de semana (1e3 ou 2e4)
+  const grupo = grupoSemana(now);
+  const cronGrupo = dados.cronograma[grupo] || dados.cronograma['1e3'];
+
+  let cronHoje = cronGrupo[diaSigla];
+  _cronHoje = cronHoje;
+  const diaHojeLabel = DIAS_FULL[diaIdx];
+  const diaHojeData = dateFmt(now);
+
+  // Dia útil anterior (seg→sex pulando fim de semana)
+  const antIdx = diaIdx === 1 ? 5 : diaIdx === 0 ? 5 : diaIdx - 1;
+  const antSigla = DIAS_SEMANA[antIdx];
+  const antDate = new Date(now); antDate.setDate(now.getDate() - (diaIdx === 1 ? 3 : diaIdx === 0 ? 2 : 1));
+  const grupoAnt = grupoSemana(antDate);
+  const cronGrupoAnt = dados.cronograma[grupoAnt] || dados.cronograma['1e3'];
+  let cronAnt = cronGrupoAnt[antSigla];
+  const antLabel = DIAS_FULL[antIdx];
+  const antData = dateFmt(antDate);
+  // Status inicial: tudo pendente (ERP buscado após render)
+  if (cronHoje) {
+    for (const cat of cronHoje.categorias) {
+      for (const item of cat.itens) { item.status = 'r'; }
+    }
+  }
+  if (cronAnt) {
+    for (const cat of cronAnt.categorias) {
+      for (const item of cat.itens) { item.status = 'r'; }
+    }
+  }
+
+  // Header compradora
+  document.getElementById('h-nome').textContent = nome;
+  document.getElementById('h-cargo').textContent = dados.cargo;
+  const av = document.getElementById('h-avatar');
+  av.style.background = dados.cor + '22';
+  av.style.border = '2px solid ' + dados.cor;
+  av.style.color = dados.cor;
+  av.textContent = nome[0];
+
+  // Day banner
+  document.getElementById('day-nome').textContent = diaHojeLabel;
+  document.getElementById('day-data').textContent = diaHojeData;
+  // Semana tag
+  const oldTag = document.querySelector('.day-semana-tag');
+  if (oldTag) oldTag.remove();
+  const tag = document.createElement('div');
+  tag.className = 'day-semana-tag';
+  tag.textContent = labelGrupo(grupo);
+  document.getElementById('day-data').insertAdjacentElement('afterend', tag);
+
+  if (cronHoje) {
+    const st = calcStats(cronHoje);
+    document.getElementById('dp-done').textContent = st.done;
+    document.getElementById('dp-and').textContent  = st.and;
+    document.getElementById('dp-pend').textContent = st.pend;
+    document.getElementById('pb-pct').textContent  = st.pct + '%';
+    document.getElementById('pb-fill').style.width = st.pct + '%';
+    const _ph2 = document.getElementById('panel-hoje');
+    _ph2.style.visibility = 'hidden';
+    _ph2.innerHTML = renderCronograma(cronHoje);
+    fitPainelTV();
+    _ph2.style.visibility = 'visible';
+  } else {
+    document.getElementById('dp-done').textContent = '—';
+    document.getElementById('panel-hoje').innerHTML = `<div style="padding:30px;text-align:center;color:var(--muted2)">Sem cronograma programado para hoje</div>`;
+  }
+
+  document.getElementById('panel-today-date').textContent = diaHojeData;
+
+  // Pendências — placeholder enquanto ERP carrega
+  document.getElementById('pend-date-badge').textContent = 'verificando…';
+  const elPend = document.getElementById('panel-pend');
+  elPend.innerHTML = renderPendencias(cronAnt || { categorias: [], atividades: [] });
+  ativarCarrossel(elPend);
+
+  // Busca status real do ERP logo após render
+  atualizarStatusERP();
+}
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  const p = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  document.getElementById('clock-sub').textContent = `${dias[now.getDay()]}, ${dateFmt(now)}`;
+}
+
+// ── ROTAÇÃO AUTOMÁTICA ──
+const ORDEM_AUTO = ['FÁTIMA','FERNANDA','PRISCILA','MARCOS','RENATA'];
+const params_auto = new URLSearchParams(location.search);
+const isAuto = params_auto.get('auto') === '1';
+const idxAtual = parseInt(params_auto.get('idx') || '0');
+
+if (isAuto) {
+  document.getElementById('fb-auto').style.display = 'flex';
+  let cdAuto = 15;
+  setInterval(() => {
+    cdAuto--;
+    document.getElementById('auto-cd').textContent = cdAuto + 's';
+    if (cdAuto <= 0) {
+      const prox = idxAtual + 1;
+      if (prox < ORDEM_AUTO.length) {
+        location.href = '/comprador.html?nome=' + encodeURIComponent(ORDEM_AUTO[prox]) + '&auto=1&idx=' + prox;
+      } else {
+        location.href = '/compras.html';
+      }
+    }
+  }, 1000);
+}
+
+init();
+updateClock();
+setInterval(updateClock, 1000);
+// Recarrega status do ERP a cada 5 minutos
+setInterval(atualizarStatusERP, 5 * 60 * 1000);
+</script>
+</body>
+</html>

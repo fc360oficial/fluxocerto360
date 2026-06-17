@@ -26,9 +26,9 @@ iframe.visivel{opacity:1;pointer-events:auto}
 </head>
 <body>
 
-<iframe id="fr-diretoria" src="/diretoria.html"    title="Diretoria"></iframe>
-<iframe id="fr-precif"   src="/precificacao.html"  title="Precificação"></iframe>
-<iframe id="fr-compras"  src="/compras.html"       title="Compras"></iframe>
+<iframe id="fr-diretoria" title="Diretoria"></iframe>
+<iframe id="fr-precif"   title="Precificação"></iframe>
+<iframe id="fr-compras"  title="Compras"></iframe>
 
 <div class="dots">
   <div class="dot ativo" id="dot-d" title="Diretoria"></div>
@@ -37,6 +37,10 @@ iframe.visivel{opacity:1;pointer-events:auto}
 </div>
 
 <script>
+// Sempre carrega os iframes do servidor de produção,
+// independente de qual IP foi usado pra abrir esta página.
+const BASE = 'http://192.168.2.252:3003';
+
 let atual = 'diretoria';
 
 const frD  = document.getElementById('fr-diretoria');
@@ -48,7 +52,7 @@ const dotC = document.getElementById('dot-c');
 
 function mostrarDiretoria() {
   atual = 'diretoria';
-  frD.src = '/diretoria.html';
+  frD.src = BASE + '/diretoria.html';
   frD.classList.add('visivel');
   frP.classList.remove('visivel');
   frC.classList.remove('visivel');
@@ -69,7 +73,7 @@ function mostrarPrecif() {
 
 function mostrarCompras() {
   atual = 'compras';
-  frC.src = '/compras.html';
+  frC.src = BASE + '/compras.html';
   frC.classList.add('visivel');
   frD.classList.remove('visivel');
   frP.classList.remove('visivel');
@@ -81,7 +85,7 @@ function mostrarCompras() {
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
 
-  // Diretoria terminou 25s → vai para precificação
+  // Diretoria terminou → vai para precificação
   if (e.data.type === 'diretoriaCycleComplete' && atual === 'diretoria') {
     mostrarPrecif();
   }
@@ -97,8 +101,9 @@ window.addEventListener('message', (e) => {
   }
 });
 
-// Inicia mostrando diretoria
-frD.classList.add('visivel');
+// Pré-carrega precificação do servidor correto e inicia mostrando diretoria
+frP.src = BASE + '/precificacao.html';
+mostrarDiretoria();
 </script>
 </body>
 </html>

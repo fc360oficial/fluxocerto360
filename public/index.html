@@ -361,8 +361,15 @@ async function carregarKPIs() {
     const vAnoFat = d.variacao_percentual;
     document.getElementById('kpi-fat-var').innerHTML =
       `<span class="${vAnoFat >= 0 ? 'kpi-up' : 'kpi-down'}">${vAnoFat >= 0 ? '▲' : '▼'} ${Math.abs(vAnoFat)}%</span>`;
-    document.getElementById('kpi-prog-mes').style.width = pctMes + '%';
-    document.getElementById('kpi-dias-mes').textContent = `Dia ${diaAte} de ${diasNoMes} · ${pctMes}% do mês`;
+    const antAteDia = d.fat_ano_ant_ate_dia ?? 0;
+    const pctVsAnt  = antAteDia > 0 ? +(d.faturamento_mes / antAteDia * 100).toFixed(1) : pctMes;
+    const barEl     = document.getElementById('kpi-prog-mes');
+    barEl.style.width      = Math.min(pctVsAnt, 100) + '%';
+    barEl.style.background = pctVsAnt >= 100 ? '#10b981' : '#3b82f6';
+    document.getElementById('kpi-dias-mes').textContent =
+      antAteDia > 0
+        ? `${pctVsAnt}% vs ${mesNome}/${d.ano_ant} até dia ${diaAte}`
+        : `Dia ${diaAte} de ${diasNoMes} · ${pctMes}% do mês`;
     document.getElementById('kpi-fat-sub').innerHTML =
       `<span style="color:#64748b">${mesNome} até dia ${diaAte} · ${lojaLabel}</span>`;
 

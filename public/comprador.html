@@ -873,15 +873,15 @@ let _dados    = null;
 function ativarCarrossel(elInner) {
   if (!elInner || !elInner.textContent.trim()) return;
   elInner.classList.remove('animating');
+  elInner.style.visibility = 'hidden';
   const original = elInner.innerHTML;
   elInner.innerHTML = original + original;
-  requestAnimationFrame(() => {
-    // 35px/s fixo — mesma velocidade visual em todas as abas independente da qtd de itens
-    const height = elInner.scrollHeight / 2;
-    const dur = Math.max(10, Math.round(height / 35));
-    elInner.style.setProperty('--dur', dur + 's');
-    elInner.classList.add('animating');
-  });
+  // Síncrono: scrollHeight força reflow, sem RAF, sem flash
+  const height = elInner.scrollHeight / 2;
+  const dur = Math.max(10, Math.round(height / 35));
+  elInner.style.setProperty('--dur', dur + 's');
+  elInner.classList.add('animating');
+  elInner.style.visibility = 'visible';
 }
 
 function fitPainelTV() {
@@ -1013,8 +1013,10 @@ async function atualizarStatusERP() {
     const badge = document.getElementById('pend-date-badge');
     if (badge) badge.textContent = totalPend > 0 ? `${totalPend} pendência${totalPend !== 1 ? 's' : ''}` : '✓ Em dia';
 
+    elPend.style.visibility = 'hidden';
     elPend.innerHTML = html;
     ativarCarrossel(elPend);
+    elPend.style.visibility = 'visible';
   } catch (e) { console.warn('ERP:', e); }
 }
 
@@ -1116,8 +1118,10 @@ async function init() {
   // Pendências — placeholder enquanto ERP carrega
   document.getElementById('pend-date-badge').textContent = 'verificando…';
   const elPend = document.getElementById('panel-pend');
+  elPend.style.visibility = 'hidden';
   elPend.innerHTML = renderPendencias(cronAnt || { categorias: [], atividades: [] });
   ativarCarrossel(elPend);
+  elPend.style.visibility = 'visible';
 
   // Busca status real do ERP logo após render
   atualizarStatusERP();

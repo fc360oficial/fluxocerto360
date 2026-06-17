@@ -267,6 +267,15 @@ async function load() {
   let totNeg = 0, totBaixo = 0;
 
   for (let ln = 1; ln <= 6; ln++) {
+    // Criar col-body como elemento DOM direto (sem querySelector depois)
+    const col     = document.createElement('div');
+    col.className = 'col';
+    const head    = document.createElement('div');
+    head.className = 'col-head';
+    const bodyEl  = document.createElement('div');
+    bodyEl.className = 'col-body';
+    bodyEl.id = 'body-' + ln;
+
     try {
       const items = Array.isArray(data[ln]) ? data[ln] : [];
       const neg   = items.filter(i => i.margem < 0);
@@ -274,47 +283,41 @@ async function load() {
       totNeg   += neg.length;
       totBaixo += baixo.length;
 
-      let itemsHtml = '';
+      head.innerHTML = `<div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div>
+        <div class="col-sub">${neg.length} neg · ${baixo.length} baixo</div>`;
+
       if (items.length === 0) {
-        itemsHtml = `<div class="empty"><div class="empty-icon">✅</div>Sem alertas</div>`;
+        bodyEl.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Sem alertas</div>`;
       } else {
-        itemsHtml = items.map(i => {
+        items.forEach(i => {
           try {
             const preco = (+(i.preco || 0)).toFixed(2);
             const custo = (+(i.custo || 0)).toFixed(2);
-            return `<div class="item ${i.margem < 0 ? 'neg' : 'baixo'}">
-              <div class="item-info">
-                <div class="item-desc">${String(i.descricao || '')}</div>
+            const div = document.createElement('div');
+            div.className = 'item ' + (i.margem < 0 ? 'neg' : 'baixo');
+            div.innerHTML = `<div class="item-info">
+                <div class="item-desc"></div>
                 <div class="item-row2">
-                  <span class="item-cod">${String(i.codigo || '')}</span>
+                  <span class="item-cod"></span>
                   <span class="item-preco">Vda R$${preco}</span>
                   <span class="item-custo">Cst R$${custo}</span>
                 </div>
               </div>
-              <span class="item-pct">${i.margem}%</span>
-            </div>`;
-          } catch(_) { return ''; }
-        }).join('');
+              <span class="item-pct">${i.margem}%</span>`;
+            div.querySelector('.item-desc').textContent = i.descricao || '';
+            div.querySelector('.item-cod').textContent  = i.codigo || '';
+            bodyEl.appendChild(div);
+          } catch(_) {}
+        });
       }
-
-      const col = document.createElement('div');
-      col.className = 'col';
-      col.innerHTML = `
-        <div class="col-head">
-          <div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div>
-          <div class="col-sub">${neg.length} neg · ${baixo.length} baixo</div>
-        </div>
-        <div class="col-body" id="body-${ln}">${itemsHtml}</div>`;
-      grid.appendChild(col);
-      colBodies.push(col.querySelector('.col-body'));
     } catch(_) {
-      // garante que a coluna existe mesmo se der erro
-      const col = document.createElement('div');
-      col.className = 'col';
-      col.innerHTML = `<div class="col-head"><div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div></div><div class="col-body" id="body-${ln}"></div>`;
-      grid.appendChild(col);
-      colBodies.push(col.querySelector('.col-body'));
+      head.innerHTML = `<div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div>`;
     }
+
+    col.appendChild(head);
+    col.appendChild(bodyEl);
+    grid.appendChild(col);
+    colBodies.push(bodyEl); // referência direta, sem querySelector
   }
 
   // Sempre inicia carrossel após construir as 6 colunas

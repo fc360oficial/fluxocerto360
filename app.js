@@ -912,7 +912,7 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var _BUILD = '167';
+    var _BUILD = '168';
     if (localStorage.getItem('fc360_build') !== _BUILD || /[?&]t=\d/.test(window.location.search)) {
       localStorage.setItem('fc360_build', _BUILD);
       sessionStorage.removeItem('eco_last_page');
@@ -1313,12 +1313,15 @@ function buildCLBlock(cl) {
     }
     var key = cl.id + '_' + item.t;
     var on = S.checkState[key] ? true : false;
+    // Foto efetiva: respeita config do item; se foto obrigatória global ativa, aplica a todos simNão
+    var _efFoto = (item.foto && item.foto !== 'none') ? item.foto
+      : (_isFotoObrig() && (item.tipo||'checkbox') === 'simNao' ? 'depois' : 'none');
     var fotoHtml = '';
-    if (item.foto && item.foto !== 'none') {
+    if (_efFoto !== 'none') {
       var hasFotoAntes = !!S.checkState[cl.id+'_foto_antes_'+i];
       var hasFotoDepois = !!S.checkState[cl.id+'_foto_depois_'+i];
 
-      if (item.foto === 'antes_depois') {
+      if (_efFoto === 'antes_depois') {
         // Fluxo sequencial: primeiro ANTES, depois DEPOIS
         if (!hasFotoAntes) {
           // Estado 1: aguardando foto ANTES
@@ -1394,10 +1397,10 @@ function buildCLBlock(cl) {
       var justifVal = S.checkState[cl.id+'_justif_'+i] || '';
       if (!jaConcluido) {
         // Verificar se foto obrigatória já foi enviada antes de liberar Sim/Não
-        var _precisaFoto = item.foto && item.foto !== 'none';
+        var _precisaFoto = _efFoto !== 'none';
         var _fotoLiberada = !_precisaFoto;
         if (_precisaFoto) {
-          if (item.foto === 'antes_depois') {
+          if (_efFoto === 'antes_depois') {
             _fotoLiberada = !!(S.checkState[cl.id+'_foto_antes_'+i]);
           } else {
             _fotoLiberada = !!(S.checkState[cl.id+'_foto_depois_'+i] || S.checkState[cl.id+'_foto_'+i]);
@@ -1630,8 +1633,9 @@ function setSimNao(clId, idx, val) {
   var cl = getMyCLs().find(function(c){return c.id===clId;});
   if (!cl) return;
   var item = cl.itens[idx];
-  if (item.foto && item.foto !== 'none') {
-    var temFoto = item.foto === 'antes_depois'
+  var _efFotoSN = (item.foto && item.foto !== 'none') ? item.foto : (_isFotoObrig() ? 'depois' : 'none');
+  if (_efFotoSN !== 'none') {
+    var temFoto = _efFotoSN === 'antes_depois'
       ? !!(S.checkState[clId+'_foto_antes_'+idx])
       : !!(S.checkState[clId+'_foto_depois_'+idx] || S.checkState[clId+'_foto_'+idx]);
     if (!temFoto) { showToast('📷 Envie a foto antes de responder.'); return; }

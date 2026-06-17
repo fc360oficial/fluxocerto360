@@ -122,6 +122,23 @@ header{
 .chart-wrap{flex:1;position:relative;min-height:0}
 .chart-wrap canvas{width:100%!important;height:100%!important}
 .loading-chart{display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;height:100%}
+
+/* ── CONTROLES (igual supervisão) ── */
+.controles{
+  position:fixed;bottom:12px;right:16px;z-index:999;
+  display:flex;gap:8px;align-items:center;
+  background:rgba(0,0,0,.55);border-radius:24px;
+  padding:7px 12px;backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.08);
+}
+.btn-ctrl{
+  background:none;border:none;cursor:pointer;padding:0 2px;
+  color:rgba(255,255,255,.5);font-size:15px;line-height:1;
+  transition:color .2s,transform .2s;display:flex;align-items:center;
+  text-decoration:none;
+}
+.btn-ctrl:hover{color:rgba(250,204,21,.9);transform:scale(1.2)}
+.ctrl-sep{width:1px;height:14px;background:rgba(255,255,255,.15);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -169,6 +186,12 @@ header{
     <div class="loja-indicator" id="dots-merc"></div>
     <div class="chart-wrap" id="wrap-merc"><div class="loading-chart">Carregando...</div></div>
   </div>
+</div>
+
+<div class="controles">
+  <a class="btn-ctrl" href="/hub.html" title="Voltar ao início">⌂</a>
+  <div class="ctrl-sep"></div>
+  <button class="btn-ctrl" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 </div>
 
 <script>
@@ -400,6 +423,25 @@ async function init() {
 }
 
 init();
+
+// ── CONTROLES ──
+const btnFs = document.getElementById('btn-fs');
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    document.exitFullscreen().catch(()=>{});
+  }
+}
+btnFs.addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', () => {
+  const fs = !!document.fullscreenElement;
+  btnFs.textContent = fs ? '✕' : '⛶';
+  btnFs.title = fs ? 'Sair da tela cheia (Esc)' : 'Tela cheia';
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); }
+});
 
 // Resize dos gráficos quando a resolução muda
 window.addEventListener('resize', () => {

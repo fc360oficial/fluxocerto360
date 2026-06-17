@@ -1466,7 +1466,7 @@ app.get('/api/precificacao/margens-criticas', async (req, res) => {
           .map(r => {
             const preco = parsePreco(r.preco);
             const custo = parsePreco(r.custo);
-            const margem = preco > 0 ? +((preco - custo) / preco * 100).toFixed(1) : -999;
+            const margem = custo > 0 ? +((preco - custo) / custo * 100).toFixed(1) : -999;
             return { codigo: r.Codigo, descricao: r.descricao, preco, custo, margem };
           })
           .filter(r => r.margem < 20)

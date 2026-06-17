@@ -195,10 +195,11 @@ setInterval(tick, 1000); tick();
 
 // ── CARROSSEL ──────────────────────────────────────
 const PX_POR_SEG = 18;
-let carTimer   = null;
-let carTimeout = null;
-let colBodies  = [];
-let currentIdx = 0;
+let carTimer        = null;
+let carTimeout      = null;
+let colBodies       = [];
+let currentIdx      = 0;
+let resumeScrollTop = 0;
 
 function pararCarrossel() {
   if (carTimer)   { clearInterval(carTimer);  carTimer = null; }
@@ -207,21 +208,23 @@ function pararCarrossel() {
 
 function proximaCol(idx) {
   currentIdx = (idx + 1) % colBodies.length;
-  carTimeout = setTimeout(() => iniciarCarrossel(currentIdx), 1800);
+  carTimeout = setTimeout(() => iniciarCarrossel(currentIdx, 0), 1800);
 }
 
-function iniciarCarrossel(idx) {
+function iniciarCarrossel(idx, startAt) {
   pararCarrossel();
   if (!colBodies.length) return;
   currentIdx = idx;
+  if (startAt === undefined) startAt = 0;
   document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === idx));
   colBodies.forEach((b, i) => { if (b && i !== idx) b.scrollTop = 0; });
   const body = colBodies[idx];
   if (!body) { proximaCol(idx); return; }
-  body.scrollTop = 0;
+  body.scrollTop = startAt;
   const maxScroll = body.scrollHeight - body.clientHeight;
 
-  if (maxScroll <= 0) { proximaCol(idx); return; }
+  // se não tem o que rolar ou já chegou ao fim, vai pra próxima
+  if (maxScroll <= 0 || body.scrollTop >= maxScroll - 1) { proximaCol(idx); return; }
 
   const tickMs = 50;
   const pxTick = PX_POR_SEG * tickMs / 1000;
@@ -234,12 +237,14 @@ function iniciarCarrossel(idx) {
   }, tickMs);
 }
 
-// Pausa quando esconde a aba, retoma de onde parou
+// Salva posição exata ao sair, retoma do mesmo ponto ao voltar
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
+    resumeScrollTop = colBodies[currentIdx]?.scrollTop ?? 0;
     pararCarrossel();
   } else if (colBodies.length) {
-    iniciarCarrossel(currentIdx);
+    iniciarCarrossel(currentIdx, resumeScrollTop);
+    resumeScrollTop = 0;
   }
 });
 

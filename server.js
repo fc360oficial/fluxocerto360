@@ -24,7 +24,7 @@ app.use(session({
 app.use((req, res, next) => {
   const publico = ['/login.html', '/api/login', '/logo.png', '/deploy',
     '/precificacao.html', '/compras.html', '/comprador.html', '/supervisao.html',
-    '/api/precificacao/margens-criticas'];
+    '/api/precificacao/margens-criticas', '/api/compras/pedidos-hoje'];
   if (publico.includes(req.path)) return next();
   if (req.session && req.session.user) return next();
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado' });

@@ -195,74 +195,88 @@ setInterval(tick, 1000); tick();
 
 // ── CARROSSEL ──────────────────────────────────────
 const PX_POR_SEG = 18;
-let carTimer       = null;
-let carTimeout     = null;
 let colBodies      = [];
 let currentIdx     = 0;
 let refreshPending = false;
-let ultimoAvanço   = Date.now();
+
+// Sessão única por ciclo: invalida callbacks de ciclos anteriores
+let _carSessao     = 0;
+let _carTimer      = null;
+let _carTimeout    = null;
+let _ultimoAvanço  = Date.now();
+// Salva posição exata para retomar ao voltar para a tela
+let _savedScroll   = 0;
 
 function pararCarrossel() {
-  if (carTimer)   { clearInterval(carTimer);  carTimer = null; }
-  if (carTimeout) { clearTimeout(carTimeout); carTimeout = null; }
+  if (_carTimer)   { clearInterval(_carTimer);  _carTimer = null; }
+  if (_carTimeout) { clearTimeout(_carTimeout); _carTimeout = null; }
 }
 
-function proximaCol(idx) {
-  if (refreshPending) {
-    refreshPending = false;
-    aplicarRefresh();
-    return;
-  }
+function proximaCol(idx, sessao) {
+  if (sessao !== _carSessao) return; // callback de sessão antiga, ignorar
+  if (refreshPending) { refreshPending = false; aplicarRefresh(); return; }
   const proximo = (idx + 1) % colBodies.length;
   currentIdx = proximo;
-  // Ciclo completo: voltou para a coluna 1 após passar pela 6
   if (proximo === 0) {
     try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
   }
-  carTimeout = setTimeout(() => iniciarCarrossel(proximo, 0), 1800);
+  _carTimeout = setTimeout(() => iniciarCarrossel(proximo, 0, sessao), 1800);
 }
 
-function iniciarCarrossel(idx, startAt) {
+function iniciarCarrossel(idx, startAt, sessao) {
+  // Sem sessão = chamada externa (nova rodada) → nova sessão
+  if (sessao === undefined) { _carSessao++; sessao = _carSessao; }
   pararCarrossel();
   if (!colBodies.length) return;
-  ultimoAvanço = Date.now();
+
+  // Garante que idx esteja sempre no intervalo 0–(length-1)
+  idx = ((idx % colBodies.length) + colBodies.length) % colBodies.length;
   currentIdx = idx;
+  _ultimoAvanço = Date.now();
+
   document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === idx));
   colBodies.forEach((b, i) => { if (b && i !== idx) b.scrollTop = 0; });
+
   const body = colBodies[idx];
-  if (!body) { proximaCol(idx); return; }
+  if (!body) { _carTimeout = setTimeout(() => proximaCol(idx, sessao), 2000); return; }
+
   body.scrollTop = startAt || 0;
+  void body.scrollHeight; // força layout para garantir medição correta
   const maxScroll = body.scrollHeight - body.clientHeight;
 
   if (maxScroll <= 0 || body.scrollTop >= maxScroll - 1) {
-    // coluna sem scroll: fica visível 3s antes de passar para a próxima
-    carTimeout = setTimeout(() => proximaCol(idx), 3000);
+    // coluna sem scroll ou já no fim: 3s visível e avança
+    _carTimeout = setTimeout(() => proximaCol(idx, sessao), 3000);
     return;
   }
 
   const tickMs = 50;
   const pxTick = PX_POR_SEG * tickMs / 1000;
-  carTimer = setInterval(() => {
+  _carTimer = setInterval(() => {
+    if (sessao !== _carSessao) { clearInterval(_carTimer); _carTimer = null; return; }
     body.scrollTop += pxTick;
     if (body.scrollTop >= maxScroll - 1) {
       pararCarrossel();
-      proximaCol(idx);
+      proximaCol(idx, sessao);
     }
   }, tickMs);
 }
 
-// Watchdog: se o carrossel ficar parado mais de 2 min, reinicia
+// Watchdog: se parado >2 min sem ser por hide, retoma
 setInterval(() => {
-  if (colBodies.length && !carTimer && !carTimeout && Date.now() - ultimoAvanço > 120000) {
+  if (colBodies.length && !_carTimer && !_carTimeout && Date.now() - _ultimoAvanço > 120000) {
     iniciarCarrossel((currentIdx + 1) % colBodies.length, 0);
   }
 }, 15000);
 
+// Pausa e retoma com coluna e posição EXATAS ao voltar para a tela
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
+    const body = colBodies[currentIdx];
+    if (body) _savedScroll = body.scrollTop;
     pararCarrossel();
   } else if (colBodies.length) {
-    setTimeout(() => iniciarCarrossel(currentIdx, 0), 150);
+    setTimeout(() => iniciarCarrossel(currentIdx, _savedScroll), 150);
   }
 });
 

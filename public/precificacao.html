@@ -195,9 +195,10 @@ setInterval(tick, 1000); tick();
 
 // ── CARROSSEL ──────────────────────────────────────
 const PX_POR_SEG = 18;
-let carTimer = null;
+let carTimer   = null;
 let carTimeout = null;
-let colBodies = [];
+let colBodies  = [];
+let currentIdx = 0;
 
 function pararCarrossel() {
   if (carTimer)   { clearInterval(carTimer);  carTimer = null; }
@@ -205,13 +206,14 @@ function pararCarrossel() {
 }
 
 function proximaCol(idx) {
-  carTimeout = setTimeout(() => iniciarCarrossel((idx + 1) % colBodies.length), 1800);
+  currentIdx = (idx + 1) % colBodies.length;
+  carTimeout = setTimeout(() => iniciarCarrossel(currentIdx), 1800);
 }
 
 function iniciarCarrossel(idx) {
   pararCarrossel();
-  const total = colBodies.length;
-  if (!total) return;
+  if (!colBodies.length) return;
+  currentIdx = idx;
   document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === idx));
   colBodies.forEach((b, i) => { if (b && i !== idx) b.scrollTop = 0; });
   const body = colBodies[idx];
@@ -219,10 +221,7 @@ function iniciarCarrossel(idx) {
   body.scrollTop = 0;
   const maxScroll = body.scrollHeight - body.clientHeight;
 
-  if (maxScroll <= 0) {
-    proximaCol(idx);
-    return;
-  }
+  if (maxScroll <= 0) { proximaCol(idx); return; }
 
   const tickMs = 50;
   const pxTick = PX_POR_SEG * tickMs / 1000;
@@ -234,6 +233,15 @@ function iniciarCarrossel(idx) {
     }
   }, tickMs);
 }
+
+// Pausa quando esconde a aba, retoma de onde parou
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    pararCarrossel();
+  } else if (colBodies.length) {
+    iniciarCarrossel(currentIdx);
+  }
+});
 
 // ── LOAD ───────────────────────────────────────────
 async function load() {
@@ -257,22 +265,28 @@ async function load() {
       const col = document.createElement('div');
       col.className = 'col';
 
-      let body = '';
+      let itemsHtml = '';
       if (items.length === 0) {
-        body = `<div class="empty"><div class="empty-icon">✅</div>Sem alertas</div>`;
+        itemsHtml = `<div class="empty"><div class="empty-icon">✅</div>Sem alertas</div>`;
       } else {
-        body = items.map(i => `
-          <div class="item ${i.margem < 0 ? 'neg' : 'baixo'}">
-            <div class="item-info">
-              <div class="item-desc">${i.descricao}</div>
-              <div class="item-row2">
-                <span class="item-cod">${i.codigo}</span>
-                <span class="item-preco">Vda R$${i.preco.toFixed(2)}</span>
-                <span class="item-custo">Cst R$${i.custo.toFixed(2)}</span>
+        itemsHtml = items.map(i => {
+          try {
+            const preco = (+(i.preco || 0)).toFixed(2);
+            const custo = (+(i.custo || 0)).toFixed(2);
+            return `
+            <div class="item ${i.margem < 0 ? 'neg' : 'baixo'}">
+              <div class="item-info">
+                <div class="item-desc">${i.descricao || ''}</div>
+                <div class="item-row2">
+                  <span class="item-cod">${i.codigo || ''}</span>
+                  <span class="item-preco">Vda R$${preco}</span>
+                  <span class="item-custo">Cst R$${custo}</span>
+                </div>
               </div>
-            </div>
-            <span class="item-pct">${i.margem}%</span>
-          </div>`).join('');
+              <span class="item-pct">${i.margem}%</span>
+            </div>`;
+          } catch(e) { return ''; }
+        }).join('');
       }
 
       col.innerHTML = `
@@ -280,7 +294,7 @@ async function load() {
           <div class="col-loja">${LOJAS[ln]}</div>
           <div class="col-sub">${neg.length} neg · ${baixo.length} baixo</div>
         </div>
-        <div class="col-body" id="body-${ln}">${body}</div>`;
+        <div class="col-body" id="body-${ln}">${itemsHtml}</div>`;
       grid.appendChild(col);
       colBodies.push(col.querySelector('.col-body'));
     }

@@ -32,9 +32,9 @@ body::before{
 
 /* ── LOGO / HEADER ── */
 .topo{text-align:center;margin-bottom:48px;position:relative;z-index:1}
-.topo-logo{height:60px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);margin-bottom:16px}
-.topo h1{font-size:11px;font-weight:900;color:var(--brand);letter-spacing:3px;text-transform:uppercase;line-height:1}
-.topo p{font-size:9px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;margin-top:5px}
+.topo-logo{height:100px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);margin-bottom:20px}
+.topo h1{font-size:20px;font-weight:900;color:var(--brand);letter-spacing:4px;text-transform:uppercase;line-height:1}
+.topo p{font-size:13px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:8px}
 
 /* ── HUB ── */
 .hub{width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
@@ -52,28 +52,28 @@ body::before{
 }
 .hcard-main{
   display:flex;align-items:center;gap:20px;
-  padding:26px 28px;cursor:pointer;user-select:none;
+  padding:28px 32px;cursor:pointer;user-select:none;
   text-decoration:none;color:inherit;
 }
 .hcard-icon{
-  width:52px;height:52px;border-radius:14px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:24px;
+  width:56px;height:56px;border-radius:14px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
   background:rgba(250,204,21,.10);border:1px solid rgba(250,204,21,.18);
 }
-.hcard-tv .hcard-icon{background:rgba(59,130,246,.10);border-color:rgba(59,130,246,.2)}
-.hcard-body{flex:1}
+.hcard-tv .hcard-icon{background:rgba(250,204,21,.10);border-color:rgba(250,204,21,.18)}
+.hcard-body{flex:1;text-align:center}
 .hcard-body h2{
-  font-size:13px;font-weight:900;color:var(--brand);
-  letter-spacing:2.5px;text-transform:uppercase;line-height:1;margin-bottom:5px;
+  font-size:16px;font-weight:900;color:var(--brand);
+  letter-spacing:3px;text-transform:uppercase;line-height:1;margin-bottom:6px;
 }
-.hcard-tv .hcard-body h2{color:#60a5fa}
-.hcard-body p{font-size:11px;color:var(--text3);line-height:1.4}
+.hcard-tv .hcard-body h2{color:var(--brand)}
+.hcard-body p{font-size:12px;color:var(--text3);line-height:1.4}
 .hcard-arrow{
   font-size:11px;color:var(--text3);flex-shrink:0;
   transition:transform .3s,color .3s;
 }
 .hcard.aberto .hcard-arrow{transform:rotate(90deg);color:var(--brand)}
-.hcard-tv.aberto .hcard-arrow{color:#60a5fa}
+.hcard-tv.aberto .hcard-arrow{color:var(--brand)}
 
 /* ── SUB-PAINEL (TV) ── */
 .hcard-sub{

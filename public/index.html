@@ -235,12 +235,18 @@
     </div>
   </div>
 
-  <!-- Row 1: Produtos Semana + Formas Pagamento -->
+  <!-- Row 1: Top 10 Mensal + Formas Pagamento -->
   <div class="charts-row two">
     <div class="chart-card">
-      <div class="chart-title">🏆 Top Produtos Mais Vendidos <span class="badge badge-blue">Semana</span></div>
-      <div class="chart-subtitle">Quantidade vendida nos últimos 7 dias</div>
-      <div class="chart-wrap" id="wrap-semana">
+      <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>🏆 Top 10 Produtos Mais Vendidos <span class="badge badge-green" id="badge-top-vendidos">Mês · Loja</span></span>
+        <div style="display:flex;gap:4px">
+          <button id="btn-top-qtd" onclick="setModoTop('qtd')" style="border:1px solid #F9C200;background:#F9C200;color:#0f0f1a;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Qtd</button>
+          <button id="btn-top-val" onclick="setModoTop('val')" style="border:1px solid #334155;background:transparent;color:#64748b;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Valor R$</button>
+        </div>
+      </div>
+      <div class="chart-subtitle" id="sub-top-vendidos">Quantidade vendida no mês e loja selecionados</div>
+      <div class="chart-wrap tall" id="wrap-top-vendidos">
         <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
       </div>
     </div>
@@ -275,18 +281,12 @@
     </div>
   </div>
 
-  <!-- Row 4: Top Vendidos + Mercadológico -->
+  <!-- Row 4: Top Produtos Semana -->
   <div class="charts-row one">
     <div class="chart-card">
-      <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <span>🏆 Top 10 Produtos Mais Vendidos <span class="badge badge-green" id="badge-top-vendidos">Mês · Loja</span></span>
-        <div style="display:flex;gap:4px">
-          <button id="btn-top-qtd" onclick="setModoTop('qtd')" style="border:1px solid #F9C200;background:#F9C200;color:#0f0f1a;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Qtd</button>
-          <button id="btn-top-val" onclick="setModoTop('val')" style="border:1px solid #334155;background:transparent;color:#64748b;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">Valor R$</button>
-        </div>
-      </div>
-      <div class="chart-subtitle" id="sub-top-vendidos">Quantidade vendida no mês e loja selecionados</div>
-      <div class="chart-wrap tall" id="wrap-top-vendidos">
+      <div class="chart-title">🏆 Top Produtos Mais Vendidos <span class="badge badge-blue">Semana</span></div>
+      <div class="chart-subtitle">Quantidade vendida nos últimos 7 dias</div>
+      <div class="chart-wrap" id="wrap-semana">
         <div class="loading-overlay"><div class="spinner"></div> Carregando...</div>
       </div>
     </div>

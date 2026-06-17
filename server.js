@@ -53,7 +53,7 @@ app.get('/api/me', (req, res) => {
 });
 
 const dbConfig = {
-  host: '192.168.2.252',
+  host: 'localhost',
   port: 3306,
   user: 'root',
   password: '1900',

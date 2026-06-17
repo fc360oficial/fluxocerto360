@@ -239,7 +239,9 @@ main {
 .forn-row.andamento { border-left: 3px solid var(--amber); border-color: rgba(245,158,11,.1); }
 .forn-row.pendente  { border-left: 3px solid var(--red);   border-color: rgba(239,68,68,.08); }
 .forn-icon { font-size: 14px; flex-shrink: 0; }
-.forn-nome { flex: 1; font-size: 17px; color: var(--text); font-weight: 600; }
+.forn-cod { font-size: 10px; font-weight: 800; color: var(--text3); min-width: 32px; text-align: center;
+  background: rgba(255,255,255,.07); border-radius: 4px; padding: 2px 6px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.forn-nome { flex: 1; font-size: 15px; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .forn-cat-tag { font-size: 9px; color: var(--text3); background: rgba(255,255,255,.05); padding: 2px 7px; border-radius: 4px; font-weight: 600; }
 .forn-pedido { font-size: 11px; color: var(--text3); white-space: nowrap; font-weight: 500; }
 .forn-status { font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .8px; white-space: nowrap; }
@@ -456,39 +458,39 @@ function fatimaCronSeg() {
   return {
     categorias: [
       { nome: 'Açúcar', itens: [
-        { nome: 'Avile',         status: 'r', pedido: null, cod: null },
-        { nome: 'Usina Ipojuca', status: 'r', pedido: null, cod: null },
-        { nome: 'Usina Petribú', status: 'r', pedido: null, cod: null },
+        { nome: 'AVILE COMERCIO & DISTRIBUIDORA LTDA', status: 'r', pedido: null, cod: null },
+        { nome: 'USINA IPOJUCA S/A',                  status: 'r', pedido: null, cod: null },
+        { nome: 'USINA PETRIBU SA',                   status: 'r', pedido: null, cod: null },
       ]},
       { nome: 'Arroz', itens: [
-        { nome: 'Camil',        status: 'r', pedido: null, cod: 344 },
-        { nome: 'Tio João',     status: 'r', pedido: null, cod: 342 },
-        { nome: 'Emoções',      status: 'r', pedido: null, cod: 380 },
-        { nome: 'Urbano',       status: 'r', pedido: null, cod: 355 },
-        { nome: 'Panelaco',     status: 'r', pedido: null, cod: 534 },
-        { nome: 'João Marcelo', status: 'r', pedido: null, cod: 304 },
-        { nome: 'Rampinelli',   status: 'r', pedido: null, cod: 537 },
+        { nome: 'CAMIL ALIMENTOS S/A',             status: 'r', pedido: null, cod: 344 },
+        { nome: 'JOSAPAR JOAQUIM OLIVEIRA SA PART',status: 'r', pedido: null, cod: 342 },
+        { nome: 'NELSON WENDT CIA LTDA',           status: 'r', pedido: null, cod: 380 },
+        { nome: 'URBANO AGROINDUSTRIA LTDA',       status: 'r', pedido: null, cod: 355 },
+        { nome: 'PANELACO ALIMENTOS LTDA',         status: 'r', pedido: null, cod: 534 },
+        { nome: 'JOAO MARCELO VITORINO',           status: 'r', pedido: null, cod: 304 },
+        { nome: 'RAMPINELLI ALIMENTOS LTDA',       status: 'r', pedido: null, cod: 537 },
       ]},
       { nome: 'Café', itens: [
-        { nome: 'São Braz',       status: 'r', pedido: null, cod: 415 },
-        { nome: 'Moinho Petinho', status: 'r', pedido: null, cod: 347 },
-        { nome: 'Três Corações',  status: 'r', pedido: null, cod: 332 },
+        { nome: 'SAO BRAZ S/A IND COM DE ALIMENTOS',        status: 'r', pedido: null, cod: 415 },
+        { nome: 'MOINHO PETINHO INDUSTRIA E COMERCIO LTDA', status: 'r', pedido: null, cod: 347 },
+        { nome: 'TRES CORACOES ALIMENTOS SA',               status: 'r', pedido: null, cod: 332 },
       ]},
       { nome: 'Farinha', itens: [
-        { nome: 'Feira Nova',       status: 'r', pedido: null, cod: 314 },
-        { nome: 'Do Sítio',         status: 'r', pedido: null, cod: 303 },
-        { nome: 'Kelly e Cordeiro', status: 'r', pedido: null, cod: 482 },
+        { nome: 'FEIRA NOVA INDUSTRIA', status: 'r', pedido: null, cod: 314 },
+        { nome: 'MONJOLO INDUSTRIA',    status: 'r', pedido: null, cod: 303 },
+        { nome: 'OMAR LINDEMBERG',      status: 'r', pedido: null, cod: 482 },
       ]},
       { nome: 'Feijão', itens: [
-        { nome: 'Pai Heleno',           status: 'r', pedido: null, cod: 310 },
-        { nome: 'Tá Gostoso',           status: 'r', pedido: null, cod: 312 },
-        { nome: 'Pernambucano',         status: 'r', pedido: null, cod: 311 },
-        { nome: 'Turquesa ⚠ fecha 14h', status: 'r', pedido: null, cod: 309 },
-        { nome: 'Grão de Minas',        status: 'r', pedido: null, cod: 461 },
-        { nome: 'Kicaldo',              status: 'r', pedido: null, cod: 313 },
+        { nome: 'COMERCIAL DE ALIMENTOS',        status: 'r', pedido: null, cod: 310 },
+        { nome: 'FEIJÃO TA GOSTOSO',             status: 'r', pedido: null, cod: 312 },
+        { nome: 'FLAVIO Q D MORAIS',             status: 'r', pedido: null, cod: 311 },
+        { nome: 'OASIS ALIMENTOS ⚠ fecha 14h',   status: 'r', pedido: null, cod: 309 },
+        { nome: 'PRODUTOS PEROLA',               status: 'r', pedido: null, cod: 461 },
+        { nome: 'SOMAR COMERCIO',                status: 'r', pedido: null, cod: 313 },
       ]},
       { nome: 'Floção', itens: [
-        { nome: 'Valeriano Valente', status: 'r', pedido: null, cod: 394 },
+        { nome: 'VALERIANO VALENTE DE OLIVEIRA', status: 'r', pedido: null, cod: 394 },
       ]},
     ],
     atividades: [
@@ -500,7 +502,7 @@ function fatimaCronTer() {
   return {
     categorias: [
       { nome: 'Farinha', itens: [
-        { nome: 'Roniel J. Silva', status: 'r', pedido: null, cod: 538 },
+        { nome: 'RONIEL J SILVA FARINHA', status: 'r', pedido: null, cod: 538 },
       ]},
     ],
     atividades: [
@@ -514,12 +516,12 @@ function fatimaCronQua() {
   return {
     categorias: [
       { nome: 'Laticínios & Derivados', itens: [
-        { nome: 'ASA',      status: 'r', pedido: null, cod: 341 },
-        { nome: 'Coringa',  status: 'r', pedido: null, cod: 419 },
-        { nome: 'Leitesol', status: 'r', pedido: null, cod: 384 },
-        { nome: 'Lactalis', status: 'r', pedido: null, cod: 543 },
-        { nome: 'Alvoar',   status: 'r', pedido: null, cod: 555 },
-        { nome: 'Raça',     status: 'r', pedido: null, cod: 350 },
+        { nome: 'ASA INDUSTRIA E COMERCIO LTDA',               status: 'r', pedido: null, cod: 341 },
+        { nome: 'INDUSTRIA REUNIDAS CORINGA LTDA',             status: 'r', pedido: null, cod: 419 },
+        { nome: 'LEITESOL INDUSTRIA E COMERCIO S/A',           status: 'r', pedido: null, cod: 384 },
+        { nome: 'LACTALIS DO BRASIL',                          status: 'r', pedido: null, cod: 543 },
+        { nome: 'ALVOAR LACTEOS NORDESTE SA',                  status: 'r', pedido: null, cod: 555 },
+        { nome: 'RACA DISTRIBUICAO E LOGISTICA DE PERNAMBUCO L', status: 'r', pedido: null, cod: 350 },
       ]},
     ],
     atividades: [],
@@ -805,7 +807,8 @@ function renderCronograma(cronograma) {
     const rows = cat.itens.map(f => `
       <div class="forn-row ${f.status === 'g' ? 'concluido' : f.status === 'a' ? 'andamento' : 'pendente'}">
         <span class="forn-icon">${STATUS_ICON[f.status]}</span>
-        <span class="forn-nome">${f.nome}</span>
+        <span class="forn-cod">${f.cod || '—'}</span>
+        <span class="forn-nome" title="${f.nome}">${f.nome}</span>
         <span class="forn-pedido">${f.pedido || 'Sem pedido'}</span>
         <span class="forn-status ${f.status}">${STATUS_LABEL[f.status]}</span>
       </div>

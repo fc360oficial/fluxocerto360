@@ -263,16 +263,18 @@ main{
 }
 .cat-nome::after{content:'';flex:1;height:1px;background:var(--border)}
 
-.forn{display:flex;align-items:center;gap:7px;padding:4px 8px;border-radius:var(--r-xs);margin-bottom:2px;transition:background .15s}
+.forn{display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:var(--r-xs);margin-bottom:2px;transition:background .15s}
 .forn:hover{background:rgba(255,255,255,.04)}
-.sdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .sdot.g{background:var(--green);box-shadow:0 0 6px var(--green-glow)}
 .sdot.a{background:var(--amber);box-shadow:0 0 6px var(--amber-glow);animation:bpa 2s infinite}
 .sdot.r{background:var(--red);box-shadow:0 0 6px var(--red-glow);animation:bpr 2s infinite}
 @keyframes bpa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 @keyframes bpr{0%,100%{opacity:1}50%{opacity:.3}}
 
-.forn-nome{font-size:14px;flex:1;color:var(--text2);font-weight:500}
+.forn-cod{font-size:9px;font-weight:800;color:var(--text3);min-width:28px;text-align:center;
+  background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.forn-nome{font-size:11px;flex:1;color:var(--text2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stag{font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .stag.g{background:var(--green-bg);color:var(--green)}
 .stag.a{background:var(--amber-bg);color:var(--amber)}
@@ -451,33 +453,53 @@ function fatimaHoje() {
   const sched = {
     SEG:{categorias:[
       {nome:'Açúcar',fornecedores:[
-        {nome:'Avile',status:'r',cod:null},{nome:'Usina Ipojuca',status:'r',cod:null},{nome:'Usina Petribú',status:'r',cod:null}]},
+        {nome:'AVILE COMERCIO & DISTRIBUIDORA LTDA',status:'r',cod:null},
+        {nome:'USINA IPOJUCA S/A',status:'r',cod:null},
+        {nome:'USINA PETRIBU SA',status:'r',cod:null}]},
       {nome:'Arroz',fornecedores:[
-        {nome:'Camil',status:'r',cod:344},{nome:'Tio João',status:'r',cod:342},{nome:'Emoções',status:'r',cod:380},
-        {nome:'Urbano',status:'r',cod:355},{nome:'Panelaco',status:'r',cod:534},{nome:'João Marcelo',status:'r',cod:304},{nome:'Rampinelli',status:'r',cod:537}]},
+        {nome:'CAMIL ALIMENTOS S/A',status:'r',cod:344},
+        {nome:'JOSAPAR JOAQUIM OLIVEIRA SA PART',status:'r',cod:342},
+        {nome:'NELSON WENDT CIA LTDA',status:'r',cod:380},
+        {nome:'URBANO AGROINDUSTRIA LTDA',status:'r',cod:355},
+        {nome:'PANELACO ALIMENTOS LTDA',status:'r',cod:534},
+        {nome:'JOAO MARCELO VITORINO',status:'r',cod:304},
+        {nome:'RAMPINELLI ALIMENTOS LTDA',status:'r',cod:537}]},
       {nome:'Café',fornecedores:[
-        {nome:'São Braz',status:'r',cod:415},{nome:'Moinho Petinho',status:'r',cod:347},{nome:'Três Corações',status:'r',cod:332}]},
+        {nome:'SAO BRAZ S/A IND COM DE ALIMENTOS',status:'r',cod:415},
+        {nome:'MOINHO PETINHO INDUSTRIA E COMERCIO LTDA',status:'r',cod:347},
+        {nome:'TRES CORACOES ALIMENTOS SA',status:'r',cod:332}]},
       {nome:'Farinha',fornecedores:[
-        {nome:'Feira Nova',status:'r',cod:314},{nome:'Do Sítio',status:'r',cod:303},{nome:'Kelly e Cordeiro',status:'r',cod:482}]},
+        {nome:'FEIRA NOVA INDUSTRIA',status:'r',cod:314},
+        {nome:'MONJOLO INDUSTRIA',status:'r',cod:303},
+        {nome:'OMAR LINDEMBERG',status:'r',cod:482}]},
       {nome:'Feijão',fornecedores:[
-        {nome:'Pai Heleno',status:'r',cod:310},{nome:'Tá Gostoso',status:'r',cod:312},{nome:'Pernambucano',status:'r',cod:311},
-        {nome:'Turquesa ⚠ fecha 14h',status:'r',cod:309},{nome:'Grão de Minas',status:'r',cod:461},{nome:'Kicaldo',status:'r',cod:313}]},
-      {nome:'Floção',fornecedores:[{nome:'Valeriano Valente',status:'r',cod:394}]}],
+        {nome:'COMERCIAL DE ALIMENTOS',status:'r',cod:310},
+        {nome:'FEIJÃO TA GOSTOSO',status:'r',cod:312},
+        {nome:'FLAVIO Q D MORAIS',status:'r',cod:311},
+        {nome:'OASIS ALIMENTOS ⚠ fecha 14h',status:'r',cod:309},
+        {nome:'PRODUTOS PEROLA',status:'r',cod:461},
+        {nome:'SOMAR COMERCIO',status:'r',cod:313}]},
+      {nome:'Floção',fornecedores:[
+        {nome:'VALERIANO VALENTE DE OLIVEIRA',status:'r',cod:394}]}],
      atividades:[{nome:'Fechamento da Cotação de Alimentos (Club)',status:'r'}]},
     TER:{categorias:[
-      {nome:'Farinha',fornecedores:[{nome:'Roniel J. Silva',status:'r',cod:538}]}],
+      {nome:'Farinha',fornecedores:[{nome:'RONIEL J SILVA FARINHA',status:'r',cod:538}]}],
      atividades:[
       {nome:'Planilha de Preços de Cereais',status:'r'},
       {nome:'Fechamento de Pedidos de Cereais',status:'r'},
       {nome:'Alinhamento Encarte Final de Semana',status:'r'}]},
     QUA:{categorias:[
       {nome:'Laticínios & Derivados',fornecedores:[
-        {nome:'ASA',status:'r',cod:341},{nome:'Coringa',status:'r',cod:419},{nome:'Leitesol',status:'r',cod:384},
-        {nome:'Lactalis',status:'r',cod:543},{nome:'Alvoar',status:'r',cod:555},{nome:'Raça',status:'r',cod:350}]}],
+        {nome:'ASA INDUSTRIA E COMERCIO LTDA',status:'r',cod:341},
+        {nome:'INDUSTRIA REUNIDAS CORINGA LTDA',status:'r',cod:419},
+        {nome:'LEITESOL INDUSTRIA E COMERCIO S/A',status:'r',cod:384},
+        {nome:'LACTALIS DO BRASIL',status:'r',cod:543},
+        {nome:'ALVOAR LACTEOS NORDESTE SA',status:'r',cod:555},
+        {nome:'RACA DISTRIBUICAO E LOGISTICA DE PERNAMBUCO L',status:'r',cod:350}]}],
      atividades:[]},
     QUI:{categorias:[],atividades:[{nome:'Ofertas Semanais',status:'r'},{nome:'Sem Giros das Lojas',status:'r'}]},
     SEX:{categorias:[{nome:'Cotação de Alimentos',fornecedores:[
-        {nome:'Cotação de Alimentos',status:'r',cod:277}]}],
+        {nome:'COTAÇÃO DE ALIMENTOS',status:'r',cod:277}]}],
      atividades:[{nome:'Pendências / Reuniões / Visitar Lojas',status:'r'}]},
   };
   return sched[sig] || {categorias:[],atividades:[]};
@@ -554,7 +576,8 @@ function renderCard(c) {
       ${cat.fornecedores.map(f=>`
         <div class="forn">
           <span class="sdot ${f.status}"></span>
-          <span class="forn-nome">${f.nome}</span>
+          <span class="forn-cod">${f.cod||'—'}</span>
+          <span class="forn-nome" title="${f.nome}">${f.nome}</span>
           <span class="stag ${f.status}">${STATUS_LABEL[f.status]}</span>
         </div>`).join('')}
     </div>`).join('');

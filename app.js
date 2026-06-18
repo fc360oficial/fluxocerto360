@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '175';
+  var BUILD = '176';
   if (localStorage.getItem('fc360_build') !== BUILD) {
     localStorage.setItem('fc360_build', BUILD);
     sessionStorage.removeItem('eco_last_page');
@@ -6100,6 +6100,13 @@ function criarPlanoAuto(checklistNome, itemTexto, justificativa, setor, prazoHor
   var loja = S.currentUser ? (S.currentUser.loja||'') : '';
   var list = getPlanos();
   var desc = '['+checklistNome+'] '+itemTexto;
+  // Não cria novo plano se já existe um ativo (aberto ou andamento) para este item+loja
+  var jaExiste = list.some(function(p) {
+    return p.desc === desc
+      && (p.loja||'').toLowerCase() === loja.toLowerCase()
+      && p.status !== 'resolvido';
+  });
+  if (jaExiste) return;
   prazoHoras = prazoHoras || 72;
   var prazoFim = new Date(Date.now() + prazoHoras * 3600000).toISOString();
   var quemAuto = S.currentUser ? S.currentUser.nome : '—';
@@ -6144,7 +6151,8 @@ function _planoAbertoDoItem(clLabel, itemTexto) {
   var uLoja = S.currentUser ? (S.currentUser.loja||'').toLowerCase() : '';
   var descAlvo = '['+clLabel+'] '+itemTexto;
   return getPlanos().find(function(p) {
-    if (p.status === 'resolvido') return false;
+    // Só bloqueia item enquanto plano estiver 'aberto'; andamento e resolvido liberam
+    if (p.status !== 'aberto') return false;
     if (uLoja && (p.loja||'').toLowerCase() !== uLoja) return false;
     return p.desc === descAlvo;
   }) || null;

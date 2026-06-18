@@ -1205,7 +1205,8 @@ if (isAuto) {
     document.getElementById('auto-cd').textContent = cdAuto + 's';
     if (cdAuto <= 0) {
       // Vai para a visão mensal do mesmo comprador antes de avançar
-      location.href = '/mensal.html?nome=' + encodeURIComponent(nomeAtual) + '&auto=1&idx=' + idxAtual;
+      const nomeSemAcento = nomeAtual.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+      location.href = '/mensal.html?nome=' + encodeURIComponent(nomeSemAcento) + '&auto=1&idx=' + idxAtual;
     }
   }, 1000);
 }

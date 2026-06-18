@@ -326,15 +326,14 @@ function renderTabela(cron) {
 
 // Init
 const params = new URLSearchParams(location.search);
-nomeSel = (params.get('nome') || 'FATIMA').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
-// normaliza acento pra busca
-const NOMES_MAP = {'FATIMA':'FÁTIMA','FERNANDA':'FERNANDA','PRISCILA':'PRISCILA','MARCOS':'MARCOS','RENATA':'RENATA'};
-nomeSel = NOMES_MAP[nomeSel] || nomeSel;
+// Remove acentos para busca no COMPRADORES (chaves sem acento)
+function semAcento(s) { return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase(); }
+nomeSel = semAcento(params.get('nome') || 'FATIMA');
 if (params.get('mes')) mesSel = parseInt(params.get('mes'));
 if (params.get('ano')) anoSel = parseInt(params.get('ano'));
 
 // Rotação automática
-const ORDEM_AUTO = ['FÁTIMA','FERNANDA','PRISCILA','MARCOS','RENATA'];
+const ORDEM_AUTO = ['FATIMA','FERNANDA','PRISCILA','MARCOS','RENATA'];
 const isAuto   = params.get('auto') === '1';
 const idxAtual = parseInt(params.get('idx') || '0');
 

@@ -35,6 +35,15 @@ body{display:flex;flex-direction:column;height:100vh}
   border:1px solid var(--border-md);background:rgba(255,255,255,.04);transition:all .2s}
 .h-back:hover{color:var(--brand);border-color:rgba(250,204,21,.3)}
 
+/* Nome comprador */
+.h-compradora{display:flex;align-items:center;gap:12px}
+.h-info h2{font-size:22px;font-weight:800;letter-spacing:.3px;color:var(--text)}
+.h-info p{font-size:11px;color:var(--text2);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:500}
+/* Relógio */
+.h-clock{text-align:right}
+.clock-time{font-size:48px;font-weight:800;color:#fff;letter-spacing:3px;font-variant-numeric:tabular-nums;line-height:1}
+.clock-sub{font-size:11px;color:var(--text2);margin-top:2px;text-align:right;font-weight:500}
+
 /* ── MÊS NAV ── */
 .mes-nav{display:flex;align-items:center;gap:12px}
 .mes-btn{background:rgba(255,255,255,.06);border:1px solid var(--border-md);
@@ -158,7 +167,20 @@ table{border-collapse:collapse;width:100%}
     <div class="mes-label" id="mes-label">—</div>
     <button class="mes-btn" onclick="mudarMes(1)">›</button>
   </div>
-  <a class="h-back" href="javascript:history.back()">← Voltar</a>
+
+  <div class="h-compradora">
+    <div class="h-info">
+      <h2 id="h-nome">—</h2>
+      <p>Compradora · <span id="h-sub">—</span></p>
+    </div>
+  </div>
+
+  <div class="h-clock">
+    <div class="clock-time" id="clock">00:00:00</div>
+    <div class="clock-sub" id="clock-sub">—</div>
+  </div>
+
+  <a class="h-back" href="/compras.html">← Compras</a>
 </header>
 
 <main>
@@ -429,7 +451,8 @@ function renderTabela(cron) {
     <div class="res-item fut"><div class="res-num" style="color:var(--text3)">${totalFut}</div><div class="res-lbl">Futuros</div></div>
   `;
 
-  document.getElementById('h-sub').textContent = `${nomeSel} · ${MESES[mesSel]} ${anoSel}`;
+  document.getElementById('h-nome').textContent = nomeSel;
+  document.getElementById('h-sub').textContent = `${MESES[mesSel]} ${anoSel}`;
 
   iniciarCarrossel();
 }
@@ -501,6 +524,19 @@ if (isAuto) {
     }
   }, 1000);
 }
+
+// Relógio — igual ao comprador.html
+function updateClock() {
+  const now = new Date();
+  const p = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  document.getElementById('clock-sub').textContent =
+    `${dias[now.getDay()]}, ${p(now.getDate())} ${meses[now.getMonth()]} ${now.getFullYear()}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
 
 carregar();
 </script>

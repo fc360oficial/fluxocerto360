@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pendências de Cadastro</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #334155}
+.sidebar-logo h2{font-size:15px;color:#F9C200;font-weight:700;letter-spacing:0.5px}
+.sidebar-logo p{font-size:11px;color:#64748b;margin-top:2px}
+.sidebar-nav{padding:10px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#334155;color:#f1f5f9}
+.nav-item.active{background:#F9C20018;color:#F9C200;border-right:3px solid #F9C200}
+.nav-item .ic{font-size:15px;width:20px;text-align:center}
+
+.main{margin-left:220px;padding:24px}
+.page-hdr{margin-bottom:20px}
+.page-hdr h1{font-size:21px;font-weight:700;color:#f8fafc}
+.page-hdr p{font-size:12px;color:#64748b;margin-top:2px}
+
+/* TABS PRINCIPAIS */
+.main-tabs{display:flex;gap:0;border-bottom:2px solid #334155;margin-bottom:20px}
+.main-tab{padding:10px 22px;font-size:13px;font-weight:700;color:#64748b;background:transparent;border:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;display:flex;align-items:center;gap:7px;transition:all .15s}
+.main-tab:hover{color:#cbd5e1}
+.main-tab.active{color:#f1f5f9;border-bottom-color:#f59e0b}
+.main-tab .cnt{font-size:10px;background:#334155;color:#94a3b8;border-radius:10px;padding:1px 7px;font-weight:700}
+.main-tab.active .cnt{background:#f59e0b22;color:#f59e0b}
+
+/* FILTROS */
+.filtros{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg select,.fg input{background:#0f172a;border:1px solid #334155;border-radius:7px;color:#e2e8f0;padding:7px 11px;font-size:13px;outline:none;min-width:140px}
+.fg select:focus,.fg input:focus{border-color:#F9C200}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end}
+.btn-blue{background:#F9C200;color:#0f0f1a;font-weight:700}.btn-blue:hover{background:#e0ae00}
+.btn-amber{background:#d97706;color:#fff}.btn-amber:hover{background:#b45309}
+.btn-slate{background:#334155;color:#cbd5e1}.btn-slate:hover{background:#475569}
+
+/* KPI CARDS */
+.kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.kpi{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;min-width:130px}
+.kpi .v{font-size:20px;font-weight:700}
+.kpi .l{font-size:10px;color:#64748b;margin-top:2px}
+
+/* GRUPO ACCORDION */
+.grupo-bloco{margin-bottom:8px;border:1px solid #334155;border-radius:10px;overflow:hidden}
+.grupo-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1e293b;cursor:pointer;user-select:none;transition:background .1s}
+.grupo-hdr:hover{background:#263249}
+.grupo-hdr-nome{font-size:13px;font-weight:700;color:#e2e8f0;flex:1}
+.grupo-badge{font-size:11px;font-weight:700;background:#f59e0b22;color:#f59e0b;border-radius:6px;padding:2px 8px}
+.grupo-toggle{font-size:11px;color:#64748b;transition:transform .2s}
+.grupo-hdr.open .grupo-toggle{transform:rotate(180deg)}
+.grupo-body{display:none;background:#0f172a22}
+.grupo-body.open{display:block}
+
+/* TABELA */
+.table-wrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:12px}
+table.t thead{background:#0f172a}
+table.t th{padding:8px 12px;text-align:left;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #334155}
+table.t td{padding:7px 12px;border-bottom:1px solid #1e293b22;vertical-align:middle}
+table.t tbody tr:hover{background:#ffffff06}
+.cod{color:#94a3b8;font-size:11px;font-family:monospace}
+.desc{font-weight:500;color:#e2e8f0}
+.sub{font-size:11px;color:#64748b}
+.tag{font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;margin-left:3px;display:inline-block}
+.tag-sem-sub{background:#422006;color:#fed7aa}
+.tag-sem-merc{background:#450a0a;color:#fca5a5}
+
+/* SUMMARY BARRA */
+.summary-bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;background:#0f172a33;border-bottom:1px solid #334155}
+.sb-chip{background:#1e293b;border:1px solid #334155;border-radius:6px;padding:4px 10px;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:5px}
+
+.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #334155;border-top-color:#f59e0b;animation:spin .7s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:30px;text-align:center;color:#475569;font-size:13px}
+
+@media(max-width:768px){
+  /* SIDEBAR → top bar compacta */
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #334155}
+  .sidebar-logo{padding:8px 12px;border-bottom:none;display:flex;align-items:center}
+  .sidebar-logo img{width:100px !important;height:auto !important}
+  .sidebar-logo h2,.sidebar-logo p{display:none}
+  .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+  .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center}
+  .nav-item .ic{font-size:12px;width:auto}
+  .nav-item.active{border-right:none;border-bottom:2px solid #F9C200}
+
+  /* MAIN */
+  .main{margin-left:0;padding:10px}
+  .page-hdr{margin-bottom:12px}
+  .page-hdr h1{font-size:16px}
+
+  /* TABS */
+  .main-tabs{flex-wrap:nowrap;gap:0;margin-bottom:12px}
+  .main-tab{font-size:11px;padding:8px 10px;flex:1;justify-content:center}
+
+  /* FILTROS */
+  .filtros{gap:6px}
+  .fg select,.fg input{font-size:16px;min-width:80px}
+  .btn{padding:7px 10px;font-size:12px}
+
+  /* KPI — 2 por linha */
+  .kpi-row{gap:8px}
+  .kpi{flex:1;min-width:calc(50% - 5px);padding:10px 12px}
+  .kpi .v{font-size:18px}
+
+  /* TABELA — scroll horizontal */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.t{min-width:500px}
+  table.t th,table.t td{padding:6px 8px;font-size:10px}
+}
+@media print{
+  .sidebar,.filtros,.main-tabs{display:none!important}
+  .main{margin-left:0;padding:10px}
+  .grupo-body{display:block!important}
+  body{background:#fff;color:#000}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item"><span class="ic">📊</span> Dashboard</a>
+    <a href="consulta.html" class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
+    <a href="itens.html" class="nav-item"><span class="ic">📂</span> Mercadológico</a>
+    <a href="fornecedores.html" class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
+    <a href="pendencias.html" class="nav-item active"><span class="ic">⚠️</span> Pendências</a>
+  </nav>
+  <div style="padding:12px 16px;border-top:1px solid #334155;margin-top:auto">
+    <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="sidebar-user">👤 ...</div>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#f87171;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #7f1d1d;background:#450a0a22;transition:background .15s" onmouseover="this.style.background='#450a0a'" onmouseout="this.style.background='#450a0a22'">🚪 Sair</a>
+  </div>
+</div>
+<script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('sidebar-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
+
+<div class="main">
+  <div class="page-hdr">
+    <h1>⚠️ Pendências de Cadastro</h1>
+    <p>Produtos ativos com informações incompletas</p>
+  </div>
+
+  <div class="main-tabs">
+    <button class="main-tab active" onclick="mudarTab('sem-lista')" id="tab-sem-lista">
+      📋 Sem Lista de Compra <span class="cnt" id="cnt-sem-lista">...</span>
+    </button>
+    <button class="main-tab" onclick="mudarTab('sem-merc')" id="tab-sem-merc">
+      🗂️ Sem Mercadológico <span class="cnt" id="cnt-sem-merc">...</span>
+    </button>
+  </div>
+
+  <!-- SEÇÃO SEM LISTA -->
+  <div id="sec-sem-lista">
+    <div class="filtros">
+      <div class="fg">
+        <label>Grupo</label>
+        <select id="fil-grupo" onchange="carregarSemLista()">
+          <option value="">Todos os Grupos</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Buscar Produto</label>
+        <input type="text" id="fil-busca-sl" placeholder="nome ou código..." onkeydown="if(event.key==='Enter')carregarSemLista()">
+      </div>
+      <button class="btn btn-blue" onclick="carregarSemLista()">🔍 Filtrar</button>
+      <button class="btn btn-slate" onclick="exportarCSV('sem-lista')">⬇ CSV</button>
+      <button class="btn btn-slate" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+    <div class="kpi-row" id="kpi-sl"></div>
+    <div id="lista-sl"><div class="spinner"></div></div>
+  </div>
+
+  <!-- SEÇÃO SEM MERCADOLÓGICO -->
+  <div id="sec-sem-merc" style="display:none">
+    <div class="filtros">
+      <div class="fg">
+        <label>Buscar Produto</label>
+        <input type="text" id="fil-busca-sm" placeholder="nome ou código..." onkeydown="if(event.key==='Enter')carregarSemMerc()">
+      </div>
+      <button class="btn btn-blue" onclick="carregarSemMerc()">🔍 Filtrar</button>
+      <button class="btn btn-slate" onclick="exportarCSV('sem-merc')">⬇ CSV</button>
+    </div>
+    <div class="kpi-row" id="kpi-sm"></div>
+    <div id="lista-sm"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<script>
+let dadosSL = [], dadosSM = [];
+let tabAtiva = 'sem-lista';
+
+function mudarTab(t) {
+  tabAtiva = t;
+  document.getElementById('tab-sem-lista').classList.toggle('active', t==='sem-lista');
+  document.getElementById('tab-sem-merc').classList.toggle('active', t==='sem-merc');
+  document.getElementById('sec-sem-lista').style.display = t==='sem-lista' ? '' : 'none';
+  document.getElementById('sec-sem-merc').style.display  = t==='sem-merc'  ? '' : 'none';
+}
+
+// ─── GRUPOS ─────────────────────────────────────
+async function carregarGrupos() {
+  try {
+    const r = await fetch('/api/grupos');
+    const grupos = await r.json();
+    const sel = document.getElementById('fil-grupo');
+    grupos.forEach(g => {
+      const o = document.createElement('option');
+      o.value = g.CodGrupo; o.textContent = g.Descricao;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+}
+
+// ─── SEM LISTA ───────────────────────────────────
+async function carregarSemLista() {
+  document.getElementById('lista-sl').innerHTML = '<div class="spinner"></div>';
+  const grupo = document.getElementById('fil-grupo').value;
+  const busca = document.getElementById('fil-busca-sl').value.trim();
+  const params = new URLSearchParams();
+  if (grupo) params.set('grupo', grupo);
+  if (busca) params.set('busca', busca);
+  try {
+    const r = await fetch('/api/pendencias/sem-lista?' + params);
+    dadosSL = await r.json();
+    if (!Array.isArray(dadosSL)) throw new Error(dadosSL.error || 'Erro');
+  } catch(e) {
+    document.getElementById('lista-sl').innerHTML = `<div class="empty">Erro: ${e.message}</div>`;
+    return;
+  }
+  renderKpisSL();
+  renderSemLista();
+}
+
+function renderKpisSL() {
+  const grupos = new Set(dadosSL.map(r=>r.grupo||'Sem Grupo'));
+  document.getElementById('cnt-sem-lista').textContent = dadosSL.length;
+  document.getElementById('kpi-sl').innerHTML = `
+    <div class="kpi"><div class="v" style="color:#f59e0b">${dadosSL.length}</div><div class="l">Produtos sem lista</div></div>
+    <div class="kpi"><div class="v">${grupos.size}</div><div class="l">Grupos afetados</div></div>
+    <div class="kpi"><div class="v" style="color:#94a3b8;font-size:14px">Organize estes itens</div><div class="l">em listas de compra</div></div>
+  `;
+}
+
+function renderSemLista() {
+  const cont = document.getElementById('lista-sl');
+  if (!dadosSL.length) { cont.innerHTML = '<div class="empty">Nenhum item encontrado com os filtros atuais.</div>'; return; }
+
+  // Agrupa por grupo
+  const grupos = {};
+  for (const r of dadosSL) {
+    const g = r.grupo || 'SEM GRUPO';
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(r);
+  }
+  const nomes = Object.keys(grupos).sort();
+
+  let html = '';
+  nomes.forEach((nome, idx) => {
+    const itens = grupos[nome];
+    const id = 'grp-sl-' + idx;
+    html += `
+      <div class="grupo-bloco">
+        <div class="grupo-hdr open" onclick="toggleGrupo('${id}')">
+          <span class="grupo-hdr-nome">📁 ${nome}</span>
+          <span class="grupo-badge">${itens.length} ${itens.length===1?'item':'itens'}</span>
+          <span class="grupo-toggle">▼</span>
+        </div>
+        <div class="grupo-body open" id="${id}">
+          <div class="table-wrap">
+            <table class="t">
+              <thead><tr>
+                <th>Código</th><th>Produto</th><th>Unid</th>
+                <th>Subgrupo</th><th>Mercadológico</th>
+              </tr></thead>
+              <tbody>
+                ${itens.map(p=>`<tr>
+                  <td class="cod">${p.CodigoBarra}</td>
+                  <td class="desc">${p.Descricao||''}</td>
+                  <td style="color:#64748b;font-size:11px">${p.Unid||''}</td>
+                  <td class="sub">${p.subgrupo||'<span style="color:#f87171">—</span>'}</td>
+                  <td class="sub">${p.mercadologico||'<span style="color:#f87171">—</span>'}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  });
+  cont.innerHTML = html;
+}
+
+// ─── SEM MERCADOLÓGICO ───────────────────────────
+async function carregarSemMerc() {
+  document.getElementById('lista-sm').innerHTML = '<div class="spinner"></div>';
+  const busca = document.getElementById('fil-busca-sm').value.trim();
+  const params = new URLSearchParams();
+  if (busca) params.set('busca', busca);
+  try {
+    const r = await fetch('/api/pendencias/sem-mercadologico?' + params);
+    dadosSM = await r.json();
+    if (!Array.isArray(dadosSM)) throw new Error(dadosSM.error || 'Erro');
+  } catch(e) {
+    document.getElementById('lista-sm').innerHTML = `<div class="empty">Erro: ${e.message}</div>`;
+    return;
+  }
+  renderKpisSM();
+  renderSemMerc();
+}
+
+function renderKpisSM() {
+  const semSub  = dadosSM.filter(r=>r.sem_subgrupo).length;
+  const semMerc = dadosSM.filter(r=>r.sem_merc).length;
+  document.getElementById('cnt-sem-merc').textContent = dadosSM.length;
+  document.getElementById('kpi-sm').innerHTML = `
+    <div class="kpi"><div class="v" style="color:#f87171">${dadosSM.length}</div><div class="l">Itens com pendência</div></div>
+    <div class="kpi"><div class="v" style="color:#fed7aa">${semSub}</div><div class="l">Sem Subgrupo</div></div>
+    <div class="kpi"><div class="v" style="color:#fca5a5">${semMerc}</div><div class="l">Sem Mercadológico</div></div>
+  `;
+}
+
+function renderSemMerc() {
+  const cont = document.getElementById('lista-sm');
+  if (!dadosSM.length) { cont.innerHTML = '<div class="empty">Nenhum item encontrado.</div>'; return; }
+
+  const grupos = {};
+  for (const r of dadosSM) {
+    const g = r.grupo || 'SEM GRUPO';
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(r);
+  }
+  const nomes = Object.keys(grupos).sort();
+
+  let html = '';
+  nomes.forEach((nome, idx) => {
+    const itens = grupos[nome];
+    const id = 'grp-sm-' + idx;
+    html += `
+      <div class="grupo-bloco">
+        <div class="grupo-hdr open" onclick="toggleGrupo('${id}')">
+          <span class="grupo-hdr-nome">📁 ${nome}</span>
+          <span class="grupo-badge">${itens.length} ${itens.length===1?'item':'itens'}</span>
+          <span class="grupo-toggle">▼</span>
+        </div>
+        <div class="grupo-body open" id="${id}">
+          <div class="table-wrap">
+            <table class="t">
+              <thead><tr>
+                <th>Código</th><th>Produto</th><th>Unid</th>
+                <th>Subgrupo</th><th>Mercadológico</th><th>Pendência</th>
+              </tr></thead>
+              <tbody>
+                ${itens.map(p=>{
+                  const tags = [];
+                  if (p.sem_subgrupo) tags.push('<span class="tag tag-sem-sub">SEM SUBGRUPO</span>');
+                  if (p.sem_merc)     tags.push('<span class="tag tag-sem-merc">SEM MERCAD.</span>');
+                  return `<tr>
+                    <td class="cod">${p.CodigoBarra}</td>
+                    <td class="desc">${p.Descricao||''}</td>
+                    <td style="color:#64748b;font-size:11px">${p.Unid||''}</td>
+                    <td class="sub">${p.subgrupo||'<span style="color:#f87171">—</span>'}</td>
+                    <td class="sub">${p.mercadologico||'<span style="color:#f87171">—</span>'}</td>
+                    <td>${tags.join('')}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  });
+  cont.innerHTML = html;
+}
+
+// ─── UTILS ───────────────────────────────────────
+function toggleGrupo(id) {
+  const body = document.getElementById(id);
+  const hdr  = body.previousElementSibling;
+  body.classList.toggle('open');
+  hdr.classList.toggle('open');
+}
+
+function exportarCSV(tipo) {
+  const dados = tipo==='sem-lista' ? dadosSL : dadosSM;
+  if (!dados.length) return;
+  const cols = tipo==='sem-lista'
+    ? ['CodigoBarra','Descricao','Unid','grupo','subgrupo','mercadologico']
+    : ['CodigoBarra','Descricao','Unid','grupo','subgrupo','mercadologico'];
+  const header = cols.join(';');
+  const linhas = dados.map(r => cols.map(c => `"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(';'));
+  const csv = [header, ...linhas].join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `pendencias-${tipo}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ─── INIT ─────────────────────────────────────────
+(async () => {
+  await carregarGrupos();
+  await Promise.all([carregarSemLista(), carregarSemMerc()]);
+})();
+</script>
+</body>
+</html>

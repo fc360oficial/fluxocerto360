@@ -12,7 +12,6 @@ iframe{
 }
 iframe.visivel{opacity:1;pointer-events:auto}
 
-/* Barra de controles no canto inferior direito */
 .controles{
   position:fixed;bottom:12px;right:16px;z-index:999;
   display:flex;gap:8px;align-items:center;
@@ -34,14 +33,8 @@ iframe.visivel{opacity:1;pointer-events:auto}
   transition:color .2s,transform .2s;display:flex;align-items:center;
 }
 .btn-fs:hover{color:rgba(250,204,21,.9);transform:scale(1.2)}
-
-/* Esconde controles em fullscreen (reexibe ao mover mouse) */
-:fullscreen .controles, :-webkit-full-screen .controles{
-  opacity:0;transition:opacity .4s;
-}
-:fullscreen .controles:hover, :-webkit-full-screen .controles:hover{
-  opacity:1;
-}
+:fullscreen .controles,:-webkit-full-screen .controles{opacity:0;transition:opacity .4s}
+:fullscreen .controles:hover,:-webkit-full-screen .controles:hover{opacity:1}
 </style>
 </head>
 <body>
@@ -49,12 +42,14 @@ iframe.visivel{opacity:1;pointer-events:auto}
 <iframe id="fr-diretoria" title="Diretoria"></iframe>
 <iframe id="fr-precif"   title="Precificação"></iframe>
 <iframe id="fr-compras"  title="Compras"></iframe>
-<iframe id="fr-analise"  title="Análise Comprador"></iframe>
+<iframe id="fr-ciclo"    title="Comprador + Mensal"></iframe>
+<iframe id="fr-analise"  title="Análise Estoque"></iframe>
 
 <div class="controles">
   <div class="dot ativo" id="dot-d" title="Diretoria"></div>
   <div class="dot"       id="dot-p" title="Precificação"></div>
   <div class="dot"       id="dot-c" title="Compras"></div>
+  <div class="dot"       id="dot-k" title="Comprador · Mensal"></div>
   <div class="dot"       id="dot-a" title="Análise Estoque"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
@@ -65,97 +60,82 @@ const BASE = 'http://192.168.2.252:3003';
 
 let atual = 'diretoria';
 
-const frD   = document.getElementById('fr-diretoria');
-const frP   = document.getElementById('fr-precif');
-const frC   = document.getElementById('fr-compras');
-const frA   = document.getElementById('fr-analise');
-const dotD  = document.getElementById('dot-d');
-const dotP  = document.getElementById('dot-p');
-const dotC  = document.getElementById('dot-c');
-const dotA  = document.getElementById('dot-a');
+const frD  = document.getElementById('fr-diretoria');
+const frP  = document.getElementById('fr-precif');
+const frC  = document.getElementById('fr-compras');
+const frK  = document.getElementById('fr-ciclo');
+const frA  = document.getElementById('fr-analise');
+const dotD = document.getElementById('dot-d');
+const dotP = document.getElementById('dot-p');
+const dotC = document.getElementById('dot-c');
+const dotK = document.getElementById('dot-k');
+const dotA = document.getElementById('dot-a');
 const btnFs = document.getElementById('btn-fs');
 
-function setDot(ativo) {
-  [dotD,dotP,dotC,dotA].forEach(d => d.classList.remove('ativo'));
-  ativo.classList.add('ativo');
+const todos = [frD,frP,frC,frK,frA];
+const dots  = [dotD,dotP,dotC,dotK,dotA];
+
+function mostrar(iframe, dot, nome) {
+  atual = nome;
+  todos.forEach(f => f.classList.remove('visivel'));
+  dots.forEach(d  => d.classList.remove('ativo'));
+  iframe.classList.add('visivel');
+  dot.classList.add('ativo');
 }
 
 function mostrarDiretoria() {
-  atual = 'diretoria';
   frD.src = BASE + '/diretoria.html';
-  frD.classList.add('visivel');
-  frP.classList.remove('visivel');
-  frC.classList.remove('visivel');
-  frA.classList.remove('visivel');
-  setDot(dotD);
+  mostrar(frD, dotD, 'diretoria');
 }
-
 function mostrarPrecif() {
-  atual = 'precif';
-  frP.classList.add('visivel');
-  frD.classList.remove('visivel');
-  frC.classList.remove('visivel');
-  frA.classList.remove('visivel');
-  setDot(dotP);
+  mostrar(frP, dotP, 'precif');
 }
-
 function mostrarCompras() {
-  atual = 'compras';
   frC.src = BASE + '/compras.html';
-  frC.classList.add('visivel');
-  frD.classList.remove('visivel');
-  frP.classList.remove('visivel');
-  frA.classList.remove('visivel');
-  setDot(dotC);
+  mostrar(frC, dotC, 'compras');
 }
-
+function mostrarCiclo() {
+  // Inicia o ciclo comprador→mensal por todos os compradores
+  frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0';
+  mostrar(frK, dotK, 'ciclo');
+}
 function mostrarAnalise() {
-  atual = 'analise';
   frA.src = BASE + '/analise-comprador.html?nome=FATIMA';
-  frA.classList.add('visivel');
-  frD.classList.remove('visivel');
-  frP.classList.remove('visivel');
-  frC.classList.remove('visivel');
-  setDot(dotA);
+  mostrar(frA, dotA, 'analise');
 }
 
-// ── TELA CHEIA ──
-function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  } else {
-    document.exitFullscreen().catch(() => {});
-  }
-}
-
-document.addEventListener('fullscreenchange', () => {
-  const fs = !!document.fullscreenElement;
-  btnFs.textContent = fs ? '✕' : '⛶';
-  btnFs.title       = fs ? 'Sair da tela cheia (Esc)' : 'Tela cheia (F11)';
-});
-
-btnFs.addEventListener('click', toggleFullscreen);
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); }
-});
-
-// ── NAVEGAÇÃO PELOS PONTOS ──
-dotD.addEventListener('click', mostrarDiretoria);
-dotP.addEventListener('click', mostrarPrecif);
-dotC.addEventListener('click', mostrarCompras);
-dotA.addEventListener('click', mostrarAnalise);
-
-// ── MENSAGENS DOS IFRAMES ──
-// Rotação: diretoria → precif → compras → analise → diretoria → ...
+// ── Rotação automática ──
+// diretoria → precif → compras → comprador+mensal (ciclo) → analise → diretoria
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
   if (e.data.type === 'diretoriaCycleComplete' && atual === 'diretoria') mostrarPrecif();
   if (e.data.type === 'carouselCycleComplete'  && atual === 'precif')    mostrarCompras();
-  if (e.data.type === 'comprasCycleComplete'   && atual === 'compras')   mostrarAnalise();
+  if (e.data.type === 'comprasCycleComplete'   && atual === 'compras')   mostrarCiclo();
+  if (e.data.type === 'mensalCycleComplete'    && atual === 'ciclo')     mostrarAnalise();
   if (e.data.type === 'analiseCycleComplete'   && atual === 'analise')   mostrarDiretoria();
 });
 
-// Pré-carrega precificação e inicia na diretoria
+// ── Tela cheia ──
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen().catch(()=>{});
+}
+document.addEventListener('fullscreenchange', () => {
+  const fs = !!document.fullscreenElement;
+  btnFs.textContent = fs ? '✕' : '⛶';
+  btnFs.title = fs ? 'Sair da tela cheia (Esc)' : 'Tela cheia (F11)';
+});
+btnFs.addEventListener('click', toggleFullscreen);
+document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault();toggleFullscreen();} });
+
+// ── Clique nos dots ──
+dotD.addEventListener('click', mostrarDiretoria);
+dotP.addEventListener('click', mostrarPrecif);
+dotC.addEventListener('click', mostrarCompras);
+dotK.addEventListener('click', mostrarCiclo);
+dotA.addEventListener('click', mostrarAnalise);
+
+// Pré-carrega precificação e inicia
 frP.src = BASE + '/precificacao.html';
 mostrarDiretoria();
 </script>

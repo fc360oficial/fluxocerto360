@@ -705,8 +705,7 @@ if (isAuto) {
       if (prox < ORDEM_AUTO.length) {
         location.href = '/comprador.html?nome=' + encodeURIComponent(ORDEM_AUTO[prox]) + '&auto=1&idx=' + prox;
       } else {
-        try { window.parent.postMessage({ type: 'comprasCycleComplete' }, '*'); } catch(_) {}
-        location.href = '/compras.html';
+        try { window.parent.postMessage({ type: 'mensalCycleComplete' }, '*'); } catch(_) {}
       }
     }
   }, 1000);

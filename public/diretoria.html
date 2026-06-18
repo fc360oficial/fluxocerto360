@@ -94,7 +94,7 @@ header{
 .kc-bottom{display:flex;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 .kc-kpi{flex:1}
 .kc-kpi-lbl{font-size:8px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
-.kc-kpi-val{font-size:18px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums}
+.kc-kpi-val{font-size:14px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
 .kc-kpi-val.msv{color:var(--brand)}
 
 /* ── CHARTS ROW ── */
@@ -259,7 +259,7 @@ function renderKPIs(data) {
         <span class="badge ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(lj.variacao).toFixed(1)}%</span>
       </div>
       <div class="kc-bottom">
-        <div class="kc-kpi"><div class="kc-kpi-lbl">Ticket</div><div class="kc-kpi-val">R$ ${fmt(lj.ticket)}</div></div>
+        <div class="kc-kpi"><div class="kc-kpi-lbl">Diário</div><div class="kc-kpi-val">R$ ${fmt(lj.ticket)}</div></div>
         <div class="kc-kpi"><div class="kc-kpi-lbl">MSV</div><div class="kc-kpi-val msv">${lj.msv.toFixed(1)}%</div></div>
         <div class="kc-kpi"><div class="kc-kpi-lbl">Cupons</div><div class="kc-kpi-val">${fmtN(lj.cupons)}</div></div>
       </div>`;

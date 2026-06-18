@@ -109,6 +109,15 @@ function fmtDate(d) {
   return d.toISOString().split('T')[0];
 }
 
+// Data local (sem timezone UTC) — evita bug de virar dia às 21h no Brasil
+function localDate(d) {
+  const dt = d || new Date();
+  const y  = dt.getFullYear();
+  const m  = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 // KPIs resumo — aceita ?loja=1..6 e ?mes=1..12
 app.get('/api/kpis', async (req, res) => {
   try {
@@ -1469,7 +1478,7 @@ app.get('/api/listas-compra/:id/itens', async (req, res) => {
 // Fornecedores com pedido colocado hoje (ou em data específica ?data=YYYY-MM-DD)
 app.get('/api/compras/pedidos-hoje', async (req, res) => {
   try {
-    const hoje = req.query.data || new Date().toISOString().split('T')[0];
+    const hoje = req.query.data || localDate();
     const rows = await q(`
       SELECT
         CodFornec,
@@ -1653,7 +1662,7 @@ app.get('/api/compras/pedidos-mes', async (req, res) => {
 
 app.get('/api/precificacao/margens-criticas', async (req, res) => {
   try {
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = localDate();
     const mes  = new Date().getMonth() + 1;
     const mm   = mesDB(mes);
     const result = {};

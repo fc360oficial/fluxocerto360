@@ -535,21 +535,20 @@ const COMPRADORES = [
    atividades:[{nome:'Cotação Bazar — Ciclo Mensal',status:'r'},{nome:'Revisão de Planograma Bazar',status:'g'}]},
 ];
 
-const ALERTAS = [
-  '⚠ URBANO — Fornecedor programado sem pedido fechado (Fátima / Arroz)',
-  '⚠ TURQUESA — Pedido não realizado (Fátima / Feijão)',
-  '⚠ BRILHANTE / OMO — Sem pedido (Fernanda / Limpeza)',
-  '⚠ VEJA / FLASH LÍDER — Cobertura abaixo da meta: 12 dias (meta: 35 dias)',
-  '⚠ MILI — Pedido atrasado em 1 dia (Fernanda / Descartáveis)',
-  '⚠ PARMALAT — Pedido não realizado (Priscila / Frios)',
-  '⚠ P&G — Em andamento há mais de 2 horas (Fernanda / Higiene)',
-  '⚠ NOBREZA — Sem pedido (Renata / Bazar)',
-  '⚠ CAZA NOVA — Cobertura crítica: 8 dias (meta: 45 dias)',
-  '⚠ LA CUISINE — Pedido não iniciado (Renata / Utilidades)',
-  '⚠ EURO HOME — Pedido não iniciado (Renata / Utilidades)',
-  '⚠ SLA VENCIDO — Cotação Bazar Ciclo Mensal (Renata)',
-  '⚠ ESTOQUE CRÍTICO — Análise pendente (Fernanda)',
-];
+function gerarAlertas() {
+  const lista = [];
+  for (const c of COMPRADORES) {
+    for (const cat of (c.categorias || [])) {
+      for (const f of (cat.fornecedores || [])) {
+        if (f.cod && f.status === 'r')
+          lista.push(`⚠ ${f.nome} — Sem pedido hoje (${c.nome} / ${cat.nome})`);
+        else if (f.cod && f.status === 'a')
+          lista.push(`⚠ ${f.nome} — Pedido em andamento (${c.nome} / ${cat.nome})`);
+      }
+    }
+  }
+  return lista.length ? lista : ['✅ Nenhum alerta de pedido no momento'];
+}
 
 const STATUS_LABEL = {g:'Concluído',a:'Andamento',r:'Pendente'};
 
@@ -679,7 +678,8 @@ function renderAll() {
 
 /* ══ TICKER ══ */
 function renderTicker() {
-  const items = [...ALERTAS,...ALERTAS].map(a=>
+  const alertas = gerarAlertas();
+  const items = [...alertas,...alertas].map(a=>
     `<span class="alert-item">${a}</span><span class="alert-sep"> ◆ </span>`
   ).join('');
   document.getElementById('ticker').innerHTML = items;
@@ -741,6 +741,7 @@ async function atualizarStatusReal() {
             f.status = codsOk.has(parseInt(codFornec)) ? 'g' : 'r';
           }
     renderAll();
+    renderTicker();
     const el = document.getElementById('kpi-real');
     if (el) el.textContent = `${total_pedidos} pedidos hoje`;
   } catch(e) { console.warn('ERP offline:',e.message); }

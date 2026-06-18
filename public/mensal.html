@@ -225,6 +225,13 @@ function ocorrencias(mes, ano, weekday) {
   return datas;
 }
 
+async function carregarPedidos() {
+  try {
+    const r = await fetch(`/api/compras/pedidos-mes?mes=${mesSel}&ano=${anoSel}`);
+    if (r.ok) { const d = await r.json(); pedidosMes = d.pedidos || {}; }
+  } catch(_) {}
+}
+
 async function carregar() {
   document.getElementById('conteudo').innerHTML = '<div class="loading">Carregando…</div>';
   document.getElementById('mes-label').textContent = MESES[mesSel] + ' ' + anoSel;
@@ -243,14 +250,20 @@ async function carregar() {
     if (r.ok) fornecMap = await r.json();
   } catch(_) {}
 
-  // Carrega pedidos do mês
-  try {
-    const r = await fetch(`/api/compras/pedidos-mes?mes=${mesSel}&ano=${anoSel}`);
-    if (r.ok) { const d = await r.json(); pedidosMes = d.pedidos || {}; }
-  } catch(_) {}
-
+  await carregarPedidos();
   renderTabela(cron);
 }
+
+// Atualiza só os pedidos do banco e re-renderiza — mesma regra do comprador.html
+async function atualizarStatus() {
+  const cron = COMPRADORES[nomeSel];
+  if (!cron) return;
+  await carregarPedidos();
+  renderTabela(cron);
+}
+
+// Auto-refresh a cada 60s (igual ao comprador.html)
+setInterval(atualizarStatus, 60000);
 
 // Determina grupo pela posição de ocorrência: 1ª/3ª = '1e3', 2ª/4ª = '2e4'
 function grupoOcorrencia(occIdx) {

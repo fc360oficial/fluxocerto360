@@ -11,7 +11,6 @@ iframe{
   border:none;opacity:0;pointer-events:none;transition:opacity .6s;
 }
 iframe.visivel{opacity:1;pointer-events:auto}
-
 .controles{
   position:fixed;bottom:12px;right:16px;z-index:999;
   display:flex;gap:8px;align-items:center;
@@ -41,21 +40,21 @@ iframe.visivel{opacity:1;pointer-events:auto}
 
 <iframe id="fr-diretoria" title="Diretoria"></iframe>
 <iframe id="fr-precif"   title="Precificação"></iframe>
-<iframe id="fr-compras"  title="Compras"></iframe>
-<iframe id="fr-ciclo"    title="Comprador + Mensal"></iframe>
-<iframe id="fr-analise"  title="Análise Estoque"></iframe>
+<iframe id="fr-compras"  title="Compras Geral"></iframe>
+<iframe id="fr-ciclo"    title="Comprador · Mensal · Produtos"></iframe>
 
 <div class="controles">
   <div class="dot ativo" id="dot-d" title="Diretoria"></div>
   <div class="dot"       id="dot-p" title="Precificação"></div>
   <div class="dot"       id="dot-c" title="Compras"></div>
-  <div class="dot"       id="dot-k" title="Comprador · Mensal"></div>
-  <div class="dot"       id="dot-a" title="Análise Estoque"></div>
+  <div class="dot"       id="dot-k" title="Diário · Mensal · Produtos"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 </div>
 
 <script>
+// Rotação: Diretoria → Precificação → Compras (geral) →
+//          [Fátima diário→mensal→produtos → Fernanda → ... → Renata] → Diretoria
 const BASE = 'http://192.168.2.252:3003';
 
 let atual = 'diretoria';
@@ -64,21 +63,16 @@ const frD  = document.getElementById('fr-diretoria');
 const frP  = document.getElementById('fr-precif');
 const frC  = document.getElementById('fr-compras');
 const frK  = document.getElementById('fr-ciclo');
-const frA  = document.getElementById('fr-analise');
 const dotD = document.getElementById('dot-d');
 const dotP = document.getElementById('dot-p');
 const dotC = document.getElementById('dot-c');
 const dotK = document.getElementById('dot-k');
-const dotA = document.getElementById('dot-a');
 const btnFs = document.getElementById('btn-fs');
-
-const todos = [frD,frP,frC,frK,frA];
-const dots  = [dotD,dotP,dotC,dotK,dotA];
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
-  todos.forEach(f => f.classList.remove('visivel'));
-  dots.forEach(d  => d.classList.remove('ativo'));
+  [frD,frP,frC,frK].forEach(f => f.classList.remove('visivel'));
+  [dotD,dotP,dotC,dotK].forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');
 }
@@ -95,27 +89,21 @@ function mostrarCompras() {
   mostrar(frC, dotC, 'compras');
 }
 function mostrarCiclo() {
-  // Inicia o ciclo comprador→mensal por todos os compradores
+  // Começa o ciclo pelo primeiro comprador — encadeia sozinho até o último
   frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0';
   mostrar(frK, dotK, 'ciclo');
 }
-function mostrarAnalise() {
-  frA.src = BASE + '/analise-comprador.html?nome=FATIMA';
-  mostrar(frA, dotA, 'analise');
-}
 
-// ── Rotação automática ──
-// diretoria → precif → compras → comprador+mensal (ciclo) → analise → diretoria
+// Rotação automática via postMessage
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
   if (e.data.type === 'diretoriaCycleComplete' && atual === 'diretoria') mostrarPrecif();
   if (e.data.type === 'carouselCycleComplete'  && atual === 'precif')    mostrarCompras();
   if (e.data.type === 'comprasCycleComplete'   && atual === 'compras')   mostrarCiclo();
-  if (e.data.type === 'mensalCycleComplete'    && atual === 'ciclo')     mostrarAnalise();
-  if (e.data.type === 'analiseCycleComplete'   && atual === 'analise')   mostrarDiretoria();
+  if (e.data.type === 'analiseCycleComplete'   && atual === 'ciclo')     mostrarDiretoria();
 });
 
-// ── Tela cheia ──
+// Tela cheia
 function toggleFullscreen() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
   else document.exitFullscreen().catch(()=>{});
@@ -128,14 +116,13 @@ document.addEventListener('fullscreenchange', () => {
 btnFs.addEventListener('click', toggleFullscreen);
 document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault();toggleFullscreen();} });
 
-// ── Clique nos dots ──
+// Clique nos dots
 dotD.addEventListener('click', mostrarDiretoria);
 dotP.addEventListener('click', mostrarPrecif);
 dotC.addEventListener('click', mostrarCompras);
 dotK.addEventListener('click', mostrarCiclo);
-dotA.addEventListener('click', mostrarAnalise);
 
-// Pré-carrega precificação e inicia
+// Pré-carrega precificação e inicia na diretoria
 frP.src = BASE + '/precificacao.html';
 mostrarDiretoria();
 </script>

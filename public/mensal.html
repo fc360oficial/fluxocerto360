@@ -647,7 +647,7 @@ function renderTabela(cron) {
 // ── CARROSSEL VERTICAL ────────────────────────────────
 let _carraf = null;
 let _scrollY = 0;
-const PX_POR_FRAME = 0.8; // ~48px/s em 60fps — ajustável
+const PX_POR_FRAME = 0.4; // ~24px/s em 60fps — ajustável
 
 function iniciarCarrossel() {
   if (_carraf) { cancelAnimationFrame(_carraf); _carraf = null; }
@@ -701,12 +701,8 @@ if (isAuto) {
     if (el) el.textContent = cdAuto + 's';
     if (cdAuto <= 0) {
       clearInterval(iv);
-      const prox = idxAtual + 1;
-      if (prox < ORDEM_AUTO.length) {
-        location.href = '/comprador.html?nome=' + encodeURIComponent(ORDEM_AUTO[prox]) + '&auto=1&idx=' + prox;
-      } else {
-        try { window.parent.postMessage({ type: 'mensalCycleComplete' }, '*'); } catch(_) {}
-      }
+      // Vai para análise de produtos do mesmo comprador
+      location.href = '/analise-comprador.html?nome=' + encodeURIComponent(ORDEM_AUTO[idxAtual]) + '&auto=1&idx=' + idxAtual;
     }
   }, 1000);
 }

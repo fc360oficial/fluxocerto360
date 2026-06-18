@@ -214,6 +214,22 @@ function proximaColuna(colIdx, slideLocal, sessao) {
     const nextSlide = (slideLocal + 1) % slides.length;
     slideIdx = nextSlide;
     if (nextSlide === 0) {
+      const sp = new URLSearchParams(location.search);
+      const isAutoMode = sp.get('auto') === '1';
+      const idxMode   = parseInt(sp.get('idx') || '0');
+      const ORDEM_CICLO = ['FATIMA','FERNANDA','PRISCILA','MARCOS','RENATA'];
+      if (isAutoMode) {
+        const prox = idxMode + 1;
+        if (prox < ORDEM_CICLO.length) {
+          _carTimeout = setTimeout(() => {
+            location.href = '/comprador.html?nome=' + ORDEM_CICLO[prox] + '&auto=1&idx=' + prox;
+          }, 1200);
+        } else {
+          try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}
+          _carTimeout = setTimeout(() => renderSlide(slides[0]), 1200);
+        }
+        return;
+      }
       try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}
     }
     _carTimeout = setTimeout(() => renderSlide(slides[nextSlide]), 1200);

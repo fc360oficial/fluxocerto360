@@ -28,6 +28,8 @@ app.use((req, res, next) => {
     '/diretoria.html', '/api/diretoria/kpis',
     '/api/top-vendidos', '/api/top-mercadologico',
     '/api/compras/verificar-comprador',
+    '/api/compras/analise-estoque',
+    '/analise-comprador.html',
     '/api/compras/fornec-por-lista',
     '/api/compras/pedidos-mes',
     '/mensal.html'];
@@ -1722,6 +1724,210 @@ app.get('/api/precificacao/margens-criticas', async (req, res) => {
       totalCusto: +totalCusto.toFixed(2),
       porLoja
     };
+    res.json(result);
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════
+// MÓDULO COMPRAS — ANÁLISE DE ESTOQUE POR COMPRADOR
+// Tudo separado por loja (ruptura/excesso/giro por loja)
+// Variação de custo: soma das 6 lojas (preço único de compra)
+// ═══════════════════════════════════════════════════
+
+const NREGS_COMPRADOR = {
+  FATIMA: [344,342,380,355,534,304,537,338,347,332,314,303,482,310,312,311,309,461,313,394,538,341,419,384,543,555,350,277],
+};
+
+let _analiseCache = {}, _analiseCacheTs = {};
+const ANALISE_TTL = 10 * 60 * 1000;
+
+app.get('/api/compras/analise-estoque', async (req, res) => {
+  try {
+    const comp = (req.query.comprador || 'FATIMA')
+      .normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+    const nRegs = NREGS_COMPRADOR[comp];
+    const vazio = { lojas:{}, variacaoCusto:[], totalProdutos:0, geradoEm:'' };
+    if (!nRegs) return res.json(vazio);
+
+    const now = Date.now();
+    if (_analiseCache[comp] && (now - _analiseCacheTs[comp]) < ANALISE_TTL)
+      return res.json(_analiseCache[comp]);
+
+    // 1. CodFornec reais para os nRegs
+    const phN = nRegs.map(() => '?').join(',');
+    const fornecRows = await q(
+      `SELECT DISTINCT CodFornec FROM central.c_cotacao_lista WHERE nReg IN (${phN}) AND CodFornec > 0`,
+      nRegs
+    );
+    const codsFornec = [...new Set(fornecRows.map(r => parseInt(r.CodFornec)))].filter(Boolean);
+    if (!codsFornec.length) return res.json(vazio);
+
+    // 2. Produtos dessas fornecedoras
+    const phF = codsFornec.map(() => '?').join(',');
+    const prods = await q(`
+      SELECT DISTINCT fi.CodigoBarra, TRIM(i.Descricao) as descricao
+      FROM central.fornecedoritens fi
+      INNER JOIN central.itens i ON i.CodigoBarra = fi.CodigoBarra AND i.CodDesativado = 0
+      WHERE fi.CodFornecedor IN (${phF}) AND fi.Backup = 0
+    `, codsFornec);
+    if (!prods.length) return res.json(vazio);
+
+    const codigos = [...new Set(prods.map(p => p.CodigoBarra))];
+    const descMap = Object.fromEntries(prods.map(p => [p.CodigoBarra, p.descricao]));
+    const phC = codigos.map(() => '?').join(',');
+
+    // 3. Estoque por loja (separado)
+    const estRows = await q(`
+      SELECT i.CodigoBarra,
+        GREATEST(0,COALESCE(e1.Qtd,0)) as q1, GREATEST(0,COALESCE(e2.Qtd,0)) as q2,
+        GREATEST(0,COALESCE(e3.Qtd,0)) as q3, GREATEST(0,COALESCE(e4.Qtd,0)) as q4,
+        GREATEST(0,COALESCE(e5.Qtd,0)) as q5, GREATEST(0,COALESCE(e6.Qtd,0)) as q6
+      FROM (SELECT CodigoBarra FROM central.itens WHERE CodigoBarra IN (${phC})) i
+      LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
+    `, codigos);
+    // estoqueMap[cod][ln] = qty
+    const estoqueMap = {};
+    for (const r of estRows) {
+      estoqueMap[r.CodigoBarra] = {
+        '1':parseFloat(r.q1||0),'2':parseFloat(r.q2||0),'3':parseFloat(r.q3||0),
+        '4':parseFloat(r.q4||0),'5':parseFloat(r.q5||0),'6':parseFloat(r.q6||0),
+      };
+    }
+
+    // 4. Vendas por loja × período (3 meses para cobrir 60 dias)
+    const hojeD = new Date();
+    const ini60 = localDate(new Date(hojeD - 60*86400000));
+    const ini30 = localDate(new Date(hojeD - 30*86400000));
+    const meses = [];
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(hojeD.getFullYear(), hojeD.getMonth()-i, 1);
+      meses.push({ ano: d.getFullYear(), mes: d.getMonth()+1 });
+    }
+
+    // vendasMap[ln][cod] = { qtd30, qtd30ant, custoAtual, custoAnt, ultimaVenda }
+    const vendasMap = {};
+    for (const ln of ['1','2','3','4','5','6']) vendasMap[ln] = {};
+
+    for (const { ano, mes } of meses) {
+      const mm = mesDB(mes);
+      for (const ln of [1,2,3,4,5,6]) {
+        try {
+          const rows = await q(`
+            SELECT Codigo,
+              SUM(CASE WHEN Data >= ? THEN QtdNovo ELSE 0 END) as qtd30,
+              SUM(CASE WHEN Data >= ? AND Data < ? THEN QtdNovo ELSE 0 END) as qtd30ant,
+              SUM(CASE WHEN Data >= ? THEN Custo  ELSE 0 END) as custoAtual,
+              SUM(CASE WHEN Data >= ? AND Data < ? THEN Custo  ELSE 0 END) as custoAnt,
+              MAX(Data) as ultima_venda
+            FROM \`ln${ln}${mm}\`.zcupomitens
+            WHERE IndCancel='N' AND Data >= ? AND Codigo IN (${phC})
+            GROUP BY Codigo
+          `, [ini30, ini60, ini30, ini30, ini60, ini30, ini60, ...codigos]);
+          const key = String(ln);
+          for (const r of rows) {
+            const k = r.Codigo;
+            if (!vendasMap[key][k]) vendasMap[key][k] = { qtd30:0, qtd30ant:0, custoAtual:0, custoAnt:0, ultimaVenda:null };
+            vendasMap[key][k].qtd30     += parseFloat(r.qtd30||0);
+            vendasMap[key][k].qtd30ant  += parseFloat(r.qtd30ant||0);
+            vendasMap[key][k].custoAtual+= parseFloat(r.custoAtual||0);
+            vendasMap[key][k].custoAnt  += parseFloat(r.custoAnt||0);
+            const uv = r.ultima_venda ? String(r.ultima_venda).slice(0,10) : null;
+            if (uv && (!vendasMap[key][k].ultimaVenda || uv > vendasMap[key][k].ultimaVenda))
+              vendasMap[key][k].ultimaVenda = uv;
+          }
+        } catch(_) {}
+      }
+    }
+
+    // 5. Classificar por loja
+    const lojas = {};
+    for (const ln of ['1','2','3','4','5','6']) {
+      lojas[ln] = { ruptura:[], excesso:[], semVenda:[], topVendidos:[], quedaGiro:[] };
+    }
+    const variacaoCusto = [];
+
+    for (const cod of codigos) {
+      const descricao = descMap[cod] || cod;
+
+      // Variação de custo — soma das 6 lojas (preço de compra é único)
+      let totQtd30=0, totQtd30ant=0, totCustoAtual=0, totCustoAnt=0;
+      for (const ln of ['1','2','3','4','5','6']) {
+        const v = vendasMap[ln][cod];
+        if (!v) continue;
+        totQtd30     += v.qtd30;
+        totQtd30ant  += v.qtd30ant;
+        totCustoAtual+= v.custoAtual;
+        totCustoAnt  += v.custoAnt;
+      }
+      if (totQtd30 > 0 && totQtd30ant > 0 && totCustoAnt > 0) {
+        const cu = totCustoAtual/totQtd30, ca = totCustoAnt/totQtd30ant;
+        const varPct = ((cu-ca)/ca)*100;
+        if (varPct > 5) variacaoCusto.push({ codigo:cod, descricao,
+          custoAtual:+cu.toFixed(4), custoAnt:+ca.toFixed(4), varPct:+varPct.toFixed(1) });
+      }
+
+      // Por loja
+      for (const ln of ['1','2','3','4','5','6']) {
+        const estoque = estoqueMap[cod]?.[ln] || 0;
+        const v = vendasMap[ln][cod];
+        const qtd30    = v ? v.qtd30    : 0;
+        const qtd30ant = v ? v.qtd30ant : 0;
+        const ultimaVenda = v ? v.ultimaVenda : null;
+        const mediaDiaria = qtd30 / 30;
+        const diasCobertura = mediaDiaria > 0.001
+          ? Math.round(estoque / mediaDiaria) : (estoque > 0 ? 9999 : 0);
+        const diasSemVenda = ultimaVenda
+          ? Math.round((hojeD - new Date(ultimaVenda+'T12:00:00')) / 86400000) : 999;
+
+        if (diasSemVenda >= 60 && estoque > 0)
+          lojas[ln].semVenda.push({ codigo:cod, descricao, estoque:+estoque.toFixed(2), diasSemVenda, ultimaVenda });
+
+        if (mediaDiaria > 0.001 && diasCobertura < 40) {
+          const urgencia = diasCobertura < 10 ? 'critico' : diasCobertura < 20 ? 'alto' : 'medio';
+          lojas[ln].ruptura.push({ codigo:cod, descricao, estoque:+estoque.toFixed(2), mediaDiaria:+mediaDiaria.toFixed(2), diasCobertura, urgencia });
+        }
+
+        if (mediaDiaria > 0.001 && diasCobertura > 80)
+          lojas[ln].excesso.push({ codigo:cod, descricao, estoque:+estoque.toFixed(2), mediaDiaria:+mediaDiaria.toFixed(2), diasCobertura });
+
+        if (qtd30 > 0)
+          lojas[ln].topVendidos.push({ codigo:cod, descricao, qtd30:+qtd30.toFixed(0), mediaDiaria:+mediaDiaria.toFixed(2) });
+
+        if (qtd30ant > 0 && qtd30 < qtd30ant * 0.7)
+          lojas[ln].quedaGiro.push({ codigo:cod, descricao,
+            qtd30:+qtd30.toFixed(0), qtd30ant:+qtd30ant.toFixed(0),
+            quedaPct:+(((qtd30ant-qtd30)/qtd30ant)*100).toFixed(1) });
+      }
+    }
+
+    // Ordenar e limitar por loja
+    for (const ln of ['1','2','3','4','5','6']) {
+      lojas[ln].ruptura.sort((a,b)    => a.diasCobertura - b.diasCobertura);
+      lojas[ln].excesso.sort((a,b)    => b.diasCobertura - a.diasCobertura);
+      lojas[ln].semVenda.sort((a,b)   => b.diasSemVenda  - a.diasSemVenda);
+      lojas[ln].topVendidos.sort((a,b)=> b.qtd30 - a.qtd30);
+      lojas[ln].quedaGiro.sort((a,b)  => b.quedaPct - a.quedaPct);
+      lojas[ln].ruptura    = lojas[ln].ruptura.slice(0,20);
+      lojas[ln].excesso    = lojas[ln].excesso.slice(0,20);
+      lojas[ln].semVenda   = lojas[ln].semVenda.slice(0,10);
+      lojas[ln].topVendidos= lojas[ln].topVendidos.slice(0,10);
+      lojas[ln].quedaGiro  = lojas[ln].quedaGiro.slice(0,10);
+    }
+    variacaoCusto.sort((a,b) => b.varPct - a.varPct);
+
+    const result = {
+      lojas,
+      variacaoCusto: variacaoCusto.slice(0,10),
+      totalProdutos: codigos.length,
+      geradoEm: new Date().toISOString()
+    };
+    _analiseCache[comp] = result;
+    _analiseCacheTs[comp] = now;
     res.json(result);
   } catch(err) { res.status(500).json({ error: err.message }); }
 });

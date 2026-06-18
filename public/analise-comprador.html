@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Análise de Estoque — FC360</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#08111F;--bg2:#0B1220;--card:#121B2E;--card2:#172033;
+  --brand:#FACC15;--green:#22C55E;--green-bg:rgba(34,197,94,.12);
+  --amber:#F59E0B;--amber-bg:rgba(245,158,11,.12);
+  --red:#EF4444;--red-bg:rgba(239,68,68,.12);
+  --blue:#3B82F6;--purple:#8B5CF6;
+  --text:#FFF;--text2:#94A3B8;--text3:#64748B;
+  --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
+  --r:16px;--r-sm:10px;
+}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text)}
+
+/* ── HEADER ── */
+header{
+  height:70px;padding:0 28px;display:flex;align-items:center;gap:18px;flex-shrink:0;
+  background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
+  border-bottom:1px solid var(--border-md);
+  box-shadow:0 4px 24px rgba(0,0,0,.4);
+}
+.h-logo{height:44px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
+.h-sep{width:1px;height:36px;background:var(--border-md)}
+.h-avatar{
+  width:42px;height:42px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+.h-info h2{font-size:20px;font-weight:800;color:var(--text)}
+.h-info p{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1.2px;margin-top:1px}
+.h-spacer{flex:1}
+.h-update{font-size:10px;color:var(--text3);text-align:right}
+.h-clock-wrap{text-align:right}
+.h-clock{font-size:44px;font-weight:800;color:#fff;letter-spacing:3px;font-variant-numeric:tabular-nums;line-height:1}
+.h-clock-sub{font-size:10px;color:var(--text2);margin-top:2px}
+.h-back{
+  display:flex;align-items:center;gap:5px;color:var(--text3);text-decoration:none;
+  font-size:11px;font-weight:700;padding:6px 12px;border-radius:var(--r-sm);
+  border:1px solid var(--border-md);background:rgba(255,255,255,.04);
+  transition:all .2s;white-space:nowrap;
+}
+.h-back:hover{border-color:var(--brand);color:var(--brand)}
+
+/* ── TOOLBAR ── */
+.toolbar{
+  padding:10px 28px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  border-bottom:1px solid var(--border);background:var(--bg2);
+}
+.loja-tabs{display:flex;gap:6px}
+.ltab{
+  padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;
+  border:1px solid var(--border-md);color:var(--text2);background:transparent;
+  transition:all .2s;
+}
+.ltab.active{background:var(--brand);color:#000;border-color:var(--brand)}
+.ltab:hover:not(.active){border-color:var(--brand);color:var(--brand)}
+.toolbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tot-badge{font-size:11px;color:var(--text3)}
+
+/* ── MAIN ── */
+main{
+  display:flex;flex-direction:column;gap:0;
+  height:calc(100vh - 70px - 46px);overflow:hidden;
+}
+
+/* ── ABA ANÁLISE ── */
+.analise-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;padding:0 28px}
+.atab{
+  padding:10px 18px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text3);
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;
+  text-transform:uppercase;letter-spacing:.8px;
+}
+.atab.active{color:var(--text);border-bottom-color:var(--brand)}
+.atab:hover:not(.active){color:var(--text2)}
+.atab .badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;font-size:9px;font-weight:800;
+  margin-left:5px;vertical-align:middle;
+}
+.atab.red .badge{background:var(--red-bg);color:var(--red)}
+.atab.amber .badge{background:var(--amber-bg);color:var(--amber)}
+.atab.blue .badge{background:rgba(59,130,246,.15);color:var(--blue)}
+.atab.green .badge{background:var(--green-bg);color:var(--green)}
+.atab.purple .badge{background:rgba(139,92,246,.15);color:var(--purple)}
+.atab.orange .badge{background:rgba(245,158,11,.15);color:var(--amber)}
+
+/* ── PAINEL ── */
+.painel{flex:1;overflow-y:auto;padding:16px 28px;display:none}
+.painel.active{display:block}
+
+/* ── TABELA ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{
+  font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;
+  letter-spacing:1.2px;padding:6px 10px;border-bottom:1px solid var(--border-md);
+  text-align:left;position:sticky;top:0;background:var(--bg);z-index:1;
+}
+.tbl th.r{text-align:right}
+.tbl td{padding:9px 10px;font-size:13px;border-bottom:1px solid var(--border)}
+.tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr:hover td{background:rgba(255,255,255,.025)}
+
+/* urgência ruptura */
+.urg-critico{color:var(--red);font-weight:800}
+.urg-alto   {color:var(--amber);font-weight:700}
+.urg-medio  {color:var(--text2)}
+
+.dias-chip{
+  display:inline-block;padding:2px 8px;border-radius:20px;
+  font-size:11px;font-weight:700;
+}
+.chip-critico{background:var(--red-bg);color:var(--red)}
+.chip-alto   {background:var(--amber-bg);color:var(--amber)}
+.chip-medio  {background:rgba(255,255,255,.06);color:var(--text2)}
+.chip-excesso{background:rgba(139,92,246,.15);color:var(--purple)}
+.chip-ok     {background:var(--green-bg);color:var(--green)}
+.chip-semvenda{background:rgba(100,116,139,.15);color:var(--text3)}
+
+/* variação de custo */
+.var-up{color:var(--red);font-weight:700}
+.var-dn{color:var(--green);font-weight:700}
+
+/* top vendidos bar */
+.bar-wrap{display:flex;align-items:center;gap:8px}
+.bar-bg{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--brand)}
+
+/* sem venda data */
+.data-sub{font-size:11px;color:var(--text3);display:block}
+
+/* empty state */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;gap:12px;text-align:center;
+}
+.empty-icon{font-size:40px}
+.empty-txt{font-size:15px;font-weight:700;color:var(--text2)}
+.empty-sub{font-size:12px;color:var(--text3)}
+
+/* loading */
+.loading{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+
+/* variação de custo painel (cross-loja) */
+.custo-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+.custo-title{font-size:13px;font-weight:700;color:var(--text2)}
+.custo-sub{font-size:11px;color:var(--text3)}
+</style>
+</head>
+<body>
+
+<header>
+  <img class="h-logo" src="/logo.png" alt="Econômico">
+  <div class="h-sep"></div>
+  <div class="h-avatar" id="h-avatar"></div>
+  <div class="h-info">
+    <h2 id="h-nome">—</h2>
+    <p id="h-cargo">Compradora</p>
+  </div>
+  <div class="h-spacer"></div>
+  <div class="h-update" id="h-update"></div>
+  <div class="h-sep"></div>
+  <div class="h-clock-wrap">
+    <div class="h-clock" id="clock">00:00:00</div>
+    <div class="h-clock-sub" id="clock-sub">—</div>
+  </div>
+  <a class="h-back" href="/comprador.html?nome=FÁTIMA" id="h-back">← Comprador</a>
+</header>
+
+<div class="toolbar">
+  <div class="loja-tabs" id="loja-tabs">
+    <button class="ltab active" data-loja="1">Loja 1</button>
+    <button class="ltab" data-loja="2">Loja 2</button>
+    <button class="ltab" data-loja="3">Loja 3</button>
+    <button class="ltab" data-loja="4">Loja 4</button>
+    <button class="ltab" data-loja="5">Loja 5</button>
+    <button class="ltab" data-loja="6">Loja 6</button>
+  </div>
+  <div class="toolbar-right">
+    <span class="tot-badge" id="tot-badge"></span>
+  </div>
+</div>
+
+<main>
+  <div class="analise-tabs" id="analise-tabs">
+    <div class="atab red active"   data-tab="ruptura">🔴 Ruptura <span class="badge" id="n-ruptura">0</span></div>
+    <div class="atab amber"        data-tab="semvenda">⬛ Sem Venda 60d <span class="badge" id="n-semvenda">0</span></div>
+    <div class="atab purple"       data-tab="excesso">🟣 Excesso <span class="badge" id="n-excesso">0</span></div>
+    <div class="atab green"        data-tab="top">🏆 Top Vendidos <span class="badge" id="n-top">0</span></div>
+    <div class="atab blue"         data-tab="queda">📉 Queda de Giro <span class="badge" id="n-queda">0</span></div>
+    <div class="atab orange"       data-tab="custo">📈 Variação de Custo <span class="badge" id="n-custo">0</span></div>
+  </div>
+
+  <div class="painel active" id="painel-ruptura">
+    <div class="loading">Carregando...</div>
+  </div>
+  <div class="painel" id="painel-semvenda"></div>
+  <div class="painel" id="painel-excesso"></div>
+  <div class="painel" id="painel-top"></div>
+  <div class="painel" id="painel-queda"></div>
+  <div class="painel" id="painel-custo"></div>
+</main>
+
+<script>
+const COR_COMPRADORES = {
+  'FATIMA':'#6366f1','FERNANDA':'#f43f5e','PRISCILA':'#14b8a6',
+  'MARCOS':'#f59e0b','RENATA':'#a855f7',
+};
+const CARGO_COMPRADORES = {
+  'FATIMA':'Compradora de Alimentos','FERNANDA':'Compradora de Higiene & Limpeza',
+  'PRISCILA':'Compradora de Bebidas & Frios','MARCOS':'Comprador de Hortifruti & Padaria',
+  'RENATA':'Compradora de Bazar & Utilidades',
+};
+
+const params  = new URLSearchParams(location.search);
+const NOME    = (params.get('nome') || 'FATIMA').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+let lojaAtual = '1';
+let dadosCache = null;
+
+// ── Clock ──
+function updateClock() {
+  const n = new Date();
+  const p = x => String(x).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  document.getElementById('clock-sub').textContent =
+    `${dias[n.getDay()]}, ${n.getDate()} de ${meses[n.getMonth()]} de ${n.getFullYear()}`;
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── Header ──
+function setupHeader() {
+  document.getElementById('h-nome').textContent = NOME;
+  document.getElementById('h-cargo').textContent = CARGO_COMPRADORES[NOME] || 'Compradora';
+  document.getElementById('h-back').href = `/comprador.html?nome=${encodeURIComponent(NOME)}`;
+  const av  = document.getElementById('h-avatar');
+  const cor = COR_COMPRADORES[NOME] || '#6366f1';
+  av.style.background = cor + '22';
+  av.style.border = '2px solid ' + cor;
+  av.style.color  = cor;
+  av.textContent  = NOME[0];
+}
+
+// ── Tabs de análise ──
+document.getElementById('analise-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.atab');
+  if (!tab) return;
+  document.querySelectorAll('.atab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.painel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('painel-' + tab.dataset.tab).classList.add('active');
+});
+
+// ── Tabs de loja ──
+document.getElementById('loja-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.ltab');
+  if (!btn) return;
+  document.querySelectorAll('.ltab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  lojaAtual = btn.dataset.loja;
+  if (dadosCache) renderLoja(dadosCache, lojaAtual);
+});
+
+// ── Render ──
+function chipDias(d, tipo) {
+  if (tipo === 'ruptura') {
+    const cls = d < 10 ? 'chip-critico' : d < 20 ? 'chip-alto' : 'chip-medio';
+    return `<span class="dias-chip ${cls}">${d} dias</span>`;
+  }
+  if (tipo === 'excesso') return `<span class="dias-chip chip-excesso">${d} dias</span>`;
+  return `<span class="dias-chip chip-semvenda">${d === 999 ? '60+ dias' : d + ' dias'}</span>`;
+}
+
+function emptyState(icon, txt, sub) {
+  return `<div class="empty-state"><div class="empty-icon">${icon}</div>
+    <div class="empty-txt">${txt}</div><div class="empty-sub">${sub}</div></div>`;
+}
+
+function renderRuptura(lista) {
+  if (!lista.length) return emptyState('✅','Sem risco de ruptura','Todas as coberturas estão acima de 40 dias');
+  return `<table class="tbl">
+    <thead><tr>
+      <th>Produto</th><th class="r">Estoque</th>
+      <th class="r">Média/dia</th><th class="r">Cobertura</th>
+    </tr></thead>
+    <tbody>${lista.map(r => `<tr>
+      <td><span style="font-size:10px;color:var(--text3);margin-right:4px">${r.codigo}</span>${r.descricao}</td>
+      <td class="r">${r.estoque.toLocaleString('pt-BR')}</td>
+      <td class="r">${r.mediaDiaria}</td>
+      <td class="r">${chipDias(r.diasCobertura,'ruptura')}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderExcesso(lista) {
+  if (!lista.length) return emptyState('✅','Sem excesso de estoque','Nenhum produto acima de 80 dias de cobertura');
+  return `<table class="tbl">
+    <thead><tr>
+      <th>Produto</th><th class="r">Estoque</th>
+      <th class="r">Média/dia</th><th class="r">Cobertura</th>
+    </tr></thead>
+    <tbody>${lista.map(r => `<tr>
+      <td><span style="font-size:10px;color:var(--text3);margin-right:4px">${r.codigo}</span>${r.descricao}</td>
+      <td class="r">${r.estoque.toLocaleString('pt-BR')}</td>
+      <td class="r">${r.mediaDiaria}</td>
+      <td class="r">${chipDias(r.diasCobertura,'excesso')}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderSemVenda(lista) {
+  if (!lista.length) return emptyState('✅','Sem produtos parados','Todos os itens tiveram venda nos últimos 60 dias');
+  return `<table class="tbl">
+    <thead><tr>
+      <th>Produto</th><th class="r">Estoque</th>
+      <th class="r">Sem venda há</th><th class="r">Última venda</th>
+    </tr></thead>
+    <tbody>${lista.map(r => `<tr>
+      <td><span style="font-size:10px;color:var(--text3);margin-right:4px">${r.codigo}</span>${r.descricao}</td>
+      <td class="r">${r.estoque.toLocaleString('pt-BR')}</td>
+      <td class="r">${chipDias(r.diasSemVenda,'semvenda')}</td>
+      <td class="r" style="color:var(--text3);font-size:12px">${r.ultimaVenda || '—'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderTop(lista) {
+  if (!lista.length) return emptyState('📊','Sem dados de venda','Nenhuma venda registrada nos últimos 30 dias');
+  const max = lista[0]?.qtd30 || 1;
+  return `<table class="tbl">
+    <thead><tr>
+      <th>#</th><th>Produto</th>
+      <th class="r">Qtd 30d</th><th class="r">Média/dia</th>
+    </tr></thead>
+    <tbody>${lista.map((r,i) => `<tr>
+      <td style="color:var(--text3);font-size:12px;width:30px">${i+1}</td>
+      <td>
+        <span style="font-size:10px;color:var(--text3);margin-right:4px">${r.codigo}</span>${r.descricao}
+        <div class="bar-wrap" style="margin-top:4px">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(r.qtd30/max*100)}%"></div></div>
+        </div>
+      </td>
+      <td class="r">${Number(r.qtd30).toLocaleString('pt-BR')}</td>
+      <td class="r" style="color:var(--text2)">${r.mediaDiaria}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderQueda(lista) {
+  if (!lista.length) return emptyState('✅','Sem quedas significativas','Nenhum produto caiu mais de 30% de giro');
+  return `<table class="tbl">
+    <thead><tr>
+      <th>Produto</th>
+      <th class="r">30d atual</th><th class="r">30d anterior</th><th class="r">Queda</th>
+    </tr></thead>
+    <tbody>${lista.map(r => `<tr>
+      <td><span style="font-size:10px;color:var(--text3);margin-right:4px">${r.codigo}</span>${r.descricao}</td>
+      <td class="r">${Number(r.qtd30).toLocaleString('pt-BR')}</td>
+      <td class="r" style="color:var(--text3)">${Number(r.qtd30ant).toLocaleString('pt-BR')}</td>
+      <td class="r var-up">▼ ${r.quedaPct}%</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderCusto(lista) {
+  if (!lista.length) return emptyState('✅','Sem variação relevante de custo','Nenhum produto subiu mais de 5% de custo');
+  return `<div class="custo-header">
+    <div>
+      <div class="custo-title">Comparação: custo unitário médio últimos 30 dias vs 30 dias anteriores</div>
+      <div class="custo-sub">Soma das 6 lojas — alertas acima de +5%</div>
+    </div>
+  </div>
+  <table class="tbl">
+    <thead><tr>
+      <th>Produto</th>
+      <th class="r">Custo atual</th><th class="r">Custo anterior</th><th class="r">Variação</th>
+    </tr></thead>
+    <tbody>${lista.map(r => `<tr>
+      <td><span style="font-size:10px;color:var(--text3);margin-right:4px">${r.codigo}</span>${r.descricao}</td>
+      <td class="r">R$ ${r.custoAtual.toFixed(2)}</td>
+      <td class="r" style="color:var(--text3)">R$ ${r.custoAnt.toFixed(2)}</td>
+      <td class="r var-up">▲ ${r.varPct}%</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderLoja(dados, ln) {
+  const l = dados.lojas[ln] || {};
+  document.getElementById('painel-ruptura').innerHTML  = renderRuptura(l.ruptura  || []);
+  document.getElementById('painel-semvenda').innerHTML = renderSemVenda(l.semVenda || []);
+  document.getElementById('painel-excesso').innerHTML  = renderExcesso(l.excesso   || []);
+  document.getElementById('painel-top').innerHTML      = renderTop(l.topVendidos   || []);
+  document.getElementById('painel-queda').innerHTML    = renderQueda(l.quedaGiro   || []);
+  document.getElementById('painel-custo').innerHTML    = renderCusto(dados.variacaoCusto || []);
+  document.getElementById('n-ruptura').textContent  = (l.ruptura  || []).length;
+  document.getElementById('n-semvenda').textContent = (l.semVenda || []).length;
+  document.getElementById('n-excesso').textContent  = (l.excesso  || []).length;
+  document.getElementById('n-top').textContent      = (l.topVendidos || []).length;
+  document.getElementById('n-queda').textContent    = (l.quedaGiro  || []).length;
+  document.getElementById('n-custo').textContent    = (dados.variacaoCusto || []).length;
+}
+
+// ── Buscar dados ──
+async function buscarDados() {
+  try {
+    document.getElementById('painel-ruptura').innerHTML = '<div class="loading">Calculando análise... isso pode levar alguns segundos ⏳</div>';
+    const r = await fetch(`/api/compras/analise-estoque?comprador=${NOME}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    dadosCache = await r.json();
+    renderLoja(dadosCache, lojaAtual);
+    document.getElementById('tot-badge').textContent =
+      `${dadosCache.totalProdutos} produtos nas listas`;
+    const ge = dadosCache.geradoEm ? new Date(dadosCache.geradoEm) : new Date();
+    const p = x => String(x).padStart(2,'0');
+    document.getElementById('h-update').textContent =
+      `Atualizado às ${p(ge.getHours())}:${p(ge.getMinutes())}  ·  próx. 10 min`;
+  } catch(e) {
+    document.getElementById('painel-ruptura').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">⚠️</div>
+       <div class="empty-txt">Erro ao carregar</div>
+       <div class="empty-sub">${e.message}</div></div>`;
+  }
+}
+
+setupHeader();
+buscarDados();
+setInterval(buscarDados, 10 * 60 * 1000);
+</script>
+</body>
+</html>

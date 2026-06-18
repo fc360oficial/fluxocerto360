@@ -276,21 +276,21 @@ main {
 .ativ-status.g { color: var(--green); }
 .ativ-status.r { color: var(--red); }
 
-/* ══ PENDÊNCIAS PANEL ══ */
+/* ══ HISTÓRICO PANEL ══ */
 .panel-pend {
   background: linear-gradient(180deg, #16202E, #111A2B);
-  border: 1px solid rgba(239,68,68,.16);
+  border: 1px solid rgba(59,130,246,.16);
   border-radius: var(--radius); overflow: hidden;
   display: flex; flex-direction: column; min-height: 0;
   box-shadow: var(--shadow); position: relative;
 }
 .panel-pend::after {
   content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(239,68,68,.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(59,130,246,.35), transparent);
   pointer-events: none;
 }
-.panel-pend .panel-header { background: rgba(239,68,68,.05); border-bottom: 1px solid rgba(239,68,68,.1); flex-shrink: 0; }
-.panel-pend .panel-title::before { background: var(--red); }
+.panel-pend .panel-header { background: rgba(59,130,246,.05); border-bottom: 1px solid rgba(59,130,246,.1); flex-shrink: 0; }
+.panel-pend .panel-title::before { background: #3b82f6; }
 .panel-pend .panel-body { flex: 1; overflow: hidden; position: relative; padding: 0; }
 .panel-pend .panel-body::before,
 .panel-pend .panel-body::after {
@@ -303,10 +303,9 @@ main {
 .pend-scroll-inner.animating { animation: scrollUp var(--dur, 20s) linear infinite; }
 @keyframes scrollUp { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
 .pend-date-badge {
-  font-size: 10px; font-weight: 800; color: var(--red);
-  background: var(--red-bg); border: 1px solid rgba(239,68,68,.2);
+  font-size: 10px; font-weight: 800; color: #93c5fd;
+  background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.2);
   padding: 3px 10px; border-radius: 20px;
-  animation: badgePulse 3s ease-in-out infinite;
 }
 @keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:.6} }
 .pend-empty { text-align: center; padding: 40px 16px; }
@@ -318,21 +317,24 @@ main {
   padding: 8px 6px 4px; border-bottom: 1px solid rgba(239,68,68,.1); margin-bottom: 4px;
 }
 .pend-row {
-  display: flex; align-items: center; gap: 9px;
+  display: flex; align-items: center; gap: 9px; justify-content: space-between;
   padding: 7px 10px; border-radius: var(--radius-sm); margin-bottom: 3px;
   border-left: 2px solid var(--red);
   background: rgba(239,68,68,.05);
   border: 1px solid rgba(239,68,68,.09);
   transition: background .15s;
 }
-.pend-row:hover { background: rgba(239,68,68,.1); }
-.pend-row.ativ { border-left-color: var(--amber); background: rgba(245,158,11,.05); border-color: rgba(245,158,11,.09); }
-.pend-icon { font-size: 10px; flex-shrink: 0; color: var(--red); font-weight: 700; }
-.pend-row.ativ .pend-icon { color: var(--amber); }
+.pend-row:hover { background: rgba(255,255,255,.04); }
+.pend-row.concluido { border-left-color: var(--green); background: rgba(34,197,94,.04); border-color: rgba(34,197,94,.08); }
+.pend-icon { font-size: 11px; flex-shrink: 0; color: var(--red); font-weight: 700; }
+.pend-row.concluido .pend-icon { color: var(--green); }
 .pend-info { flex: 1; min-width: 0; }
-.pend-nome { font-size: 13px; color: #fca5a5; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pend-row.ativ .pend-nome { color: #fcd34d; }
+.pend-nome { font-size: 13px; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pend-row.concluido .pend-nome { color: var(--text); opacity: .8; }
 .pend-cat  { font-size: 9px; color: var(--text3); margin-top: 2px; }
+.pend-status { font-size: 8px; font-weight: 800; padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; letter-spacing: .6px; text-transform: uppercase; }
+.pend-status.ok   { background: var(--green-bg); color: var(--green); }
+.pend-status.pend { background: var(--red-bg);   color: var(--red); }
 
 /* ══ MOBILE ══ */
 @media (max-width: 768px) {
@@ -423,10 +425,10 @@ main {
       </div>
     </div>
 
-    <!-- DIREITA: Pendências acumuladas da semana -->
+    <!-- DIREITA: Histórico da semana -->
     <div class="panel panel-pend">
       <div class="panel-header">
-        <div class="panel-title" style="color:#fca5a5">⚠ Pendências da Semana</div>
+        <div class="panel-title" style="color:#93c5fd">📅 Histórico da Semana</div>
         <div class="pend-date-badge" id="pend-date-badge">—</div>
       </div>
       <div class="panel-body">
@@ -967,16 +969,16 @@ async function atualizarStatusERP() {
       }
     }
 
-    // ── Dias anteriores — acumula pendências da semana ──
+    // ── Histórico da semana (seg até hoje) ──
     if (!_dados) return;
 
     const now = new Date();
-    const diaIdx = now.getDay(); // 0=Dom … 6=Sab
+    const diaIdx = now.getDay();
 
-    // Dias úteis desde segunda até ontem (inclusive)
+    // Dias úteis desde segunda até hoje (inclusive)
     const diasVerificar = [];
     const diasAtras = diaIdx === 1 ? 7 : diaIdx === 0 ? 8 : diaIdx - 1;
-    for (let d = diasAtras; d >= 1; d--) {
+    for (let d = diasAtras; d >= 0; d--) {
       const dia = new Date(now);
       dia.setDate(now.getDate() - d);
       const idx = dia.getDay();
@@ -986,7 +988,7 @@ async function atualizarStatusERP() {
 
     if (diasVerificar.length === 0) return;
 
-    // Busca ERP para cada dia anterior em paralelo
+    // Busca ERP para cada dia em paralelo (hoje e anteriores)
     const resultados = await Promise.all(diasVerificar.map(async (dia) => {
       const iso  = dataFmtISO(dia);
       const sig  = DIAS_SEMANA[dia.getDay()];
@@ -994,6 +996,9 @@ async function atualizarStatusERP() {
       const cronGrp = _dados.cronograma[grp] || _dados.cronograma['1e3'];
       const cron = cronGrp[sig];
       if (!cron || !cron.categorias.length) return null;
+      const ehHoje = d => {
+        const t = new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear();
+      };
       try {
         const r = await fetch('/api/compras/pedidos-hoje?data=' + iso);
         if (!r.ok) return null;
@@ -1001,55 +1006,51 @@ async function atualizarStatusERP() {
         const codsOk = new Set(concluidos);
         for (const cat of cron.categorias) {
           for (const item of cat.itens) {
-            if (item.cod) item.status = codsOk.has(item.cod) ? 'g' : 'r';
+            if (item.cod) {
+              const codFornec = fornecMap[String(item.cod)]?.codFornec ?? item.cod;
+              item.status = codsOk.has(parseInt(codFornec)) ? 'g' : 'r';
+            }
           }
         }
-        return { label: DIAS_FULL[dia.getDay()], data: dateFmt(dia), cron };
+        const label = ehHoje(dia) ? 'Hoje' : DIAS_FULL[dia.getDay()];
+        return { label, data: dateFmt(dia), cron, ehHoje: ehHoje(dia) };
       } catch (e) { return null; }
     }));
 
-    // Monta HTML de pendências acumuladas
+    // Monta HTML do histórico — TODOS os itens, concluídos e pendentes
     const elPend = document.getElementById('panel-pend');
     if (!elPend) return;
 
     let html = '';
-    let totalPend = 0;
+    let totalConcluido = 0, totalTotal = 0;
 
     for (const res of resultados) {
       if (!res) continue;
-      // Inclui TODOS os itens não concluídos — com ou sem cod ERP
-      const pendForn = res.cron.categorias.flatMap(c =>
-        c.itens.filter(i => i.status !== 'g').map(i => ({ ...i, cat: c.nome }))
+      const todosItens = res.cron.categorias.flatMap(c =>
+        c.itens.filter(i => i.cod).map(i => ({ ...i, cat: c.nome }))
       );
-      const pendAtiv = (res.cron.atividades || []).filter(a => a.status !== 'g');
-      if (!pendForn.length && !pendAtiv.length) continue;
-      totalPend += pendForn.length + pendAtiv.length;
+      if (!todosItens.length) continue;
+      totalTotal    += todosItens.length;
+      totalConcluido += todosItens.filter(i => i.status === 'g').length;
 
       html += `<div class="pend-section-title">${res.label} — ${res.data}</div>`;
-      html += pendForn.map(f => `
-        <div class="pend-row">
-          <span class="pend-icon">✕</span>
+      html += todosItens.map(f => `
+        <div class="pend-row ${f.status === 'g' ? 'concluido' : ''}">
+          <span class="pend-icon">${f.status === 'g' ? '✓' : '✕'}</span>
           <div class="pend-info">
             <div class="pend-nome">${f.nome}</div>
             <div class="pend-cat">${f.cat}</div>
           </div>
-        </div>`).join('');
-      html += pendAtiv.map(a => `
-        <div class="pend-row ativ">
-          <span class="pend-icon">◎</span>
-          <div class="pend-info">
-            <div class="pend-nome">${a.nome}</div>
-            <div class="pend-cat">Atividade</div>
-          </div>
+          <span class="pend-status ${f.status === 'g' ? 'ok' : 'pend'}">${f.status === 'g' ? 'CONCLUÍDO' : 'PENDENTE'}</span>
         </div>`).join('');
     }
 
     if (!html) {
-      html = `<div class="pend-empty"><div class="pend-empty-icon">✅</div><div class="pend-empty-txt">Nenhuma pendência na semana</div></div>`;
+      html = `<div class="pend-empty"><div class="pend-empty-icon">📅</div><div class="pend-empty-txt">Sem histórico esta semana</div></div>`;
     }
 
     const badge = document.getElementById('pend-date-badge');
-    if (badge) badge.textContent = totalPend > 0 ? `${totalPend} pendência${totalPend !== 1 ? 's' : ''}` : '✓ Em dia';
+    if (badge) badge.textContent = totalTotal > 0 ? `${totalConcluido}/${totalTotal} concluídos` : '—';
 
     elPend.style.visibility = 'hidden';
     elPend.innerHTML = html;

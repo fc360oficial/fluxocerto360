@@ -86,6 +86,17 @@ table{border-collapse:collapse;width:100%}
   font-weight:600;color:var(--text);padding-left:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+/* Badges de código — igual comprador.html */
+.badge-lista{
+  display:inline-block;font-size:9px;font-weight:800;
+  background:#1e3a5f;color:#60a5fa;border-radius:3px;
+  padding:0 4px;margin-right:4px;vertical-align:middle;flex-shrink:0;
+}
+.badge-fornec{
+  display:inline-block;font-size:9px;font-weight:800;
+  background:#1a3a2a;color:#4ade80;border-radius:3px;
+  padding:0 4px;margin-right:4px;vertical-align:middle;flex-shrink:0;
+}
 
 /* Status cells */
 .cell{
@@ -327,7 +338,10 @@ function buildGrupoHTML(cron, grupo) {
 
     for (const f of itens) {
       const codFornec = fornecMap[String(f.nReg)]?.codFornec;
-      h += `<tr class="forn-linha"><td class="col-nome" title="${f.nome}">${f.nome}</td>`;
+      const badgeLista  = `<span class="badge-lista" title="Lista">${f.nReg}</span>`;
+      const badgeFornec = codFornec && String(codFornec) !== String(f.nReg)
+        ? `<span class="badge-fornec" title="Cód. Fornecedor">${codFornec}</span>` : '';
+      h += `<tr class="forn-linha"><td class="col-nome" title="${f.nome}">${badgeLista}${badgeFornec}${f.nome}</td>`;
       datasGrupo.forEach(({data}, i) => {
         const futura = data > hoje;
         const ok = !futura && pedidoNaSemana(codFornec, data);

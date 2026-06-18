@@ -285,7 +285,9 @@ function grupoOcorrencia(occIdx) {
 // Igual à lógica de comprador.html — pedido pode ser aprovado em dia diferente do agendado
 function pedidoNaSemana(codFornec, dateISO) {
   if (!codFornec) return false;
-  const d = new Date(dateISO);
+  // Parsear em hora local (evita UTC offset que deslocaria o dia no Brasil UTC-3)
+  const [y, m, day] = dateISO.split('-').map(Number);
+  const d = new Date(y, m - 1, day);
   const dow = d.getDay(); // 0=Dom,1=Seg,...,6=Sab
   const diffSeg = dow === 0 ? -6 : 1 - dow;
   const seg = new Date(d); seg.setDate(d.getDate() + diffSeg);

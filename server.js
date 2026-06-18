@@ -1835,6 +1835,15 @@ app.get('/api/compras/analise-estoque', async (req, res) => {
       }
     }
 
+    // Filtrar produtos sem nenhuma atividade (sem estoque e sem vendas em 60 dias)
+    const codAtivos = codigos.filter(cod => {
+      const estoqueTotal = Object.values(estoqueMap[cod] || {}).reduce((s,v) => s+v, 0);
+      const vendasTotal  = ['1','2','3','4','5','6'].reduce((s,ln) => {
+        const v = vendasMap[ln][cod]; return s + (v ? v.qtd30 + v.qtd30ant : 0);
+      }, 0);
+      return estoqueTotal > 0 || vendasTotal > 0;
+    });
+
     // 5. Classificar por loja
     const lojas = {};
     for (const ln of ['1','2','3','4','5','6']) {
@@ -1842,7 +1851,7 @@ app.get('/api/compras/analise-estoque', async (req, res) => {
     }
     const variacaoCusto = [];
 
-    for (const cod of codigos) {
+    for (const cod of codAtivos) {
       const descricao = descMap[cod] || cod;
 
       // Variação de custo — soma das 6 lojas (preço de compra é único)
@@ -1914,7 +1923,7 @@ app.get('/api/compras/analise-estoque', async (req, res) => {
     const result = {
       lojas,
       variacaoCusto: variacaoCusto.slice(0,10),
-      totalProdutos: codigos.length,
+      totalProdutos: codAtivos.length,
       geradoEm: new Date().toISOString()
     };
     _analiseCache[comp] = result;

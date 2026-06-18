@@ -214,12 +214,12 @@ function pararCarrossel() {
 
 function proximaCol(idx, sessao) {
   if (sessao !== _carSessao) return; // callback de sessão antiga, ignorar
-  if (refreshPending) { refreshPending = false; aplicarRefresh(); return; }
   const proximo = (idx + 1) % colBodies.length;
   currentIdx = proximo;
   if (proximo === 0) {
     try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
   }
+  if (refreshPending) { refreshPending = false; aplicarRefresh(); return; }
   _carTimeout = setTimeout(() => iniciarCarrossel(proximo, 0, sessao), 1800);
 }
 

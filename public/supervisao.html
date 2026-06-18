@@ -47,7 +47,6 @@ iframe.visivel{opacity:1;pointer-events:auto}
   <div class="dot ativo" id="dot-d" title="Diretoria"></div>
   <div class="dot"       id="dot-p" title="Precificação"></div>
   <div class="dot"       id="dot-c" title="Compras"></div>
-  <div class="dot"       id="dot-k" title="Diário · Mensal · Produtos"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 </div>
@@ -66,13 +65,12 @@ const frK  = document.getElementById('fr-ciclo');
 const dotD = document.getElementById('dot-d');
 const dotP = document.getElementById('dot-p');
 const dotC = document.getElementById('dot-c');
-const dotK = document.getElementById('dot-k');
 const btnFs = document.getElementById('btn-fs');
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
   [frD,frP,frC,frK].forEach(f => f.classList.remove('visivel'));
-  [dotD,dotP,dotC,dotK].forEach(d => d.classList.remove('ativo'));
+  [dotD,dotP,dotC].forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');
 }
@@ -91,7 +89,7 @@ function mostrarCompras() {
 function mostrarCiclo() {
   // Começa o ciclo pelo primeiro comprador — encadeia sozinho até o último
   frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0';
-  mostrar(frK, dotK, 'ciclo');
+  mostrar(frK, dotC, 'ciclo');
 }
 
 // Rotação automática via postMessage
@@ -120,7 +118,6 @@ document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault()
 dotD.addEventListener('click', mostrarDiretoria);
 dotP.addEventListener('click', mostrarPrecif);
 dotC.addEventListener('click', mostrarCompras);
-dotK.addEventListener('click', mostrarCiclo);
 
 // Pré-carrega precificação e inicia na diretoria
 frP.src = BASE + '/precificacao.html';

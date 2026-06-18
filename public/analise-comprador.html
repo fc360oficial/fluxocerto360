@@ -15,85 +15,78 @@
   --blue:#3B82F6;--purple:#8B5CF6;--purple-bg:rgba(139,92,246,.12);
   --text:#FFF;--text2:#94A3B8;--text3:#64748B;
   --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
-  --r:14px;--r-sm:8px;
+  --r:14px;
 }
 html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text)}
 
 /* ── HEADER ── */
 header{
-  height:68px;padding:0 24px;display:flex;align-items:center;gap:16px;flex-shrink:0;
+  height:64px;padding:0 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;
   background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
   border-bottom:1px solid var(--border-md);
 }
-.h-logo{height:42px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
-.h-sep{width:1px;height:34px;background:var(--border-md)}
+.h-logo{height:38px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
+.h-sep{width:1px;height:30px;background:var(--border-md)}
 .h-avatar{
-  width:40px;height:40px;border-radius:11px;flex-shrink:0;
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:17px;font-weight:900;box-shadow:0 4px 14px rgba(0,0,0,.4);
+  font-size:16px;font-weight:900;box-shadow:0 4px 14px rgba(0,0,0,.4);
 }
-.h-info h2{font-size:19px;font-weight:800}
-.h-info p{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1.2px;margin-top:1px}
-
-/* loja atual */
-.h-loja-badge{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.25);
-  border-radius:20px;padding:4px 14px;
-}
-.h-loja-nome{font-size:16px;font-weight:900;color:var(--brand)}
-.h-loja-sub{font-size:10px;color:var(--text3);letter-spacing:.5px}
-
+.h-info h2{font-size:17px;font-weight:800}
+.h-info p{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
 .h-spacer{flex:1}
-.h-timer{display:flex;align-items:center;gap:8px}
-.timer-bar-wrap{width:120px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
-.timer-bar{height:100%;background:var(--brand);border-radius:2px;transition:width .1s linear}
-.timer-lbl{font-size:10px;color:var(--text3);min-width:20px;text-align:right}
-.h-clock{font-size:40px;font-weight:800;color:#fff;letter-spacing:3px;font-variant-numeric:tabular-nums;line-height:1}
-.h-clock-sub{font-size:9px;color:var(--text2);margin-top:1px;text-align:right}
-.h-update{font-size:9px;color:var(--text3);text-align:right}
+.h-clock{font-size:36px;font-weight:800;color:#fff;letter-spacing:2px;font-variant-numeric:tabular-nums;line-height:1}
+.h-clock-sub{font-size:9px;color:var(--text2);text-align:right;margin-top:2px}
 
-/* ── DOTS de loja ── */
-.loja-dots{
-  display:flex;gap:6px;padding:8px 24px;border-bottom:1px solid var(--border);
-  flex-shrink:0;align-items:center;background:var(--bg2);
+/* barra progresso loja */
+.loja-bar{
+  flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;
 }
-.ldot{
-  flex:1;height:3px;border-radius:2px;
-  background:rgba(255,255,255,.08);transition:background .3s;
-}
-.ldot.active{background:var(--brand)}
+.loja-bar-label{font-size:13px;font-weight:800;color:var(--brand);letter-spacing:.5px}
+.loja-dots-row{display:flex;gap:5px}
+.ldot{width:18px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);transition:background .3s}
 .ldot.done{background:rgba(250,204,21,.3)}
-.view-label{font-size:10px;color:var(--text3);margin-left:auto;letter-spacing:.5px}
+.ldot.ativo{background:var(--brand)}
+
+/* view label + col atual */
+.view-info{
+  display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+}
+.view-label{font-size:11px;color:var(--text3);letter-spacing:.4px}
+.col-label{font-size:12px;font-weight:700;color:var(--text2)}
 
 /* ── MAIN ── */
 main{
-  display:flex;gap:12px;padding:12px 24px 12px;
-  height:calc(100vh - 68px - 20px);overflow:hidden;
+  display:flex;gap:10px;padding:10px 16px 12px;
+  height:calc(100vh - 64px);overflow:hidden;
 }
 
 /* ── COLUNA ── */
 .col{
-  flex:1;display:flex;flex-direction:column;gap:0;
+  flex:1;display:flex;flex-direction:column;
   background:var(--card);border-radius:var(--r);
-  border:1px solid var(--border-md);overflow:hidden;
+  border:1.5px solid var(--border);overflow:hidden;
+  opacity:.45;transition:opacity .4s,border-color .4s,box-shadow .4s;
+}
+.col.ativo{
+  opacity:1;
+  border-color:rgba(250,204,21,.35);
+  box-shadow:0 0 24px rgba(250,204,21,.08);
 }
 .col-head{
   display:flex;align-items:center;gap:8px;
-  padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;
+  padding:9px 12px;border-bottom:1px solid var(--border);flex-shrink:0;
 }
-.col-icon{font-size:16px}
-.col-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;flex:1}
-.col-count{
-  font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
-}
-.col-body-wrap{flex:1;overflow:hidden;position:relative}
-.col-body{padding:8px 0;transition:transform .05s linear}
+.col-icon{font-size:15px}
+.col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;flex:1}
+.col-count{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.col-body{flex:1;overflow-y:auto;scrollbar-width:none}
+.col-body::-webkit-scrollbar{display:none}
 
 /* itens */
 .item-row{
   display:flex;align-items:center;gap:8px;
-  padding:7px 14px;border-bottom:1px solid var(--border);
+  padding:6px 12px;border-bottom:1px solid var(--border);
 }
 .item-row:last-child{border-bottom:none}
 .item-info{flex:1;min-width:0}
@@ -101,7 +94,7 @@ main{
 .item-cod{font-size:10px;color:var(--text3);margin-bottom:1px}
 .item-meta{font-size:11px;color:var(--text2)}
 .item-chip{
-  flex-shrink:0;padding:3px 9px;border-radius:14px;
+  flex-shrink:0;padding:3px 8px;border-radius:13px;
   font-size:11px;font-weight:700;white-space:nowrap;
 }
 .chip-crit{background:var(--red-bg);color:var(--red)}
@@ -120,16 +113,10 @@ main{
 /* empty */
 .col-empty{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  height:100%;gap:8px;padding:20px;text-align:center;
+  height:100%;gap:6px;padding:16px;text-align:center;
 }
-.col-empty-icon{font-size:28px}
-.col-empty-txt{font-size:12px;color:var(--text3)}
-
-/* overlay loading */
-.loading-overlay{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(8,17,31,.8);font-size:13px;color:var(--text3);
-}
+.col-empty-icon{font-size:24px}
+.col-empty-txt{font-size:11px;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -142,37 +129,31 @@ main{
     <h2 id="h-nome">—</h2>
     <p id="h-cargo">Compradora</p>
   </div>
-  <div class="h-sep"></div>
-  <div class="h-loja-badge">
-    <div>
-      <div class="h-loja-nome" id="h-loja">LOJA 1</div>
-      <div class="h-loja-sub" id="h-view-lbl">Ruptura · Excesso · Sem Venda</div>
-    </div>
-  </div>
   <div class="h-spacer"></div>
-  <div class="h-timer">
-    <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
-    <div class="timer-lbl" id="timer-lbl">15s</div>
+  <div class="view-info">
+    <div class="view-label" id="view-label">—</div>
+    <div class="col-label" id="col-label">—</div>
+  </div>
+  <div class="h-sep"></div>
+  <div class="loja-bar">
+    <div class="loja-bar-label" id="loja-label">LOJA 1</div>
+    <div class="loja-dots-row" id="loja-dots">
+      <div class="ldot ativo" data-l="1"></div>
+      <div class="ldot" data-l="2"></div>
+      <div class="ldot" data-l="3"></div>
+      <div class="ldot" data-l="4"></div>
+      <div class="ldot" data-l="5"></div>
+      <div class="ldot" data-l="6"></div>
+    </div>
   </div>
   <div class="h-sep"></div>
   <div>
     <div class="h-clock" id="clock">00:00:00</div>
-    <div class="h-clock-sub" id="clock-sub">—</div>
-    <div class="h-update" id="h-update"></div>
+    <div class="h-clock-sub" id="h-update"></div>
   </div>
 </header>
 
-<div class="loja-dots" id="loja-dots">
-  <div class="ldot active" data-l="1"></div>
-  <div class="ldot" data-l="2"></div>
-  <div class="ldot" data-l="3"></div>
-  <div class="ldot" data-l="4"></div>
-  <div class="ldot" data-l="5"></div>
-  <div class="ldot" data-l="6"></div>
-</div>
-
 <main id="main-cols">
-  <!-- colunas geradas por JS -->
 </main>
 
 <script>
@@ -188,77 +169,117 @@ const CARGO_COMPRADORES = {
 const params = new URLSearchParams(location.search);
 const NOME   = (params.get('nome')||'FATIMA').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
 
-// Sequência de slides: loja 1-6 × 2 views cada
 const LOJAS = ['1','2','3','4','5','6'];
 const VIEWS = [
-  { id:'abc', label:'Ruptura · Excesso · Sem Venda',    cols:['ruptura','excesso','semVenda'] },
-  { id:'def', label:'Top Vendidos · Queda de Giro · Variação de Custo', cols:['topVendidos','quedaGiro','custo'] },
+  { id:'abc', label:'Ruptura · Excesso · Sem Venda',
+    cols:[
+      { key:'ruptura',     icon:'🔴', title:'Ruptura de Estoque',  countCls:'chip-crit' },
+      { key:'excesso',     icon:'🟣', title:'Excesso de Estoque',  countCls:'chip-exc'  },
+      { key:'semVenda',    icon:'⬛', title:'Sem Venda 60+ dias',  countCls:'chip-sem'  },
+    ]
+  },
+  { id:'def', label:'Top Vendidos · Queda · Custo',
+    cols:[
+      { key:'topVendidos', icon:'🏆', title:'Top Vendidos 30d',    countCls:'chip-top'  },
+      { key:'quedaGiro',   icon:'📉', title:'Queda de Giro >30%', countCls:'chip-queda'},
+      { key:'custo',       icon:'📈', title:'Variação de Custo',   countCls:'chip-custo'},
+    ]
+  },
 ];
-const SLIDE_SEC = 18; // segundos por slide
 
 let slides = [];
-for (const ln of LOJAS)
-  for (const v of VIEWS)
-    slides.push({ loja:ln, view:v });
+for (const loja of LOJAS)
+  for (const view of VIEWS)
+    slides.push({ loja, view });
 
-let slideIdx = 0;
-let dados = null;
-let timerInterval = null;
-let timerSec = SLIDE_SEC;
-let scrollAFs = [];
+let slideIdx   = 0;
+let dados      = null;
+let colBodies  = [];
+
+// ── Carrossel ──────────────────────────────────────
+const PX_POR_SEG = 25;
+let _carTimer = null, _carTimeout = null, _carSessao = 0, _ultimoAvanço = 0;
+
+function pararCarrossel() {
+  if (_carTimer)   { clearInterval(_carTimer);  _carTimer   = null; }
+  if (_carTimeout) { clearTimeout(_carTimeout); _carTimeout = null; }
+}
+
+function proximaColuna(colIdx, slideLocal, sessao) {
+  pararCarrossel();
+  const nextCol = colIdx + 1;
+  if (nextCol < colBodies.length) {
+    _carTimeout = setTimeout(() => iniciarCarrosselCol(nextCol, slideLocal, sessao), 900);
+  } else {
+    const nextSlide = (slideLocal + 1) % slides.length;
+    slideIdx = nextSlide;
+    if (nextSlide === 0) {
+      try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
+    }
+    _carTimeout = setTimeout(() => renderSlide(slides[nextSlide]), 1200);
+  }
+}
+
+function iniciarCarrosselCol(colIdx, slideLocal, sessao) {
+  if (sessao === undefined) { _carSessao++; sessao = _carSessao; }
+  pararCarrossel();
+  if (!colBodies.length) return;
+  _ultimoAvanço = Date.now();
+
+  document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === colIdx));
+  const cfg = slides[slideLocal].view.cols[colIdx];
+  document.getElementById('col-label').textContent = cfg.icon + ' ' + cfg.title;
+
+  const body = colBodies[colIdx];
+  if (!body) { _carTimeout = setTimeout(() => proximaColuna(colIdx, slideLocal, sessao), 2000); return; }
+
+  body.scrollTop = 0;
+  void body.scrollHeight;
+  const maxScroll = body.scrollHeight - body.clientHeight;
+
+  if (maxScroll <= 0) {
+    _carTimeout = setTimeout(() => proximaColuna(colIdx, slideLocal, sessao), 3000);
+    return;
+  }
+
+  const tickMs = 50;
+  const pxTick = PX_POR_SEG * tickMs / 1000;
+  _carTimer = setInterval(() => {
+    if (sessao !== _carSessao) { clearInterval(_carTimer); _carTimer = null; return; }
+    body.scrollTop += pxTick;
+    if (body.scrollTop >= maxScroll - 1) {
+      pararCarrossel();
+      _carTimeout = setTimeout(() => proximaColuna(colIdx, slideLocal, sessao), 2000);
+    }
+  }, tickMs);
+}
+
+// watchdog: se parado > 2 min sem hide, retoma
+setInterval(() => {
+  if (colBodies.length && !_carTimer && !_carTimeout && Date.now() - _ultimoAvanço > 120000)
+    iniciarCarrosselCol(0, slideIdx, undefined);
+}, 15000);
 
 // ── Clock ──
-function updateClock() {
+function tick() {
   const n = new Date(), p = x => String(x).padStart(2,'0');
   document.getElementById('clock').textContent = `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
-  const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  document.getElementById('clock-sub').textContent = `${dias[n.getDay()]} ${n.getDate()}/${meses[n.getMonth()]}`;
 }
-setInterval(updateClock,1000); updateClock();
+setInterval(tick,1000); tick();
 
-// ── Header ──
+// ── Setup header ──
 function setupHeader() {
   document.getElementById('h-nome').textContent = NOME;
   document.getElementById('h-cargo').textContent = CARGO_COMPRADORES[NOME]||'Compradora';
-  const av = document.getElementById('h-avatar');
+  const av  = document.getElementById('h-avatar');
   const cor = COR_COMPRADORES[NOME]||'#6366f1';
   av.style.cssText = `background:${cor}22;border:2px solid ${cor};color:${cor}`;
   av.textContent = NOME[0];
 }
 
-// ── Scroll automático por coluna ──
-function iniciarScroll(bodyEl) {
-  let y = 0;
-  const el = bodyEl;
-  function step() {
-    const max = el.scrollHeight - el.parentElement.clientHeight;
-    if (max <= 0) return;
-    y += 0.6;
-    if (y > max + 20) y = 0;
-    el.style.transform = `translateY(-${y}px)`;
-    return requestAnimationFrame(step);
-  }
-  return requestAnimationFrame(step);
-}
-
-function pararScrolls() {
-  scrollAFs.forEach(id => cancelAnimationFrame(id));
-  scrollAFs = [];
-}
-
-// ── Render colunas ──
-const COL_CFG = {
-  ruptura:    { icon:'🔴', title:'Ruptura de Estoque',    cls:'chip-crit chip-alto chip-med', countCls:'chip-crit' },
-  excesso:    { icon:'🟣', title:'Excesso de Estoque',    countCls:'chip-exc' },
-  semVenda:   { icon:'⬛', title:'Sem Venda 60+ dias',    countCls:'chip-sem' },
-  topVendidos:{ icon:'🏆', title:'Top Vendidos (30d)',     countCls:'chip-top' },
-  quedaGiro:  { icon:'📉', title:'Queda de Giro > 30%',  countCls:'chip-queda' },
-  custo:      { icon:'📈', title:'Variação de Custo',     countCls:'chip-custo' },
-};
-
-function renderItem(tipo, r, maxQtd) {
-  if (tipo === 'ruptura') {
+// ── Render itens ──
+function renderItem(key, r, maxQtd) {
+  if (key === 'ruptura') {
     const chip = r.diasCobertura < 10 ? 'chip-crit' : r.diasCobertura < 20 ? 'chip-alto' : 'chip-med';
     return `<div class="item-row">
       <div class="item-info">
@@ -269,7 +290,7 @@ function renderItem(tipo, r, maxQtd) {
       <div class="item-chip ${chip}">${r.diasCobertura}d</div>
     </div>`;
   }
-  if (tipo === 'excesso') {
+  if (key === 'excesso') {
     return `<div class="item-row">
       <div class="item-info">
         <div class="item-cod">${r.codigo}</div>
@@ -279,7 +300,7 @@ function renderItem(tipo, r, maxQtd) {
       <div class="item-chip chip-exc">${r.diasCobertura}d</div>
     </div>`;
   }
-  if (tipo === 'semVenda') {
+  if (key === 'semVenda') {
     const label = r.diasSemVenda >= 999 ? '60+d' : r.diasSemVenda+'d';
     return `<div class="item-row">
       <div class="item-info">
@@ -290,7 +311,7 @@ function renderItem(tipo, r, maxQtd) {
       <div class="item-chip chip-sem">${label}</div>
     </div>`;
   }
-  if (tipo === 'topVendidos') {
+  if (key === 'topVendidos') {
     const pct = maxQtd > 0 ? Math.round(r.qtd30/maxQtd*100) : 0;
     return `<div class="item-row">
       <div class="item-info">
@@ -301,7 +322,7 @@ function renderItem(tipo, r, maxQtd) {
       <div class="item-chip chip-top">${Number(r.qtd30).toLocaleString('pt-BR')} un</div>
     </div>`;
   }
-  if (tipo === 'quedaGiro') {
+  if (key === 'quedaGiro') {
     return `<div class="item-row">
       <div class="item-info">
         <div class="item-cod">${r.codigo}</div>
@@ -311,7 +332,7 @@ function renderItem(tipo, r, maxQtd) {
       <div class="item-chip chip-queda">▼${r.quedaPct}%</div>
     </div>`;
   }
-  if (tipo === 'custo') {
+  if (key === 'custo') {
     return `<div class="item-row">
       <div class="item-info">
         <div class="item-cod">${r.codigo}</div>
@@ -324,95 +345,54 @@ function renderItem(tipo, r, maxQtd) {
   return '';
 }
 
-function buildCol(tipo, lista) {
-  const cfg = COL_CFG[tipo];
-  const maxQtd = (lista[0]?.qtd30)||1;
-  let bodyHtml;
-  if (!lista.length) {
-    bodyHtml = `<div class="col-empty">
-      <div class="col-empty-icon">✅</div>
-      <div class="col-empty-txt">Nenhuma ocorrência</div>
-    </div>`;
-  } else {
-    bodyHtml = lista.map(r => renderItem(tipo, r, maxQtd)).join('');
-  }
+function buildColHTML(cfg, lista) {
+  const maxQtd = lista[0]?.qtd30 || 1;
+  const body = lista.length
+    ? lista.map(r => renderItem(cfg.key, r, maxQtd)).join('')
+    : `<div class="col-empty">
+         <div class="col-empty-icon">✅</div>
+         <div class="col-empty-txt">Nenhuma ocorrência</div>
+       </div>`;
   return `
     <div class="col">
       <div class="col-head">
         <span class="col-icon">${cfg.icon}</span>
         <span class="col-title">${cfg.title}</span>
-        <span class="item-chip ${cfg.countCls||''}">${lista.length}</span>
+        <span class="item-chip ${cfg.countCls}">${lista.length}</span>
       </div>
-      <div class="col-body-wrap">
-        <div class="col-body" id="cb-${tipo}">${bodyHtml}</div>
-      </div>
+      <div class="col-body">${body}</div>
     </div>`;
 }
 
 function renderSlide(slide) {
-  pararScrolls();
+  pararCarrossel();
   const { loja, view } = slide;
   const ld = dados?.lojas?.[loja] || {};
 
-  // Atualiza header
-  document.getElementById('h-loja').textContent = `LOJA ${loja}`;
-  document.getElementById('h-view-lbl').textContent = view.label;
+  document.getElementById('loja-label').textContent = `LOJA ${loja}`;
+  document.getElementById('view-label').textContent  = view.label;
 
-  // Dots
-  document.querySelectorAll('.ldot').forEach((d,i) => {
-    d.classList.remove('active','done');
-    const l = LOJAS[i];
-    if (l === loja) d.classList.add('active');
-    else if (LOJAS.indexOf(l) < LOJAS.indexOf(loja)) d.classList.add('done');
+  document.querySelectorAll('.ldot').forEach(d => {
+    const l = d.dataset.l;
+    d.classList.remove('ativo','done');
+    if (l === loja) d.classList.add('ativo');
+    else if (parseInt(l) < parseInt(loja)) d.classList.add('done');
   });
 
-  // Colunas
   let html = '';
-  for (const col of view.cols) {
-    let lista;
-    if (col === 'custo') lista = dados?.variacaoCusto || [];
-    else lista = ld[col] || [];
-    html += buildCol(col, lista);
+  for (const cfg of view.cols) {
+    const lista = cfg.key === 'custo' ? (dados?.variacaoCusto||[]) : (ld[cfg.key]||[]);
+    html += buildColHTML(cfg, lista);
   }
   document.getElementById('main-cols').innerHTML = html;
 
-  // Iniciar scroll em cada coluna
-  setTimeout(() => {
-    for (const col of view.cols) {
-      const el = document.getElementById('cb-'+col);
-      if (el) scrollAFs.push(iniciarScroll(el));
-    }
-  }, 800);
+  colBodies = Array.from(document.querySelectorAll('.col-body'));
+  const localSlide = slideIdx;
+  setTimeout(() => iniciarCarrosselCol(0, localSlide, undefined), 300);
 }
 
-// ── Timer de avanço ──
-function startTimer() {
-  clearInterval(timerInterval);
-  timerSec = SLIDE_SEC;
-  const bar = document.getElementById('timer-bar');
-  const lbl = document.getElementById('timer-lbl');
-  timerInterval = setInterval(() => {
-    timerSec--;
-    const pct = (timerSec / SLIDE_SEC) * 100;
-    bar.style.width = pct + '%';
-    lbl.textContent = timerSec + 's';
-    if (timerSec <= 0) {
-      slideIdx = (slideIdx + 1) % slides.length;
-      renderSlide(slides[slideIdx]);
-      startTimer();
-    }
-  }, 1000);
-}
-
-// ── Buscar dados ──
+// ── Fetch ──
 async function buscarDados() {
-  if (!dados) {
-    // loading inicial
-    document.getElementById('main-cols').innerHTML =
-      `<div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3)">
-        ⏳ Calculando análise das listas de ${NOME}...
-       </div>`;
-  }
   try {
     const r = await fetch(`/api/compras/analise-estoque?comprador=${NOME}`);
     if (!r.ok) throw new Error('HTTP '+r.status);
@@ -421,8 +401,7 @@ async function buscarDados() {
     const p = x => String(x).padStart(2,'0');
     document.getElementById('h-update').textContent =
       `${dados.totalProdutos} produtos · ${p(ge.getHours())}:${p(ge.getMinutes())}`;
-    renderSlide(slides[slideIdx]);
-    if (!timerInterval) startTimer();
+    if (!_ultimoAvanço) renderSlide(slides[slideIdx]);
   } catch(e) {
     document.getElementById('main-cols').innerHTML =
       `<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
@@ -432,9 +411,13 @@ async function buscarDados() {
   }
 }
 
+document.getElementById('main-cols').innerHTML =
+  `<div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text3)">
+    ⏳ Calculando análise das listas de ${NOME}...
+   </div>`;
+
 setupHeader();
 buscarDados();
-// Re-busca a cada 10 min (respeita cache do servidor)
 setInterval(buscarDados, 10 * 60 * 1000);
 </script>
 </body>

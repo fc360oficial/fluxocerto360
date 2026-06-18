@@ -1753,23 +1753,14 @@ app.get('/api/compras/analise-estoque', async (req, res) => {
     if (_analiseCache[comp] && (now - _analiseCacheTs[comp]) < ANALISE_TTL)
       return res.json(_analiseCache[comp]);
 
-    // 1. CodFornec reais para os nRegs
+    // 1. Produtos diretamente dos itens das listas (só o que está nas listas)
     const phN = nRegs.map(() => '?').join(',');
-    const fornecRows = await q(
-      `SELECT DISTINCT CodFornec FROM central.c_cotacao_lista WHERE nReg IN (${phN}) AND CodFornec > 0`,
-      nRegs
-    );
-    const codsFornec = [...new Set(fornecRows.map(r => parseInt(r.CodFornec)))].filter(Boolean);
-    if (!codsFornec.length) return res.json(vazio);
-
-    // 2. Produtos dessas fornecedoras
-    const phF = codsFornec.map(() => '?').join(',');
     const prods = await q(`
-      SELECT DISTINCT fi.CodigoBarra, TRIM(i.Descricao) as descricao
-      FROM central.fornecedoritens fi
-      INNER JOIN central.itens i ON i.CodigoBarra = fi.CodigoBarra AND i.CodDesativado = 0
-      WHERE fi.CodFornecedor IN (${phF}) AND fi.Backup = 0
-    `, codsFornec);
+      SELECT DISTINCT i.Codigobarra as CodigoBarra, TRIM(it.Descricao) as descricao
+      FROM central.c_cotacao_lista_itens i
+      INNER JOIN central.itens it ON it.CodigoBarra = i.Codigobarra AND it.CodDesativado = 0
+      WHERE i.nCotacao IN (${phN})
+    `, nRegs);
     if (!prods.length) return res.json(vazio);
 
     const codigos = [...new Set(prods.map(p => p.CodigoBarra))];

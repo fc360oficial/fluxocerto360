@@ -44,7 +44,7 @@ header{
 .h-brand h1{font-size:12px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
 .h-brand p{font-size:8px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
 .h-sep{width:1px;height:44px;background:var(--border-md);flex-shrink:0}
-.h-clock{text-align:center;flex-shrink:0}
+.h-clock{display:none}
 .clock-time{font-size:58px;font-weight:900;color:#fff;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;
   text-shadow:0 0 40px rgba(255,255,255,.15)}
 .clock-sub{display:flex;gap:12px;justify-content:center;margin-top:3px}
@@ -137,7 +137,6 @@ header{
 <header>
   <img class="h-logo" src="/logo.png" alt="Econômico">
   <div class="h-brand"><h1>Econômico</h1><p>Relatórios</p></div>
-  <div class="h-sep"></div>
   <div class="h-clock">
     <div class="clock-time" id="clock">00:00:00</div>
     <div class="clock-sub">

@@ -236,11 +236,32 @@ function ocorrencias(mes, ano, weekday) {
   return datas;
 }
 
+// Mesma lógica do comprador.html histórico: pedidos-hoje?data=DATE por data específica
 async function carregarPedidos() {
-  try {
-    const r = await fetch(`/api/compras/pedidos-mes?mes=${mesSel}&ano=${anoSel}`);
-    if (r.ok) { const d = await r.json(); pedidosMes = d.pedidos || {}; }
-  } catch(_) {}
+  const cron = COMPRADORES[nomeSel];
+  if (!cron) return;
+
+  // Coleta todas as datas agendadas no mês
+  const datesSet = new Set();
+  for (const grupo of ['1e3','2e4']) {
+    for (const dia of ['SEG','TER','QUA','QUI','SEX']) {
+      const itens = cron[grupo]?.[dia] || [];
+      if (!itens.length) continue;
+      ocorrencias(mesSel, anoSel, DIA_IDX[dia]).forEach(d => datesSet.add(d));
+    }
+  }
+
+  pedidosMes = {};
+  // Busca igual ao histórico da semana do comprador.html — uma chamada por data
+  await Promise.all([...datesSet].map(async dateISO => {
+    try {
+      const r = await fetch('/api/compras/pedidos-hoje?data=' + dateISO);
+      if (r.ok) {
+        const { concluidos } = await r.json();
+        if (concluidos?.length) pedidosMes[dateISO] = concluidos.map(c => parseInt(c));
+      }
+    } catch(_) {}
+  }));
 }
 
 async function carregar() {
@@ -281,20 +302,21 @@ function grupoOcorrencia(occIdx) {
   return occIdx % 2 === 0 ? '1e3' : '2e4';
 }
 
-// Verifica se há pedido para o fornecedor em qualquer dia daquela semana (Seg-Sex)
-// Igual à lógica de comprador.html — pedido pode ser aprovado em dia diferente do agendado
-function pedidoNaSemana(codFornec, dateISO) {
+// Igual ao comprador.html histórico: verifica pedidosMes[data] por CodFornec
+// pedidosMes é carregado via pedidos-hoje?data=DATE por cada data do cronograma
+function pedidoFeito(codFornec, dateISO) {
   if (!codFornec) return false;
-  // Parsear em hora local (evita UTC offset que deslocaria o dia no Brasil UTC-3)
+  const cod = parseInt(codFornec);
+  // Verifica data exata (mesma regra do histórico)
+  if ((pedidosMes[dateISO] || []).includes(cod)) return true;
+  // Fallback: qualquer dia da mesma semana (pedido aprovado em dia diferente do agendado)
   const [y, m, day] = dateISO.split('-').map(Number);
   const d = new Date(y, m - 1, day);
-  const dow = d.getDay(); // 0=Dom,1=Seg,...,6=Sab
+  const dow = d.getDay();
   const diffSeg = dow === 0 ? -6 : 1 - dow;
   const seg = new Date(d); seg.setDate(d.getDate() + diffSeg);
   const sex = new Date(seg); sex.setDate(seg.getDate() + 4);
-  const monISO = isoDate(seg);
-  const friISO = isoDate(sex);
-  const cod = parseInt(codFornec);
+  const monISO = isoDate(seg), friISO = isoDate(sex);
   for (const [dt, cods] of Object.entries(pedidosMes)) {
     if (dt >= monISO && dt <= friISO && cods.includes(cod)) return true;
   }
@@ -346,7 +368,7 @@ function buildGrupoHTML(cron, grupo) {
       h += `<tr class="forn-linha"><td class="col-nome" title="${f.nome}">${badgeLista}${badgeFornec}${f.nome}</td>`;
       datasGrupo.forEach(({data}, i) => {
         const futura = data > hoje;
-        const ok = !futura && pedidoNaSemana(codFornec, data);
+        const ok = !futura && pedidoFeito(codFornec, data);
         if (futura)    { tots[i].fut++;  gFut++;  h += `<td><div class="cell fut">—</div></td>`; }
         else if (ok)   { tots[i].ok++;   gOk++;   h += `<td><div class="cell ok">✓</div></td>`; }
         else           { tots[i].pend++; gPend++; h += `<td><div class="cell pend">✗</div></td>`; }

@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '173';
+  var BUILD = '174';
   if (localStorage.getItem('fc360_build') !== BUILD) {
     localStorage.setItem('fc360_build', BUILD);
     sessionStorage.removeItem('eco_last_page');
@@ -410,6 +410,16 @@ function loadCheckStateFromFirebase(callback) {
 }
 
 function carregarFotosFirebase(callback) {
+  // Primeiro restaura backups do localStorage (disponível offline)
+  var hoje3 = getLocalDate();
+  try {
+    var bkKeys = JSON.parse(localStorage.getItem('eco_foto_bk_keys_'+hoje3) || '[]');
+    bkKeys.forEach(function(fk) {
+      var bk = localStorage.getItem('eco_foto_bk_'+fk);
+      if (bk && !S.checkState[fk]) S.checkState[fk] = bk;
+    });
+  } catch(e) {}
+
   var userId = S.currentUser ? S.currentUser.id : 'guest';
   var today = getLocalDate();
   db.collection('fotos').where('userId','==',userId).where('date','==',today).get()
@@ -1221,21 +1231,35 @@ function sincronizarEstadoFirebase() {
   if (!userId) return;
   var hoje = getLocalDate();
 
-  // Load BOTH checkstate and resultados fresh from Firebase, then rebuild UI
+  // Preservar fotos que já estão em memória antes de qualquer sync
+  var fotosEmMemoria = {};
+  Object.keys(S.checkState || {}).forEach(function(k) {
+    if (k.indexOf('_foto_') >= 0) fotosEmMemoria[k] = S.checkState[k];
+  });
+
   var promiseState = db.collection('checkstates').doc(userId+'_'+hoje).get()
     .then(function(doc){
       var localState = loadCheckState();
+      // Restaurar backup de fotos do localStorage no localState
+      Object.keys(localStorage).forEach(function(k) {
+        if (k.indexOf('eco_foto_bk_') === 0) {
+          var fotoKey = k.replace('eco_foto_bk_', '');
+          if (!localState[fotoKey]) localState[fotoKey] = localStorage.getItem(k);
+        }
+      });
       if (doc.exists && doc.data().state && doc.data().localDate === getLocalDate()) {
         try {
           var fbState = JSON.parse(doc.data().state);
-          // Firebase wins para respostas; localStorage mantém as fotos (base64)
           S.checkState = Object.assign(localState, fbState);
-          localStorage.setItem(getStateKey(), JSON.stringify(S.checkState));
         } catch(e){ S.checkState = localState; }
       } else {
         S.checkState = localState;
       }
-    }).catch(function(){});
+      // Restaurar fotos em memória (nunca perder fotos já tiradas)
+      Object.assign(S.checkState, fotosEmMemoria);
+    }).catch(function(){
+      Object.assign(S.checkState || {}, fotosEmMemoria);
+    });
 
   var promiseResultados = db.collection('resultados').get().then(function(snap){
     var allResults = snap.docs.map(function(d){return d.data();});
@@ -1245,7 +1269,10 @@ function sincronizarEstadoFirebase() {
   }).catch(function(){});
 
   Promise.all([promiseState, promiseResultados]).then(function(){
-    loadPlanilhasDiarias(function() { buildCLTabs(); renderAlertaPlanos(); updateDash(); });
+    // Recarregar fotos do Firebase após sync (garante que fotos salvas estejam presentes)
+    carregarFotosFirebase(function() {
+      loadPlanilhasDiarias(function() { buildCLTabs(); renderAlertaPlanos(); updateDash(); });
+    });
   }).catch(function(){
     loadPlanilhasDiarias(function() { buildCLTabs(); renderAlertaPlanos(); updateDash(); });
   });
@@ -1707,6 +1734,22 @@ function salvarFotoTipo(clId, idx, tipo, input) {
 
     var fotoKey = clId+'_foto_'+tipo+'_'+idx;
     S.checkState[fotoKey] = base64;
+
+    // Backup local da foto (evita perda se Firebase demorar ou conexão cair)
+    try {
+      var hoje2 = getLocalDate();
+      localStorage.setItem('eco_foto_bk_' + fotoKey, base64);
+      // Guardar data do backup para limpeza posterior
+      var bkKeys = JSON.parse(localStorage.getItem('eco_foto_bk_keys_'+hoje2) || '[]');
+      if (bkKeys.indexOf(fotoKey) < 0) { bkKeys.push(fotoKey); localStorage.setItem('eco_foto_bk_keys_'+hoje2, JSON.stringify(bkKeys)); }
+      // Limpar backups de dias anteriores
+      Object.keys(localStorage).forEach(function(lk) {
+        if (lk.indexOf('eco_foto_bk_keys_') === 0 && lk !== 'eco_foto_bk_keys_'+hoje2) {
+          try { var oldKeys = JSON.parse(localStorage.getItem(lk)||'[]'); oldKeys.forEach(function(ok){ localStorage.removeItem('eco_foto_bk_'+ok); }); } catch(e){}
+          localStorage.removeItem(lk);
+        }
+      });
+    } catch(e) {}
 
     // Salvar foto separado no Firebase (nao no checkstate)
     var userId = S.currentUser ? S.currentUser.id : 'guest';

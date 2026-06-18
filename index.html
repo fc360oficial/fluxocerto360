@@ -1285,11 +1285,16 @@
           <option value="texto">📝 Texto</option>
           <option value="planilha">📊 Planilha</option>
         </select>
-        <select id="ncl-item-foto" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
+        <select id="ncl-item-foto" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff" onchange="toggleFotoQtd(this)">
           <option value="none">Sem foto</option>
           <option value="depois">📷 Foto</option>
           <option value="antes_depois">📷📷 Foto antes e depois</option>
+          <option value="multiplas">📷＋ Múltiplas fotos</option>
         </select>
+        <div id="ncl-foto-qtd-row" style="display:none;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:600;color:var(--t2);white-space:nowrap">Qtd de fotos:</span>
+          <input type="number" id="ncl-foto-qtd" value="2" min="1" max="10" style="width:56px;padding:7px 8px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;text-align:center"/>
+        </div>
         <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--r);white-space:nowrap;cursor:pointer" title="Item crítico reprova a inspeção inteira se marcado Não">
           <input type="checkbox" id="ncl-item-critico" style="accent-color:var(--r);width:15px;height:15px"/> ⚠️ Crítico
         </label>
@@ -1717,7 +1722,7 @@
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="app.js?v=174" defer></script>
+<script src="app.js?v=175" defer></script>
 
 
 </body>

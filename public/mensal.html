@@ -250,6 +250,24 @@ function grupoOcorrencia(occIdx) {
   return occIdx % 2 === 0 ? '1e3' : '2e4';
 }
 
+// Verifica se há pedido para o fornecedor em qualquer dia daquela semana (Seg-Sex)
+// Igual à lógica de comprador.html — pedido pode ser aprovado em dia diferente do agendado
+function pedidoNaSemana(codFornec, dateISO) {
+  if (!codFornec) return false;
+  const d = new Date(dateISO);
+  const dow = d.getDay(); // 0=Dom,1=Seg,...,6=Sab
+  const diffSeg = dow === 0 ? -6 : 1 - dow;
+  const seg = new Date(d); seg.setDate(d.getDate() + diffSeg);
+  const sex = new Date(seg); sex.setDate(seg.getDate() + 4);
+  const monISO = isoDate(seg);
+  const friISO = isoDate(sex);
+  const cod = parseInt(codFornec);
+  for (const [dt, cods] of Object.entries(pedidosMes)) {
+    if (dt >= monISO && dt <= friISO && cods.includes(cod)) return true;
+  }
+  return false;
+}
+
 function renderTabela(cron) {
   const hoje = isoDate(new Date());
   let totalOk = 0, totalPend = 0, totalFut = 0;
@@ -308,7 +326,7 @@ function renderTabela(cron) {
         if (!codFornec) { html += '<td></td>'; return; }
 
         const futura = dataISO > hoje;
-        const ok = !futura && (pedidosMes[dataISO] || []).includes(parseInt(codFornec));
+        const ok = !futura && pedidoNaSemana(codFornec, dataISO);
 
         if (futura) { totaisDia[i].fut++; totalFut++; }
         else if (ok) { totaisDia[i].ok++; totalOk++; }

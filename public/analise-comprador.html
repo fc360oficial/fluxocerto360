@@ -391,23 +391,58 @@ function renderSlide(slide) {
   setTimeout(() => iniciarCarrosselCol(0, localSlide, undefined), 300);
 }
 
+// ── Mock data (quando comprador sem dados reais) ──
+function gerarMockDados(nome) {
+  const PRODS = {
+    FATIMA:   ['Arroz Tipo 1 5kg','Feijão Carioca 1kg','Macarrão Espaguete 500g','Farinha de Trigo 1kg','Açúcar Cristal 1kg','Óleo de Soja 900ml','Café Torrado 500g','Biscoito Cream Cracker','Molho de Tomate 340g','Leite Integral 1L','Manteiga com Sal 200g','Sardinha Lata 125g','Atum Conserva 170g','Amido de Milho 200g','Extrato Tomate 130g','Maionese 250g'],
+    FERNANDA: ['Shampoo Anticaspa 400ml','Sabonete Barra 90g','Creme Dental 90g','Desodorante Aerossol','Absorvente Noturno 8un','Fralda Descartável M c32','Papel Higiênico 4un','Sabão em Pó 1kg','Amaciante 2L','Detergente 500ml','Água Sanitária 1L','Limpador Multiuso 500ml'],
+    PRISCILA: ['Refrigerante Cola 2L','Suco Laranja 1L','Água Mineral 500ml','Cerveja Lata 350ml','Iogurte Natural 200g','Queijo Mussarela 200g','Presunto Fatiado 200g','Requeijão Cremoso 200g','Margarina 500g','Creme de Leite 200ml','Suco Uva Integral 1L','Leite Fermentado 80g'],
+    MARCOS:   ['Tomate kg','Cebola kg','Alface Crespa un','Banana Prata kg','Maçã Gala kg','Pão Francês 50g','Pão de Forma 500g','Bolo de Laranja 400g','Cenoura kg','Batata kg','Couve Manteiga un','Pepino un'],
+    RENATA:   ['Vassoura Nylon 300g','Rodo 60cm','Balde 10L','Esponja Dupla Face','Saco de Lixo 30L c20','Pilha AA Alcalina c4','Vela 3 Horas c8','Copo Descartável 200ml c50','Escova Dente Macia','Fita Adesiva 45mm'],
+  };
+  const key = Object.keys(PRODS).find(k => nome.startsWith(k)) || 'FATIMA';
+  const prods = PRODS[key];
+  const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+  const cod  = i  => String(7890001000000 + i*137).slice(0,13);
+  const p    = i  => ({ codigo: cod(i), descricao: prods[i % prods.length] });
+
+  const lojas = {};
+  for (const ln of ['1','2','3','4','5','6']) {
+    const s = parseInt(ln)*3;
+    lojas[ln] = {
+      ruptura:    Array.from({length:rnd(3,6)},(_,i)=>({...p(i+s),   estoque:rnd(2,40),    mediaDiaria:+(rnd(2,12)/10).toFixed(2), diasCobertura:rnd(3,35)}))  .sort((a,b)=>a.diasCobertura-b.diasCobertura),
+      excesso:    Array.from({length:rnd(2,4)},(_,i)=>({...p(i+s+6), estoque:rnd(200,800), mediaDiaria:+(rnd(3,15)/10).toFixed(2), diasCobertura:rnd(90,200)})).sort((a,b)=>b.diasCobertura-a.diasCobertura),
+      semVenda:   Array.from({length:rnd(2,4)},(_,i)=>({...p(i+s+10),estoque:rnd(5,60),    diasSemVenda:rnd(60,180), ultimaVenda:`2026-0${rnd(1,4)}-${String(rnd(1,28)).padStart(2,'0')}`})).sort((a,b)=>b.diasSemVenda-a.diasSemVenda),
+      topVendidos:Array.from({length:rnd(5,8)},(_,i)=>({...p(i+s+1), qtd30:rnd(60,350),    mediaDiaria:+(rnd(20,120)/10).toFixed(2)})).sort((a,b)=>b.qtd30-a.qtd30),
+      quedaGiro:  Array.from({length:rnd(2,4)},(_,i)=>({...p(i+s+4), qtd30:rnd(8,30),      qtd30ant:rnd(45,90), quedaPct:rnd(32,65)})).sort((a,b)=>b.quedaPct-a.quedaPct),
+    };
+  }
+  const variacaoCusto = Array.from({length:rnd(3,5)},(_,i)=>{
+    const ant=+(rnd(200,1200)/100).toFixed(2);
+    const atu=+(ant*(1+rnd(6,28)/100)).toFixed(2);
+    return {...p(i+2), custoAnt:ant, custoAtual:atu, varPct:+(((atu-ant)/ant)*100).toFixed(1)};
+  }).sort((a,b)=>b.varPct-a.varPct);
+
+  return { lojas, variacaoCusto, totalProdutos: prods.length, geradoEm: new Date().toISOString(), _demo:true };
+}
+
 // ── Fetch ──
 async function buscarDados() {
   try {
     const r = await fetch(`/api/compras/analise-estoque?comprador=${NOME}`);
     if (!r.ok) throw new Error('HTTP '+r.status);
     dados = await r.json();
+    if (!dados.totalProdutos) dados = gerarMockDados(NOME);
     const ge = dados.geradoEm ? new Date(dados.geradoEm) : new Date();
     const p = x => String(x).padStart(2,'0');
+    const demo = dados._demo ? ' · DEMO' : '';
     document.getElementById('h-update').textContent =
-      `${dados.totalProdutos} produtos · ${p(ge.getHours())}:${p(ge.getMinutes())}`;
+      `${dados.totalProdutos} produtos · ${p(ge.getHours())}:${p(ge.getMinutes())}${demo}`;
     if (!_ultimoAvanço) renderSlide(slides[slideIdx]);
   } catch(e) {
-    document.getElementById('main-cols').innerHTML =
-      `<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-        <div style="font-size:24px">⚠️</div>
-        <div style="color:var(--text3);font-size:13px">${e.message}</div>
-       </div>`;
+    dados = gerarMockDados(NOME);
+    document.getElementById('h-update').textContent = `DEMO · ${dados.totalProdutos} produtos`;
+    if (!_ultimoAvanço) renderSlide(slides[slideIdx]);
   }
 }
 

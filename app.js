@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '178';
+  var BUILD = '179';
   if (localStorage.getItem('fc360_build') !== BUILD) {
     localStorage.setItem('fc360_build', BUILD);
     sessionStorage.removeItem('eco_last_page');
@@ -4065,8 +4065,8 @@ function _renderDashKPIs(perfilFiltro) {
   var resTodos  = window._dashEquipeResultadosHoje  || [];
   var resOntem  = window._dashEquipeResultadosOntem || [];
   var pf        = perfilFiltro || 'todos';
-  var resFilt   = pf === 'todos' ? resTodos : resTodos.filter(function(r){ var cp = _perfilDoChecklist(r.checklistId); return cp === pf || cp === 'todos'; });
-  var resOFilt  = pf === 'todos' ? resOntem : resOntem.filter(function(r){ var cp = _perfilDoChecklist(r.checklistId); return cp === pf || cp === 'todos'; });
+  var resFilt   = pf === 'todos' ? resTodos : resTodos.filter(function(r){ return r.perfil === pf; });
+  var resOFilt  = pf === 'todos' ? resOntem : resOntem.filter(function(r){ return r.perfil === pf; });
 
   var totalEnvios = resFilt.length;
   var completos   = resFilt.filter(function(r){ return r.pct===100; }).length;
@@ -4171,7 +4171,7 @@ function _renderDashKPIs(perfilFiltro) {
   var pendSub = document.getElementById('dpend-sub');
   if (pendVal) {
     var todasPend = getPendencias();
-    var pendFilt  = pf === 'todos' ? todasPend : todasPend.filter(function(p){ var cp2 = _perfilDoChecklist(p.cl.id); return cp2 === pf || cp2 === 'todos'; });
+    var pendFilt  = pf === 'todos' ? todasPend : todasPend.filter(function(p){ return (p.cl.perfil||'').toLowerCase()===pf; });
     var pendentes = pendFilt.length;
     pendVal.textContent = pendentes;
     pendVal.style.color = pendentes===0 ? 'var(--g)' : 'var(--r)';

@@ -175,7 +175,7 @@ table.dt tbody tr:hover{background:#ffffff06}
       <div class="kpi-s" id="k-dif">diferença</div>
     </div>
     <div class="kpi rose">
-      <div class="kpi-l">Média Diária 2026</div>
+      <div class="kpi-l" id="k-med-label">Média Diária 2026</div>
       <div class="kpi-v" id="k-med26">—</div>
       <div class="kpi-s" id="k-med25">vs 2025: —</div>
     </div>
@@ -413,12 +413,35 @@ function setTab(aba) {
   document.getElementById('tab-btn-diario').classList.toggle('active', aba === 'diario');
   document.getElementById('tab-btn-mensal').classList.toggle('active', aba === 'mensal');
   document.getElementById('fg-mes').style.display = aba === 'mensal' ? 'none' : '';
+  if (aba === 'diario') document.getElementById('k-med-label').textContent = 'Média Diária 2026';
   if (aba === 'mensal' && !mensalCarregado) carregarMensal();
 }
 
 function atualizarAbaAtual() {
   if (abaAtual === 'mensal') { mensalCarregado = false; carregarMensal(); }
   else carregar();
+}
+
+function atualizarKpisMensal(data) {
+  document.getElementById('k-tot25').textContent = BRL(data.total2025);
+  document.getElementById('k-tot26').textContent = BRL(data.total2026);
+  document.getElementById('k-sub25').textContent = 'total do ano';
+  document.getElementById('k-sub26').textContent = 'total do ano';
+  document.getElementById('k-med-label').textContent = 'Média Mensal 2026';
+  const varPct = data.var_pct;
+  const kVar = document.getElementById('k-var');
+  if (varPct !== null) {
+    kVar.textContent = PCT(varPct);
+    kVar.className = 'kpi-v ' + (varPct >= 0 ? 'up' : 'dn');
+  } else { kVar.textContent = '—'; kVar.className = 'kpi-v'; }
+  const dif = data.total2026 - data.total2025;
+  document.getElementById('k-dif').textContent = (dif >= 0 ? '+' : '') + BRL(dif);
+  const mesesC26 = data.meses.filter(m => m.v2026 > 0);
+  const med26 = mesesC26.length > 0 ? mesesC26.reduce((s,m) => s+m.v2026, 0) / mesesC26.length : 0;
+  const mesesC25 = data.meses.filter(m => m.v2025 > 0);
+  const med25 = mesesC25.length > 0 ? mesesC25.reduce((s,m) => s+m.v2025, 0) / mesesC25.length : 0;
+  document.getElementById('k-med26').textContent = BRL(med26);
+  document.getElementById('k-med25').textContent = 'vs 2025: ' + BRL(med25);
 }
 
 function carregarMensal() {
@@ -428,6 +451,7 @@ function carregarMensal() {
     .then(r => r.json())
     .then(data => {
       mensalCarregado = true;
+      atualizarKpisMensal(data);
       const tbody = document.getElementById('tbody-mensal');
       tbody.innerHTML = '';
       for (const m of data.meses) {

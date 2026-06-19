@@ -352,12 +352,19 @@ function iniciarProgresso() {
   _avanceTimer = setTimeout(proximaLoja, TEMPO * 1000);
 }
 
+const _urlParams = new URLSearchParams(window.location.search);
+const _nextPage  = _urlParams.get('next');
+
 function proximaLoja() {
   clearTimeout(_avanceTimer);
   if (lojaAtual < 6) {
     carregarLoja(lojaAtual + 1);
   } else {
     try { window.parent.postMessage({ type: 'comparativoTvCycleComplete' }, '*'); } catch(_) {}
+    if (_nextPage && window.parent === window) {
+      window.location.href = '/' + _nextPage + '.html?next=diretoria';
+      return;
+    }
     carregarLoja(1);
   }
 }

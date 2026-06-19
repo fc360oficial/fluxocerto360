@@ -361,9 +361,13 @@ function trocarLoja(loja) {
   lojaTimer = setTimeout(() => {
     const proxima = loja + 1;
     if (proxima > 6) {
-      // Ciclo completo das 6 lojas → avança na supervisão
+      // Avisa supervisão (se estiver em iframe)
       try { window.parent.postMessage({ type: 'diretoriaCycleComplete' }, '*'); } catch(_) {}
-      // Standalone: recomeça da loja 1 após pausa
+      // Standalone: vai pra comparativo-tv → precificação → volta
+      if (window.parent === window) {
+        window.location.href = '/comparativo-tv.html?next=precificacao';
+        return;
+      }
       setTimeout(() => trocarLoja(1), 2000);
     } else {
       trocarLoja(proxima);

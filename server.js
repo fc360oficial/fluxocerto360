@@ -933,12 +933,18 @@ app.get('/api/comparativo-diario', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+const _mensalCache = {}, _mensalCacheTs = {};
+
 // Comparativo mensal: todos os meses do ano 2025 vs 2026
 app.get('/api/comparativo-mensal', async (req, res) => {
   try {
     const lojaSel = req.query.loja ? parseInt(req.query.loja) : 1;
-    const meses = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+    const cacheKey = String(lojaSel);
+    if (_mensalCache[cacheKey] && (Date.now() - _mensalCacheTs[cacheKey]) < RESUMO_TTL) {
+      return res.json(_mensalCache[cacheKey]);
+    }
 
+    const meses = ['01','02','03','04','05','06','07','08','09','10','11','12'];
     const results = await Promise.all(meses.map(mm =>
       q(`SELECT YEAR(Data) as ano, SUM(ValorTotalNovo) as valor,
                 COUNT(DISTINCT CONCAT(nECF,'-',CCF)) as cupons
@@ -962,8 +968,10 @@ app.get('/api/comparativo-mensal', async (req, res) => {
 
     const tot25 = data.reduce((s,d)=>s+d.v2025,0);
     const tot26 = data.reduce((s,d)=>s+d.v2026,0);
-    res.json({ meses: data, total2025: +tot25.toFixed(2), total2026: +tot26.toFixed(2),
-      var_pct: tot25>0 ? +((tot26-tot25)/tot25*100).toFixed(1) : null });
+    const payload = { meses: data, total2025: +tot25.toFixed(2), total2026: +tot26.toFixed(2),
+      var_pct: tot25>0 ? +((tot26-tot25)/tot25*100).toFixed(1) : null };
+    _mensalCache[cacheKey] = payload; _mensalCacheTs[cacheKey] = Date.now();
+    res.json(payload);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

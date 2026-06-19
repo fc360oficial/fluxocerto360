@@ -32,7 +32,8 @@ app.use((req, res, next) => {
     '/analise-comprador.html',
     '/api/compras/fornec-por-lista',
     '/api/compras/pedidos-mes',
-    '/mensal.html'];
+    '/mensal.html',
+    '/comparativo-tv.html', '/api/comparativo-tv'];
   if (publico.includes(req.path)) return next();
   if (req.session && req.session.user) return next();
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado' });
@@ -892,6 +893,84 @@ app.get('/api/fornecedores/resumo', async (req, res) => {
     if (!busca && !compradorSel) { _resumoCache[cacheKey] = payload; _resumoCacheTs[cacheKey] = Date.now(); }
     res.json(payload);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Cache de itens mercadológico (muda raramente)
+let _itensCache = null, _itensCacheTs = 0;
+async function getItensGrupo() {
+  if (_itensCache && Date.now() - _itensCacheTs < 10*60*1000) return _itensCache;
+  _itensCache = await q(`SELECT i.CodigoBarra, g.CodGrupo, g.Descricao as grupo_nome
+     FROM central.itens i
+     INNER JOIN central.gruposub gs ON gs.CodSubGrupo=i.CodGrupoSub AND gs.CodDesativado=0
+     INNER JOIN central.grupo g ON g.CodGrupo=gs.CodGrupo
+     WHERE i.CodDesativado=0 AND i.CodGrupoSub>0`).catch(()=>[]);
+  _itensCacheTs = Date.now();
+  return _itensCache;
+}
+
+// Comparativo TV: dados combinados (diário + mercadológico) para uma loja — mês atual
+app.get('/api/comparativo-tv', async (req, res) => {
+  try {
+    const hoje    = new Date();
+    const mesSel  = hoje.getMonth() + 1;
+    const diaAtual= hoje.getDate();
+    const lojaSel = req.query.loja ? parseInt(req.query.loja) : 1;
+    const mm      = mesDB(mesSel);
+
+    const [diasRows, prod25, prod26, itens] = await Promise.all([
+      q(`SELECT DAY(Data) as dia, YEAR(Data) as ano, SUM(ValorTotalNovo) as valor
+         FROM \`ln${lojaSel}${mm}\`.zcupomitens
+         WHERE MONTH(Data)=? AND YEAR(Data) IN (2025,2026) AND IndCancel='N'
+         GROUP BY dia, ano ORDER BY dia`, [mesSel]).catch(()=>[]),
+      q(`SELECT Codigo, SUM(ValorTotalNovo) as valor FROM \`ln${lojaSel}${mm}\`.zcupomitens
+         WHERE YEAR(Data)=2025 AND MONTH(Data)=? AND IndCancel='N' GROUP BY Codigo`, [mesSel]).catch(()=>[]),
+      q(`SELECT Codigo, SUM(ValorTotalNovo) as valor FROM \`ln${lojaSel}${mm}\`.zcupomitens
+         WHERE YEAR(Data)=2026 AND MONTH(Data)=? AND IndCancel='N' GROUP BY Codigo`, [mesSel]).catch(()=>[]),
+      getItensGrupo()
+    ]);
+
+    // Diário
+    const v25d = {}, v26d = {};
+    for (const r of diasRows) {
+      if (r.ano==2025) v25d[r.dia] = parseFloat(r.valor);
+      if (r.ano==2026) v26d[r.dia] = parseFloat(r.valor);
+    }
+    const ultimoDia = new Date(2026, mesSel, 0).getDate();
+    const dias = [];
+    for (let d=1; d<=ultimoDia; d++) {
+      const a=v25d[d]||0, b=v26d[d]||0;
+      if (a>0||b>0) dias.push({ dia:d, v2025:+a.toFixed(2), v2026:+b.toFixed(2),
+        var: a>0?+((b-a)/a*100).toFixed(1):null });
+    }
+    const tot25  = dias.reduce((s,d)=>s+d.v2025,0);
+    const tot26  = dias.reduce((s,d)=>s+d.v2026,0);
+    const tot25p = dias.filter(d=>d.dia<=diaAtual).reduce((s,d)=>s+d.v2025,0);
+
+    // Mercadológico por grupo
+    const pv25={}, pv26={};
+    for (const r of prod25) pv25[r.Codigo]=parseFloat(r.valor);
+    for (const r of prod26) pv26[r.Codigo]=parseFloat(r.valor);
+    const gMap={};
+    for (const it of itens) {
+      const a=pv25[it.CodigoBarra]||0, b=pv26[it.CodigoBarra]||0;
+      if (!a&&!b) continue;
+      const k=it.CodGrupo;
+      if (!gMap[k]) gMap[k]={ nome:it.grupo_nome?.trim()||'—', v2025:0, v2026:0 };
+      gMap[k].v2025+=a; gMap[k].v2026+=b;
+    }
+    const grupos = Object.values(gMap)
+      .filter(g=>g.v2025>0||g.v2026>0)
+      .map(g=>({ nome:g.nome, v2025:+g.v2025.toFixed(2), v2026:+g.v2026.toFixed(2),
+        var:g.v2025>0?+((g.v2026-g.v2025)/g.v2025*100).toFixed(1):null }))
+      .sort((a,b)=>b.v2026-a.v2026||b.v2025-a.v2025).slice(0,10);
+
+    res.json({ loja:lojaSel, mes:mesSel, dia_atual:diaAtual,
+      total2025:+tot25.toFixed(2), total2026:+tot26.toFixed(2),
+      total2025_periodo:+tot25p.toFixed(2),
+      var_pct: tot25>0?+((tot26-tot25)/tot25*100).toFixed(1):null,
+      var_periodo: tot25p>0?+((tot26-tot25p)/tot25p*100).toFixed(1):null,
+      dias, grupos });
+  } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
 // Comparativo diário: vendas dia-a-dia 2025 vs 2026 para o mês selecionado

@@ -39,6 +39,7 @@ iframe.visivel{opacity:1;pointer-events:auto}
 <body>
 
 <iframe id="fr-diretoria" title="Diretoria"></iframe>
+<iframe id="fr-comptvs"  title="Comparativo TV"></iframe>
 <iframe id="fr-precif"   title="Precificação"></iframe>
 <iframe id="fr-compras"  title="Compras Geral"></iframe>
 <iframe id="fr-ciclo"    title="Comprador · Mensal · Produtos"></iframe>
@@ -59,6 +60,7 @@ const BASE = 'http://192.168.2.252:3003';
 let atual = 'diretoria';
 
 const frD  = document.getElementById('fr-diretoria');
+const frCT = document.getElementById('fr-comptvs');
 const frP  = document.getElementById('fr-precif');
 const frC  = document.getElementById('fr-compras');
 const frK  = document.getElementById('fr-ciclo');
@@ -69,7 +71,7 @@ const btnFs = document.getElementById('btn-fs');
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
-  [frD,frP,frC,frK].forEach(f => f.classList.remove('visivel'));
+  [frD,frCT,frP,frC,frK].forEach(f => f.classList.remove('visivel'));
   [dotD,dotP,dotC].forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');
@@ -79,6 +81,10 @@ function mostrarDiretoria() {
   frD.src = BASE + '/diretoria.html';
   mostrar(frD, dotD, 'diretoria');
 }
+function mostrarComparativoTV() {
+  frCT.src = BASE + '/comparativo-tv.html';
+  mostrar(frCT, dotD, 'comptvs');
+}
 function mostrarPrecif() {
   mostrar(frP, dotP, 'precif');
 }
@@ -87,7 +93,6 @@ function mostrarCompras() {
   mostrar(frC, dotC, 'compras');
 }
 function mostrarCiclo() {
-  // Começa o ciclo pelo primeiro comprador — encadeia sozinho até o último
   frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0';
   mostrar(frK, dotC, 'ciclo');
 }
@@ -95,10 +100,11 @@ function mostrarCiclo() {
 // Rotação automática via postMessage
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
-  if (e.data.type === 'diretoriaCycleComplete' && atual === 'diretoria') mostrarPrecif();
-  if (e.data.type === 'carouselCycleComplete'  && atual === 'precif')    mostrarCompras();
-  if (e.data.type === 'comprasCycleComplete'   && atual === 'compras')   mostrarCiclo();
-  if (e.data.type === 'analiseCycleComplete'   && atual === 'ciclo')     mostrarDiretoria();
+  if (e.data.type === 'diretoriaCycleComplete'    && atual === 'diretoria') mostrarComparativoTV();
+  if (e.data.type === 'comparativoTvCycleComplete'&& atual === 'comptvs')   mostrarPrecif();
+  if (e.data.type === 'carouselCycleComplete'     && atual === 'precif')    mostrarCompras();
+  if (e.data.type === 'comprasCycleComplete'      && atual === 'compras')   mostrarCiclo();
+  if (e.data.type === 'analiseCycleComplete'      && atual === 'ciclo')     mostrarDiretoria();
 });
 
 // Tela cheia
@@ -118,6 +124,8 @@ document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault()
 dotD.addEventListener('click', mostrarDiretoria);
 dotP.addEventListener('click', mostrarPrecif);
 dotC.addEventListener('click', mostrarCompras);
+// Pré-carrega precificação
+
 
 // Pré-carrega precificação e inicia na diretoria
 frP.src = BASE + '/precificacao.html';

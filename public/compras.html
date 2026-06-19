@@ -747,5 +747,17 @@ setInterval(updateClock, 1000);
 setInterval(updateCountdown, 1000);
 setInterval(atualizarStatusReal, 2*60*1000);
 </script>
+<style>
+.btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
+  transition:all .2s;z-index:999;backdrop-filter:blur(4px)}
+.btn-fs-fixed:hover{color:#F9C200;border-color:#F9C200}
+:fullscreen .btn-fs-fixed,:-webkit-full-screen .btn-fs-fixed{opacity:0;transition:opacity .3s}
+:fullscreen .btn-fs-fixed:hover,:-webkit-full-screen .btn-fs-fixed:hover{opacity:1}
+</style>
+<button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
+<script>
+(function(){var b=document.getElementById('btn-fs');function tgl(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});}document.addEventListener('fullscreenchange',function(){b.textContent=document.fullscreenElement?'✕':'⛶';});b.addEventListener('click',tgl);document.addEventListener('keydown',function(e){if(e.key==='F11'){e.preventDefault();tgl();}});})();
+</script>
 </body>
 </html>

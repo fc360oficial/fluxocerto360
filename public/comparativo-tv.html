@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Comparativo TV</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f0;font-family:'Segoe UI',sans-serif}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 24px;
+  background:linear-gradient(135deg,#0f1e3a,#0a1628);border-bottom:2px solid #F9C200;height:62px}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-left img{height:34px;width:auto;filter:brightness(0) invert(1) sepia(1) saturate(4) hue-rotate(-8deg)}
+.hdr-title{font-size:13px;color:#94a3b8;font-weight:600;letter-spacing:.5px}
+.hdr-loja{font-size:22px;font-weight:800;color:#F9C200;letter-spacing:1px}
+.hdr-right{display:flex;align-items:center;gap:14px}
+.loja-dots{display:flex;gap:6px}
+.ldot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .3s}
+.ldot.ativo{background:#F9C200;transform:scale(1.35)}
+.mes-badge{font-size:11px;color:#64748b;font-weight:600;background:#1e293b;padding:4px 10px;border-radius:20px}
+
+/* PROGRESS BAR */
+.prog-wrap{height:3px;background:#1e293b;overflow:hidden}
+.prog-bar{height:100%;background:linear-gradient(90deg,#3b82f6,#F9C200);width:0%;transition:width .5s linear}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:260px 1fr 1fr;gap:0;height:calc(100vh - 65px);padding:14px;gap:12px}
+
+/* CARDS KPI */
+.kpi-col{display:flex;flex-direction:column;gap:10px}
+.kpi-card{background:#0f1e3a;border:1px solid #1e3a6e;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.blue::before{background:#3b82f6}
+.kpi-card.gold::before{background:#F9C200}
+.kpi-card.green::before{background:#10b981}
+.kpi-card.red::before{background:#ef4444}
+.kpi-card.purple::before{background:#8b5cf6}
+.kc-label{font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.kc-val{font-size:20px;font-weight:800;color:#f1f5f9;line-height:1.1}
+.kc-sub{font-size:10px;color:#64748b;margin-top:3px}
+.kc-var{font-size:16px;font-weight:800}
+.up{color:#10b981}.dn{color:#ef4444}
+
+/* TABELAS */
+.tbl-card{background:#0b1628;border:1px solid #1e293b;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.tbl-hdr{padding:10px 14px;background:#0f1e3a;border-bottom:1px solid #1e3a6e;font-size:11px;font-weight:700;color:#F9C200;letter-spacing:.5px;flex-shrink:0}
+.tbl-wrap{overflow-y:auto;flex:1}
+table{width:100%;border-collapse:collapse}
+th{padding:7px 10px;font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1e293b;white-space:nowrap;position:sticky;top:0;background:#0b1628;z-index:1}
+th.r,td.r{text-align:right}
+td{padding:6px 10px;font-size:12px;border-bottom:1px solid #0f172a;white-space:nowrap}
+tr:hover td{background:#ffffff05}
+.v-up{color:#10b981;font-weight:700}
+.v-dn{color:#ef4444;font-weight:700}
+.v-ze{color:#475569}
+.dia-num{color:#64748b;font-size:11px}
+.val25{color:#60a5fa}
+.val26{color:#F9C200;font-weight:700}
+.tr-total td{background:#0f1e3a!important;font-weight:700;border-top:1px solid #1e3a6e}
+.loading{text-align:center;padding:30px;color:#334155;font-size:13px}
+
+/* FULLSCREEN BTN */
+.btn-fs{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
+  transition:all .2s;z-index:99;backdrop-filter:blur(4px)}
+.btn-fs:hover{color:#F9C200;border-color:#F9C200}
+:fullscreen .btn-fs,:-webkit-full-screen .btn-fs{opacity:0;transition:opacity .3s}
+:fullscreen .btn-fs:hover,:-webkit-full-screen .btn-fs:hover{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <img src="/logo.png" alt="Econômico">
+    <div>
+      <div class="hdr-title">COMPARATIVOS 2025 × 2026</div>
+      <div class="hdr-loja" id="hdr-loja">LOJA 1</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="mes-badge" id="hdr-mes">—</div>
+    <div class="loja-dots" id="loja-dots">
+      <div class="ldot ativo" id="ld1"></div>
+      <div class="ldot" id="ld2"></div>
+      <div class="ldot" id="ld3"></div>
+      <div class="ldot" id="ld4"></div>
+      <div class="ldot" id="ld5"></div>
+      <div class="ldot" id="ld6"></div>
+    </div>
+  </div>
+</div>
+<div class="prog-wrap"><div class="prog-bar" id="prog"></div></div>
+
+<div class="grid">
+  <!-- KPIs -->
+  <div class="kpi-col">
+    <div class="kpi-card blue">
+      <div class="kc-label">Total 2025 — Mês Completo</div>
+      <div class="kc-val" id="k25">—</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kc-label">Total 2026 — Até Hoje</div>
+      <div class="kc-val" id="k26">—</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kc-label">Variação — Mês Completo</div>
+      <div class="kc-var" id="kvar">—</div>
+      <div class="kc-sub" id="kdif">—</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kc-label">2025 Até Dia <span id="k-diaLabel">—</span></div>
+      <div class="kc-val" id="k25p">—</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kc-label">Variação — Mesmo Período</div>
+      <div class="kc-var" id="kvarp">—</div>
+      <div class="kc-sub" id="kdifp">—</div>
+    </div>
+  </div>
+
+  <!-- Diário -->
+  <div class="tbl-card">
+    <div class="tbl-hdr">📅 VENDAS DIÁRIAS</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Dia</th>
+          <th class="r">2025</th>
+          <th class="r">2026</th>
+          <th class="r">Var%</th>
+        </tr></thead>
+        <tbody id="tbody-dias"><tr><td colspan="4" class="loading">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Mercadológico -->
+  <div class="tbl-card">
+    <div class="tbl-hdr">🏷️ MERCADOLÓGICO — TOP GRUPOS</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Grupo</th>
+          <th class="r">2025</th>
+          <th class="r">2026</th>
+          <th class="r">Var%</th>
+        </tr></thead>
+        <tbody id="tbody-merc"><tr><td colspan="4" class="loading">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<button class="btn-fs" id="btn-fs" title="Tela cheia">⛶</button>
+
+<script>
+const BRL = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const PCT = v => (v>=0?'+':'')+v.toFixed(1)+'%';
+const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const TEMPO = 20; // segundos por loja
+
+let lojaAtual = 1;
+let _progInterval = null;
+let _avanceTimer  = null;
+let _progStart    = 0;
+
+function iniciar() { carregarLoja(1); }
+
+function carregarLoja(n) {
+  lojaAtual = n;
+  // Dots
+  for (let i=1;i<=6;i++) document.getElementById('ld'+i).classList.toggle('ativo', i===n);
+  document.getElementById('hdr-loja').textContent = 'LOJA ' + n;
+
+  // Reset tabelas
+  ['tbody-dias','tbody-merc'].forEach(id => {
+    document.getElementById(id).innerHTML = '<tr><td colspan="4" class="loading">Carregando…</td></tr>';
+  });
+  ['k25','k26','k25p','kvar','kvarp'].forEach(id => document.getElementById(id).textContent = '…');
+
+  fetch('/api/comparativo-tv?loja=' + n)
+    .then(r => r.json())
+    .then(renderizar)
+    .catch(() => {});
+}
+
+function renderizar(data) {
+  document.getElementById('hdr-mes').textContent = MESES[data.mes] + ' 2026';
+  document.getElementById('k-diaLabel').textContent = data.dia_atual;
+
+  document.getElementById('k25').textContent  = BRL(data.total2025);
+  document.getElementById('k26').textContent  = BRL(data.total2026);
+  document.getElementById('k25p').textContent = BRL(data.total2025_periodo);
+
+  const kv = document.getElementById('kvar');
+  kv.textContent = data.var_pct !== null ? PCT(data.var_pct) : '—';
+  kv.className = 'kc-var ' + (data.var_pct >= 0 ? 'up' : 'dn');
+  const dif = data.total2026 - data.total2025;
+  document.getElementById('kdif').textContent = (dif>=0?'+':'') + BRL(dif);
+
+  const kvp = document.getElementById('kvarp');
+  kvp.textContent = data.var_periodo !== null ? PCT(data.var_periodo) : '—';
+  kvp.className = 'kc-var ' + (data.var_periodo >= 0 ? 'up' : 'dn');
+  const difp = data.total2026 - data.total2025_periodo;
+  document.getElementById('kdifp').textContent = (difp>=0?'+':'') + BRL(difp);
+
+  // Tabela diária
+  const tdias = document.getElementById('tbody-dias');
+  tdias.innerHTML = '';
+  let t25=0, t26=0;
+  for (const d of data.dias) {
+    t25+=d.v2025; t26+=d.v2026;
+    const vClass = d.var===null?'v-ze':d.var>0?'v-up':'v-dn';
+    tdias.insertAdjacentHTML('beforeend',`
+      <tr>
+        <td class="dia-num"><strong>${String(d.dia).padStart(2,'0')}</strong></td>
+        <td class="r val25">${d.v2025>0?BRL(d.v2025):'<span style="color:#1e293b">—</span>'}</td>
+        <td class="r val26">${d.v2026>0?BRL(d.v2026):'<span style="color:#1e293b">—</span>'}</td>
+        <td class="r ${vClass}">${d.var!==null?PCT(d.var):'—'}</td>
+      </tr>`);
+  }
+  const varT = t25>0?+((t26-t25)/t25*100).toFixed(1):null;
+  tdias.insertAdjacentHTML('beforeend',`
+    <tr class="tr-total">
+      <td>Total</td>
+      <td class="r val25">${BRL(t25)}</td>
+      <td class="r val26">${BRL(t26)}</td>
+      <td class="r ${varT>=0?'v-up':'v-dn'}">${varT!==null?PCT(varT):'—'}</td>
+    </tr>`);
+
+  // Tabela mercadológico
+  const tmerc = document.getElementById('tbody-merc');
+  tmerc.innerHTML = '';
+  let m25=0, m26=0;
+  for (const g of data.grupos) {
+    m25+=g.v2025; m26+=g.v2026;
+    const vClass = g.var===null?'v-ze':g.var>0?'v-up':'v-dn';
+    tmerc.insertAdjacentHTML('beforeend',`
+      <tr>
+        <td><strong>${g.nome}</strong></td>
+        <td class="r val25">${BRL(g.v2025)}</td>
+        <td class="r val26">${BRL(g.v2026)}</td>
+        <td class="r ${vClass}">${g.var!==null?PCT(g.var):'—'}</td>
+      </tr>`);
+  }
+  const varM = m25>0?+((m26-m25)/m25*100).toFixed(1):null;
+  tmerc.insertAdjacentHTML('beforeend',`
+    <tr class="tr-total">
+      <td>Total</td>
+      <td class="r val25">${BRL(m25)}</td>
+      <td class="r val26">${BRL(m26)}</td>
+      <td class="r ${varM>=0?'v-up':'v-dn'}">${varM!==null?PCT(varM):'—'}</td>
+    </tr>`);
+
+  // Iniciar progress bar e timer de avanço
+  iniciarProgresso();
+}
+
+function iniciarProgresso() {
+  clearInterval(_progInterval);
+  clearTimeout(_avanceTimer);
+  const prog = document.getElementById('prog');
+  prog.style.transition = 'none';
+  prog.style.width = '0%';
+  _progStart = Date.now();
+  requestAnimationFrame(() => {
+    prog.style.transition = `width ${TEMPO}s linear`;
+    prog.style.width = '100%';
+  });
+  _avanceTimer = setTimeout(proximaLoja, TEMPO * 1000);
+}
+
+function proximaLoja() {
+  clearTimeout(_avanceTimer);
+  if (lojaAtual < 6) {
+    carregarLoja(lojaAtual + 1);
+  } else {
+    try { window.parent.postMessage({ type: 'comparativoTvCycleComplete' }, '*'); } catch(_) {}
+    carregarLoja(1);
+  }
+}
+
+// Fullscreen
+const btnFs = document.getElementById('btn-fs');
+function toggleFs() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen().catch(()=>{});
+}
+document.addEventListener('fullscreenchange', () => {
+  btnFs.textContent = document.fullscreenElement ? '✕' : '⛶';
+});
+btnFs.addEventListener('click', toggleFs);
+document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault();toggleFs();} });
+
+iniciar();
+</script>
+</body>
+</html>

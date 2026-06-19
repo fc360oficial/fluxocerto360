@@ -126,7 +126,7 @@ table.dt tbody tr:hover{background:#ffffff06}
   </div>
 
   <div class="filtros">
-    <div class="fg">
+    <div class="fg" id="fg-loja">
       <label>Loja</label>
       <select id="sel-loja">
         <option value="1">Loja 1</option>
@@ -186,6 +186,8 @@ table.dt tbody tr:hover{background:#ffffff06}
     <div class="tabs">
       <button class="tab-btn active" id="tab-btn-diario" onclick="setTab('diario')">Detalhe Diário</button>
       <button class="tab-btn"        id="tab-btn-mensal" onclick="setTab('mensal')">Detalhe Mensal</button>
+      <button class="tab-btn"        id="tab-btn-merc"   onclick="setTab('merc')">Por Mercadológico</button>
+      <button class="tab-btn"        id="tab-btn-lojas"  onclick="setTab('lojas')">Por Lojas</button>
     </div>
 
     <!-- Tab: Diário -->
@@ -224,6 +226,44 @@ table.dt tbody tr:hover{background:#ffffff06}
             </tr>
           </thead>
           <tbody id="tbody-mensal"><tr><td colspan="7" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Por Mercadológico -->
+    <div id="tab-merc" style="display:none">
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Mercadológico</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">Variação</th>
+              <th class="r">Diferença</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-merc"><tr><td colspan="5" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Por Lojas -->
+    <div id="tab-lojas" style="display:none">
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Loja</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">Variação</th>
+              <th class="r">Diferença</th>
+              <th class="r">Cupons 2025</th>
+              <th class="r">Cupons 2026</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-lojas"><tr><td colspan="7" class="loading">Selecione a aba para carregar</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -403,23 +443,29 @@ function renderizar(data) {
   `);
 }
 
-let mensalCarregado = false;
+const _carregado = { diario: false, mensal: false, merc: false, lojas: false };
 let abaAtual = 'diario';
+// Visibilidade de filtros por aba: [mostra-loja, mostra-mes]
+const _filtros = { diario:[1,1], mensal:[1,0], merc:[1,1], lojas:[0,1] };
+// Label do 4º KPI por aba
+const _kpiLabel = { diario:'Média Diária 2026', mensal:'Média Mensal 2026', merc:'Total Mercad. 2026', lojas:'Melhor Loja 2026' };
 
 function setTab(aba) {
   abaAtual = aba;
-  document.getElementById('tab-diario').style.display = aba === 'diario' ? '' : 'none';
-  document.getElementById('tab-mensal').style.display = aba === 'mensal' ? '' : 'none';
-  document.getElementById('tab-btn-diario').classList.toggle('active', aba === 'diario');
-  document.getElementById('tab-btn-mensal').classList.toggle('active', aba === 'mensal');
-  document.getElementById('fg-mes').style.display = aba === 'mensal' ? 'none' : '';
-  if (aba === 'diario') document.getElementById('k-med-label').textContent = 'Média Diária 2026';
-  if (aba === 'mensal' && !mensalCarregado) carregarMensal();
+  ['diario','mensal','merc','lojas'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === aba ? '' : 'none';
+    document.getElementById('tab-btn-' + t).classList.toggle('active', t === aba);
+  });
+  const [showLoja, showMes] = _filtros[aba];
+  document.getElementById('fg-loja').style.display = showLoja ? '' : 'none';
+  document.getElementById('fg-mes').style.display  = showMes  ? '' : 'none';
+  document.getElementById('k-med-label').textContent = _kpiLabel[aba];
+  if (!_carregado[aba]) _carregar[aba]();
 }
 
 function atualizarAbaAtual() {
-  if (abaAtual === 'mensal') { mensalCarregado = false; carregarMensal(); }
-  else carregar();
+  _carregado[abaAtual] = false;
+  _carregar[abaAtual]();
 }
 
 function atualizarKpisMensal(data) {
@@ -450,7 +496,7 @@ function carregarMensal() {
   fetch(`/api/comparativo-mensal?loja=${loja}`)
     .then(r => r.json())
     .then(data => {
-      mensalCarregado = true;
+      _carregado.mensal = true;
       atualizarKpisMensal(data);
       const tbody = document.getElementById('tbody-mensal');
       tbody.innerHTML = '';
@@ -491,11 +537,115 @@ function carregarMensal() {
     });
 }
 
-// Ao trocar loja, recarrega a aba que está ativa
+function carregarMerc() {
+  const loja = document.getElementById('sel-loja').value;
+  const mes  = document.getElementById('sel-mes').value;
+  document.getElementById('tbody-merc').innerHTML = '<tr><td colspan="5" class="loading">Carregando...</td></tr>';
+  fetch(`/api/comparativo-mercadologico?loja=${loja}&mes=${mes}`)
+    .then(r => r.json())
+    .then(data => {
+      _carregado.merc = true;
+      atualizarKpisGenerico(data, 'merc');
+      const tbody = document.getElementById('tbody-merc');
+      tbody.innerHTML = '';
+      for (const m of data.mercadologico) {
+        const dif = m.v2026 - m.v2025;
+        let varCell = '<span class="var-zero">—</span>';
+        if (m.var !== null) {
+          const cls = m.var > 0 ? 'var-pos' : m.var < 0 ? 'var-neg' : 'var-zero';
+          varCell = `<span class="${cls}">${PCT(m.var)}</span>`;
+        }
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>${m.nome}</strong></td>
+            <td class="r">${m.v2025 > 0 ? BRL(m.v2025) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${m.v2026 > 0 ? BRL(m.v2026) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${varCell}</td>
+            <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${m.v2025>0||m.v2026>0 ? (dif>=0?'+':'')+BRL(dif) : ''}</td>
+          </tr>`);
+      }
+      const difTot = data.total2026 - data.total2025;
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total</td>
+          <td class="r">${BRL(data.total2025)}</td>
+          <td class="r">${BRL(data.total2026)}</td>
+          <td class="r">${data.var_pct!==null?`<span class="${data.var_pct>=0?'var-pos':'var-neg'}">${PCT(data.var_pct)}</span>`:''}</td>
+          <td class="r ${difTot>=0?'var-pos':'var-neg'}">${(difTot>=0?'+':'')+BRL(difTot)}</td>
+        </tr>`);
+    })
+    .catch(() => { document.getElementById('tbody-merc').innerHTML = '<tr><td colspan="5" class="loading">Erro ao carregar</td></tr>'; });
+}
+
+function carregarLojas() {
+  const mes = document.getElementById('sel-mes').value;
+  document.getElementById('tbody-lojas').innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
+  fetch(`/api/comparativo-lojas?mes=${mes}`)
+    .then(r => r.json())
+    .then(data => {
+      _carregado.lojas = true;
+      atualizarKpisGenerico(data, 'lojas');
+      const tbody = document.getElementById('tbody-lojas');
+      tbody.innerHTML = '';
+      for (const l of data.lojas) {
+        const dif = l.v2026 - l.v2025;
+        let varCell = '<span class="var-zero">—</span>';
+        if (l.var !== null) {
+          const cls = l.var > 0 ? 'var-pos' : l.var < 0 ? 'var-neg' : 'var-zero';
+          varCell = `<span class="${cls}">${PCT(l.var)}</span>`;
+        }
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>Loja ${l.loja}</strong></td>
+            <td class="r">${l.v2025 > 0 ? BRL(l.v2025) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.v2026 > 0 ? BRL(l.v2026) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${varCell}</td>
+            <td class="r ${dif>=0?'var-pos':'var-neg'}">${l.v2025>0||l.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
+            <td class="r">${l.c2025||''}</td>
+            <td class="r">${l.c2026||''}</td>
+          </tr>`);
+      }
+      const difTot = data.total2026 - data.total2025;
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total Rede</td>
+          <td class="r">${BRL(data.total2025)}</td>
+          <td class="r">${BRL(data.total2026)}</td>
+          <td class="r">${data.var_pct!==null?`<span class="${data.var_pct>=0?'var-pos':'var-neg'}">${PCT(data.var_pct)}</span>`:''}</td>
+          <td class="r ${difTot>=0?'var-pos':'var-neg'}">${(difTot>=0?'+':'')+BRL(difTot)}</td>
+          <td class="r">${data.lojas.reduce((s,l)=>s+l.c2025,0)}</td>
+          <td class="r">${data.lojas.reduce((s,l)=>s+l.c2026,0)}</td>
+        </tr>`);
+    })
+    .catch(() => { document.getElementById('tbody-lojas').innerHTML = '<tr><td colspan="7" class="loading">Erro ao carregar</td></tr>'; });
+}
+
+function atualizarKpisGenerico(data, aba) {
+  document.getElementById('k-tot25').textContent = BRL(data.total2025);
+  document.getElementById('k-tot26').textContent = BRL(data.total2026);
+  document.getElementById('k-sub25').textContent = aba === 'lojas' ? 'todas as lojas' : 'total selecionado';
+  document.getElementById('k-sub26').textContent = aba === 'lojas' ? 'todas as lojas' : 'total selecionado';
+  const varPct = data.var_pct;
+  const kVar = document.getElementById('k-var');
+  if (varPct !== null) { kVar.textContent = PCT(varPct); kVar.className = 'kpi-v ' + (varPct >= 0 ? 'up' : 'dn'); }
+  else { kVar.textContent = '—'; kVar.className = 'kpi-v'; }
+  const dif = data.total2026 - data.total2025;
+  document.getElementById('k-dif').textContent = (dif >= 0 ? '+' : '') + BRL(dif);
+  document.getElementById('k-med26').textContent = BRL(data.total2026);
+  document.getElementById('k-med25').textContent = 'vs 2025: ' + BRL(data.total2025);
+}
+
+const _carregar = { diario: carregar, mensal: carregarMensal, merc: carregarMerc, lojas: carregarLojas };
+
+// Ao trocar loja: recarrega abas que usam loja (diario, mensal, merc)
 document.getElementById('sel-loja').addEventListener('change', () => {
-  mensalCarregado = false;
-  if (abaAtual === 'mensal') carregarMensal();
-  else carregar();
+  _carregado[abaAtual] = false;
+  if (['diario','mensal','merc'].includes(abaAtual)) _carregar[abaAtual]();
+});
+// Ao trocar mês: recarrega abas que usam mês (diario, merc, lojas)
+document.getElementById('sel-mes').addEventListener('change', () => {
+  _carregado[abaAtual] = false;
+  if (['diario','merc','lojas'].includes(abaAtual)) _carregar[abaAtual]();
 });
 
 initSelects();

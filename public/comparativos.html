@@ -537,6 +537,17 @@ function carregarMensal() {
     });
 }
 
+function mercRow(item, dif, varCell, indent) {
+  const pad = indent ? 'padding-left:28px;color:#94a3b8;font-size:11px' : 'font-weight:700';
+  return `<tr style="${indent ? 'background:#ffffff04' : ''}">
+    <td style="${pad}">${indent ? '↳ ' : ''}${item.nome}</td>
+    <td class="r">${item.v2025>0 ? BRL(item.v2025) : '<span style="color:#334155">—</span>'}</td>
+    <td class="r">${item.v2026>0 ? BRL(item.v2026) : '<span style="color:#334155">—</span>'}</td>
+    <td class="r">${varCell}</td>
+    <td class="r ${dif>=0?'var-pos':'var-neg'}">${item.v2025>0||item.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
+  </tr>`;
+}
+
 function carregarMerc() {
   const loja = document.getElementById('sel-loja').value;
   const mes  = document.getElementById('sel-mes').value;
@@ -548,21 +559,41 @@ function carregarMerc() {
       atualizarKpisGenerico(data, 'merc');
       const tbody = document.getElementById('tbody-merc');
       tbody.innerHTML = '';
-      for (const m of data.mercadologico) {
-        const dif = m.v2026 - m.v2025;
+      let gIdx = 0;
+      for (const g of data.grupos) {
+        const gId = 'g' + gIdx++;
+        const dif = g.v2026 - g.v2025;
         let varCell = '<span class="var-zero">—</span>';
-        if (m.var !== null) {
-          const cls = m.var > 0 ? 'var-pos' : m.var < 0 ? 'var-neg' : 'var-zero';
-          varCell = `<span class="${cls}">${PCT(m.var)}</span>`;
+        if (g.var !== null) {
+          const cls = g.var > 0 ? 'var-pos' : g.var < 0 ? 'var-neg' : 'var-zero';
+          varCell = `<span class="${cls}">${PCT(g.var)}</span>`;
         }
+        // Linha do grupo — clicável para expandir subgrupos
         tbody.insertAdjacentHTML('beforeend', `
-          <tr>
-            <td><strong>${m.nome}</strong></td>
-            <td class="r">${m.v2025 > 0 ? BRL(m.v2025) : '<span style="color:#334155">—</span>'}</td>
-            <td class="r">${m.v2026 > 0 ? BRL(m.v2026) : '<span style="color:#334155">—</span>'}</td>
+          <tr style="cursor:pointer;background:#1a2540" onclick="toggleSubs('${gId}')">
+            <td style="font-weight:700"><span id="ic-${gId}" style="color:#F9C200;margin-right:6px;font-size:10px">▶</span>${g.nome}</td>
+            <td class="r" style="font-weight:700">${g.v2025>0?BRL(g.v2025):'<span style="color:#334155">—</span>'}</td>
+            <td class="r" style="font-weight:700">${g.v2026>0?BRL(g.v2026):'<span style="color:#334155">—</span>'}</td>
             <td class="r">${varCell}</td>
-            <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${m.v2025>0||m.v2026>0 ? (dif>=0?'+':'')+BRL(dif) : ''}</td>
+            <td class="r ${dif>=0?'var-pos':'var-neg'}" style="font-weight:700">${g.v2025>0||g.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
           </tr>`);
+        // Subgrupos — ocultos por padrão
+        for (const s of g.subs) {
+          const sd = s.v2026 - s.v2025;
+          let svc = '<span class="var-zero">—</span>';
+          if (s.var !== null) {
+            const sc = s.var>0?'var-pos':s.var<0?'var-neg':'var-zero';
+            svc = `<span class="${sc}">${PCT(s.var)}</span>`;
+          }
+          tbody.insertAdjacentHTML('beforeend',
+            `<tr class="sub-${gId}" style="display:none;background:#0d1829">
+              <td style="padding-left:28px;color:#94a3b8;font-size:12px">↳ ${s.nome}</td>
+              <td class="r" style="font-size:12px">${s.v2025>0?BRL(s.v2025):'<span style="color:#334155">—</span>'}</td>
+              <td class="r" style="font-size:12px">${s.v2026>0?BRL(s.v2026):'<span style="color:#334155">—</span>'}</td>
+              <td class="r">${svc}</td>
+              <td class="r ${sd>=0?'var-pos':'var-neg'}" style="font-size:12px">${s.v2025>0||s.v2026>0?(sd>=0?'+':'')+BRL(sd):''}</td>
+            </tr>`);
+        }
       }
       const difTot = data.total2026 - data.total2025;
       tbody.insertAdjacentHTML('beforeend', `
@@ -575,6 +606,14 @@ function carregarMerc() {
         </tr>`);
     })
     .catch(() => { document.getElementById('tbody-merc').innerHTML = '<tr><td colspan="5" class="loading">Erro ao carregar</td></tr>'; });
+}
+
+function toggleSubs(gId) {
+  const subs = document.querySelectorAll('.sub-' + gId);
+  const ic   = document.getElementById('ic-' + gId);
+  const open = subs[0] && subs[0].style.display !== 'none';
+  subs.forEach(r => r.style.display = open ? 'none' : '');
+  if (ic) ic.textContent = open ? '▶' : '▼';
 }
 
 function carregarLojas() {

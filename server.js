@@ -933,7 +933,7 @@ app.get('/api/comparativo-diario', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Comparativo por mercadológico (subgrupo): 2025 vs 2026 para loja+mês
+// Comparativo por mercadológico (grupo + subgrupo): 2025 vs 2026 para loja+mês
 app.get('/api/comparativo-mercadologico', async (req, res) => {
   try {
     const hoje    = new Date();
@@ -946,9 +946,11 @@ app.get('/api/comparativo-mercadologico', async (req, res) => {
          WHERE YEAR(Data)=2025 AND MONTH(Data)=? AND IndCancel='N' GROUP BY Codigo`, [mesSel]).catch(()=>[]),
       q(`SELECT Codigo, SUM(ValorTotalNovo) as valor FROM \`ln${lojaSel}${mm}\`.zcupomitens
          WHERE YEAR(Data)=2026 AND MONTH(Data)=? AND IndCancel='N' GROUP BY Codigo`, [mesSel]).catch(()=>[]),
-      q(`SELECT i.CodigoBarra, i.CodGrupoSub, gs.Descricao as nome
+      q(`SELECT i.CodigoBarra, i.CodGrupoSub, gs.Descricao as sub_nome,
+                g.CodGrupo, g.Descricao as grupo_nome
          FROM central.itens i
          INNER JOIN central.gruposub gs ON gs.CodSubGrupo=i.CodGrupoSub AND gs.CodDesativado=0
+         INNER JOIN central.grupo g ON g.CodGrupo=gs.CodGrupo
          WHERE i.CodDesativado=0 AND i.CodGrupoSub>0`).catch(()=>[])
     ]);
 
@@ -956,24 +958,35 @@ app.get('/api/comparativo-mercadologico', async (req, res) => {
     for (const r of rows25) v25[r.Codigo] = parseFloat(r.valor);
     for (const r of rows26) v26[r.Codigo] = parseFloat(r.valor);
 
-    const mMap = {};
+    // Agrupa por grupo → subgrupo
+    const gMap = {};
     for (const it of itens) {
       const a = v25[it.CodigoBarra] || 0, b = v26[it.CodigoBarra] || 0;
       if (!a && !b) continue;
-      const key = it.CodGrupoSub;
-      if (!mMap[key]) mMap[key] = { nome: it.nome?.trim() || '—', v2025: 0, v2026: 0 };
-      mMap[key].v2025 += a; mMap[key].v2026 += b;
+      const gk = it.CodGrupo, sk = it.CodGrupoSub;
+      if (!gMap[gk]) gMap[gk] = { nome: it.grupo_nome?.trim()||'—', v2025:0, v2026:0, subs:{} };
+      gMap[gk].v2025 += a; gMap[gk].v2026 += b;
+      if (!gMap[gk].subs[sk]) gMap[gk].subs[sk] = { nome: it.sub_nome?.trim()||'—', v2025:0, v2026:0 };
+      gMap[gk].subs[sk].v2025 += a; gMap[gk].subs[sk].v2026 += b;
     }
 
-    const result = Object.values(mMap)
-      .filter(m => m.v2025 > 0 || m.v2026 > 0)
-      .map(m => ({ nome: m.nome, v2025: +m.v2025.toFixed(2), v2026: +m.v2026.toFixed(2),
-        var: m.v2025 > 0 ? +((m.v2026-m.v2025)/m.v2025*100).toFixed(1) : null }))
-      .sort((a, b) => b.v2026 - a.v2026 || b.v2025 - a.v2025);
+    const grupos = Object.values(gMap)
+      .filter(g => g.v2025>0 || g.v2026>0)
+      .map(g => ({
+        nome: g.nome,
+        v2025: +g.v2025.toFixed(2), v2026: +g.v2026.toFixed(2),
+        var: g.v2025>0 ? +((g.v2026-g.v2025)/g.v2025*100).toFixed(1) : null,
+        subs: Object.values(g.subs)
+          .filter(s => s.v2025>0 || s.v2026>0)
+          .map(s => ({ nome:s.nome, v2025:+s.v2025.toFixed(2), v2026:+s.v2026.toFixed(2),
+            var: s.v2025>0 ? +((s.v2026-s.v2025)/s.v2025*100).toFixed(1) : null }))
+          .sort((a,b) => b.v2026-a.v2026 || b.v2025-a.v2025)
+      }))
+      .sort((a,b) => b.v2026-a.v2026 || b.v2025-a.v2025);
 
-    const tot25 = result.reduce((s,r)=>s+r.v2025, 0);
-    const tot26 = result.reduce((s,r)=>s+r.v2026, 0);
-    res.json({ mercadologico: result, total2025: +tot25.toFixed(2), total2026: +tot26.toFixed(2),
+    const tot25 = grupos.reduce((s,g)=>s+g.v2025, 0);
+    const tot26 = grupos.reduce((s,g)=>s+g.v2026, 0);
+    res.json({ grupos, total2025: +tot25.toFixed(2), total2026: +tot26.toFixed(2),
       var_pct: tot25>0 ? +((tot26-tot25)/tot25*100).toFixed(1) : null });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

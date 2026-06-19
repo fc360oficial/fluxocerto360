@@ -46,6 +46,7 @@ iframe.visivel{opacity:1;pointer-events:auto}
 
 <div class="controles">
   <div class="dot ativo" id="dot-d" title="Diretoria"></div>
+  <div class="dot"       id="dot-ct" title="Comparativo"></div>
   <div class="dot"       id="dot-p" title="Precificação"></div>
   <div class="dot"       id="dot-c" title="Compras"></div>
   <div class="sep"></div>
@@ -64,15 +65,16 @@ const frCT = document.getElementById('fr-comptvs');
 const frP  = document.getElementById('fr-precif');
 const frC  = document.getElementById('fr-compras');
 const frK  = document.getElementById('fr-ciclo');
-const dotD = document.getElementById('dot-d');
-const dotP = document.getElementById('dot-p');
-const dotC = document.getElementById('dot-c');
+const dotD  = document.getElementById('dot-d');
+const dotCT = document.getElementById('dot-ct');
+const dotP  = document.getElementById('dot-p');
+const dotC  = document.getElementById('dot-c');
 const btnFs = document.getElementById('btn-fs');
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
   [frD,frCT,frP,frC,frK].forEach(f => f.classList.remove('visivel'));
-  [dotD,dotP,dotC].forEach(d => d.classList.remove('ativo'));
+  [dotD,dotCT,dotP,dotC].forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');
 }
@@ -83,7 +85,7 @@ function mostrarDiretoria() {
 }
 function mostrarComparativoTV() {
   frCT.src = BASE + '/comparativo-tv.html';
-  mostrar(frCT, dotD, 'comptvs');
+  mostrar(frCT, dotCT, 'comptvs');
 }
 function mostrarPrecif() {
   mostrar(frP, dotP, 'precif');
@@ -122,6 +124,7 @@ document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault()
 
 // Clique nos dots
 dotD.addEventListener('click', mostrarDiretoria);
+dotCT.addEventListener('click', mostrarComparativoTV);
 dotP.addEventListener('click', mostrarPrecif);
 dotC.addEventListener('click', mostrarCompras);
 // Pré-carrega precificação

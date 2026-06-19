@@ -947,10 +947,12 @@ app.get('/api/comparativo-mercadologico', async (req, res) => {
       q(`SELECT Codigo, SUM(ValorTotalNovo) as valor FROM \`ln${lojaSel}${mm}\`.zcupomitens
          WHERE YEAR(Data)=2026 AND MONTH(Data)=? AND IndCancel='N' GROUP BY Codigo`, [mesSel]).catch(()=>[]),
       q(`SELECT i.CodigoBarra, i.CodGrupoSub, gs.Descricao as sub_nome,
-                g.CodGrupo, g.Descricao as grupo_nome
+                g.CodGrupo, g.Descricao as grupo_nome,
+                i.CodGrupoMarca, gm.Descricao as merc_nome
          FROM central.itens i
          INNER JOIN central.gruposub gs ON gs.CodSubGrupo=i.CodGrupoSub AND gs.CodDesativado=0
          INNER JOIN central.grupo g ON g.CodGrupo=gs.CodGrupo
+         LEFT JOIN central.grupomarca gm ON gm.CodMarca=i.CodGrupoMarca
          WHERE i.CodDesativado=0 AND i.CodGrupoSub>0`).catch(()=>[])
     ]);
 
@@ -958,31 +960,41 @@ app.get('/api/comparativo-mercadologico', async (req, res) => {
     for (const r of rows25) v25[r.Codigo] = parseFloat(r.valor);
     for (const r of rows26) v26[r.Codigo] = parseFloat(r.valor);
 
-    // Agrupa por grupo → subgrupo
+    // Agrupa por grupo → subgrupo → mercadológico
     const gMap = {};
     for (const it of itens) {
       const a = v25[it.CodigoBarra] || 0, b = v26[it.CodigoBarra] || 0;
       if (!a && !b) continue;
-      const gk = it.CodGrupo, sk = it.CodGrupoSub;
+      const gk = it.CodGrupo, sk = it.CodGrupoSub, mk = it.CodGrupoMarca || 0;
       if (!gMap[gk]) gMap[gk] = { nome: it.grupo_nome?.trim()||'—', v2025:0, v2026:0, subs:{} };
       gMap[gk].v2025 += a; gMap[gk].v2026 += b;
-      if (!gMap[gk].subs[sk]) gMap[gk].subs[sk] = { nome: it.sub_nome?.trim()||'—', v2025:0, v2026:0 };
+      if (!gMap[gk].subs[sk]) gMap[gk].subs[sk] = { nome: it.sub_nome?.trim()||'—', v2025:0, v2026:0, mercs:{} };
       gMap[gk].subs[sk].v2025 += a; gMap[gk].subs[sk].v2026 += b;
+      if (!gMap[gk].subs[sk].mercs[mk]) gMap[gk].subs[sk].mercs[mk] = { nome: it.merc_nome?.trim()||'Sem mercadológico', v2025:0, v2026:0 };
+      gMap[gk].subs[sk].mercs[mk].v2025 += a; gMap[gk].subs[sk].mercs[mk].v2026 += b;
     }
+
+    const sort26 = (a,b) => b.v2026-a.v2026 || b.v2025-a.v2025;
+    const mkVar  = m => m.v2025>0 ? +((m.v2026-m.v2025)/m.v2025*100).toFixed(1) : null;
 
     const grupos = Object.values(gMap)
       .filter(g => g.v2025>0 || g.v2026>0)
       .map(g => ({
         nome: g.nome,
-        v2025: +g.v2025.toFixed(2), v2026: +g.v2026.toFixed(2),
-        var: g.v2025>0 ? +((g.v2026-g.v2025)/g.v2025*100).toFixed(1) : null,
+        v2025: +g.v2025.toFixed(2), v2026: +g.v2026.toFixed(2), var: mkVar(g),
         subs: Object.values(g.subs)
           .filter(s => s.v2025>0 || s.v2026>0)
-          .map(s => ({ nome:s.nome, v2025:+s.v2025.toFixed(2), v2026:+s.v2026.toFixed(2),
-            var: s.v2025>0 ? +((s.v2026-s.v2025)/s.v2025*100).toFixed(1) : null }))
-          .sort((a,b) => b.v2026-a.v2026 || b.v2025-a.v2025)
+          .map(s => ({
+            nome: s.nome,
+            v2025: +s.v2025.toFixed(2), v2026: +s.v2026.toFixed(2), var: mkVar(s),
+            mercs: Object.values(s.mercs)
+              .filter(m => m.v2025>0 || m.v2026>0)
+              .map(m => ({ nome:m.nome, v2025:+m.v2025.toFixed(2), v2026:+m.v2026.toFixed(2), var:mkVar(m) }))
+              .sort(sort26)
+          }))
+          .sort(sort26)
       }))
-      .sort((a,b) => b.v2026-a.v2026 || b.v2025-a.v2025);
+      .sort(sort26);
 
     const tot25 = grupos.reduce((s,g)=>s+g.v2025, 0);
     const tot26 = grupos.reduce((s,g)=>s+g.v2026, 0);

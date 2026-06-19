@@ -596,7 +596,9 @@ function carregarMerc() {
             <td class="r ${dif>=0?'var-pos':'var-neg'}" style="font-weight:700">${g.v2025>0||g.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
           </tr>`);
         // Subgrupos — ocultos por padrão
+        let sIdx = 0;
         for (const s of g.subs) {
+          const sId = gId + 's' + sIdx++;
           const sd = s.v2026 - s.v2025;
           let svc = '<span class="var-zero">—</span>';
           if (s.var !== null) {
@@ -604,13 +606,30 @@ function carregarMerc() {
             svc = `<span class="${sc}">${PCT(s.var)}</span>`;
           }
           tbody.insertAdjacentHTML('beforeend',
-            `<tr class="sub-${gId}" style="display:none;background:#0d1829">
-              <td style="padding-left:28px;color:#94a3b8;font-size:12px">↳ ${s.nome}</td>
-              <td class="r" style="font-size:12px">${s.v2025>0?BRL(s.v2025):'<span style="color:#334155">—</span>'}</td>
-              <td class="r" style="font-size:12px">${s.v2026>0?BRL(s.v2026):'<span style="color:#334155">—</span>'}</td>
+            `<tr class="sub-${gId}" style="display:none;background:#0d1829;cursor:pointer" onclick="toggleSubs('${sId}')">
+              <td style="padding-left:24px;font-size:12px;font-weight:600"><span id="ic-${sId}" style="color:#60a5fa;margin-right:5px;font-size:9px">▶</span>↳ ${s.nome}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2025>0?BRL(s.v2025):'<span style="color:#334155">—</span>'}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2026>0?BRL(s.v2026):'<span style="color:#334155">—</span>'}</td>
               <td class="r">${svc}</td>
-              <td class="r ${sd>=0?'var-pos':'var-neg'}" style="font-size:12px">${s.v2025>0||s.v2026>0?(sd>=0?'+':'')+BRL(sd):''}</td>
+              <td class="r ${sd>=0?'var-pos':'var-neg'}" style="font-size:12px;font-weight:600">${s.v2025>0||s.v2026>0?(sd>=0?'+':'')+BRL(sd):''}</td>
             </tr>`);
+          // Mercadológico (3º nível) — oculto por padrão
+          for (const m of s.mercs) {
+            const md = m.v2026 - m.v2025;
+            let mvc = '<span class="var-zero">—</span>';
+            if (m.var !== null) {
+              const mc = m.var>0?'var-pos':m.var<0?'var-neg':'var-zero';
+              mvc = `<span class="${mc}">${PCT(m.var)}</span>`;
+            }
+            tbody.insertAdjacentHTML('beforeend',
+              `<tr class="sub-${gId} sub-${sId}" style="display:none;background:#080f1e">
+                <td style="padding-left:48px;color:#64748b;font-size:11px">· ${m.nome}</td>
+                <td class="r" style="font-size:11px;color:#94a3b8">${m.v2025>0?BRL(m.v2025):'<span style="color:#1e293b">—</span>'}</td>
+                <td class="r" style="font-size:11px;color:#94a3b8">${m.v2026>0?BRL(m.v2026):'<span style="color:#1e293b">—</span>'}</td>
+                <td class="r">${mvc}</td>
+                <td class="r ${md>=0?'var-pos':'var-neg'}" style="font-size:11px">${m.v2025>0||m.v2026>0?(md>=0?'+':'')+BRL(md):''}</td>
+              </tr>`);
+          }
         }
       }
       const difTot = data.total2026 - data.total2025;
@@ -631,6 +650,16 @@ function toggleSubs(gId) {
   const ic   = document.getElementById('ic-' + gId);
   const open = subs[0] && subs[0].style.display !== 'none';
   subs.forEach(r => r.style.display = open ? 'none' : '');
+  // Ao fechar, reseta ícones dos subgrupos filhos e oculta seus mercs
+  if (open) {
+    subs.forEach(r => {
+      const cls = Array.from(r.classList).find(c => c.startsWith('sub-') && c !== 'sub-' + gId);
+      if (cls) {
+        const childIc = document.getElementById('ic-' + cls.replace('sub-',''));
+        if (childIc) childIc.textContent = '▶';
+      }
+    });
+  }
   if (ic) ic.textContent = open ? '▶' : '▼';
 }
 

@@ -304,20 +304,22 @@ function renderizar(data) {
   setupTicker('ti-dias', 'tw-dias', diasRows, totalDias, 1.2);
 
   // --- Mensal ---
-  const mensalRows = (data.mensal||[]).map(m =>
+  const tiMensal = document.getElementById('ti-mensal');
+  tiMensal.style.animation = 'none';
+  tiMensal.innerHTML = (data.mensal||[]).map(m =>
     renderRow(m.nome.slice(0,3).toUpperCase(), m.v2025, m.v2026, m.var)
-  );
-  setupTicker('ti-mensal', 'tw-mensal', mensalRows, null, 1.5);
+  ).join('');
 
   // --- Mercadológico ---
   let m25=0, m26=0;
-  const mercRows = data.grupos.map(g => {
+  const tiMerc = document.getElementById('ti-merc');
+  tiMerc.style.animation = 'none';
+  tiMerc.innerHTML = data.grupos.map(g => {
     m25+=g.v2025; m26+=g.v2026;
     return renderRow(g.nome, g.v2025, g.v2026, g.var);
-  });
+  }).join('');
   const varM = m25>0?+((m26-m25)/m25*100).toFixed(1):null;
-  const totalMerc = `<div class="tr-row total"><span>Total</span><span class="r val25">${BRL(m25)}</span><span class="r val26">${BRL(m26)}</span><span class="r ${varM>=0?'v-up':'v-dn'}">${varM!==null?PCT(varM):'—'}</span></div>`;
-  setupTicker('ti-merc', 'tw-merc', mercRows, totalMerc, 1.5);
+  tiMerc.innerHTML += `<div class="tr-row total"><span>Total</span><span class="r val25">${BRL(m25)}</span><span class="r val26">${BRL(m26)}</span><span class="r ${varM>=0?'v-up':'v-dn'}">${varM!==null?PCT(varM):'—'}</span></div>`;
 
   // Iniciar progress bar e timer de avanço
   iniciarProgresso();

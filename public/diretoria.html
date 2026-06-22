@@ -456,8 +456,8 @@ setInterval(() => {
   function tgl(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});}
   document.addEventListener('fullscreenchange',function(){b.textContent=document.fullscreenElement?'✕':'⛶';});
   b.addEventListener('click',tgl);
-  document.addEventListener('keydown',function(e){if(e.key==='F11'){e.preventDefault();tgl();}});
 })();
 </script>
+<script src="/tv-fit.js"></script>
 </body>
 </html>

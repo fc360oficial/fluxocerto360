@@ -446,57 +446,78 @@ main{
 function fatimaHoje() {
   const DIAS = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
   const sig  = DIAS[new Date().getDay()];
+  const semana = Math.ceil(new Date().getDate() / 7);
+  const impar  = semana % 2 === 1;
+
+  const seg = {categorias:[
+    {nome:'Arroz',fornecedores:[
+      {nome:'CAMIL ALIMENTOS S/A',status:'r',cod:344},
+      {nome:'JOSAPAR JOAQUIM OLIVEIRA SA PART (TIO JOAO)',status:'r',cod:342},
+      {nome:'NELSON WENDT CIA LTDA (EMOÇÕES)',status:'r',cod:380},
+      {nome:'URBANO AGROINDUSTRIA LTDA',status:'r',cod:355},
+      {nome:'PANELACO ALIMENTOS LTDA',status:'r',cod:534},
+      {nome:'RAMPINELLI ALIMENTOS LTDA',status:'r',cod:537}]},
+    {nome:'Feijão',fornecedores:[
+      {nome:'COMERCIAL DE ALIMENTOS (PAI HELENO)',status:'r',cod:310},
+      {nome:'FEIJÃO TA GOSTOSO',status:'r',cod:312},
+      {nome:'FLAVIO Q D MORAIS (PERNAMBUCANO)',status:'r',cod:311},
+      {nome:'OASIS ALIMENTOS (TURQUESA)',status:'r',cod:309},
+      {nome:'PRODUTOS PEROLA (GRÃO DE MINAS)',status:'r',cod:461},
+      {nome:'SOMAR COMERCIO (KICALDO)',status:'r',cod:313}]},
+    {nome:'Farinha',fornecedores:[
+      {nome:'FEIRA NOVA INDUSTRIA',status:'r',cod:314},
+      {nome:'MONJOLO INDUSTRIA (DO SITIO)',status:'r',cod:303},
+      {nome:'OMAR LINDEMBERG (KELLY E CORDEIRO)',status:'r',cod:482},
+      {nome:'RONIEL J SILVA FARINHA',status:'r',cod:538}]}],
+   atividades:[]};
+
+  const ter = {categorias:[
+    {nome:'Café',fornecedores:[
+      {nome:'MOINHO PETINHO IND E COMERCIO LTDA',status:'r',cod:347},
+      {nome:'SAO BRAZ S/A IND COM DE ALIMENTOS',status:'r',cod:415},
+      {nome:'TRES CORACOES ALIMENTOS SA',status:'r',cod:332}]},
+    {nome:'Temperos & Mercearia',fornecedores:[
+      {nome:'ASA INDUSTRIA E COMERCIO',status:'r',cod:341},
+      {nome:'YOKI C/ CUSTO',status:'r',cod:417}]}],
+   atividades:[]};
+
+  const qua_impar = {categorias:[
+    {nome:'Flocão',fornecedores:[
+      {nome:'INDUSTRIA REUNIDAS CORINGA LTDA',status:'r',cod:419},
+      {nome:'SABORMIL IND E COMERCIO LTDA',status:'r',cod:457},
+      {nome:'VALERIANO VALENTE DE OLIVEIRA',status:'r',cod:394}]},
+    {nome:'Leite & Mercearia',fornecedores:[
+      {nome:'ALVOAR LACTEOS NORDESTE SA',status:'r',cod:555},
+      {nome:'LACTALIS DO BRASIL',status:'r',cod:543}]}],
+   atividades:[]};
+
+  const qua_par = {categorias:[
+    {nome:'Flocão',fornecedores:[
+      {nome:'INDUSTRIA REUNIDAS CORINGA LTDA',status:'r',cod:419},
+      {nome:'SABORMIL IND E COMERCIO LTDA',status:'r',cod:457}]},
+    {nome:'Leite & Mercearia',fornecedores:[
+      {nome:'ALVOAR LACTEOS NORDESTE SA',status:'r',cod:555},
+      {nome:'LACTALIS DO BRASIL',status:'r',cod:543}]}],
+   atividades:[]};
+
+  const qui = {categorias:[
+    {nome:'Açúcar',fornecedores:[
+      {nome:'USINA PETRIBU',status:'r',cod:573},
+      {nome:'USINA IPOJUCA',status:'r',cod:574},
+      {nome:'AVILE/PUREZA',status:'r',cod:572}]}],
+   atividades:[]};
+
+  const sex = {categorias:[
+    {nome:'Cotação',fornecedores:[
+      {nome:'COTAÇÃO DE ALIMENTOS',status:'r',cod:277}]}],
+   atividades:[]};
+
   const sched = {
-    SEG:{categorias:[
-      {nome:'Açúcar',fornecedores:[
-        {nome:'AVILE COMERCIO & DISTRIBUIDORA LTDA',status:'r',cod:null},
-        {nome:'USINA IPOJUCA S/A',status:'r',cod:null},
-        {nome:'USINA PETRIBU SA',status:'r',cod:null}]},
-      {nome:'Arroz',fornecedores:[
-        {nome:'CAMIL ALIMENTOS S/A',status:'r',cod:344},
-        {nome:'JOSAPAR JOAQUIM OLIVEIRA SA PART',status:'r',cod:342},
-        {nome:'NELSON WENDT CIA LTDA',status:'r',cod:380},
-        {nome:'URBANO AGROINDUSTRIA LTDA',status:'r',cod:355},
-        {nome:'PANELACO ALIMENTOS LTDA',status:'r',cod:534},
-        {nome:'JOAO MARCELO VITORINO',status:'r',cod:304},
-        {nome:'RAMPINELLI ALIMENTOS LTDA',status:'r',cod:537}]},
-      {nome:'Café',fornecedores:[
-        {nome:'SAO BRAZ S/A IND COM DE ALIMENTOS',status:'r',cod:415},
-        {nome:'MOINHO PETINHO INDUSTRIA E COMERCIO LTDA',status:'r',cod:347},
-        {nome:'TRES CORACOES ALIMENTOS SA',status:'r',cod:332}]},
-      {nome:'Farinha',fornecedores:[
-        {nome:'FEIRA NOVA INDUSTRIA',status:'r',cod:314},
-        {nome:'MONJOLO INDUSTRIA',status:'r',cod:303},
-        {nome:'OMAR LINDEMBERG',status:'r',cod:482}]},
-      {nome:'Feijão',fornecedores:[
-        {nome:'COMERCIAL DE ALIMENTOS',status:'r',cod:310},
-        {nome:'FEIJÃO TA GOSTOSO',status:'r',cod:312},
-        {nome:'FLAVIO Q D MORAIS',status:'r',cod:311},
-        {nome:'OASIS ALIMENTOS ⚠ fecha 14h',status:'r',cod:309},
-        {nome:'PRODUTOS PEROLA',status:'r',cod:461},
-        {nome:'SOMAR COMERCIO',status:'r',cod:313}]},
-      {nome:'Floção',fornecedores:[
-        {nome:'VALERIANO VALENTE DE OLIVEIRA',status:'r',cod:394}]}],
-     atividades:[{nome:'Fechamento da Cotação de Alimentos (Club)',status:'r'}]},
-    TER:{categorias:[
-      {nome:'Farinha',fornecedores:[{nome:'RONIEL J SILVA FARINHA',status:'r',cod:538}]}],
-     atividades:[
-      {nome:'Planilha de Preços de Cereais',status:'r'},
-      {nome:'Fechamento de Pedidos de Cereais',status:'r'},
-      {nome:'Alinhamento Encarte Final de Semana',status:'r'}]},
-    QUA:{categorias:[
-      {nome:'Laticínios & Derivados',fornecedores:[
-        {nome:'ASA INDUSTRIA E COMERCIO LTDA',status:'r',cod:341},
-        {nome:'INDUSTRIA REUNIDAS CORINGA LTDA',status:'r',cod:419},
-        {nome:'LEITESOL INDUSTRIA E COMERCIO S/A',status:'r',cod:384},
-        {nome:'LACTALIS DO BRASIL',status:'r',cod:543},
-        {nome:'ALVOAR LACTEOS NORDESTE SA',status:'r',cod:555},
-        {nome:'RACA DISTRIBUICAO E LOGISTICA DE PERNAMBUCO L',status:'r',cod:350}]}],
-     atividades:[]},
-    QUI:{categorias:[],atividades:[{nome:'Ofertas Semanais',status:'r'},{nome:'Sem Giros das Lojas',status:'r'}]},
-    SEX:{categorias:[{nome:'Cotação de Alimentos',fornecedores:[
-        {nome:'COTAÇÃO DE ALIMENTOS',status:'r',cod:277}]}],
-     atividades:[{nome:'Pendências / Reuniões / Visitar Lojas',status:'r'}]},
+    SEG: seg,
+    TER: ter,
+    QUA: impar ? qua_impar : qua_par,
+    QUI: qui,
+    SEX: sex,
   };
   return sched[sig] || {categorias:[],atividades:[]};
 }

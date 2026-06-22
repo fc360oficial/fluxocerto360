@@ -196,6 +196,8 @@ table{border-collapse:collapse;width:100%}
     <div id="conteudo"><div class="loading">Carregando…</div></div>
   </div>
 </main>
+<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .2s}.btn-fs:hover{color:#FACC15;border-color:#FACC15}:fullscreen .btn-fs,:-webkit-full-screen .btn-fs{opacity:0}:fullscreen .btn-fs:hover,:-webkit-full-screen .btn-fs:hover{opacity:1}</style>
+<button class="btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia (use F11 para manter entre telas)">⛶</button>
 
 <script>
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',

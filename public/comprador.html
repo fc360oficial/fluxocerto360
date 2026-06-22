@@ -258,6 +258,14 @@ main {
 .compact .forn-nome { font-size: 13px; }
 .compact .cat { margin-bottom: 8px; }
 .compact .cat-title { margin-bottom: 3px; }
+/* Modo ultra-compacto — 12+ itens */
+.ultra-compact .forn-row { padding: 3px 8px; margin-bottom: 1px; gap: 6px; }
+.ultra-compact .forn-nome { font-size: 12px; }
+.ultra-compact .forn-status { font-size: 8px; padding: 2px 7px; }
+.ultra-compact .forn-cod, .ultra-compact .forn-fornec { font-size: 9px; padding: 1px 4px; }
+.ultra-compact .forn-icon { font-size: 12px; }
+.ultra-compact .cat { margin-bottom: 4px; }
+.ultra-compact .cat-title { margin-bottom: 2px; font-size: 8px; }
 
 /* ══ ATIVIDADES ══ */
 .ativ-section { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
@@ -1153,13 +1161,23 @@ function fitPainelTV() {
   const outer = document.getElementById('panel-hoje-outer');
   if (!inner || !outer) return;
   inner.style.zoom = '';
-  inner.classList.remove('compact');
+  inner.classList.remove('compact', 'ultra-compact');
   const avail = outer.clientHeight - 10;
-  const content = inner.scrollHeight;
-  if (content > avail && avail > 50) {
-    const ratio = avail / content;
-    if (ratio < 0.75) inner.classList.add('compact');
-    inner.style.zoom = Math.max(0.55, ratio).toFixed(3);
+  if (avail <= 50) return;
+  let content = inner.scrollHeight;
+  if (content <= avail) return;
+  let ratio = avail / content;
+  if (ratio < 0.6) {
+    inner.classList.add('ultra-compact');
+    content = inner.scrollHeight;
+    ratio = avail / content;
+  } else if (ratio < 0.8) {
+    inner.classList.add('compact');
+    content = inner.scrollHeight;
+    ratio = avail / content;
+  }
+  if (content > avail) {
+    inner.style.zoom = Math.max(0.45, ratio).toFixed(3);
   }
 }
 

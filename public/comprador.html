@@ -467,98 +467,138 @@ function grupoSemana(date) {
 function labelGrupo(g) { return g === '1e3' ? '1ª e 3ª Semana' : '2ª e 4ª Semana'; }
 
 // Dados reais do CSV com CodFornec corretos do ERP
-function fatimaCronSeg() {
+function fatimaSeg1e3() {
   return {
     categorias: [
-      { nome: 'Açúcar', itens: [
-        { nome: 'AVILE COMERCIO & DISTRIBUIDORA LTDA', status: 'r', pedido: null, cod: null },
-        { nome: 'USINA IPOJUCA S/A',                  status: 'r', pedido: null, cod: null },
-        { nome: 'USINA PETRIBU SA',                   status: 'r', pedido: null, cod: null },
-      ]},
-      { nome: 'Arroz', itens: [
+      { nome: 'Arroz e Mix', itens: [
         { nome: 'CAMIL ALIMENTOS S/A',             status: 'r', pedido: null, cod: 344 },
-        { nome: 'JOSAPAR JOAQUIM OLIVEIRA SA PART',status: 'r', pedido: null, cod: 342 },
-        { nome: 'NELSON WENDT CIA LTDA',           status: 'r', pedido: null, cod: 380 },
-        { nome: 'URBANO AGROINDUSTRIA LTDA',       status: 'r', pedido: null, cod: 355 },
-        { nome: 'PANELACO ALIMENTOS LTDA',         status: 'r', pedido: null, cod: 534 },
-        { nome: 'JOAO MARCELO VITORINO',           status: 'r', pedido: null, cod: 304 },
-        { nome: 'RAMPINELLI ALIMENTOS LTDA',       status: 'r', pedido: null, cod: 537 },
-      ]},
-      { nome: 'Café', itens: [
-        { nome: 'SAO BRAZ S/A IND COM DE ALIMENTOS',        status: 'r', pedido: null, cod: 415 },
-        { nome: 'MOINHO PETINHO INDUSTRIA E COMERCIO LTDA', status: 'r', pedido: null, cod: 347 },
-        { nome: 'TRES CORACOES ALIMENTOS SA',               status: 'r', pedido: null, cod: 332 },
-      ]},
-      { nome: 'Farinha', itens: [
-        { nome: 'FEIRA NOVA INDUSTRIA', status: 'r', pedido: null, cod: 314 },
-        { nome: 'MONJOLO INDUSTRIA',    status: 'r', pedido: null, cod: 303 },
-        { nome: 'OMAR LINDEMBERG',      status: 'r', pedido: null, cod: 482 },
       ]},
       { nome: 'Feijão', itens: [
-        { nome: 'COMERCIAL DE ALIMENTOS',        status: 'r', pedido: null, cod: 310 },
-        { nome: 'FEIJÃO TA GOSTOSO',             status: 'r', pedido: null, cod: 312 },
-        { nome: 'FLAVIO Q D MORAIS',             status: 'r', pedido: null, cod: 311 },
-        { nome: 'OASIS ALIMENTOS ⚠ fecha 14h',   status: 'r', pedido: null, cod: 309 },
-        { nome: 'PRODUTOS PEROLA',               status: 'r', pedido: null, cod: 461 },
-        { nome: 'SOMAR COMERCIO',                status: 'r', pedido: null, cod: 313 },
+        { nome: 'COMERCIAL DE ALIMENTOS (PAI HELENO)',   status: 'r', pedido: null, cod: 310 },
+        { nome: 'FEIJÃO TA GOSTOSO',                    status: 'r', pedido: null, cod: 312 },
+        { nome: 'FLAVIO Q D MORAIS (PERNAMBUCANO)',      status: 'r', pedido: null, cod: 311 },
+        { nome: 'OASIS ALIMENTOS ⚠ fecha 14h',          status: 'r', pedido: null, cod: 309 },
+        { nome: 'PRODUTOS PEROLA (GRÃO DE MINAS)',       status: 'r', pedido: null, cod: 461 },
+        { nome: 'SOMAR COMERCIO (KICALDO)',              status: 'r', pedido: null, cod: 313 },
       ]},
-      { nome: 'Floção', itens: [
-        { nome: 'VALERIANO VALENTE DE OLIVEIRA', status: 'r', pedido: null, cod: 394 },
-      ]},
-    ],
-    atividades: [
-      { nome: 'Fechamento da Cotação de Alimentos (Club)', status: 'r' },
-    ],
-  };
-}
-function fatimaCronTer() {
-  return {
-    categorias: [
       { nome: 'Farinha', itens: [
-        { nome: 'RONIEL J SILVA FARINHA', status: 'r', pedido: null, cod: 538 },
+        { nome: 'FEIRA NOVA INDUSTRIA',    status: 'r', pedido: null, cod: 314 },
+        { nome: 'MONJOLO INDUSTRIA',       status: 'r', pedido: null, cod: 303 },
+        { nome: 'OMAR LINDEMBERG',         status: 'r', pedido: null, cod: 482 },
+        { nome: 'RONIEL J SILVA FARINHA',  status: 'r', pedido: null, cod: 538 },
       ]},
-    ],
-    atividades: [
-      { nome: 'Planilha de Preços de Cereais', status: 'r' },
-      { nome: 'Fechamento de Pedidos de Cereais', status: 'r' },
-      { nome: 'Alinhamento Encarte Final de Semana', status: 'r' },
-    ],
-  };
-}
-function fatimaCronQua() {
-  return {
-    categorias: [
-      { nome: 'Laticínios & Derivados', itens: [
-        { nome: 'ASA INDUSTRIA E COMERCIO LTDA',               status: 'r', pedido: null, cod: 341 },
-        { nome: 'INDUSTRIA REUNIDAS CORINGA LTDA',             status: 'r', pedido: null, cod: 419 },
-        { nome: 'LEITESOL INDUSTRIA E COMERCIO S/A',           status: 'r', pedido: null, cod: 384 },
-        { nome: 'LACTALIS DO BRASIL',                          status: 'r', pedido: null, cod: 543 },
-        { nome: 'ALVOAR LACTEOS NORDESTE SA',                  status: 'r', pedido: null, cod: 555 },
-        { nome: 'RACA DISTRIBUICAO E LOGISTICA DE PERNAMBUCO L', status: 'r', pedido: null, cod: 350 },
+      { nome: 'Arroz', itens: [
+        { nome: 'JOSAPAR JOAQUIM OLIVEIRA SA PART', status: 'r', pedido: null, cod: 342 },
+        { nome: 'NELSON WENDT CIA LTDA',            status: 'r', pedido: null, cod: 380 },
+        { nome: 'URBANO AGROINDUSTRIA LTDA',        status: 'r', pedido: null, cod: 355 },
+        { nome: 'PANELACO ALIMENTOS LTDA',          status: 'r', pedido: null, cod: 534 },
+        { nome: 'RAMPINELLI ALIMENTOS LTDA',        status: 'r', pedido: null, cod: 537 },
       ]},
     ],
     atividades: [],
   };
 }
-function fatimaCronQui() {
-  return {
-    categorias: [],
-    atividades: [
-      { nome: 'Ofertas Semanais', status: 'r' },
-      { nome: 'Sem Giros das Lojas', status: 'r' },
-    ],
-  };
-}
-function fatimaCronSex() {
+function fatimaSeg2e4() {
   return {
     categorias: [
-      { nome: 'Cotação', itens: [
-        { nome: 'Cotação de Alimentos', status: 'r', pedido: null, cod: '277' },
+      { nome: 'Arroz e Mix', itens: [
+        { nome: 'CAMIL ALIMENTOS S/A',             status: 'r', pedido: null, cod: 344 },
+      ]},
+      { nome: 'Feijão', itens: [
+        { nome: 'COMERCIAL DE ALIMENTOS (PAI HELENO)',   status: 'r', pedido: null, cod: 310 },
+        { nome: 'FEIJÃO TA GOSTOSO',                    status: 'r', pedido: null, cod: 312 },
+        { nome: 'FLAVIO Q D MORAIS (PERNAMBUCANO)',      status: 'r', pedido: null, cod: 311 },
+        { nome: 'OASIS ALIMENTOS ⚠ fecha 14h',          status: 'r', pedido: null, cod: 309 },
+        { nome: 'PRODUTOS PEROLA (GRÃO DE MINAS)',       status: 'r', pedido: null, cod: 461 },
+        { nome: 'SOMAR COMERCIO (KICALDO)',              status: 'r', pedido: null, cod: 313 },
+      ]},
+      { nome: 'Farinha', itens: [
+        { nome: 'FEIRA NOVA INDUSTRIA',  status: 'r', pedido: null, cod: 314 },
+        { nome: 'MONJOLO INDUSTRIA',     status: 'r', pedido: null, cod: 303 },
+        { nome: 'OMAR LINDEMBERG',       status: 'r', pedido: null, cod: 482 },
+      ]},
+      { nome: 'Arroz', itens: [
+        { nome: 'JOSAPAR JOAQUIM OLIVEIRA SA PART', status: 'r', pedido: null, cod: 342 },
+        { nome: 'NELSON WENDT CIA LTDA',            status: 'r', pedido: null, cod: 380 },
+        { nome: 'URBANO AGROINDUSTRIA LTDA',        status: 'r', pedido: null, cod: 355 },
+        { nome: 'PANELACO ALIMENTOS LTDA',          status: 'r', pedido: null, cod: 534 },
+        { nome: 'RAMPINELLI ALIMENTOS LTDA',        status: 'r', pedido: null, cod: 537 },
       ]},
     ],
     atividades: [
-      { nome: 'Pendências / Reuniões / Visitar Lojas', status: 'r' },
+      { nome: 'Planilha de Preços de Cereais — enviar para Lene e Rodrigo', status: 'r' },
     ],
+  };
+}
+function fatimaTer() {
+  return {
+    categorias: [
+      { nome: 'Café', itens: [
+        { nome: 'MOINHO PETINHO INDUSTRIA E COMERCIO LTDA', status: 'r', pedido: null, cod: 347 },
+        { nome: 'SAO BRAZ S/A IND COM DE ALIMENTOS',        status: 'r', pedido: null, cod: 415 },
+        { nome: 'TRES CORACOES ALIMENTOS SA',               status: 'r', pedido: null, cod: 332 },
+      ]},
+      { nome: 'Temperos & Condimentos', itens: [
+        { nome: 'ASA INDUSTRIA E COMERCIO',  status: 'r', pedido: null, cod: 341 },
+      ]},
+      { nome: 'Mercearia', itens: [
+        { nome: 'YOKI C/ CUSTO',  status: 'r', pedido: null, cod: 417 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaQua1e3() {
+  return {
+    categorias: [
+      { nome: 'Flocão', itens: [
+        { nome: 'INDUSTRIA REUNIDAS CORINGA LTDA (3,4 e 6) c/ custo', status: 'r', pedido: null, cod: 419 },
+        { nome: 'SABORMIL IND E COMERCIO LTDA (3,4 e 6) c/ custo',   status: 'r', pedido: null, cod: 457 },
+        { nome: 'VALERIANO VALENTE DE OLIVEIRA',                      status: 'r', pedido: null, cod: 394 },
+      ]},
+      { nome: 'Leite & Mercearia', itens: [
+        { nome: 'ALVOAR LACTEOS NORDESTE SA',  status: 'r', pedido: null, cod: 555 },
+        { nome: 'LACTALIS DO BRASIL',           status: 'r', pedido: null, cod: 543 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaQua2e4() {
+  return {
+    categorias: [
+      { nome: 'Flocão', itens: [
+        { nome: 'INDUSTRIA REUNIDAS CORINGA LTDA (3,4 e 6) c/ custo', status: 'r', pedido: null, cod: 419 },
+        { nome: 'SABORMIL IND E COMERCIO LTDA (3,4 e 6) c/ custo',   status: 'r', pedido: null, cod: 457 },
+      ]},
+      { nome: 'Leite & Mercearia', itens: [
+        { nome: 'ALVOAR LACTEOS NORDESTE SA',  status: 'r', pedido: null, cod: 555 },
+        { nome: 'LACTALIS DO BRASIL',           status: 'r', pedido: null, cod: 543 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaQui() {
+  return {
+    categorias: [
+      { nome: 'Açúcar', itens: [
+        { nome: 'USINA PETRIBU',  status: 'r', pedido: null, cod: 573 },
+        { nome: 'USINA IPOJUCA',  status: 'r', pedido: null, cod: 574 },
+        { nome: 'AVILE/PUREZA',   status: 'r', pedido: null, cod: 572 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaSex() {
+  return {
+    categorias: [
+      { nome: 'Cotação', itens: [
+        { nome: 'Cotação de Alimentos', status: 'r', pedido: null, cod: 277 },
+      ]},
+    ],
+    atividades: [],
   };
 }
 
@@ -568,18 +608,18 @@ const DADOS = {
     cargo: 'Compradora de Alimentos',
     cronograma: {
       '1e3': {
-        SEG: fatimaCronSeg(),
-        TER: fatimaCronTer(),
-        QUA: fatimaCronQua(),
-        QUI: fatimaCronQui(),
-        SEX: fatimaCronSex(),
+        SEG: fatimaSeg1e3(),
+        TER: fatimaTer(),
+        QUA: fatimaQua1e3(),
+        QUI: fatimaQui(),
+        SEX: fatimaSex(),
       },
       '2e4': {
-        SEG: fatimaCronSeg(),
-        TER: fatimaCronTer(),
-        QUA: fatimaCronQua(),
-        QUI: fatimaCronQui(),
-        SEX: fatimaCronSex(),
+        SEG: fatimaSeg2e4(),
+        TER: fatimaTer(),
+        QUA: fatimaQua2e4(),
+        QUI: fatimaQui(),
+        SEX: fatimaSex(),
       },
     },
   },

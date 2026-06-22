@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '180';
+  var BUILD = '181';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
@@ -617,14 +617,16 @@ function loadResultadosFromFirebase(callback) {
     var list = snap.docs.map(function(d){return d.data();});
     list.sort(function(a,b){return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1;});
     S.resultadosCache = list;
-    // Salva sem assinatura no localStorage para não estourar cota (base64 grande)
+    console.log('[FC360 DEBUG] Firestore resultados: ' + snap.docs.length + ' docs');
     try {
       var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
       localStorage.setItem(RESKEY, JSON.stringify(semAssina));
     } catch(e){}
     if (callback) callback();
-  }).catch(function(){
+  }).catch(function(err){
+    console.error('[FC360 DEBUG] Firestore ERRO:', err);
     try { S.resultadosCache = JSON.parse(localStorage.getItem(RESKEY)||'[]'); } catch(e){ S.resultadosCache=[]; }
+    console.log('[FC360 DEBUG] Fallback localStorage: ' + S.resultadosCache.length + ' resultados');
     if (callback) callback();
   });
 }
@@ -1156,13 +1158,9 @@ function nav(page, el) {
   document.getElementById('pageTitle').textContent = PAGE_TITLES[page]||page;
   if (page==='relatorios') {
     initRelCharts();
-    if (S.resultadosCache && S.resultadosCache.length) {
+    loadResultadosFromFirebase(function(){
       renderRelatorios();
-    } else {
-      loadResultadosFromFirebase(function(){
-        renderRelatorios();
-      });
-    }
+    });
   }
   if (page==='usuarios') {
     loadUsersFromFirebase(function(){ renderUsers(); });
@@ -4633,6 +4631,11 @@ function getResultadosFiltradosDia() {
 
 function renderRelChecklist() {
   var resultados = getResultados();
+  var _allCache = S.resultadosCache || [];
+  var _lsCount = 0; try { _lsCount = JSON.parse(localStorage.getItem('eco_resultados')||'[]').length; } catch(e){}
+  console.log('[FC360 DEBUG] renderRelChecklist: cache=' + _allCache.length + ', filtered=' + resultados.length + ', localStorage=' + _lsCount + ', user=' + (S.currentUser ? S.currentUser.nome + '/' + S.currentUser.perfil : 'NULL'));
+  var _dbg = document.getElementById('rel-debug-info');
+  if (_dbg) _dbg.textContent = 'Cache: ' + _allCache.length + ' | Filtrado: ' + resultados.length + ' | LS: ' + _lsCount;
   var totalEnv = resultados.length;
   var totalComp = resultados.filter(function(r){return r.pct===100;}).length;
   var taxa = totalEnv ? Math.round(totalComp/totalEnv*100) : 0;

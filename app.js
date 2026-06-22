@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '183';
+  var BUILD = '184';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
@@ -909,9 +909,60 @@ function finalizarLogin(found) {
   // Mostrar tela de carregamento
   document.getElementById('app').style.opacity='0.6';
 
+  function _migracaoRecalcFotos() {
+    if (localStorage.getItem('fc360_migr_foto_v183')) return;
+    db.collection('resultados').get().then(function(snap) {
+      var batch = db.batch();
+      var alterados = 0;
+      snap.docs.forEach(function(doc) {
+        var r = doc.data();
+        if (!r.itens || !r.itens.length) return;
+        var novoFeitos = 0;
+        var novoTotal = 0;
+        r.itens.forEach(function(item) {
+          if (item.emPlano) return;
+          novoTotal++;
+          var respondeu = item.tipo === 'simNao' ? !!item.resposta : item.feito !== undefined ? true : false;
+          if (!respondeu && !item.feito) return;
+          var ft = item.foto;
+          if (!ft || ft === 'none' || ft === false) {
+            if (item.feito) novoFeitos++;
+            return;
+          }
+          if (ft === 'multiplas') {
+            var multi = item.fotosMulti || [];
+            var qtd = item.fotoQtd || 2;
+            if (multi.length >= qtd && item.feito) novoFeitos++;
+            return;
+          }
+          var temDepois = !!(item.fotoDepois);
+          if (ft === 'antes_depois') {
+            if (!!(item.fotoAntes) && temDepois) novoFeitos++;
+          } else {
+            if (temDepois) novoFeitos++;
+          }
+        });
+        var novoPct = novoTotal ? Math.round(novoFeitos / novoTotal * 100) : 0;
+        if (novoPct !== r.pct || novoFeitos !== r.feitos) {
+          alterados++;
+          batch.update(doc.ref, { feitos: novoFeitos, pct: novoPct });
+        }
+      });
+      if (alterados > 0) {
+        batch.commit().then(function() {
+          console.log('[FC360] Migração foto: ' + alterados + ' resultados recalculados');
+          localStorage.setItem('fc360_migr_foto_v183', '1');
+        });
+      } else {
+        localStorage.setItem('fc360_migr_foto_v183', '1');
+      }
+    });
+  }
+
   function iniciarApp() {
     limparContagensAntigas();
     limparPlanosAntigos();
+    _migracaoRecalcFotos();
     // Load inv and perdas for this user/day
     loadInvFromFirebase(function(){
       loadPerdasFromFirebase(function(){

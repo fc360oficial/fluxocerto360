@@ -32,8 +32,8 @@ iframe.visivel{opacity:1;pointer-events:auto}
   transition:color .2s,transform .2s;display:flex;align-items:center;
 }
 .btn-fs:hover{color:rgba(250,204,21,.9);transform:scale(1.2)}
-:fullscreen .controles,:-webkit-full-screen .controles{opacity:0;transition:opacity .4s}
-:fullscreen .controles:hover,:-webkit-full-screen .controles:hover{opacity:1}
+.controles{opacity:0;transition:opacity .4s}
+.controles:hover{opacity:1}
 </style>
 </head>
 <body>
@@ -121,7 +121,6 @@ document.addEventListener('fullscreenchange', () => {
   btnFs.title = fs ? 'Sair da tela cheia (Esc)' : 'Tela cheia (F11)';
 });
 btnFs.addEventListener('click', toggleFullscreen);
-document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault();toggleFullscreen();} });
 
 // Clique nos dots
 dotD.addEventListener('click', mostrarDiretoria);

@@ -1152,10 +1152,8 @@ setInterval(atualizarStatusReal, 2*60*1000);
 <style>
 .btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
   border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
-  transition:all .2s;z-index:999;backdrop-filter:blur(4px)}
-.btn-fs-fixed:hover{color:#F9C200;border-color:#F9C200}
-:fullscreen .btn-fs-fixed,:-webkit-full-screen .btn-fs-fixed{opacity:0;transition:opacity .3s}
-:fullscreen .btn-fs-fixed:hover,:-webkit-full-screen .btn-fs-fixed:hover{opacity:1}
+  transition:all .3s;z-index:999;backdrop-filter:blur(4px);opacity:0}
+.btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
 </style>
 <button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 <script>

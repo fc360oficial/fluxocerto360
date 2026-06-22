@@ -80,13 +80,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f
 .v-ze{color:#475569}
 .dia-num{color:#94a3b8}
 
-/* FULLSCREEN BTN */
+/* FULLSCREEN BTN — invisível por padrão, aparece no hover */
 .btn-fs{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);
   border:1px solid rgba(255,255,255,.12);border-radius:8px;cursor:pointer;
-  padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;transition:all .2s;z-index:99}
-.btn-fs:hover{color:#F9C200;border-color:#F9C200}
-:fullscreen .btn-fs{opacity:0;transition:opacity .3s}
-:fullscreen .btn-fs:hover{opacity:1}
+  padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;transition:all .3s;z-index:99;
+  opacity:0}
+.btn-fs:hover{opacity:1;color:#F9C200;border-color:#F9C200}
 </style>
 </head>
 <body>
@@ -189,7 +188,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f
   </div>
 </div>
 
-<style>.btn-fs{position:fixed;bottom:16px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .2s}.btn-fs:hover{color:#FACC15;border-color:#FACC15}:fullscreen .btn-fs,:-webkit-full-screen .btn-fs{opacity:0}:fullscreen .btn-fs:hover,:-webkit-full-screen .btn-fs:hover{opacity:1}</style>
+<style>.btn-fs{position:fixed;bottom:16px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}</style>
 <button class="btn-fs" id="btn-fs" title="Tela cheia">⛶</button>
 
 <script>
@@ -390,7 +389,6 @@ document.addEventListener('fullscreenchange', () => {
   if (_lastRenderData) setTimeout(() => renderizar(_lastRenderData), 300);
 });
 btnFs.addEventListener('click', toggleFs);
-document.addEventListener('keydown', e => { if(e.key==='F11'){e.preventDefault();toggleFs();} });
 
 iniciar();
 </script>

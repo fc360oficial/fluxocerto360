@@ -220,6 +220,7 @@ function proximaCol(idx, sessao) {
     try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
     const _np = new URLSearchParams(window.location.search).get('next');
     if (_np && window.parent === window) { window.location.href = '/' + _np + '.html'; return; }
+    if (window.parent !== window) { pararCarrossel(); return; }
   }
   if (refreshPending) { refreshPending = false; aplicarRefresh(); return; }
   _carTimeout = setTimeout(() => iniciarCarrossel(proximo, 0, sessao), 1800);

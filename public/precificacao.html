@@ -373,9 +373,7 @@ function aplicarRefresh() {
     colBodies.push(bodyEl);
   }
 
-  // Na carga inicial (idxAntes=0 e carrossel nunca rodou) começa da coluna 1
-  // Nos refreshes posteriores pula a coluna que estava rolando para não repetir
-  const inicio = (_carSessao === 0) ? 0 : (idxAntes + 1) % colBodies.length;
+  const inicio = (_carSessao === 0) ? 0 : idxAntes;
   setTimeout(() => iniciarCarrossel(inicio, 0), 200);
 
   try {

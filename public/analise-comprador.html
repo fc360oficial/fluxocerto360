@@ -151,10 +151,10 @@ main{
 
 <script>
 const COR_COMPRADORES = {
-  FATIMA:'#6366f1',FERNANDA:'#f43f5e',PRISCILA:'#14b8a6',MARCOS:'#f59e0b',RENATA:'#a855f7'
+  FATIMA:'#6366f1',KELLY:'#f43f5e',PRISCILA:'#14b8a6',MARCOS:'#f59e0b',RENATA:'#a855f7'
 };
 const CARGO_COMPRADORES = {
-  FATIMA:'Compradora de Alimentos',FERNANDA:'Compradora de Higiene & Limpeza',
+  FATIMA:'Compradora de Alimentos',KELLY:'Compradora de Frios & Laticínios',
   PRISCILA:'Compradora de Bebidas & Frios',MARCOS:'Comprador de Hortifruti & Padaria',
   RENATA:'Compradora de Bazar & Utilidades'
 };
@@ -324,7 +324,7 @@ function proximoSlide() {
     const sp = new URLSearchParams(location.search);
     const isAutoMode = sp.get('auto') === '1';
     const idxMode   = parseInt(sp.get('idx') || '0');
-    const ORDEM_CICLO = ['FATIMA','FERNANDA','PRISCILA','MARCOS','RENATA'];
+    const ORDEM_CICLO = ['FATIMA','KELLY','PRISCILA','MARCOS','RENATA'];
     if (isAutoMode) {
       const prox = idxMode + 1;
       if (prox < ORDEM_CICLO.length) {

@@ -578,55 +578,131 @@ const DADOS = {
     },
   },
 
-  'FERNANDA': {
+  'KELLY': {
     cor: '#f43f5e',
-    cargo: 'Compradora de Higiene & Limpeza',
-    cronograma: { '1e3': {
-      SEG: { categorias: [
-        { nome: 'Higiene Pessoal', itens: [
-          { nome: 'Unilever',         status: 'g', pedido: '#47101 — R$ 42.800', cod: null },
-          { nome: 'P&G',              status: 'a', pedido: 'Em cotação',          cod: null },
-          { nome: 'Colgate-Palmolive',status: 'g', pedido: '#47102 — R$ 19.300', cod: null },
-          { nome: 'Reckitt',          status: 'r', pedido: null,                  cod: null },
-        ]},
-        { nome: 'Limpeza', itens: [
-          { nome: 'Ypê',             status: 'g', pedido: '#47103 — R$ 28.600', cod: null },
-          { nome: 'Brilhante / Omo', status: 'r', pedido: null,                  cod: null },
-          { nome: 'Veja / Flash',    status: 'r', pedido: null,                  cod: null },
-        ]},
-      ], atividades: [
-        { nome: 'Cotação de Higiene e Limpeza', status: 'a' },
-        { nome: 'Análise de Estoque Crítico',   status: 'r' },
-      ]},
-      TER: { categorias: [
-        { nome: 'Descartáveis', itens: [
-          { nome: 'Santher',  status: 'g', pedido: '#47201 — R$ 31.500', cod: null },
-          { nome: 'Mili',     status: 'r', pedido: null,                  cod: null },
-          { nome: 'Isabela',  status: 'a', pedido: 'Em negociação',       cod: null },
-          { nome: 'Procter',  status: 'g', pedido: '#47202 — R$ 14.900', cod: null },
-        ]},
-      ], atividades: [
-        { nome: 'Revisão de Cobertura — Descartáveis', status: 'r' },
-        { nome: 'Relatório de Ruptura Lojas',           status: 'r' },
-      ]},
-      QUA: { categorias: [
-        { nome: 'Cosméticos', itens: [
-          { nome: 'Natura',   status: 'g', pedido: '#47301 — R$ 22.100', cod: null },
-          { nome: "L'Oréal",  status: 'a', pedido: 'Em andamento',        cod: null },
-          { nome: 'Nívea',    status: 'r', pedido: null,                   cod: null },
-        ]},
-      ], atividades: [
-        { nome: 'Negociação de Verba de Gôndola', status: 'r' },
-      ]},
-      QUI: { categorias: [], atividades: [
-        { nome: 'Análise de Sell-Out Higiene',   status: 'g' },
-        { nome: 'Reunião de Fornecedores',        status: 'r' },
-      ]},
-      SEX: { categorias: [], atividades: [
-        { nome: 'Fechamento Semanal — Higiene', status: 'r' },
-        { nome: 'Relatório para Diretoria',      status: 'r' },
-      ]},
-    }, get '2e4'() { return this['1e3']; } },
+    cargo: 'Compradora de Frios & Laticínios',
+    cronograma: {
+      '1e3': {
+        SEG: { categorias: [
+          { nome: 'Laticínios', itens: [
+            { nome: 'ALVOAR LACTEOS NORDESTE SA',status:'r',pedido:null,cod:338},
+            { nome: 'BOM LEITE INDUSTRIAL LTDA',status:'r',pedido:null,cod:346},
+            { nome: 'LATICINIO BELO VALE LTDA',status:'r',pedido:null,cod:326},
+            { nome: 'LATICINIO GUARARAPES LTDA',status:'r',pedido:null,cod:325},
+            { nome: 'NOBRE IND. LATICINIOS (até 10h)',status:'r',pedido:null,cod:320},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'C E S DISTRIBUIDORA VAREJISTA LTDA',status:'r',pedido:null,cod:366},
+            { nome: 'FRANCISCO CORDEIRO CAMPOS',status:'r',pedido:null,cod:318},
+            { nome: 'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',status:'r',pedido:null,cod:322},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Frios & Embutidos', itens: [
+            { nome: 'AURORA COOP CENTRAL OESTE CATARINENSE',status:'r',pedido:null,cod:403},
+            { nome: 'BRF S A',status:'r',pedido:null,cod:382},
+            { nome: 'SEARA COMERCIO DE ALIMENTOS LT',status:'r',pedido:null,cod:398},
+            { nome: 'BARBOSA & MARQUES REGINA',status:'r',pedido:null,cod:443},
+            { nome: 'J A CALHEIROS DE MELO JR',status:'r',pedido:null,cod:449},
+          ]},
+          { nome: 'Laticínios & Derivados', itens: [
+            { nome: 'LACTALIS DO BRASIL',status:'r',pedido:null,cod:351},
+            { nome: 'MAURICEA ALIMENTOS DO NORDESTE',status:'r',pedido:null,cod:428},
+            { nome: 'NOTARO ALIMENTOS LTDA',status:'r',pedido:null,cod:334},
+            { nome: 'VALELAC IND. DE LATICINIOS',status:'r',pedido:null,cod:372},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'D&D ANGEIRAS DISTRIBUIDORA (502)',status:'r',pedido:null,cod:502},
+            { nome: 'D&D ANGEIRAS DISTRIBUIDORA (358)',status:'r',pedido:null,cod:358},
+            { nome: 'CODICON DISTRIBUICAO DE ALIMENTOS',status:'r',pedido:null,cod:336},
+            { nome: 'INTERBRASIL DISTRIBUICAO LTDA',status:'r',pedido:null,cod:422},
+            { nome: 'LEANDRO BATISTA DE SOUZA',status:'r',pedido:null,cod:473},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos', itens: [
+            { nome: 'NUTRA PLUSS IND. COM. ALIMENTOS',status:'r',pedido:null,cod:424},
+            { nome: 'FRUTA INDUSTRIA & COMERCIO LTDA',status:'r',pedido:null,cod:337},
+            { nome: 'BUNGE ALIMENTOS S/A',status:'r',pedido:null,cod:370},
+            { nome: 'BRITO&SANTOS FRIOS IND. ALIM.',status:'r',pedido:null,cod:345},
+            { nome: 'JBS S.A.',status:'r',pedido:null,cod:431},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Frios', itens: [
+            { nome: 'PROLAC COMERCIAL',status:'r',pedido:null,cod:423},
+            { nome: 'KARNE & KEIJO LOGISTICA INTEGRADA',status:'r',pedido:null,cod:499},
+            { nome: 'A.B. DE ALBUQUERQUE GUERRA',status:'r',pedido:null,cod:328},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Frios & Distribuição', itens: [
+            { nome: 'FRI-SABOR ALIMENTOS LTDA',status:'r',pedido:null,cod:557},
+            { nome: 'DISNOVA DISTRIBUIDORA LTDA (L6)',status:'r',pedido:null,cod:529},
+          ]},
+        ], atividades: []},
+      },
+      '2e4': {
+        SEG: { categorias: [
+          { nome: 'Laticínios', itens: [
+            { nome: 'ALVOAR LACTEOS NORDESTE SA',status:'r',pedido:null,cod:338},
+            { nome: 'BOM LEITE INDUSTRIAL LTDA',status:'r',pedido:null,cod:346},
+            { nome: 'LATICINIO BELO VALE LTDA',status:'r',pedido:null,cod:326},
+            { nome: 'LATICINIO GUARARAPES LTDA',status:'r',pedido:null,cod:325},
+            { nome: 'NOBRE IND. LATICINIOS (até 10h)',status:'r',pedido:null,cod:320},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'C E S DISTRIBUIDORA VAREJISTA LTDA',status:'r',pedido:null,cod:366},
+            { nome: 'FRANCISCO CORDEIRO CAMPOS',status:'r',pedido:null,cod:318},
+            { nome: 'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',status:'r',pedido:null,cod:322},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Frios & Embutidos', itens: [
+            { nome: 'BRF S A',status:'r',pedido:null,cod:382},
+            { nome: 'SEARA COMERCIO DE ALIMENTOS LT',status:'r',pedido:null,cod:398},
+            { nome: 'EB DISTRIBUIDORA DE SORVETE LTDA',status:'r',pedido:null,cod:359},
+            { nome: 'GOLD STYLE IMP. EXP. ALIMENTOS',status:'r',pedido:null,cod:480},
+          ]},
+          { nome: 'Laticínios & Derivados', itens: [
+            { nome: 'LACTALIS DO BRASIL',status:'r',pedido:null,cod:351},
+            { nome: 'MAURICEA ALIMENTOS DO NORDESTE',status:'r',pedido:null,cod:428},
+            { nome: 'NOTARO ALIMENTOS LTDA',status:'r',pedido:null,cod:334},
+            { nome: 'UNILEVER BRASIL LTDA (L5)',status:'r',pedido:null,cod:327},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'D&D ANGEIRAS DISTRIBUIDORA',status:'r',pedido:null,cod:358},
+            { nome: 'INTERBRASIL DISTRIBUICAO LTDA',status:'r',pedido:null,cod:422},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos', itens: [
+            { nome: 'NUTRA PLUSS IND. COM. ALIMENTOS',status:'r',pedido:null,cod:424},
+            { nome: 'FRUTA INDUSTRIA & COMERCIO LTDA',status:'r',pedido:null,cod:337},
+            { nome: 'BRITO&SANTOS FRIOS IND. ALIM.',status:'r',pedido:null,cod:345},
+            { nome: 'F.N.J. COM. ATACADISTA LEITE LATIC.',status:'r',pedido:null,cod:563},
+            { nome: 'FIPEL FRIGORIFICO IND. PERNAMBUCANA',status:'r',pedido:null,cod:356},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'GRASIELLI DE VASCONCELOS PINTO LTDA',status:'r',pedido:null,cod:561},
+            { nome: 'NORONHA IND. E COMERCIO (L5)',status:'r',pedido:null,cod:442},
+            { nome: 'RECIFE COM. CONGELADOS LTDA (L4)',status:'r',pedido:null,cod:456},
+            { nome: 'GRIFOS COMERCIO DE ALIMENTOS LTDA',status:'r',pedido:null,cod:316},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Frios', itens: [
+            { nome: 'RAINHA PRODUTOS ALIMENTICIOS L',status:'r',pedido:null,cod:440},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Frios & Distribuição', itens: [
+            { nome: 'FRI-SABOR ALIMENTOS LTDA',status:'r',pedido:null,cod:557},
+            { nome: 'DISNOVA DISTRIBUIDORA LTDA (L6)',status:'r',pedido:null,cod:529},
+          ]},
+        ], atividades: []},
+      },
+    },
   },
 
   'PRISCILA': {
@@ -1173,7 +1249,7 @@ function updateClock() {
 }
 
 // ── ROTAÇÃO AUTOMÁTICA ──
-const ORDEM_AUTO = ['FÁTIMA','FERNANDA','PRISCILA','MARCOS','RENATA'];
+const ORDEM_AUTO = ['FÁTIMA','KELLY','PRISCILA','MARCOS','RENATA'];
 const params_auto = new URLSearchParams(location.search);
 const isAuto    = params_auto.get('auto') === '1';
 const idxAtual  = parseInt(params_auto.get('idx') || '0');

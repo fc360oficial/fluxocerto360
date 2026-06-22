@@ -503,32 +503,139 @@ function fatimaHoje() {
 
 const _fat = fatimaHoje();
 
+/* ══════════════════════════════════════
+   DADOS — CRONOGRAMA KELLY
+══════════════════════════════════════ */
+function kellyHoje() {
+  const DIAS = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
+  const sig  = DIAS[new Date().getDay()];
+  const semana = Math.ceil(new Date().getDate() / 7);
+  const impar  = semana % 2 === 1; // 1°/3° semana vs 2°/4° semana
+
+  const seg = {categorias:[
+    {nome:'Laticínios',fornecedores:[
+      {nome:'ALVOAR LACTEOS NORDESTE SA',status:'r',cod:338},
+      {nome:'BOM LEITE INDUSTRIAL LTDA',status:'r',cod:346},
+      {nome:'LATICINIO BELO VALE LTDA',status:'r',cod:326},
+      {nome:'LATICINIO GUARARAPES LTDA',status:'r',cod:325},
+      {nome:'NOBRE IND. LATICINIOS (até 10h)',status:'r',cod:320}]},
+    {nome:'Distribuição',fornecedores:[
+      {nome:'C E S DISTRIBUIDORA VAREJISTA LTDA',status:'r',cod:366},
+      {nome:'FRANCISCO CORDEIRO CAMPOS',status:'r',cod:318},
+      {nome:'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',status:'r',cod:322}]}],
+   atividades:[]};
+
+  const ter_impar = {categorias:[
+    {nome:'Frios & Embutidos',fornecedores:[
+      {nome:'AURORA COOP CENTRAL OESTE CATARINENSE',status:'r',cod:403},
+      {nome:'BRF S A',status:'r',cod:382},
+      {nome:'SEARA COMERCIO DE ALIMENTOS LT',status:'r',cod:398},
+      {nome:'BARBOSA & MARQUES REGINA',status:'r',cod:443},
+      {nome:'J A CALHEIROS DE MELO JR',status:'r',cod:449}]},
+    {nome:'Laticínios & Derivados',fornecedores:[
+      {nome:'LACTALIS DO BRASIL',status:'r',cod:351},
+      {nome:'MAURICEA ALIMENTOS DO NORDESTE',status:'r',cod:428},
+      {nome:'NOTARO ALIMENTOS LTDA',status:'r',cod:334},
+      {nome:'VALELAC IND. DE LATICINIOS',status:'r',cod:372}]},
+    {nome:'Distribuição',fornecedores:[
+      {nome:'D&D ANGEIRAS DISTRIBUIDORA (502)',status:'r',cod:502},
+      {nome:'D&D ANGEIRAS DISTRIBUIDORA (358)',status:'r',cod:358},
+      {nome:'CODICON DISTRIBUICAO DE ALIMENTOS',status:'r',cod:336},
+      {nome:'INTERBRASIL DISTRIBUICAO LTDA',status:'r',cod:422},
+      {nome:'LEANDRO BATISTA DE SOUZA',status:'r',cod:473}]}],
+   atividades:[]};
+
+  const ter_par = {categorias:[
+    {nome:'Frios & Embutidos',fornecedores:[
+      {nome:'BRF S A',status:'r',cod:382},
+      {nome:'SEARA COMERCIO DE ALIMENTOS LT',status:'r',cod:398},
+      {nome:'EB DISTRIBUIDORA DE SORVETE LTDA',status:'r',cod:359},
+      {nome:'GOLD STYLE IMP. EXP. ALIMENTOS',status:'r',cod:480}]},
+    {nome:'Laticínios & Derivados',fornecedores:[
+      {nome:'LACTALIS DO BRASIL',status:'r',cod:351},
+      {nome:'MAURICEA ALIMENTOS DO NORDESTE',status:'r',cod:428},
+      {nome:'NOTARO ALIMENTOS LTDA',status:'r',cod:334},
+      {nome:'UNILEVER BRASIL LTDA (L5)',status:'r',cod:327}]},
+    {nome:'Distribuição',fornecedores:[
+      {nome:'D&D ANGEIRAS DISTRIBUIDORA',status:'r',cod:358},
+      {nome:'INTERBRASIL DISTRIBUICAO LTDA',status:'r',cod:422}]}],
+   atividades:[]};
+
+  const qua_impar = {categorias:[
+    {nome:'Alimentos',fornecedores:[
+      {nome:'NUTRA PLUSS IND. COM. ALIMENTOS',status:'r',cod:424},
+      {nome:'FRUTA INDUSTRIA & COMERCIO LTDA',status:'r',cod:337},
+      {nome:'BUNGE ALIMENTOS S/A',status:'r',cod:370},
+      {nome:'BRITO&SANTOS FRIOS IND. ALIM.',status:'r',cod:345},
+      {nome:'JBS S.A.',status:'r',cod:431}]}],
+   atividades:[]};
+
+  const qua_par = {categorias:[
+    {nome:'Alimentos',fornecedores:[
+      {nome:'NUTRA PLUSS IND. COM. ALIMENTOS',status:'r',cod:424},
+      {nome:'FRUTA INDUSTRIA & COMERCIO LTDA',status:'r',cod:337},
+      {nome:'BRITO&SANTOS FRIOS IND. ALIM.',status:'r',cod:345},
+      {nome:'F.N.J. COM. ATACADISTA LEITE LATIC.',status:'r',cod:563},
+      {nome:'FIPEL FRIGORIFICO IND. PERNAMBUCANA',status:'r',cod:356}]},
+    {nome:'Distribuição',fornecedores:[
+      {nome:'GRASIELLI DE VASCONCELOS PINTO LTDA',status:'r',cod:561},
+      {nome:'NORONHA IND. E COMERCIO (L5)',status:'r',cod:442},
+      {nome:'RECIFE COM. CONGELADOS LTDA (L4)',status:'r',cod:456},
+      {nome:'GRIFOS COMERCIO DE ALIMENTOS LTDA',status:'r',cod:316}]}],
+   atividades:[]};
+
+  const qui_impar = {categorias:[
+    {nome:'Frios',fornecedores:[
+      {nome:'PROLAC COMERCIAL',status:'r',cod:423},
+      {nome:'KARNE & KEIJO LOGISTICA INTEGRADA',status:'r',cod:499},
+      {nome:'A.B. DE ALBUQUERQUE GUERRA',status:'r',cod:328}]}],
+   atividades:[]};
+
+  const qui_par = {categorias:[
+    {nome:'Frios',fornecedores:[
+      {nome:'RAINHA PRODUTOS ALIMENTICIOS L',status:'r',cod:440}]}],
+   atividades:[]};
+
+  const sex = {categorias:[
+    {nome:'Frios & Distribuição',fornecedores:[
+      {nome:'FRI-SABOR ALIMENTOS LTDA',status:'r',cod:557},
+      {nome:'DISNOVA DISTRIBUIDORA LTDA (L6)',status:'r',cod:529}]}],
+   atividades:[]};
+
+  const sched = {
+    SEG: seg,
+    TER: impar ? ter_impar : ter_par,
+    QUA: impar ? qua_impar : qua_par,
+    QUI: impar ? qui_impar : qui_par,
+    SEX: sex,
+  };
+  return sched[sig] || {categorias:[],atividades:[]};
+}
+
+const _kelly = kellyHoje();
+
 /* ══ COMPRADORES ══ */
 const COMPRADORES = [
   {nome:'FÁTIMA',cor:'#6366f1',sla:'OK',coberturaMedia:40,
    categorias:_fat.categorias,atividades:_fat.atividades},
-  {nome:'FERNANDA',cor:'#f43f5e',sla:'OK',coberturaMedia:35,
-   categorias:[
-    {nome:'Higiene Pessoal',fornecedores:[{nome:'Unilever',status:'g'},{nome:'P&G',status:'a'},{nome:'Colgate-Palmolive',status:'g'}]},
-    {nome:'Limpeza',fornecedores:[{nome:'Ypê',status:'g'},{nome:'Brilhante / Omo',status:'r'},{nome:'Veja / Flash Líder',status:'r'}]},
-    {nome:'Descartáveis',fornecedores:[{nome:'Santher',status:'g'},{nome:'Mili',status:'r'}]}],
-   atividades:[{nome:'Cotação de Higiene e Limpeza',status:'a'},{nome:'Análise de Estoque Crítico',status:'r'}]},
+  {nome:'KELLY',cor:'#f43f5e',sla:'OK',coberturaMedia:20,
+   categorias:_kelly.categorias,atividades:_kelly.atividades},
   {nome:'PRISCILA',cor:'#14b8a6',sla:'OK',coberturaMedia:30,
    categorias:[
-    {nome:'Bebidas',fornecedores:[{nome:'Coca-Cola / Femsa',status:'g'},{nome:'Ambev',status:'g'},{nome:'Del Valle / Ades',status:'g'}]},
-    {nome:'Frios & Laticínios',fornecedores:[{nome:'Vigor / Italac',status:'g'},{nome:'Danone',status:'a'},{nome:'Parmalat',status:'r'}]}],
-   atividades:[{nome:'Fechamento de Bebidas',status:'g'},{nome:'Negociação de Frios — Semana',status:'a'}]},
+    {nome:'Bebidas',fornecedores:[{nome:'Coca-Cola / Femsa',status:'r'},{nome:'Ambev',status:'r'},{nome:'Del Valle / Ades',status:'r'}]},
+    {nome:'Frios & Laticínios',fornecedores:[{nome:'Vigor / Italac',status:'r'},{nome:'Danone',status:'r'},{nome:'Parmalat',status:'r'}]}],
+   atividades:[]},
   {nome:'MARCOS',cor:'#f59e0b',sla:'OK',coberturaMedia:7,
    categorias:[
-    {nome:'Hortifruti',fornecedores:[{nome:'Ceasa Norte',status:'g'},{nome:'Fazenda Verde Ltda',status:'g'},{nome:'Cooperativa Agrícola',status:'g'}]},
-    {nome:'Padaria & Panif.',fornecedores:[{nome:'Wickbold',status:'g'},{nome:'Pullman / Nutrella',status:'g'}]}],
-   atividades:[{nome:'Programação Semanal de Hortifruti',status:'g'},{nome:'Cotação Padaria — Pão Francês',status:'g'}]},
-  {nome:'RENATA',cor:'#a855f7',sla:'LATE',coberturaMedia:45,
+    {nome:'Hortifruti',fornecedores:[{nome:'Ceasa Norte',status:'r'},{nome:'Fazenda Verde Ltda',status:'r'},{nome:'Cooperativa Agrícola',status:'r'}]},
+    {nome:'Padaria & Panif.',fornecedores:[{nome:'Wickbold',status:'r'},{nome:'Pullman / Nutrella',status:'r'}]}],
+   atividades:[]},
+  {nome:'RENATA',cor:'#a855f7',sla:'OK',coberturaMedia:45,
    categorias:[
-    {nome:'Bazar',fornecedores:[{nome:'Globimport',status:'g'},{nome:'Nobreza Distribuidora',status:'r'},{nome:'Caza Nova Ind.',status:'r'}]},
+    {nome:'Bazar',fornecedores:[{nome:'Globimport',status:'r'},{nome:'Nobreza Distribuidora',status:'r'},{nome:'Caza Nova Ind.',status:'r'}]},
     {nome:'Utilidades Domésticas',fornecedores:[{nome:'La Cuisine',status:'r'},{nome:'Euro Home',status:'r'}]},
-    {nome:'Papelaria',fornecedores:[{nome:'Tilibra',status:'g'},{nome:'BIC Brasil',status:'a'}]}],
-   atividades:[{nome:'Cotação Bazar — Ciclo Mensal',status:'r'},{nome:'Revisão de Planograma Bazar',status:'g'}]},
+    {nome:'Papelaria',fornecedores:[{nome:'Tilibra',status:'r'},{nome:'BIC Brasil',status:'r'}]}],
+   atividades:[]},
 ];
 
 function gerarAlertas() {

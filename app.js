@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '185';
+  var BUILD = '186';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
@@ -910,24 +910,28 @@ function finalizarLogin(found) {
   document.getElementById('app').style.opacity='0.6';
 
   function _migracaoRecalcFotos() {
-    if (localStorage.getItem('fc360_migr_foto_v184')) return;
+    if (localStorage.getItem('fc360_migr_foto_v185')) return;
     var cls = getCustomCLs();
     db.collection('resultados').get().then(function(snap) {
       var batch = db.batch();
       var alterados = 0;
+      var debugLog = [];
       snap.docs.forEach(function(doc) {
         var r = doc.data();
         if (!r.itens || !r.itens.length) return;
         var clDef = cls.find(function(c){ return c.id === r.checklistId; });
         var novoFeitos = 0;
         var novoTotal = 0;
+        var itensSemFoto = [];
         r.itens.forEach(function(item, idx) {
           if (item.emPlano) return;
           novoTotal++;
           if (!item.feito) return;
           var fotoConfig = item.foto;
+          var fonte = 'resultado';
           if (clDef && clDef.itens && clDef.itens[idx]) {
             fotoConfig = clDef.itens[idx].foto;
+            fonte = 'checklist';
           }
           var ft = (fotoConfig && fotoConfig !== 'none') ? fotoConfig : 'none';
           if (ft === 'none') { novoFeitos++; return; }
@@ -935,27 +939,35 @@ function finalizarLogin(found) {
             var multi = item.fotosMulti || [];
             var qtd = (clDef && clDef.itens && clDef.itens[idx]) ? (clDef.itens[idx].fotoQtd || 2) : 2;
             if (multi.length >= qtd) novoFeitos++;
+            else itensSemFoto.push(idx + ':' + ft + '(' + fonte + ')');
             return;
           }
           var temDepois = !!(item.fotoDepois);
           if (ft === 'antes_depois') {
             if (!!(item.fotoAntes) && temDepois) novoFeitos++;
+            else itensSemFoto.push(idx + ':' + ft + '(' + fonte + ')');
           } else {
             if (temDepois) novoFeitos++;
+            else itensSemFoto.push(idx + ':' + ft + '(' + fonte + ')');
           }
         });
         var novoPct = novoTotal ? Math.round(novoFeitos / novoTotal * 100) : 0;
+        debugLog.push(r.checklistNome + ' ' + r.loja + ' ' + r.dataHora + ': ' + r.pct + '%→' + novoPct + '% (' + novoFeitos + '/' + novoTotal + ') clDef=' + (clDef ? clDef.itens.length + 'itens' : 'NULL') + ' semFoto=[' + itensSemFoto.join(',') + ']');
         if (novoPct !== r.pct || novoFeitos !== r.feitos) {
           alterados++;
           batch.update(doc.ref, { feitos: novoFeitos, pct: novoPct });
         }
       });
+      console.log('[FC360 MIGRAÇÃO] cls=' + cls.length + ' resultados=' + snap.docs.length + ' alterados=' + alterados);
+      debugLog.forEach(function(l){ console.log('[FC360]', l); });
       if (alterados > 0) {
         batch.commit().then(function() {
-          localStorage.setItem('fc360_migr_foto_v184', '1');
+          showToast('Migração: ' + alterados + ' resultado(s) recalculado(s)');
+          localStorage.setItem('fc360_migr_foto_v185', '1');
         });
       } else {
-        localStorage.setItem('fc360_migr_foto_v184', '1');
+        showToast('Migração: nenhum resultado alterado (cls=' + cls.length + ')');
+        localStorage.setItem('fc360_migr_foto_v185', '1');
       }
     });
   }

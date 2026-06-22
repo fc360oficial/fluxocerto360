@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '182';
+  var BUILD = '183';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
@@ -2469,7 +2469,16 @@ function enviarCL(clId, label) {
   }
   var cl = getMyCLs().find(function(c){return c.id===clId;});
   if (!cl) return;
-  var feitos = cl.itens.filter(function(i){return !_planoAbertoDoItem(label, i.t) && !!S.checkState[clId+'_'+i.t];}).length;
+  var feitos = cl.itens.filter(function(i,idx){
+    if (_planoAbertoDoItem(label, i.t)) return false;
+    if (!S.checkState[clId+'_'+i.t]) return false;
+    var ef = (i.foto && i.foto !== 'none') ? i.foto : 'none';
+    if (ef === 'none') return true;
+    if (ef === 'multiplas') { var qt=i.fotoQtd||2,ct=0; for(var f=0;f<qt;f++){if(S.checkState[clId+'_foto_multi_'+idx+'_'+f])ct++;} return ct>=qt; }
+    var td=!!(S.checkState[clId+'_foto_depois_'+idx]||S.checkState[clId+'_foto_'+idx]);
+    if (ef === 'antes_depois') return !!(S.checkState[clId+'_foto_antes_'+idx])&&td;
+    return td;
+  }).length;
   var total = cl.itens.filter(function(i){return !_planoAbertoDoItem(label, i.t);}).length;
   var pct = total ? Math.round(feitos/total*100) : 0;
 
@@ -3401,18 +3410,20 @@ function enviarSemFoto() {
   document.getElementById('modal-foto-pendente').style.display='none';
   var clId = document.getElementById('fp-cl-id').value;
   var label = document.getElementById('fp-cl-label').value;
-  // Skip photo check and go straight to send modal
   var cl = getMyCLs().find(function(c){return c.id===clId;});
   if (!cl) return;
   var feitos = cl.itens.filter(function(i,idx){
+    if (_planoAbertoDoItem(label, i.t)) return false;
     var val=S.checkState[clId+'_'+i.t];
     if (!val) return false;
-    if (!i.foto||i.foto==='none') return true;
-    var temDepois=!!(S.checkState[clId+'_foto_depois_'+idx]||S.checkState[clId+'_foto_'+idx]);
-    if (i.foto==='antes_depois') return !!(S.checkState[clId+'_foto_antes_'+idx])&&temDepois;
-    return temDepois;
+    var ef = (i.foto && i.foto !== 'none') ? i.foto : 'none';
+    if (ef === 'none') return true;
+    if (ef === 'multiplas') { var qt=i.fotoQtd||2,ct=0; for(var f=0;f<qt;f++){if(S.checkState[clId+'_foto_multi_'+idx+'_'+f])ct++;} return ct>=qt; }
+    var td=!!(S.checkState[clId+'_foto_depois_'+idx]||S.checkState[clId+'_foto_'+idx]);
+    if (ef === 'antes_depois') return !!(S.checkState[clId+'_foto_antes_'+idx])&&td;
+    return td;
   }).length;
-  var total = cl.itens.length;
+  var total = cl.itens.filter(function(i){return !_planoAbertoDoItem(label, i.t);}).length;
   var pct = total ? Math.round(feitos/total*100) : 0;
   pendingEnviarId = clId;
   pendingEnviarLabel = label;

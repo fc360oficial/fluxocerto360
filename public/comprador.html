@@ -1410,6 +1410,7 @@ async function init() {
     _ph2.innerHTML = renderCronograma(cronHoje);
     fitPainelTV();
     _ph2.style.visibility = 'visible';
+    setTimeout(fitPainelTV, 200);
   } else {
     document.getElementById('dp-done').textContent = '—';
     document.getElementById('panel-hoje').innerHTML = `<div style="padding:30px;text-align:center;color:var(--muted2)">Sem cronograma programado para hoje</div>`;

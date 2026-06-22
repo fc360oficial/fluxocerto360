@@ -816,11 +816,30 @@ let _carraf = null;
 let _scrollY = 0;
 const PX_POR_FRAME = 0.4; // ~24px/s em 60fps — ajustável
 
+function fitContent() {
+  const wrap = document.getElementById('scroll-wrap');
+  const el = document.getElementById('conteudo');
+  if (!wrap || !el) return false;
+  el.style.zoom = '';
+  const avail = wrap.clientHeight;
+  const content = el.scrollHeight;
+  if (content > avail && avail > 50) {
+    const ratio = avail / content;
+    if (ratio >= 0.55) {
+      el.style.zoom = ratio.toFixed(3);
+      return true;
+    }
+  }
+  return content <= avail;
+}
+
 function iniciarCarrossel() {
   if (_carraf) { cancelAnimationFrame(_carraf); _carraf = null; }
   _scrollY = 0;
   const el = document.getElementById('conteudo');
   if (!el) return;
+
+  if (fitContent()) return;
 
   // Duplicar conteúdo para loop sem pulo
   const original = el.innerHTML;

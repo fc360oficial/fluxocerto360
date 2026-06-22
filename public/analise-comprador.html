@@ -80,7 +80,9 @@ main{
 .col-icon{font-size:15px}
 .col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;flex:1}
 .col-count{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
-.col-body{flex:1;overflow:hidden}
+.col-body{flex:1;overflow:hidden;overflow-y:auto}
+.col-body::-webkit-scrollbar{width:3px}
+.col-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
 
 /* itens */
 .item-row{
@@ -301,6 +303,26 @@ function buildColHTML(cfg, lista) {
     </div>`;
 }
 
+function fitContent() {
+  const main = document.getElementById('main-cols');
+  if (!main) return;
+  main.style.zoom = '';
+  const bodies = main.querySelectorAll('.col-body');
+  const savedOF = main.style.overflow;
+  const savedH = main.style.height;
+  main.style.overflow = 'visible';
+  main.style.height = 'auto';
+  bodies.forEach(b => b.style.overflow = 'visible');
+  const avail = window.innerHeight - 64;
+  const content = main.scrollHeight;
+  main.style.overflow = savedOF;
+  main.style.height = savedH;
+  bodies.forEach(b => b.style.overflow = '');
+  if (content > avail && avail > 50) {
+    main.style.zoom = Math.max(0.45, avail / content).toFixed(3);
+  }
+}
+
 function renderSlide(slide) {
   const { loja, view } = slide;
   const ld = dados?.lojas?.[loja] || {};
@@ -321,6 +343,7 @@ function renderSlide(slide) {
     html += buildColHTML(cfg, lista);
   }
   document.getElementById('main-cols').innerHTML = html;
+  setTimeout(fitContent, 50);
 }
 
 function proximoSlide() {
@@ -338,7 +361,8 @@ function proximoSlide() {
         location.href = '/comprador.html?nome=' + ORDEM_CICLO[prox] + '&auto=1&idx=' + prox;
         return;
       }
-      try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}
+      location.href = '/compras.html';
+      return;
     } else {
       try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}
     }

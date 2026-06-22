@@ -8,12 +8,12 @@
 html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f0;font-family:'Segoe UI',sans-serif}
 
 /* HEADER */
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 18px;
-  background:linear-gradient(135deg,#0f1e3a,#0a1628);border-bottom:2px solid #F9C200;height:50px}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:4px 14px;
+  background:linear-gradient(135deg,#0f1e3a,#0a1628);border-bottom:2px solid #F9C200;height:40px}
 .hdr-left{display:flex;align-items:center;gap:10px}
 .hdr-left img{height:26px;width:auto;filter:brightness(0) invert(1) sepia(1) saturate(4) hue-rotate(-8deg)}
 .hdr-title{font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:.5px}
-.hdr-loja{font-size:18px;font-weight:800;color:#F9C200;letter-spacing:1px}
+.hdr-loja{font-size:14px;font-weight:800;color:#F9C200;letter-spacing:1px}
 .hdr-right{display:flex;align-items:center;gap:10px}
 .loja-dots{display:flex;gap:5px}
 .ldot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .3s}
@@ -31,36 +31,36 @@ html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f
 .prog-bar{height:100%;background:linear-gradient(90deg,#3b82f6,#F9C200);width:0%}
 
 /* LAYOUT */
-.main{display:flex;flex-direction:column;height:calc(100vh - 53px);padding:8px;gap:8px}
+.main{display:flex;flex-direction:column;height:calc(100vh - 43px);padding:6px;gap:6px}
 
 /* KPI ROW — horizontal no topo */
-.kpi-row{display:flex;gap:8px;flex-shrink:0}
-.kpi-card{flex:1;background:#0f1e3a;border:1px solid #1e3a6e;border-radius:8px;
-  padding:7px 12px;position:relative;overflow:hidden}
+.kpi-row{display:flex;gap:6px;flex-shrink:0}
+.kpi-card{flex:1;min-width:0;background:#0f1e3a;border:1px solid #1e3a6e;border-radius:8px;
+  padding:5px 10px;position:relative;overflow:hidden}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .kpi-card.blue::before{background:#3b82f6}
 .kpi-card.gold::before{background:#F9C200}
 .kpi-card.green::before{background:#10b981}
 .kpi-card.purple::before{background:#8b5cf6}
-.kc-label{font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:2px}
-.kc-val{font-size:17px;font-weight:800;color:#f1f5f9;line-height:1.1}
-.kc-sub{font-size:9px;color:#64748b;margin-top:2px}
-.kc-var{font-size:15px;font-weight:800}
+.kc-label{font-size:7px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-val{font-size:clamp(12px,1.4vw,16px);font-weight:800;color:#f1f5f9;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-sub{font-size:8px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-var{font-size:clamp(11px,1.2vw,14px);font-weight:800;white-space:nowrap}
 .up{color:#10b981}.dn{color:#ef4444}
 
 /* TABELAS ROW — 3 colunas, ocupam o restante */
-.tbl-row{display:grid;grid-template-columns:1fr 1fr 1fr;flex:1;gap:8px;min-height:0}
+.tbl-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);flex:1;gap:6px;min-height:0}
 
 /* CARD TABELA */
 .tbl-card{background:#0b1628;border:1px solid #1e293b;border-radius:8px;
-  display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.tbl-hdr{padding:6px 10px;background:#0f1e3a;border-bottom:1px solid #1e3a6e;
-  font-size:9px;font-weight:700;color:#F9C200;letter-spacing:.5px;flex-shrink:0}
+  display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+.tbl-hdr{padding:4px 8px;background:#0f1e3a;border-bottom:1px solid #1e3a6e;
+  font-size:8px;font-weight:700;color:#F9C200;letter-spacing:.5px;flex-shrink:0}
 
 /* HEADER DAS COLUNAS (fixo, fora do ticker) */
-.col-hdr{display:flex;padding:4px 8px;border-bottom:1px solid #1e3a6e;flex-shrink:0;
-  font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px;background:#0b1628}
-.col-hdr span{flex:1}
+.col-hdr{display:flex;padding:3px 6px;border-bottom:1px solid #1e3a6e;flex-shrink:0;
+  font-size:7px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.3px;background:#0b1628}
+.col-hdr span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .col-hdr .r{text-align:right}
 
 /* TICKER */
@@ -68,9 +68,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f
 .ticker-inner{will-change:transform}
 
 /* LINHAS */
-.tr-row{display:flex;padding:3px 8px;border-bottom:1px solid #0f172a;font-size:10px}
+.tr-row{display:flex;padding:2px 6px;border-bottom:1px solid #0f172a;font-size:9px}
 .tr-row:hover{background:#ffffff08}
-.tr-row span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-row span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tr-row .r{text-align:right}
 .tr-row.total{background:#0f1e3a;font-weight:700;border-top:1px solid #1e3a6e;margin-top:2px}
 .val25{color:#60a5fa}

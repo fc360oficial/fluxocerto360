@@ -253,6 +253,12 @@ main {
 .forn-status.a { background: var(--amber-bg); color: var(--amber); }
 .forn-status.r { background: var(--red-bg);   color: var(--red); }
 
+/* Modo compacto — quando há muitos itens no dia */
+.compact .forn-row { padding: 5px 10px; margin-bottom: 2px; gap: 8px; }
+.compact .forn-nome { font-size: 13px; }
+.compact .cat { margin-bottom: 8px; }
+.compact .cat-title { margin-bottom: 3px; }
+
 /* ══ ATIVIDADES ══ */
 .ativ-section { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 .ativ-title {
@@ -1107,11 +1113,13 @@ function fitPainelTV() {
   const outer = document.getElementById('panel-hoje-outer');
   if (!inner || !outer) return;
   inner.style.zoom = '';
-  // Acesso síncrono a scrollHeight força reflow imediato — sem flash de layout errado
-  const avail = outer.clientHeight - 20;
+  inner.classList.remove('compact');
+  const avail = outer.clientHeight - 10;
   const content = inner.scrollHeight;
   if (content > avail && avail > 50) {
-    inner.style.zoom = Math.max(0.45, avail / content).toFixed(3);
+    const ratio = avail / content;
+    if (ratio < 0.75) inner.classList.add('compact');
+    inner.style.zoom = Math.max(0.55, ratio).toFixed(3);
   }
 }
 

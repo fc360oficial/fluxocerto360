@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '187';
+  var BUILD = '188';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
@@ -1864,15 +1864,18 @@ function salvarFotoTipo(clId, idx, tipo, input) {
 
     var cl = getMyCLs().find(function(cc){return cc.id===clId;});
     if (cl && cl.itens[idx]) {
-      if (cl.itens[idx].foto === 'antes_depois') {
-        var hasBoth = !!S.checkState[clId+'_foto_antes_'+idx] && !!S.checkState[clId+'_foto_depois_'+idx];
-        if (hasBoth && !S.checkState[clId+'_'+cl.itens[idx].t]) {
-          S.checkState[clId+'_'+cl.itens[idx].t] = true;
+      var _tipoItem = cl.itens[idx].tipo || 'checkbox';
+      if (_tipoItem === 'checkbox') {
+        if (cl.itens[idx].foto === 'antes_depois') {
+          var hasBoth = !!S.checkState[clId+'_foto_antes_'+idx] && !!S.checkState[clId+'_foto_depois_'+idx];
+          if (hasBoth && !S.checkState[clId+'_'+cl.itens[idx].t]) {
+            S.checkState[clId+'_'+cl.itens[idx].t] = true;
+          }
         }
-      }
-      if (cl.itens[idx].foto === 'depois') {
-        if (!S.checkState[clId+'_'+cl.itens[idx].t]) {
-          S.checkState[clId+'_'+cl.itens[idx].t] = true;
+        if (cl.itens[idx].foto === 'depois') {
+          if (!S.checkState[clId+'_'+cl.itens[idx].t]) {
+            S.checkState[clId+'_'+cl.itens[idx].t] = true;
+          }
         }
       }
     }

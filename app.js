@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '188';
+  var BUILD = '189';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
@@ -3152,6 +3152,11 @@ function verDetalhe(idx) {
   (r.itens||[]).forEach(function(item){
     if (item.fotoAntes) todasFotos.push({src:item.fotoAntes, label:'ANTES — '+item.texto});
     if (item.fotoDepois) todasFotos.push({src:item.fotoDepois, label:'DEPOIS — '+item.texto});
+    if (item.fotosMulti && item.fotosMulti.length) {
+      item.fotosMulti.forEach(function(src, fi){
+        todasFotos.push({src:src, label:'Foto '+(fi+1)+' — '+item.texto});
+      });
+    }
   });
   fotoFullList = todasFotos;
 
@@ -3229,7 +3234,7 @@ function verDetalhe(idx) {
       +itensNormais.map(function(item){
           var tipo = item.tipo || 'checkbox';
           var fotoHtml = '';
-          if (item.fotoAntes || item.fotoDepois) {
+          if (item.fotoAntes || item.fotoDepois || (item.fotosMulti && item.fotosMulti.length)) {
             if (item.fotoAntes) {
               var fi = fotosDosItens.findIndex(function(f){return f.src===item.fotoAntes;});
               fotoHtml += '<img src="'+item.fotoAntes+'" onclick="abrirFotoFull(fotoFullList,'+fi+')" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--gray2);margin-top:8px;margin-right:6px" title="ANTES"/>';
@@ -3237,6 +3242,12 @@ function verDetalhe(idx) {
             if (item.fotoDepois) {
               var fj = fotosDosItens.findIndex(function(f){return f.src===item.fotoDepois;});
               fotoHtml += '<img src="'+item.fotoDepois+'" onclick="abrirFotoFull(fotoFullList,'+fj+')" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--gray2);margin-top:8px" title="DEPOIS"/>';
+            }
+            if (item.fotosMulti && item.fotosMulti.length) {
+              item.fotosMulti.forEach(function(src, mi){
+                var mk = fotosDosItens.findIndex(function(f){return f.src===src;});
+                fotoHtml += '<img src="'+src+'" onclick="abrirFotoFull(fotoFullList,'+mk+')" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--gray2);margin-top:8px;margin-right:6px" title="Foto '+(mi+1)+'"/>';
+              });
             }
             fotoHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">'+fotoHtml+'</div>';
           } else if (item.foto && item.foto !== 'none') {
@@ -3329,7 +3340,7 @@ function exportarDetalhePDF() {
   });
   var itensNormais = (r.itens||[]).filter(function(it){ return (it.tipo||'checkbox') !== 'planilha'; });
   var itensPlanilha = (r.itens||[]).filter(function(it){ return it.tipo === 'planilha'; });
-  var fotoCount = (r.itens||[]).reduce(function(n,it){ return n+(it.fotoAntes?1:0)+(it.fotoDepois?1:0); },0);
+  var fotoCount = (r.itens||[]).reduce(function(n,it){ return n+(it.fotoAntes?1:0)+(it.fotoDepois?1:0)+(it.fotosMulti?it.fotosMulti.length:0); },0);
 
   // ── Seção: itens normais ──
   var itensHtml = itensNormais.length ? itensNormais.map(function(item){
@@ -3344,7 +3355,8 @@ function exportarDetalhePDF() {
     var critico = item.critico ? ' <span style="font-size:9px;font-weight:800;color:#e74c3c;background:#fdecea;padding:1px 5px;border-radius:10px;border:1px solid #e74c3c">⚠ CRÍTICO</span>' : '';
     var fotosHtml = '';
     if (item.fotoAntes) fotosHtml += '<img src="'+item.fotoAntes+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;margin-top:6px;margin-right:4px" title="Foto Antes"/>';
-    if (item.fotoDepois) fotosHtml += '<img src="'+item.fotoDepois+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;margin-top:6px" title="Foto Depois"/>';
+    if (item.fotoDepois) fotosHtml += '<img src="'+item.fotoDepois+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;margin-top:6px;margin-right:4px" title="Foto Depois"/>';
+    if (item.fotosMulti && item.fotosMulti.length) { item.fotosMulti.forEach(function(src,mi){ fotosHtml += '<img src="'+src+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;margin-top:6px;margin-right:4px" title="Foto '+(mi+1)+'"/>'; }); }
     var bg = !item.feito?'#fff':(tipo==='simNao'&&item.resposta==='nao')?'#fdecea':'#f0faf3';
     return '<tr style="background:'+bg+';border-bottom:1px solid #eee">'
       +'<td style="width:28px;text-align:center;font-size:14px;padding:8px 4px">'+icon+'</td>'
@@ -5037,7 +5049,7 @@ function renderRelExecutivo() {
   var ops = [];
   res.forEach(function(r){if(ops.indexOf(r.operador)<0) ops.push(r.operador);});
   var fotos = 0;
-  res.forEach(function(r){(r.itens||[]).forEach(function(it){if(it.fotoAntes||it.fotoDepois)fotos++;});});
+  res.forEach(function(r){(r.itens||[]).forEach(function(it){if(it.fotoAntes)fotos++;if(it.fotoDepois)fotos++;if(it.fotosMulti)fotos+=it.fotosMulti.length;});});
   var ocorr = res.filter(function(r){return r.pct<100;}).length;
 
   document.getElementById('exec-total').textContent = total;

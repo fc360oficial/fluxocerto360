@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '189';
+  var BUILD = '190';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
@@ -636,8 +636,82 @@ function limparResultadosFirebase() {
 
 // Listener em tempo real para resultados — mantém o supervisor atualizado sem precisar recarregar
 var _resultadosUnsub = null;
+var _firstResultSnapshot = true;
+
+function _tocarSomNotificacao() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var notas = [
+      {freq:880,start:0,dur:0.12},
+      {freq:1108,start:0.13,dur:0.12},
+      {freq:1320,start:0.26,dur:0.18}
+    ];
+    notas.forEach(function(n){
+      var osc=ctx.createOscillator();var gain=ctx.createGain();
+      osc.type='sine';osc.frequency.value=n.freq;
+      gain.gain.setValueAtTime(0.18,ctx.currentTime+n.start);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+n.start+n.dur);
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.start(ctx.currentTime+n.start);osc.stop(ctx.currentTime+n.start+n.dur+0.05);
+    });
+  } catch(e){}
+}
+
+function _notificarNovoChecklist(r) {
+  var pctTxt = (r.pct||0)+'%';
+  var statusTxt = r.reprovado ? '🚨 REPROVADO' : r.pct===100 ? '✅ APROVADO' : '⚠️ '+pctTxt;
+  var titulo = '📋 ' + (r.checklistNome||'Checklist');
+  var corpo = (r.operador||'--') + ' • ' + (r.loja||'') + ' • ' + statusTxt;
+
+  _tocarSomNotificacao();
+
+  // Banner na tela (mais visível que o toast padrão)
+  var banner = document.getElementById('notif-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'notif-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;transform:translateY(-100%);transition:transform .4s cubic-bezier(.22,.68,0,1.2);pointer-events:none';
+    document.body.appendChild(banner);
+  }
+  var pctColor = r.reprovado?'#e74c3c':r.pct===100?'#2d9e62':r.pct>=50?'#d68910':'#e74c3c';
+  banner.innerHTML = '<div style="margin:12px 16px;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);border-left:5px solid '+pctColor+';padding:16px 18px;display:flex;align-items:center;gap:14px;pointer-events:auto;cursor:pointer" onclick="document.getElementById(\'notif-banner\').style.transform=\'translateY(-100%)\';">'
+    +'<div style="font-size:32px;flex-shrink:0">'+(r.reprovado?'🚨':r.pct===100?'✅':'📋')+'</div>'
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="font-size:14px;font-weight:800;color:#111;margin-bottom:3px">'+titulo+'</div>'
+    +'<div style="font-size:12px;color:#555;font-weight:500">'+(r.operador||'--')+' — '+(r.loja||'Sem loja')+'</div>'
+    +'<div style="font-size:12px;font-weight:700;color:'+pctColor+';margin-top:2px">'+statusTxt+' · '+(r.feitos||0)+'/'+(r.total||0)+' itens</div>'
+    +'</div>'
+    +'<div style="font-size:22px;font-weight:800;color:'+pctColor+';flex-shrink:0">'+pctTxt+'</div>'
+    +'</div>';
+  banner.style.transform = 'translateY(0)';
+  clearTimeout(banner._timer);
+  banner._timer = setTimeout(function(){ banner.style.transform = 'translateY(-100%)'; }, 8000);
+
+  // Push notification do navegador (quando aba está minimizada/segundo plano)
+  if (document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      var notif = new Notification(titulo, {
+        body: corpo,
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        tag: 'checklist-' + (r.id||Date.now()),
+        renotify: true
+      });
+      notif.onclick = function(){ window.focus(); notif.close(); };
+    } catch(e){}
+  }
+}
+
+function _pedirPermissaoNotificacao() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
 function iniciarResultadosRealtime() {
   if (_resultadosUnsub) _resultadosUnsub();
+  _firstResultSnapshot = true;
   _resultadosUnsub = db.collection('resultados').onSnapshot(function(snap) {
     var list = snap.docs.map(function(d){ return d.data(); });
     list.sort(function(a,b){ return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1; });
@@ -646,6 +720,24 @@ function iniciarResultadosRealtime() {
       var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
       localStorage.setItem(RESKEY, JSON.stringify(semAssina));
     } catch(e){}
+
+    // Notificar sobre novos checklists (ignora snapshot inicial)
+    if (!_firstResultSnapshot) {
+      var isGestor = S.role==='admin'||S.role==='gerencia'||S.role==='supervisor';
+      if (isGestor) {
+        var myName = S.currentUser ? S.currentUser.nome : '';
+        snap.docChanges().forEach(function(change) {
+          if (change.type === 'added') {
+            var r = change.doc.data();
+            if (r.operador !== myName) {
+              _notificarNovoChecklist(r);
+            }
+          }
+        });
+      }
+    }
+    _firstResultSnapshot = false;
+
     // Re-renderiza a página ativa se depende de resultados
     var dashPanel = document.getElementById('panel-dashboard');
     var centralPanel = document.getElementById('panel-central');
@@ -905,6 +997,11 @@ function finalizarLogin(found) {
   setDate();
   checkMobile();
   var isOpOrPrev2 = S.role==='operator'||S.role==='prevencao'||S.role==='coletor';
+
+  // Pedir permissão para notificações (gestores recebem alerta de novos checklists)
+  if (S.role==='admin'||S.role==='gerencia'||S.role==='supervisor') {
+    _pedirPermissaoNotificacao();
+  }
 
   // Mostrar tela de carregamento
   document.getElementById('app').style.opacity='0.6';

@@ -156,7 +156,7 @@ body.tv .item-cod,body.tv .item-preco,body.tv .item-custo{font-size:8px}
 body.tv .item-pct{font-size:11px;min-width:36px}
 </style>
 <script>
-if(window.parent!==window||new URLSearchParams(location.search).has('tv'))
+if(new URLSearchParams(location.search).has('tv'))
   document.documentElement.classList.add('tv-root');
 </script>
 </head>

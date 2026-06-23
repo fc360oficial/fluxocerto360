@@ -58,6 +58,7 @@ iframe.visivel{opacity:1;pointer-events:auto}
 // Rotação: Diretoria → Precificação → Compras (geral) →
 //          [Fátima diário→mensal→produtos → Fernanda → ... → Renata] → Diretoria
 const BASE = 'http://192.168.2.252:3003';
+const TV = window.innerWidth >= 1900 ? '?tv=1' : '';
 
 let atual = 'diretoria';
 
@@ -81,11 +82,11 @@ function mostrar(iframe, dot, nome) {
 }
 
 function mostrarDiretoria() {
-  frD.src = BASE + '/diretoria.html';
+  frD.src = BASE + '/diretoria.html' + TV;
   mostrar(frD, dotD, 'diretoria');
 }
 function mostrarComparativoTV() {
-  frCT.src = BASE + '/comparativo-tv.html';
+  frCT.src = BASE + '/comparativo-tv.html' + TV;
   mostrar(frCT, dotCT, 'comptvs');
 }
 function mostrarPrecif() {
@@ -93,11 +94,11 @@ function mostrarPrecif() {
   try { frP.contentWindow.postMessage({ type: 'activate' }, '*'); } catch(_) {}
 }
 function mostrarCompras() {
-  frC.src = BASE + '/compras.html';
+  frC.src = BASE + '/compras.html' + TV;
   mostrar(frC, dotC, 'compras');
 }
 function mostrarCiclo() {
-  frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0';
+  frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0' + (TV ? '&tv=1' : '');
   mostrar(frK, dotC, 'ciclo');
 }
 
@@ -132,7 +133,7 @@ dotC.addEventListener('click', mostrarCompras);
 
 
 // Pré-carrega precificação e inicia na diretoria
-frP.src = BASE + '/precificacao.html';
+frP.src = BASE + '/precificacao.html' + TV;
 mostrarDiretoria();
 </script>
 </body>

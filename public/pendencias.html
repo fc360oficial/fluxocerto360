@@ -117,10 +117,27 @@ table.t tbody tr:hover{background:#ffffff06}
   table.t th,table.t td{padding:6px 8px;font-size:10px}
 }
 @media print{
-  .sidebar,.filtros,.main-tabs{display:none!important}
-  .main{margin-left:0;padding:10px}
+  .sidebar,.filtros,.main-tabs,.kpi-row{display:none!important}
+  .btn{display:none!important}
+  .main{margin-left:0;padding:0}
   .grupo-body{display:block!important}
-  body{background:#fff;color:#000}
+  body{background:#fff;color:#000;font-size:11px}
+  .page-hdr h1{font-size:16px;color:#000}
+  .page-hdr p{color:#333}
+  .grupo-bloco{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
+  .grupo-hdr{background:#f0f0f0;padding:6px 10px}
+  .grupo-hdr-nome{color:#000;font-size:12px}
+  .grupo-badge{background:#eee;color:#333;font-size:10px}
+  .grupo-toggle{display:none}
+  table.t{min-width:0!important}
+  table.t th{background:#e5e5e5;color:#000;border-bottom:1px solid #999;font-size:9px;padding:4px 8px}
+  table.t td{border-bottom:1px solid #ddd;padding:4px 8px;font-size:10px}
+  .cod{color:#333}
+  .desc{color:#000}
+  .sub{color:#444}
+  .tag{border:1px solid #999;color:#000;background:#eee}
+  .tag-sem-sub{background:#fff3cd;color:#856404;border-color:#ffc107}
+  .tag-sem-merc{background:#f8d7da;color:#721c24;border-color:#f5c6cb}
 }
 </style>
 </head>
@@ -190,6 +207,7 @@ table.t tbody tr:hover{background:#ffffff06}
       </div>
       <button class="btn btn-blue" onclick="carregarSemMerc()">🔍 Filtrar</button>
       <button class="btn btn-slate" onclick="exportarCSV('sem-merc')">⬇ CSV</button>
+      <button class="btn btn-slate" onclick="window.print()">🖨 Imprimir</button>
     </div>
     <div class="kpi-row" id="kpi-sm"></div>
     <div id="lista-sm"><div class="spinner"></div></div>

@@ -233,7 +233,7 @@ function renderTudo(d) {
   // ── SETOR BREAKDOWN ──
   html += '<div class="sec-title">🏪 NOTAS EMITIDAS POR SETOR</div>';
   html += '<div class="setor-grid">';
-  var setores = ['AÇOUGUE','HORTFRUTI','PADARIA','LOJA'];
+  var setores = ['AÇOUGUE','HORTFRUTI','PADARIA'];
   for (var i = 0; i < setores.length; i++) {
     var s = setores[i];
     var v = d.porSetor[s] || 0;

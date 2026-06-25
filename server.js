@@ -1525,7 +1525,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
     const bonificacoes = parseFloat(bonifRows[0]?.total || 0);
 
     let emitido = 0, aberto = 0, tramite = 0;
-    const porSetor = { AÇOUGUE: 0, HORTFRUTI: 0, PADARIA: 0, LOJA: 0 };
+    const porSetor = { AÇOUGUE: 0, HORTFRUTI: 0, PADARIA: 0 };
     const abertoFornec = {}, tramiteFornec = {};
     const abertoItens = [], tramiteItens = [];
 

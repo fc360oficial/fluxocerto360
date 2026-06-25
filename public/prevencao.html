@@ -286,47 +286,47 @@ function renderFornecedorSection(titulo, fornecList, itens, prefix, total) {
     return html;
   }
 
-  // Tabela resumo por fornecedor
-  html += '<div class="table-wrap"><table class="t">';
-  html += '<thead><tr><th>Fornecedor</th><th class="r">Qtd</th><th class="r">Total</th></tr></thead>';
-  html += '<tbody>';
+  // Agrupa itens por fornecedor
+  var itensPorFornec = {};
+  for (var j = 0; j < itens.length; j++) {
+    var fn = itens[j].fornecedor || 'SEM FORNECEDOR';
+    if (!itensPorFornec[fn]) itensPorFornec[fn] = [];
+    itensPorFornec[fn].push(itens[j]);
+  }
+
+  // Cada fornecedor é um accordion
   for (var i = 0; i < fornecList.length; i++) {
     var f = fornecList[i];
-    html += '<tr><td class="desc">' + f.nome + '</td>';
-    html += '<td class="r">' + f.qtd + '</td>';
-    html += '<td class="r bold warn">' + fmt(f.total) + '</td></tr>';
+    var id = prefix + '-f-' + i;
+    var fi = itensPorFornec[f.nome] || [];
+    html += '<div class="grupo-bloco">';
+    html += '<div class="grupo-hdr" onclick="toggleGrupo(\'' + id + '\')">';
+    html += '<span class="grupo-hdr-nome" style="cursor:pointer">' + f.nome + '</span>';
+    html += '<span class="grupo-badge">' + f.qtd + ' itens</span>';
+    html += '<span class="grupo-badge" style="margin-left:4px">' + fmt(f.total) + '</span>';
+    html += '<span class="grupo-toggle">▼</span>';
+    html += '</div>';
+    html += '<div class="grupo-body" id="' + id + '">';
+    html += '<div class="table-wrap"><table class="t">';
+    html += '<thead><tr><th>Código</th><th>Produto</th><th>Und</th><th class="r">Qtd</th>';
+    html += '<th class="r">Valor</th><th class="r">Total</th>';
+    html += '<th>Usuário</th><th>Data</th></tr></thead>';
+    html += '<tbody>';
+    for (var k = 0; k < fi.length; k++) {
+      var p = fi[k];
+      html += '<tr>';
+      html += '<td class="cod">' + p.CodigoBarras + '</td>';
+      html += '<td class="desc">' + (p.Descricao || '') + '</td>';
+      html += '<td style="color:#64748b;font-size:11px">' + (p.Und || '') + '</td>';
+      html += '<td class="r">' + parseFloat(p.Qtd).toLocaleString('pt-BR') + '</td>';
+      html += '<td class="r">' + fmtN(p.Valor) + '</td>';
+      html += '<td class="r bold warn">' + fmtN(p.Total) + '</td>';
+      html += '<td style="font-size:11px;color:#64748b">' + (p.Usuario || '') + '</td>';
+      html += '<td style="font-size:11px;color:#64748b;white-space:nowrap">' + fmtD(p.DataLan) + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table></div></div></div>';
   }
-  html += '</tbody></table></div>';
-
-  // Accordion com itens detalhados
-  var id = 'grp-' + prefix;
-  html += '<div class="grupo-bloco">';
-  html += '<div class="grupo-hdr" onclick="toggleGrupo(\'' + id + '\')">';
-  html += '<span class="grupo-hdr-nome">📋 Ver itens detalhados</span>';
-  html += '<span class="grupo-badge">' + itens.length + ' itens</span>';
-  html += '<span class="grupo-toggle">▼</span>';
-  html += '</div>';
-  html += '<div class="grupo-body" id="' + id + '">';
-  html += '<div class="table-wrap"><table class="t">';
-  html += '<thead><tr><th>Código</th><th>Produto</th><th>Und</th><th class="r">Qtd</th>';
-  html += '<th class="r">Valor</th><th class="r">Total</th><th>Fornecedor</th>';
-  html += '<th>Usuário</th><th>Data</th></tr></thead>';
-  html += '<tbody>';
-  for (var j = 0; j < itens.length; j++) {
-    var p = itens[j];
-    html += '<tr>';
-    html += '<td class="cod">' + p.CodigoBarras + '</td>';
-    html += '<td class="desc">' + (p.Descricao || '') + '</td>';
-    html += '<td style="color:#64748b;font-size:11px">' + (p.Und || '') + '</td>';
-    html += '<td class="r">' + parseFloat(p.Qtd).toLocaleString('pt-BR') + '</td>';
-    html += '<td class="r">' + fmtN(p.Valor) + '</td>';
-    html += '<td class="r bold warn">' + fmtN(p.Total) + '</td>';
-    html += '<td style="font-size:11px;color:#94a3b8;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (p.fornecedor || '—') + '</td>';
-    html += '<td style="font-size:11px;color:#64748b">' + (p.Usuario || '') + '</td>';
-    html += '<td style="font-size:11px;color:#64748b;white-space:nowrap">' + fmtD(p.DataLan) + '</td>';
-    html += '</tr>';
-  }
-  html += '</tbody></table></div></div></div>';
 
   return html;
 }

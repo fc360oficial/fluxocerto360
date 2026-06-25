@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prevenção de Perdas</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #334155}
+.sidebar-nav{padding:10px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#334155;color:#f1f5f9}
+.nav-item.active{background:#F9C20018;color:#F9C200;border-right:3px solid #F9C200}
+.nav-item .ic{font-size:15px;width:20px;text-align:center}
+
+.main{margin-left:220px;padding:24px}
+.page-hdr{margin-bottom:20px}
+.page-hdr h1{font-size:21px;font-weight:700;color:#f8fafc}
+.page-hdr p{font-size:12px;color:#64748b;margin-top:2px}
+
+.filtros{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg select,.fg input{background:#0f172a;border:1px solid #334155;border-radius:7px;color:#e2e8f0;padding:7px 11px;font-size:13px;outline:none;min-width:140px}
+.fg select:focus,.fg input:focus{border-color:#F9C200}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end}
+.btn-blue{background:#F9C200;color:#0f0f1a;font-weight:700}.btn-blue:hover{background:#e0ae00}
+.btn-slate{background:#334155;color:#cbd5e1}.btn-slate:hover{background:#475569}
+
+.kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.kpi{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;min-width:130px;flex:1}
+.kpi .v{font-size:20px;font-weight:700}
+.kpi .l{font-size:10px;color:#64748b;margin-top:2px}
+
+.grupo-bloco{margin-bottom:8px;border:1px solid #334155;border-radius:10px;overflow:hidden}
+.grupo-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1e293b;cursor:pointer;user-select:none;transition:background .1s}
+.grupo-hdr:hover{background:#263249}
+.grupo-hdr-nome{font-size:13px;font-weight:700;color:#e2e8f0;flex:1}
+.grupo-badge{font-size:11px;font-weight:700;background:#f59e0b22;color:#f59e0b;border-radius:6px;padding:2px 8px}
+.grupo-toggle{font-size:11px;color:#64748b;transition:transform .2s}
+.grupo-hdr.open .grupo-toggle{transform:rotate(180deg)}
+.grupo-body{display:none;background:#0f172a22}
+.grupo-body.open{display:block}
+
+.table-wrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:12px}
+table.t thead{background:#0f172a}
+table.t th{padding:8px 12px;text-align:left;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #334155}
+table.t td{padding:7px 12px;border-bottom:1px solid #1e293b22;vertical-align:middle}
+table.t tbody tr:hover{background:#ffffff06}
+.cod{color:#94a3b8;font-size:11px;font-family:monospace}
+.desc{font-weight:500;color:#e2e8f0}
+.sub{font-size:11px;color:#64748b}
+
+.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #334155;border-top-color:#f59e0b;animation:spin .7s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:30px;text-align:center;color:#475569;font-size:13px}
+
+@media(max-width:768px){
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #334155}
+  .sidebar-logo{padding:8px 12px;border-bottom:none;display:flex;align-items:center}
+  .sidebar-logo img{width:100px !important;height:auto !important}
+  .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+  .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center}
+  .nav-item .ic{font-size:12px;width:auto}
+  .nav-item.active{border-right:none;border-bottom:2px solid #F9C200}
+  .main{margin-left:0;padding:10px}
+  .page-hdr h1{font-size:16px}
+  .filtros{gap:6px}
+  .fg select,.fg input{font-size:16px;min-width:80px}
+  .btn{padding:7px 10px;font-size:12px}
+  .kpi-row{gap:8px}
+  .kpi{min-width:calc(50% - 5px);padding:10px 12px}
+  .kpi .v{font-size:18px}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.t{min-width:700px}
+  table.t th,table.t td{padding:6px 8px;font-size:10px}
+}
+@media print{
+  .sidebar,.filtros,.btn{display:none!important}
+  .main{margin-left:0;padding:0}
+  .grupo-body{display:block!important}
+  body{background:#fff;color:#000;font-size:11px}
+  .page-hdr h1{font-size:16px;color:#000}
+  .page-hdr p{color:#333}
+  .grupo-bloco{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
+  .grupo-hdr{background:#f0f0f0;padding:6px 10px}
+  .grupo-hdr-nome{color:#000;font-size:12px}
+  .grupo-badge{background:#eee;color:#333;font-size:10px}
+  .grupo-toggle{display:none}
+  table.t{min-width:0!important}
+  table.t th{background:#e5e5e5;color:#000;border-bottom:1px solid #999;font-size:9px;padding:4px 8px}
+  table.t td{border-bottom:1px solid #ddd;padding:4px 8px;font-size:10px}
+  .cod{color:#333}.desc{color:#000}.sub{color:#444}
+  .kpi-row{display:flex!important}
+  .kpi{border:1px solid #ccc;background:#f9f9f9}
+  .kpi .v{color:#000!important}
+  .kpi .l{color:#333}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item"><span class="ic">📊</span> Dashboard</a>
+    <a href="consulta.html" class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
+    <a href="itens.html" class="nav-item"><span class="ic">📂</span> Mercadológico</a>
+    <a href="fornecedores.html" class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
+    <a href="pendencias.html" class="nav-item"><span class="ic">⚠️</span> Pendências</a>
+    <a href="comparativos.html" class="nav-item"><span class="ic">📈</span> Comparativos</a>
+    <a href="prevencao.html" class="nav-item active"><span class="ic">🛡️</span> Prevenção</a>
+  </nav>
+  <div style="padding:12px 16px;border-top:1px solid #334155;margin-top:auto">
+    <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="sidebar-user">👤 ...</div>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#f87171;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #7f1d1d;background:#450a0a22;transition:background .15s" onmouseover="this.style.background='#450a0a'" onmouseout="this.style.background='#450a0a22'">🚪 Sair</a>
+  </div>
+</div>
+<script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('sidebar-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
+
+<div class="main">
+  <div class="page-hdr">
+    <h1>🛡️ Prevenção de Perdas</h1>
+    <p>Avarias em aberto e em trâmite por loja e mês</p>
+  </div>
+
+  <div class="filtros">
+    <div class="fg">
+      <label>Loja</label>
+      <select id="fil-loja" onchange="carregar()">
+        <option value="1">Loja 1</option>
+        <option value="2">Loja 2</option>
+        <option value="3">Loja 3</option>
+        <option value="4">Loja 4</option>
+        <option value="5">Loja 5</option>
+        <option value="6">Loja 6</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Mês</label>
+      <input type="month" id="fil-mes" onchange="carregar()">
+    </div>
+    <div class="fg">
+      <label>Buscar Produto</label>
+      <input type="text" id="fil-busca" placeholder="nome ou código..." onkeydown="if(event.key==='Enter')carregar()">
+    </div>
+    <button class="btn btn-blue" onclick="carregar()">🔍 Filtrar</button>
+    <button class="btn btn-slate" onclick="exportarCSV()">⬇ CSV</button>
+    <button class="btn btn-slate" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+
+  <div class="kpi-row" id="kpis"></div>
+  <div id="lista"><div class="spinner"></div></div>
+</div>
+
+<script>
+let dados = [];
+
+async function carregar() {
+  document.getElementById('lista').innerHTML = '<div class="spinner"></div>';
+  const loja = document.getElementById('fil-loja').value;
+  const mes = document.getElementById('fil-mes').value;
+  const busca = document.getElementById('fil-busca').value.trim();
+  const params = new URLSearchParams();
+  params.set('loja', loja);
+  if (mes) params.set('mes', mes);
+  if (busca) params.set('busca', busca);
+  try {
+    const r = await fetch('/api/pendencias/prevencao?' + params);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    dados = data.itens || [];
+    renderKpis(data.resumo);
+    renderLista();
+  } catch(e) {
+    document.getElementById('lista').innerHTML = '<div class="empty">Erro: ' + e.message + '</div>';
+  }
+}
+
+function renderKpis(res) {
+  if (!res) return;
+  const fmt = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+  document.getElementById('kpis').innerHTML =
+    '<div class="kpi"><div class="v" style="color:#f59e0b">' + res.aberto_qtd + '</div><div class="l">Itens em Aberto</div></div>' +
+    '<div class="kpi"><div class="v" style="color:#f59e0b">' + fmt(res.aberto_total) + '</div><div class="l">Valor em Aberto</div></div>' +
+    '<div class="kpi"><div class="v" style="color:#38bdf8">' + res.tramite_qtd + '</div><div class="l">Itens em Trâmite</div></div>' +
+    '<div class="kpi"><div class="v" style="color:#38bdf8">' + fmt(res.tramite_total) + '</div><div class="l">Valor em Trâmite</div></div>' +
+    '<div class="kpi"><div class="v" style="color:#f87171">' + fmt(res.aberto_total + res.tramite_total) + '</div><div class="l">Total Geral</div></div>';
+}
+
+function renderLista() {
+  const cont = document.getElementById('lista');
+  if (!dados.length) { cont.innerHTML = '<div class="empty">Nenhum item encontrado.</div>'; return; }
+
+  const grupos = { 0: [], 2: [] };
+  for (const r of dados) {
+    if (!grupos[r.Status]) grupos[r.Status] = [];
+    grupos[r.Status].push(r);
+  }
+
+  const fmtD = d => new Date(d).toLocaleDateString('pt-BR');
+  const fmtV = v => parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+
+  let html = '';
+  for (const [status, itens] of Object.entries(grupos)) {
+    if (!itens.length) continue;
+    const label = status == 0 ? '🟡 EM ABERTO' : '🔵 EM TRÂMITE';
+    const total = itens.reduce((s, r) => s + parseFloat(r.Total), 0);
+    const id = 'grp-' + status;
+    html +=
+      '<div class="grupo-bloco">' +
+        '<div class="grupo-hdr open" onclick="toggleGrupo(\'' + id + '\')">' +
+          '<span class="grupo-hdr-nome">' + label + '</span>' +
+          '<span class="grupo-badge">' + itens.length + ' itens · R$ ' + fmtV(total) + '</span>' +
+          '<span class="grupo-toggle">▼</span>' +
+        '</div>' +
+        '<div class="grupo-body open" id="' + id + '">' +
+          '<div class="table-wrap">' +
+            '<table class="t">' +
+              '<thead><tr>' +
+                '<th>Código</th><th>Produto</th><th>Und</th><th>Qtd</th>' +
+                '<th>Valor</th><th>Total</th><th>Motivo</th>' +
+                '<th>Usuário</th><th>Data</th>' +
+              '</tr></thead>' +
+              '<tbody>' +
+                itens.map(function(p) {
+                  return '<tr>' +
+                    '<td class="cod">' + p.CodigoBarras + '</td>' +
+                    '<td class="desc">' + (p.Descricao||'') + '</td>' +
+                    '<td style="color:#64748b;font-size:11px">' + (p.Und||'') + '</td>' +
+                    '<td style="text-align:right">' + parseFloat(p.Qtd).toLocaleString('pt-BR') + '</td>' +
+                    '<td style="text-align:right">' + fmtV(p.Valor) + '</td>' +
+                    '<td style="text-align:right;font-weight:600;color:#f59e0b">' + fmtV(p.Total) + '</td>' +
+                    '<td class="sub">' + (p.motivo||'—') + '</td>' +
+                    '<td class="sub">' + (p.Usuario||'') + '</td>' +
+                    '<td class="sub" style="white-space:nowrap">' + fmtD(p.DataLan) + '</td>' +
+                  '</tr>';
+                }).join('') +
+              '</tbody>' +
+            '</table>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+  cont.innerHTML = html;
+}
+
+function toggleGrupo(id) {
+  var body = document.getElementById(id);
+  var hdr = body.previousElementSibling;
+  body.classList.toggle('open');
+  hdr.classList.toggle('open');
+}
+
+function exportarCSV() {
+  if (!dados.length) return;
+  var cols = ['CodigoBarras','Descricao','Und','Qtd','Valor','Total','motivo','Usuario','DataLan','Status'];
+  var header = cols.join(';');
+  var linhas = dados.map(function(r) {
+    return cols.map(function(c) {
+      var v = (r[c]||'').toString();
+      if (c === 'Status') v = r[c] === 0 ? 'Em Aberto' : 'Em Trâmite';
+      if (c === 'DataLan') v = new Date(r[c]).toLocaleDateString('pt-BR');
+      return '"' + v.replace(/"/g,'""') + '"';
+    }).join(';');
+  });
+  var csv = [header].concat(linhas).join('\n');
+  var blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var loja = document.getElementById('fil-loja').value;
+  var mes = document.getElementById('fil-mes').value || 'todos';
+  a.download = 'prevencao-loja' + loja + '-' + mes + '.csv';
+  a.click();
+}
+
+// Init
+(function() {
+  var hoje = new Date();
+  document.getElementById('fil-mes').value = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0');
+  carregar();
+})();
+</script>
+</body>
+</html>

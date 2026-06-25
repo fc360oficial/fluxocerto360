@@ -1499,7 +1499,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
                 f.NomeCompleto as fornecedor
          FROM central.avariaconsumo a
          LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
-         WHERE a.nLoja=? AND a.Status=4 AND a.DataEmi BETWEEN ? AND ?
+         WHERE a.nLoja=? AND a.Status=4 AND a.Tipo=1 AND a.DataEmi BETWEEN ? AND ?
          ORDER BY a.Total DESC`, [loja, dIni, dFim]),
       q(`SELECT a.CodMotivo, a.Status, a.Total, a.CodFornec, a.CodigoBarras, a.Descricao,
                 a.Qtd, a.Valor, a.Und, a.Usuario, a.DataLan,
@@ -1563,7 +1563,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
       const mDB = mesDB(mMes);
       try {
         const [av] = await q(`SELECT SUM(Total) as t FROM central.avariaconsumo
-          WHERE nLoja=? AND Status=4 AND DataEmi BETWEEN ? AND ?`, [loja, mIni, mFim]);
+          WHERE nLoja=? AND Status=4 AND Tipo=1 AND DataEmi BETWEEN ? AND ?`, [loja, mIni, mFim]);
         const [vd] = await q(`SELECT SUM(ValorTotalNovo) as t FROM \`ln${loja}${mDB}\`.zcupomitens
           WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [mIni, mFim]).catch(() => [{ t: 0 }]);
         const avT = parseFloat(av?.t || 0), vdT = parseFloat(vd?.t || 0);

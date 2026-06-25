@@ -1498,7 +1498,9 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
          WHERE a.nLoja=? AND a.Status=4 AND a.Tipo=1 AND a.NF > 0 AND a.DataEmi BETWEEN ? AND ?`, [loja, dIni, dFim]);
     const pedIds = pedidosEmitidos.map(r => r.nPedido);
 
-    const [emitidoRows, abertoTramiteRows, vendasRows, bonifRows] = await Promise.all([
+    const pedSet = new Set(pedIds);
+
+    const [emitidoRows, allAbertoTramite, vendasRows, bonifRows] = await Promise.all([
       pedIds.length ? q(`SELECT a.CodMotivo, a.Status, a.Total, a.CodFornec, a.CodigoBarras, a.Descricao,
                 a.Qtd, a.Valor, a.Und, a.Usuario, a.DataLan, a.DataEmi,
                 f.NomeCompleto as fornecedor
@@ -1507,14 +1509,12 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
          WHERE a.nLoja=? AND a.Tipo=1 AND a.nPedido IN (?)
          ORDER BY a.Total DESC`, [loja, pedIds]) : Promise.resolve([]),
       q(`SELECT a.CodMotivo, a.Status, a.Total, a.CodFornec, a.CodigoBarras, a.Descricao,
-                a.Qtd, a.Valor, a.Und, a.Usuario, a.DataLan,
+                a.Qtd, a.Valor, a.Und, a.Usuario, a.DataLan, a.nPedido,
                 f.NomeCompleto as fornecedor
          FROM central.avariaconsumo a
          LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
          WHERE a.nLoja=? AND a.Status IN (0,2) AND a.DataLan BETWEEN ? AND ?
-           AND a.nPedido NOT IN (SELECT DISTINCT nPedido FROM central.avariaconsumo
-                WHERE nLoja=? AND Status=4 AND Tipo=1 AND NF > 0 AND DataEmi BETWEEN ? AND ?)
-         ORDER BY a.Status, a.Total DESC`, [loja, dIni, dFim, loja, dIni, dFim]),
+         ORDER BY a.Status, a.Total DESC`, [loja, dIni, dFim]),
       q(`SELECT SUM(ValorTotalNovo) as total FROM \`ln${loja}${mm}\`.zcupomitens
          WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFim]).catch(() => [{ total: 0 }]),
       q(`SELECT SUM(ValorTotal) as total FROM central.bonificacao_averbacao
@@ -1536,6 +1536,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
       porSetor[setor] = (porSetor[setor] || 0) + tot;
     }
 
+    const abertoTramiteRows = allAbertoTramite.filter(r => !pedSet.has(r.nPedido));
     for (const r of abertoTramiteRows) {
       const tot = parseFloat(r.Total);
       if (r.Status === 0) {

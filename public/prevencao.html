@@ -127,6 +127,10 @@ table.t th.r,table.t td.r{text-align:right}
   table.t{min-width:600px}
   table.t th,table.t td{padding:6px 8px;font-size:10px}
 }
+/* CONSOLIDADO TABLE */
+.bonif-input:focus{border-color:#a78bfa!important}
+table.t td.r input{font-family:'Segoe UI',sans-serif}
+
 @media print{
   .sidebar,.filtros,.btn{display:none!important}
   .main{margin-left:0;padding:0}
@@ -186,12 +190,13 @@ table.t th.r,table.t td.r{text-align:right}
     <div class="fg">
       <label>Loja</label>
       <select id="fil-loja" onchange="carregar()">
-        <option value="1">Loja 1</option>
-        <option value="2">Loja 2</option>
-        <option value="3">Loja 3</option>
-        <option value="4">Loja 4</option>
-        <option value="5">Loja 5</option>
-        <option value="6">Loja 6</option>
+        <option value="0">📊 Consolidado</option>
+        <option value="1">Loja 1 — Atacarejo</option>
+        <option value="2">Loja 2 — Porta Larga</option>
+        <option value="3">Loja 3 — Ponte</option>
+        <option value="4">Loja 4 — Jd Jordão</option>
+        <option value="5">Loja 5 — Muribeca</option>
+        <option value="6">Loja 6 — Cahu</option>
       </select>
     </div>
     <div class="fg">
@@ -217,6 +222,23 @@ function carregar() {
   document.getElementById('conteudo').innerHTML = '<div class="spinner"></div>';
   var loja = document.getElementById('fil-loja').value;
   var mes = document.getElementById('fil-mes').value;
+
+  if (loja === '0') {
+    var params = new URLSearchParams();
+    if (mes) params.set('mes', mes);
+    fetch('/api/pendencias/prevencao-consolidado?' + params)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) throw new Error(data.error);
+        dadosGlobal = data;
+        renderConsolidado(data);
+      })
+      .catch(function(e) {
+        document.getElementById('conteudo').innerHTML = '<div class="empty">Erro: ' + e.message + '</div>';
+      });
+    return;
+  }
+
   var params = new URLSearchParams();
   params.set('loja', loja);
   if (mes) params.set('mes', mes);
@@ -230,6 +252,145 @@ function carregar() {
     .catch(function(e) {
       document.getElementById('conteudo').innerHTML = '<div class="empty">Erro: ' + e.message + '</div>';
     });
+}
+
+function renderConsolidado(d) {
+  var MF = ['','JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+  var html = '';
+
+  // ── AVARIAS POR MÊS (%) ──
+  html += '<div class="sec-title">📋 AVARIAS POR MÊS (%) — POR LOJA</div>';
+  html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Valores como na planilha (negativo = perda). ' + MF[d.mesAtual] + ' é o fechamento atual.</p>';
+  html += '<div class="table-wrap"><table class="t">';
+  html += '<thead><tr><th style="min-width:140px">LOJA</th>';
+  for (var m = 1; m <= d.mesAtual; m++) html += '<th class="r">' + MF[m] + '</th>';
+  html += '</tr></thead><tbody>';
+
+  for (var i = 0; i < d.lojas.length; i++) {
+    var lj = d.lojas[i];
+    html += '<tr><td class="bold" style="padding-left:16px">' + lj.nome + '</td>';
+    for (var mi = 0; mi < lj.mensal.length; mi++) {
+      var pct = lj.mensal[mi].pct;
+      if (pct === 0) {
+        html += '<td class="r" style="color:#475569">—</td>';
+      } else {
+        html += '<td class="r bold neg">-' + fmtN(pct) + '%</td>';
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+
+  // ── DESEMPENHO POR LOJA ──
+  html += '<div class="sec-title" style="margin-top:28px">📊 Desempenho por loja</div>';
+  html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Valores em R$.</p>';
+  html += '<div class="table-wrap"><table class="t" id="tbl-desemp">';
+  html += '<thead><tr>';
+  html += '<th>LOJA</th><th class="r">VENDA</th><th class="r">AV. BRUTA</th>';
+  html += '<th class="r">AÇOUG.</th><th class="r">HORTI</th><th class="r">PADARIA</th>';
+  html += '<th class="r">SALDO</th><th class="r">BONIF.</th><th class="r">AV. FINAL</th>';
+  html += '<th class="r">ABERTO</th><th class="r">TRÂMITE</th><th class="r">AV. MÊS</th><th class="r">% MÊS</th>';
+  html += '</tr></thead><tbody>';
+
+  var tot = {venda:0,avBruta:0,acougue:0,horti:0,padaria:0,saldo:0,bonif:0,avFinal:0,aberto:0,tramite:0,avMes:0};
+
+  for (var i = 0; i < d.lojas.length; i++) {
+    var lj = d.lojas[i];
+    var avFinal = lj.saldo - lj.bonif;
+    var corFinal = avFinal < 0 ? 'pos' : 'neg';
+    var corPct = lj.pctMes > 1.5 ? 'neg' : lj.pctMes > 1 ? 'warn' : '';
+
+    html += '<tr>';
+    html += '<td class="bold" style="padding-left:16px">' + lj.nome + '</td>';
+    html += '<td class="r">' + fmtN(lj.venda) + '</td>';
+    html += '<td class="r warn">' + fmtN(lj.avBruta) + '</td>';
+    html += '<td class="r">' + fmtN(lj.acougue) + '</td>';
+    html += '<td class="r">' + fmtN(lj.horti) + '</td>';
+    html += '<td class="r">' + fmtN(lj.padaria) + '</td>';
+    html += '<td class="r">' + fmtN(lj.saldo) + '</td>';
+    html += '<td class="r"><input type="text" class="bonif-input" data-idx="' + i + '" value="' + fmtN(lj.bonif) + '" style="width:80px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#a78bfa;font-size:11px;font-weight:700;padding:3px 6px;text-align:right;outline:none"></td>';
+    html += '<td class="r bold ' + corFinal + '" id="avf-' + i + '">' + fmtN(avFinal) + '</td>';
+    html += '<td class="r neg">' + fmtN(lj.aberto) + '</td>';
+    html += '<td class="r info">' + fmtN(lj.tramite) + '</td>';
+    html += '<td class="r warn">' + fmtN(lj.avMes) + '</td>';
+    html += '<td class="r bold ' + corPct + '">' + fmtN(lj.pctMes) + '%</td>';
+    html += '</tr>';
+
+    tot.venda += lj.venda; tot.avBruta += lj.avBruta; tot.acougue += lj.acougue;
+    tot.horti += lj.horti; tot.padaria += lj.padaria; tot.saldo += lj.saldo;
+    tot.bonif += lj.bonif; tot.avFinal += avFinal; tot.aberto += lj.aberto;
+    tot.tramite += lj.tramite; tot.avMes += lj.avMes;
+  }
+
+  var totPct = tot.venda > 0 ? +(tot.avMes / tot.venda * 100).toFixed(2) : 0;
+  var totCorFinal = tot.avFinal < 0 ? 'pos' : 'neg';
+
+  html += '<tr style="border-top:2px solid #475569;background:#0f172a">';
+  html += '<td class="bold" style="color:#f8fafc;padding-left:16px">TOTAL</td>';
+  html += '<td class="r bold">' + fmtN(tot.venda) + '</td>';
+  html += '<td class="r bold warn">' + fmtN(tot.avBruta) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.acougue) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.horti) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.padaria) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.saldo) + '</td>';
+  html += '<td class="r bold" style="color:#a78bfa" id="tot-bonif">' + fmtN(tot.bonif) + '</td>';
+  html += '<td class="r bold ' + totCorFinal + '" id="tot-avfinal">' + fmtN(tot.avFinal) + '</td>';
+  html += '<td class="r bold neg">' + fmtN(tot.aberto) + '</td>';
+  html += '<td class="r bold info">' + fmtN(tot.tramite) + '</td>';
+  html += '<td class="r bold warn">' + fmtN(tot.avMes) + '</td>';
+  html += '<td class="r bold">' + fmtN(totPct) + '%</td>';
+  html += '</tr>';
+  html += '</tbody></table></div>';
+
+  // ── AVARIA BRUTA POR SETOR (CONSOLIDADO) ──
+  html += '<div class="sec-title" style="margin-top:28px">🏪 Avaria bruta por setor (consolidado)</div>';
+  html += '<div class="table-wrap"><table class="t">';
+  html += '<thead><tr><th>SETOR</th><th class="r">TOTAL</th><th class="r">%</th></tr></thead><tbody>';
+  var setNomes = ['AÇOUGUE','HORTFRUTI','PADARIA'];
+  var setKeys = ['acougue','horti','padaria'];
+  for (var si = 0; si < setNomes.length; si++) {
+    var setVal = tot[setKeys[si]];
+    var setPct = tot.avMes > 0 ? (setVal / tot.avMes * 100) : 0;
+    html += '<tr><td class="bold">' + setNomes[si] + '</td>';
+    html += '<td class="r warn">' + fmtN(setVal) + '</td>';
+    html += '<td class="r">' + fmtN(setPct) + '%</td></tr>';
+  }
+  var saldoTot = tot.avMes - tot.acougue - tot.horti - tot.padaria;
+  var saldoPct = tot.avMes > 0 ? (saldoTot / tot.avMes * 100) : 0;
+  html += '<tr><td class="bold">SALDO (LOJA)</td><td class="r" style="color:#94a3b8">' + fmtN(saldoTot) + '</td>';
+  html += '<td class="r" style="color:#94a3b8">' + fmtN(saldoPct) + '%</td></tr>';
+  html += '<tr style="border-top:2px solid #475569"><td class="bold" style="color:#f8fafc">TOTAL</td>';
+  html += '<td class="r bold warn">' + fmtN(tot.avMes) + '</td><td class="r bold">100,00%</td></tr>';
+  html += '</tbody></table></div>';
+
+  document.getElementById('conteudo').innerHTML = html;
+
+  // Wire up bonif inputs
+  var inputs = document.querySelectorAll('.bonif-input');
+  for (var bi = 0; bi < inputs.length; bi++) {
+    inputs[bi].addEventListener('input', function() {
+      var idx = parseInt(this.getAttribute('data-idx'));
+      var val = parseFloat(this.value.replace(/\./g,'').replace(',','.')) || 0;
+      var lj = d.lojas[idx];
+      var avf = lj.saldo - val;
+      var el = document.getElementById('avf-' + idx);
+      el.textContent = fmtN(avf);
+      el.className = 'r bold ' + (avf < 0 ? 'pos' : 'neg');
+
+      // Recalculate totals
+      var totalBonif = 0, totalAvFinal = 0;
+      var allInputs = document.querySelectorAll('.bonif-input');
+      for (var j = 0; j < allInputs.length; j++) {
+        var bv = parseFloat(allInputs[j].value.replace(/\./g,'').replace(',','.')) || 0;
+        totalBonif += bv;
+        totalAvFinal += d.lojas[j].saldo - bv;
+      }
+      document.getElementById('tot-bonif').textContent = fmtN(totalBonif);
+      var taf = document.getElementById('tot-avfinal');
+      taf.textContent = fmtN(totalAvFinal);
+      taf.className = 'r bold ' + (totalAvFinal < 0 ? 'pos' : 'neg');
+    });
+  }
 }
 
 function renderTudo(d) {

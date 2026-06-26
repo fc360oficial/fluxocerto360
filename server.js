@@ -34,7 +34,7 @@ app.use((req, res, next) => {
     '/api/compras/pedidos-mes',
     '/mensal.html',
     '/comparativo-tv.html', '/api/comparativo-tv',
-    '/prevencao.html', '/api/pendencias/prevencao'];
+    '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado'];
   if (publico.includes(req.path)) return next();
   const ext = req.path.split('.').pop().toLowerCase();
   if (['js','css','png','jpg','jpeg','gif','svg','ico','woff','woff2','ttf','eot','map'].includes(ext)) return next();
@@ -1597,6 +1597,92 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
       abertoItens, tramiteItens,
       mensal
     });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
+  try {
+    const hoje = new Date();
+    const mesSel = req.query.mes || `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+    const [anoSel, mesNum] = mesSel.split('-').map(Number);
+    const LOJAS = {1:'ATACAREJO',2:'PORTA LARGA',3:'PONTE',4:'JARDIM JD JORDÃO',5:'MURIBECA',6:'CAHU'};
+
+    async function processLoja(loja) {
+      const dIni = `${anoSel}-${String(mesNum).padStart(2,'0')}-01`;
+      const dFim = dFimMes(anoSel, mesNum);
+      const mm = mesDB(mesNum);
+
+      const pedidosEmitidos = await q(`SELECT DISTINCT nPedido FROM central.avariaconsumo
+        WHERE nLoja=? AND Status=4 AND Tipo=1 AND NF > 0 AND DataEmi BETWEEN ? AND ?`, [loja, dIni, dFim]);
+      const pedIds = pedidosEmitidos.map(r => r.nPedido);
+
+      const [emitidoRows, allAT, vendasRows, bonifRows, avBrutaRows] = await Promise.all([
+        pedIds.length ? q(`SELECT a.Status, a.Total, f.NomeCompleto as fornecedor
+          FROM central.avariaconsumo a LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
+          WHERE a.nLoja=? AND a.Tipo=1 AND a.nPedido IN (?)`, [loja, pedIds]) : [],
+        q(`SELECT Status, Total FROM central.avariaconsumo
+          WHERE nLoja=? AND Status IN (0,3) AND DataLan BETWEEN ? AND ?`, [loja, dIni, dFim]),
+        q(`SELECT SUM(ValorTotalNovo) as total FROM \`ln${loja}${mm}\`.zcupomitens
+          WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFim]).catch(() => [{ total: 0 }]),
+        q(`SELECT SUM(ValorTotal) as total FROM central.bonificacao_averbacao
+          WHERE nLoja=? AND DataEntrada BETWEEN ? AND ?`, [loja, dIni, dFim]).catch(() => [{ total: 0 }]),
+        q(`SELECT SUM(Total) as total FROM central.avariaconsumo
+          WHERE nLoja=? AND Status=4 AND DataEmi BETWEEN ? AND ?`, [loja, dIni, dFim]).catch(() => [{ total: 0 }])
+      ]);
+
+      const valorVenda = parseFloat(vendasRows[0]?.total || 0);
+      const bonif = parseFloat(bonifRows[0]?.total || 0);
+      const avBruta = parseFloat(avBrutaRows[0]?.total || 0);
+      let emitido = 0, aberto = 0, tramite = 0;
+      const porSetor = { AÇOUGUE: 0, HORTFRUTI: 0, PADARIA: 0 };
+
+      for (const r of emitidoRows) {
+        emitido += parseFloat(r.Total);
+        if (r.Status === 4) {
+          const fn = (r.fornecedor || '').toUpperCase();
+          const setor = fn.includes('HORTI') ? 'HORTFRUTI'
+            : (fn.includes('AÇOUGUE') || fn.includes('ACOUGUE')) ? 'AÇOUGUE'
+            : fn.includes('PADARIA') ? 'PADARIA' : 'LOJA';
+          porSetor[setor] = (porSetor[setor] || 0) + parseFloat(r.Total);
+        }
+      }
+
+      for (const r of allAT) {
+        if (r.Status === 0) aberto += parseFloat(r.Total);
+        else if (r.Status === 3) tramite += parseFloat(r.Total);
+      }
+
+      const saldo = emitido - porSetor.AÇOUGUE - porSetor.HORTFRUTI - porSetor.PADARIA;
+
+      const mensal = [];
+      for (let m = 1; m <= mesNum; m++) {
+        const mIni = `${anoSel}-${String(m).padStart(2,'0')}-01`;
+        const mFim = dFimMes(anoSel, m);
+        const mDB = mesDB(m);
+        try {
+          const mPeds = await q(`SELECT DISTINCT nPedido FROM central.avariaconsumo
+            WHERE nLoja=? AND Status=4 AND Tipo=1 AND NF > 0 AND DataEmi BETWEEN ? AND ?`, [loja, mIni, mFim]);
+          const mPedIds = mPeds.map(r => r.nPedido);
+          const [av] = mPedIds.length ? await q(`SELECT SUM(Total) as t FROM central.avariaconsumo
+            WHERE nLoja=? AND Tipo=1 AND nPedido IN (?)`, [loja, mPedIds]) : [{ t: 0 }];
+          const [vd] = await q(`SELECT SUM(ValorTotalNovo) as t FROM \`ln${loja}${mDB}\`.zcupomitens
+            WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [mIni, mFim]).catch(() => [{ t: 0 }]);
+          const avT = parseFloat(av?.t || 0), vdT = parseFloat(vd?.t || 0);
+          mensal.push({ mes: m, pct: vdT > 0 ? +(avT / vdT * 100).toFixed(2) : 0 });
+        } catch { mensal.push({ mes: m, pct: 0 }); }
+      }
+
+      return {
+        loja, nome: LOJAS[loja],
+        venda: valorVenda, avBruta, avMes: emitido,
+        acougue: porSetor.AÇOUGUE, horti: porSetor.HORTFRUTI, padaria: porSetor.PADARIA,
+        saldo, bonif, aberto, tramite, mensal,
+        pctMes: valorVenda > 0 ? +(emitido / valorVenda * 100).toFixed(2) : 0
+      };
+    }
+
+    const lojas = await Promise.all([1,2,3,4,5,6].map(l => processLoja(l)));
+    res.json({ lojas, ano: anoSel, mesAtual: mesNum });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

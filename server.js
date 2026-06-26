@@ -1500,7 +1500,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
 
     const pedSet = new Set(pedIds);
 
-    const [emitidoRows, allAbertoTramite, vendasRows, bonifRows] = await Promise.all([
+    const [emitidoRows, allAbertoTramite, vendasRows, bonifRows, totalGeralRows] = await Promise.all([
       pedIds.length ? q(`SELECT a.CodMotivo, a.Status, a.Total, a.CodFornec, a.CodigoBarras, a.Descricao,
                 a.Qtd, a.Valor, a.Und, a.Usuario, a.DataLan, a.DataEmi,
                 f.NomeCompleto as fornecedor
@@ -1513,12 +1513,14 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
                 f.NomeCompleto as fornecedor
          FROM central.avariaconsumo a
          LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
-         WHERE a.nLoja=? AND a.Status IN (0,3)
-         ORDER BY a.Status, a.Total DESC`, [loja]),
+         WHERE a.nLoja=? AND a.Status IN (0,3) AND a.DataLan BETWEEN ? AND ?
+         ORDER BY a.Status, a.Total DESC`, [loja, dIni, dFim]),
       q(`SELECT SUM(ValorTotalNovo) as total FROM \`ln${loja}${mm}\`.zcupomitens
          WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFim]).catch(() => [{ total: 0 }]),
       q(`SELECT SUM(ValorTotal) as total FROM central.bonificacao_averbacao
-         WHERE nLoja=? AND DataEntrada BETWEEN ? AND ?`, [loja, dIni, dFim]).catch(() => [{ total: 0 }])
+         WHERE nLoja=? AND DataEntrada BETWEEN ? AND ?`, [loja, dIni, dFim]).catch(() => [{ total: 0 }]),
+      q(`SELECT Status, SUM(Total) as total FROM central.avariaconsumo
+         WHERE nLoja=? AND Status IN (0,3) GROUP BY Status`, [loja])
     ]);
 
     const valorVenda = parseFloat(vendasRows[0]?.total || 0);
@@ -1594,8 +1596,15 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
 
     const toArr = obj => Object.entries(obj).map(([nome, d]) => ({ nome, ...d })).sort((a, b) => b.total - a.total);
 
+    let totalGeralAberto = 0, totalGeralTramite = 0;
+    for (const r of totalGeralRows) {
+      if (r.Status === 0) totalGeralAberto = parseFloat(r.total);
+      else if (r.Status === 3) totalGeralTramite = parseFloat(r.total);
+    }
+
     res.json({
-      resumo: { emitido, aberto, tramite, valorVenda, bonificacoes, saldoAvaria, avariasFinal, pctTotal, pctFiltrada },
+      resumo: { emitido, aberto, tramite, valorVenda, bonificacoes, saldoAvaria, avariasFinal, pctTotal, pctFiltrada,
+        totalGeralAberto, totalGeralTramite },
       porSetor,
       abertoFornec: toArr(abertoFornec),
       tramiteFornec: toArr(tramiteFornec),

@@ -453,15 +453,23 @@ function renderTudo(d) {
   html += '<div class="setor-card"><div class="nome">% AVARIAS</div><div class="val" id="pct-avarias">' + fmtN(r.valorVenda > 0 ? (r.saldoAvaria / r.valorVenda * 100) : 0) + '%</div></div>';
   html += '</div>';
 
-  // ── TOTAL PRA RESOLVER ──
-  html += '<div class="sec-title">⚠️ TOTAL PRA SE RESOLVER (FÍSICO / EM TRÂMITE)</div>';
+  // ── TOTAL PRA RESOLVER (MÊS) ──
+  html += '<div class="sec-title">⚠️ PENDÊNCIAS DO MÊS</div>';
   html += '<div class="table-wrap"><table class="t">';
   html += '<thead><tr><th>Situação</th><th class="r">Valor</th><th>Tipo</th></tr></thead>';
   html += '<tbody>';
-  html += '<tr><td class="bold warn">EM ABERTO</td><td class="r bold warn">' + fmt(r.aberto) + '</td><td style="color:#94a3b8">Produtos na loja</td></tr>';
-  html += '<tr><td class="bold info">EM TRÂMITE</td><td class="r bold info">' + fmt(r.tramite) + '</td><td style="color:#94a3b8">Produtos descartados</td></tr>';
-  html += '<tr style="border-top:2px solid #334155"><td class="bold" style="color:#f8fafc">TOTAL</td><td class="r bold neg">' + fmt(r.aberto + r.tramite) + '</td><td></td></tr>';
+  html += '<tr><td class="bold warn">EM ABERTO</td><td class="r bold warn">' + fmt(r.aberto) + '</td><td style="color:#94a3b8">Produtos na loja (mês)</td></tr>';
+  html += '<tr><td class="bold info">EM TRÂMITE</td><td class="r bold info">' + fmt(r.tramite) + '</td><td style="color:#94a3b8">Produtos descartados (mês)</td></tr>';
+  html += '<tr style="border-top:2px solid #334155"><td class="bold" style="color:#f8fafc">TOTAL MÊS</td><td class="r bold neg">' + fmt(r.aberto + r.tramite) + '</td><td></td></tr>';
   html += '</tbody></table></div>';
+
+  // ── TOTAL GERAL (SEM FILTRO DE MÊS) ──
+  html += '<div class="sec-title">📦 TOTAL GERAL PENDENTE (TODOS OS MESES)</div>';
+  html += '<div class="kpi-row">';
+  html += '<div class="kpi" style="border-left:3px solid #f59e0b"><div class="v warn">' + fmt(r.totalGeralAberto) + '</div><div class="l">Em Aberto — Total Geral</div></div>';
+  html += '<div class="kpi" style="border-left:3px solid #38bdf8"><div class="v info">' + fmt(r.totalGeralTramite) + '</div><div class="l">Em Trâmite — Total Geral</div></div>';
+  html += '<div class="kpi" style="border-left:3px solid #f87171"><div class="v neg">' + fmt(r.totalGeralAberto + r.totalGeralTramite) + '</div><div class="l">Total Pendente</div></div>';
+  html += '</div>';
 
   // ── TOP 10 FORNECEDORES ──
   html += renderTop10(d.abertoFornec, d.tramiteFornec, r.aberto, r.tramite);

@@ -1565,26 +1565,31 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
     const pctTotal = valorVenda > 0 ? +(emitido / valorVenda * 100).toFixed(2) : 0;
     const pctFiltrada = valorVenda > 0 ? +(avariasFinal / valorVenda * 100).toFixed(2) : 0;
 
-    // Comparativo mensal (últimos 6 meses)
+    // Comparativo mensal — Jan/Fev/Mai fixos do ERP, Mar/Abr vazios, Jun+ do banco
+    const pctFixoLoja = {
+      1: {1:1.28,2:1.82,5:1.65}, 2: {1:1.08,2:0.85,5:1.13}, 3: {1:0.71,2:0.93,5:0.84},
+      4: {1:0.49,2:1.01,5:0.77}, 5: {1:0.57,2:0.65,5:0.86}, 6: {1:0.30,2:0.53,5:0.58}
+    };
+    const fixos = pctFixoLoja[loja] || {};
     const mensal = [];
     for (let i = 5; i >= 0; i--) {
       const dt = new Date(ano, mes - 1 - i, 1);
       const mAno = dt.getFullYear(), mMes = dt.getMonth() + 1;
+      const mesKey = `${mAno}-${String(mMes).padStart(2,'0')}`;
+      if (mMes === 3 || mMes === 4) { mensal.push({ mes: mesKey, emitido: 0, vendas: 0, pct: 0 }); continue; }
+      if (fixos[mMes] !== undefined) { mensal.push({ mes: mesKey, emitido: 0, vendas: 0, pct: fixos[mMes] }); continue; }
       const mIni = `${mAno}-${String(mMes).padStart(2,'0')}-01`;
       const mFim = dFimMes(mAno, mMes);
       const mDB = mesDB(mMes);
       try {
-        const mPeds = await q(`SELECT DISTINCT nPedido FROM central.avariaconsumo
-          WHERE nLoja=? AND Status=4 AND Tipo=1 AND NF > 0 AND DataEmi BETWEEN ? AND ?`, [loja, mIni, mFim]);
-        const mPedIds = mPeds.map(r => r.nPedido);
-        const [av] = mPedIds.length ? await q(`SELECT SUM(Total) as t FROM central.avariaconsumo
-          WHERE nLoja=? AND Tipo=1 AND nPedido IN (?)`, [loja, mPedIds]) : [{ t: 0 }];
+        const [av] = await q(`SELECT SUM(Total) as t FROM central.avariaconsumo
+          WHERE nLoja=? AND Status=4 AND Tipo=1 AND DataEmi BETWEEN ? AND ?`, [loja, mIni, mFim]);
         const [vd] = await q(`SELECT SUM(ValorTotalNovo) as t FROM \`ln${loja}${mDB}\`.zcupomitens
           WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [mIni, mFim]).catch(() => [{ t: 0 }]);
         const avT = parseFloat(av?.t || 0), vdT = parseFloat(vd?.t || 0);
-        mensal.push({ mes: `${mAno}-${String(mMes).padStart(2,'0')}`, emitido: avT, vendas: vdT,
+        mensal.push({ mes: mesKey, emitido: avT, vendas: vdT,
           pct: vdT > 0 ? +(avT / vdT * 100).toFixed(2) : 0 });
-      } catch { mensal.push({ mes: `${mAno}-${String(mMes).padStart(2,'0')}`, emitido: 0, vendas: 0, pct: 0 }); }
+      } catch { mensal.push({ mes: mesKey, emitido: 0, vendas: 0, pct: 0 }); }
     }
 
     const toArr = obj => Object.entries(obj).map(([nome, d]) => ({ nome, ...d })).sort((a, b) => b.total - a.total);

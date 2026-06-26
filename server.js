@@ -1513,7 +1513,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
                 f.NomeCompleto as fornecedor
          FROM central.avariaconsumo a
          LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
-         WHERE a.nLoja=? AND a.Status IN (0,2) AND a.DataLan BETWEEN ? AND ?
+         WHERE a.nLoja=? AND a.Status IN (0,3) AND a.DataLan BETWEEN ? AND ?
          ORDER BY a.Status, a.Total DESC`, [loja, dIni, dFim]),
       q(`SELECT SUM(ValorTotalNovo) as total FROM \`ln${loja}${mm}\`.zcupomitens
          WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFim]).catch(() => [{ total: 0 }]),
@@ -1550,7 +1550,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
         abertoFornec[fn].total += tot;
         abertoFornec[fn].qtd++;
         abertoItens.push(r);
-      } else if (r.Status === 2) {
+      } else if (r.Status === 3) {
         tramite += tot;
         const fn = r.fornecedor || 'SEM FORNECEDOR';
         if (!tramiteFornec[fn]) tramiteFornec[fn] = { total: 0, qtd: 0 };

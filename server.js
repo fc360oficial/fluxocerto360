@@ -1513,8 +1513,8 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
                 f.NomeCompleto as fornecedor
          FROM central.avariaconsumo a
          LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
-         WHERE a.nLoja=? AND a.Status IN (0,3) AND a.DataLan BETWEEN ? AND ?
-         ORDER BY a.Status, a.Total DESC`, [loja, dIni, dFim]),
+         WHERE a.nLoja=? AND a.Status IN (0,3)
+         ORDER BY a.Status, a.Total DESC`, [loja]),
       q(`SELECT SUM(ValorTotalNovo) as total FROM \`ln${loja}${mm}\`.zcupomitens
          WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFim]).catch(() => [{ total: 0 }]),
       q(`SELECT SUM(ValorTotal) as total FROM central.bonificacao_averbacao
@@ -1621,7 +1621,7 @@ app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
           FROM central.avariaconsumo a LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
           WHERE a.nLoja=? AND a.Tipo=1 AND a.nPedido IN (?)`, [loja, pedIds]) : [],
         q(`SELECT Status, Total FROM central.avariaconsumo
-          WHERE nLoja=? AND Status IN (0,3) AND DataLan BETWEEN ? AND ?`, [loja, dIni, dFim]),
+          WHERE nLoja=? AND Status IN (0,3)`, [loja]),
         q(`SELECT SUM(ValorTotalNovo) as total FROM \`ln${loja}${mm}\`.zcupomitens
           WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFim]).catch(() => [{ total: 0 }]),
         q(`SELECT SUM(ValorTotal) as total FROM central.bonificacao_averbacao
@@ -1654,9 +1654,19 @@ app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
 
       const saldo = emitido - porSetor.AÇOUGUE - porSetor.HORTFRUTI - porSetor.PADARIA;
 
+      // Jan/Fev/Mai fixos do ERP, Mar/Abr vazios, Jun+ calcula do banco
+      const pctFixo = {
+        1: {1:1.28,2:1.08,3:0.71,4:0.49,5:0.57,6:0.30},
+        2: {1:1.82,2:0.85,3:0.93,4:1.01,5:0.65,6:0.53},
+        5: {1:1.65,2:1.13,3:0.84,4:0.77,5:0.86,6:0.58}
+      };
       const mensal = [];
       for (let m = 1; m <= mesNum; m++) {
         if (m === 3 || m === 4) { mensal.push({ mes: m, pct: 0 }); continue; }
+        if (pctFixo[m]) {
+          mensal.push({ mes: m, pct: pctFixo[m][loja] || 0 });
+          continue;
+        }
         const mIni = `${anoSel}-${String(m).padStart(2,'0')}-01`;
         const mFim = dFimMes(anoSel, m);
         const mDB = mesDB(m);

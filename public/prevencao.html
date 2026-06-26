@@ -191,12 +191,12 @@ table.t td.r input{font-family:'Segoe UI',sans-serif}
       <label>Loja</label>
       <select id="fil-loja" onchange="carregar()">
         <option value="0">📊 Consolidado</option>
-        <option value="1">Loja 1 — Atacarejo</option>
-        <option value="2">Loja 2 — Porta Larga</option>
+        <option value="1">Loja 1 — Cahu</option>
+        <option value="2">Loja 2 — Muribeca</option>
         <option value="3">Loja 3 — Ponte</option>
-        <option value="4">Loja 4 — Jd Jordão</option>
-        <option value="5">Loja 5 — Muribeca</option>
-        <option value="6">Loja 6 — Cahu</option>
+        <option value="4">Loja 4 — Atacarejo</option>
+        <option value="5">Loja 5 — Porta Larga</option>
+        <option value="6">Loja 6 — Jd Jordão</option>
       </select>
     </div>
     <div class="fg">
@@ -213,10 +213,22 @@ table.t td.r input{font-family:'Segoe UI',sans-serif}
 
 <script>
 var dadosGlobal = null;
+var _bonifTimer = null;
 var fmt = function(v) { return parseFloat(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); };
 var fmtN = function(v) { return parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
 var fmtD = function(d) { return new Date(d).toLocaleDateString('pt-BR'); };
 var MESES = ['','JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
+function salvarBonif(loja, mes, valor) {
+  clearTimeout(_bonifTimer);
+  _bonifTimer = setTimeout(function() {
+    fetch('/api/pendencias/prevencao-bonif', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({loja: loja, mes: mes, valor: valor})
+    });
+  }, 500);
+}
 
 function carregar() {
   document.getElementById('conteudo').innerHTML = '<div class="spinner"></div>';
@@ -365,7 +377,8 @@ function renderConsolidado(d) {
 
   document.getElementById('conteudo').innerHTML = html;
 
-  // Wire up bonif inputs
+  // Wire up bonif inputs + save
+  var mesVal = document.getElementById('fil-mes').value;
   var inputs = document.querySelectorAll('.bonif-input');
   for (var bi = 0; bi < inputs.length; bi++) {
     inputs[bi].addEventListener('input', function() {
@@ -377,7 +390,8 @@ function renderConsolidado(d) {
       el.textContent = fmtN(avf);
       el.className = 'r bold ' + (avf < 0 ? 'pos' : 'neg');
 
-      // Recalculate totals
+      salvarBonif(lj.loja, mesVal, val);
+
       var totalBonif = 0, totalAvFinal = 0;
       var allInputs = document.querySelectorAll('.bonif-input');
       for (var j = 0; j < allInputs.length; j++) {
@@ -391,6 +405,19 @@ function renderConsolidado(d) {
       taf.className = 'r bold ' + (totalAvFinal < 0 ? 'pos' : 'neg');
     });
   }
+
+  // Load saved bonifs
+  fetch('/api/pendencias/prevencao-bonif?mes=' + mesVal)
+    .then(function(r) { return r.json(); })
+    .then(function(saved) {
+      for (var si = 0; si < d.lojas.length; si++) {
+        var sv = saved[d.lojas[si].loja];
+        if (sv > 0) {
+          var inp = document.querySelectorAll('.bonif-input')[si];
+          if (inp) { inp.value = fmtN(sv); inp.dispatchEvent(new Event('input')); }
+        }
+      }
+    }).catch(function() {});
 }
 
 function renderTudo(d) {
@@ -460,6 +487,7 @@ function renderTudo(d) {
 
   document.getElementById('conteudo').innerHTML = html;
 
+  var lojaVal = document.getElementById('fil-loja').value;
   var inputBonif = document.getElementById('input-bonif');
   if (inputBonif) {
     inputBonif.addEventListener('input', function() {
@@ -470,7 +498,18 @@ function renderTudo(d) {
       document.getElementById('avarias-final').textContent = fmt(final_);
       document.getElementById('pct-avarias').textContent = fmtN(pct) + '%';
       document.getElementById('pct-avarias').className = 'val ' + (pct > 0 ? 'neg' : '');
+      salvarBonif(lojaVal, mesVal, val);
     });
+
+    // Load saved bonif
+    fetch('/api/pendencias/prevencao-bonif?loja=' + lojaVal + '&mes=' + mesVal)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.valor > 0) {
+          inputBonif.value = fmtN(data.valor);
+          inputBonif.dispatchEvent(new Event('input'));
+        }
+      }).catch(function() {});
   }
 }
 

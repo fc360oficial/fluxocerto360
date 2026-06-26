@@ -34,7 +34,7 @@ app.use((req, res, next) => {
     '/api/compras/pedidos-mes',
     '/mensal.html',
     '/comparativo-tv.html', '/api/comparativo-tv',
-    '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado'];
+    '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado', '/api/pendencias/prevencao-bonif'];
   if (publico.includes(req.path)) return next();
   const ext = req.path.split('.').pop().toLowerCase();
   if (['js','css','png','jpg','jpeg','gif','svg','ico','woff','woff2','ttf','eot','map'].includes(ext)) return next();
@@ -1605,7 +1605,7 @@ app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
     const hoje = new Date();
     const mesSel = req.query.mes || `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
     const [anoSel, mesNum] = mesSel.split('-').map(Number);
-    const LOJAS = {1:'ATACAREJO',2:'PORTA LARGA',3:'PONTE',4:'JARDIM JD JORDÃO',5:'MURIBECA',6:'CAHU'};
+    const LOJAS = {1:'CAHU',2:'MURIBECA',3:'PONTE',4:'ATACAREJO',5:'PORTA LARGA',6:'JARDIM JD JORDÃO'};
 
     async function processLoja(loja) {
       const dIni = `${anoSel}-${String(mesNum).padStart(2,'0')}-01`;
@@ -1661,11 +1661,8 @@ app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
         const mFim = dFimMes(anoSel, m);
         const mDB = mesDB(m);
         try {
-          const mPeds = await q(`SELECT DISTINCT nPedido FROM central.avariaconsumo
-            WHERE nLoja=? AND Status=4 AND Tipo=1 AND NF > 0 AND DataEmi BETWEEN ? AND ?`, [loja, mIni, mFim]);
-          const mPedIds = mPeds.map(r => r.nPedido);
-          const [av] = mPedIds.length ? await q(`SELECT SUM(Total) as t FROM central.avariaconsumo
-            WHERE nLoja=? AND Tipo=1 AND nPedido IN (?)`, [loja, mPedIds]) : [{ t: 0 }];
+          const [av] = await q(`SELECT SUM(Total) as t FROM central.avariaconsumo
+            WHERE nLoja=? AND Status=4 AND Tipo=1 AND DataEmi BETWEEN ? AND ?`, [loja, mIni, mFim]);
           const [vd] = await q(`SELECT SUM(ValorTotalNovo) as t FROM \`ln${loja}${mDB}\`.zcupomitens
             WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [mIni, mFim]).catch(() => [{ t: 0 }]);
           const avT = parseFloat(av?.t || 0), vdT = parseFloat(vd?.t || 0);
@@ -1685,6 +1682,31 @@ app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
     const lojas = await Promise.all([1,2,3,4,5,6].map(l => processLoja(l)));
     res.json({ lojas, ano: anoSel, mesAtual: mesNum });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/pendencias/prevencao-bonif', async (req, res) => {
+  try {
+    const { loja, mes, valor } = req.body;
+    await q(`INSERT INTO central.prevencao_bonif (nLoja, mes, valor) VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE valor=VALUES(valor)`, [parseInt(loja), mes, parseFloat(valor) || 0]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/pendencias/prevencao-bonif', async (req, res) => {
+  try {
+    const mes = req.query.mes;
+    const loja = req.query.loja;
+    if (loja) {
+      const rows = await q(`SELECT valor FROM central.prevencao_bonif WHERE nLoja=? AND mes=?`, [loja, mes]);
+      res.json({ valor: parseFloat(rows[0]?.valor || 0) });
+    } else {
+      const rows = await q(`SELECT nLoja, valor FROM central.prevencao_bonif WHERE mes=?`, [mes]);
+      const result = {};
+      for (const r of rows) result[r.nLoja] = parseFloat(r.valor);
+      res.json(result);
+    }
+  } catch (err) { res.json({}); }
 });
 
 // ═══════════════════════════════════════════════════
@@ -2437,6 +2459,10 @@ app.get('/deploy', (req, res) => {
     setTimeout(() => process.exit(0), 1000);
   });
 });
+
+q(`CREATE TABLE IF NOT EXISTS central.prevencao_bonif (
+  nLoja INT NOT NULL, mes VARCHAR(7) NOT NULL, valor DECIMAL(12,2) NOT NULL DEFAULT 0,
+  PRIMARY KEY (nLoja, mes)) ENGINE=InnoDB`).catch(() => {});
 
 app.listen(3003, '0.0.0.0', () => {
   console.log('✓ Dashboard rodando em http://localhost:3003');

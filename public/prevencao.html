@@ -226,7 +226,6 @@ function renderTudo(d) {
   html += '<div class="kpi"><div class="v warn">' + fmt(r.emitido) + '</div><div class="l">Notas Emitidas</div></div>';
   html += '<div class="kpi"><div class="v neg">' + fmt(r.aberto) + '</div><div class="l">Em Aberto</div></div>';
   html += '<div class="kpi"><div class="v info">' + fmt(r.tramite) + '</div><div class="l">Em Trâmite</div></div>';
-  html += '<div class="kpi"><div class="v" style="color:#a78bfa">' + fmt(r.bonificacoes) + '</div><div class="l">Bonificações</div></div>';
   html += '<div class="kpi"><div class="v" style="color:#e2e8f0">' + fmt(r.valorVenda) + '</div><div class="l">Valor Venda</div></div>';
   html += '</div>';
 
@@ -239,10 +238,10 @@ function renderTudo(d) {
     var v = d.porSetor[s] || 0;
     html += '<div class="setor-card"><div class="nome">' + s + '</div><div class="val">' + fmt(v) + '</div></div>';
   }
-  html += '<div class="setor-card"><div class="nome">SALDO AVARIA</div><div class="val" style="color:#94a3b8">' + fmt(r.saldoAvaria) + '</div></div>';
-  html += '<div class="setor-card"><div class="nome">BONIFICAÇÕES</div><div class="val" style="color:#a78bfa">' + fmt(r.bonificacoes) + '</div></div>';
-  html += '<div class="setor-card"><div class="nome">AVARIAS FINAL</div><div class="val" style="color:#f87171">' + fmt(r.avariasFinal) + '</div></div>';
-  html += '<div class="setor-card"><div class="nome">% AVARIAS</div><div class="val ' + (r.pctTotal > 0 ? 'neg' : '') + '">' + fmtN(r.pctTotal) + '%</div></div>';
+  html += '<div class="setor-card"><div class="nome">SALDO AVARIA</div><div class="val" id="saldo-avaria" style="color:#94a3b8">' + fmt(r.saldoAvaria) + '</div></div>';
+  html += '<div class="setor-card"><div class="nome">BONIFICAÇÕES</div><div style="padding:4px 0"><input type="text" id="input-bonif" value="0,00" style="width:100%;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#a78bfa;font-size:1.1rem;font-weight:700;padding:6px 8px;text-align:center;outline:none" placeholder="Digite o valor"></div></div>';
+  html += '<div class="setor-card"><div class="nome">AVARIAS FINAL</div><div class="val" id="avarias-final" style="color:#f87171">' + fmt(r.saldoAvaria) + '</div></div>';
+  html += '<div class="setor-card"><div class="nome">% AVARIAS</div><div class="val" id="pct-avarias">' + fmtN(r.valorVenda > 0 ? (r.saldoAvaria / r.valorVenda * 100) : 0) + '%</div></div>';
   html += '</div>';
 
   // ── TOTAL PRA RESOLVER ──
@@ -276,6 +275,19 @@ function renderTudo(d) {
   html += renderFornecedorSection('🔵 EM TRÂMITE', d.tramiteFornec, d.tramiteItens, 'tramite', r.tramite);
 
   document.getElementById('conteudo').innerHTML = html;
+
+  var inputBonif = document.getElementById('input-bonif');
+  if (inputBonif) {
+    inputBonif.addEventListener('input', function() {
+      var val = parseFloat(this.value.replace(/\./g,'').replace(',','.')) || 0;
+      var saldo = r.saldoAvaria;
+      var final_ = saldo - val;
+      var pct = r.valorVenda > 0 ? (final_ / r.valorVenda * 100) : 0;
+      document.getElementById('avarias-final').textContent = fmt(final_);
+      document.getElementById('pct-avarias').textContent = fmtN(pct) + '%';
+      document.getElementById('pct-avarias').className = 'val ' + (pct > 0 ? 'neg' : '');
+    });
+  }
 }
 
 function renderFornecedorSection(titulo, fornecList, itens, prefix, total) {

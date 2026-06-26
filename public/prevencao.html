@@ -499,10 +499,16 @@ function renderTudo(d) {
     var m = d.mensal[j];
     var mParts = m.mes.split('-');
     var mNome = MESES[parseInt(mParts[1])] + '/' + mParts[0];
-    var cor = m.pct > 1.5 ? 'neg' : m.pct > 1 ? 'warn' : 'pos';
     html += '<div class="mensal-card"><div class="mes-label">' + mNome + '</div>';
-    html += '<div class="mes-val ' + cor + '">' + fmtN(m.pct) + '%</div>';
-    html += '<div class="mes-sub">' + fmt(m.emitido) + '</div></div>';
+    if (m.pct === 0 && m.emitido === 0) {
+      html += '<div class="mes-val" style="color:#475569">—</div>';
+      html += '<div class="mes-sub" style="color:#334155">—</div>';
+    } else {
+      var cor = m.pct > 1 ? 'neg' : 'pos';
+      html += '<div class="mes-val ' + cor + '">' + fmtN(m.pct) + '%</div>';
+      html += '<div class="mes-sub">' + fmt(m.emitido) + '</div>';
+    }
+    html += '</div>';
   }
   html += '</div>';
 

@@ -80,6 +80,26 @@ table.t th.r,table.t td.r{text-align:right}
 .mensal-card .mes-val{font-size:16px;font-weight:700}
 .mensal-card .mes-sub{font-size:10px;color:#64748b;margin-top:2px}
 
+/* TOP 10 FORNECEDORES */
+.top10-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.top10-col{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 16px}
+.top10-col h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.top10-col h3 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.top10-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.top10-rank{font-size:10px;font-weight:700;color:#64748b;width:16px;text-align:center;flex-shrink:0}
+.top10-info{flex:1;min-width:0}
+.top10-nome{font-size:11px;color:#cbd5e1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.top10-bar-bg{height:16px;background:#0f172a;border-radius:4px;overflow:hidden;position:relative}
+.top10-bar{height:100%;border-radius:4px;transition:width .5s ease}
+.top10-val{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;min-width:80px;text-align:right}
+.top10-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #334155}
+.top10-total span:first-child{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase}
+.top10-total span:last-child{font-size:14px;font-weight:700}
+
+@media(max-width:768px){
+  .top10-wrapper{grid-template-columns:1fr}
+}
+
 .spinner{width:22px;height:22px;border-radius:50%;border:2px solid #334155;border-top-color:#f59e0b;animation:spin .7s linear infinite;margin:30px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{padding:30px;text-align:center;color:#475569;font-size:13px}
@@ -254,6 +274,9 @@ function renderTudo(d) {
   html += '<tr style="border-top:2px solid #334155"><td class="bold" style="color:#f8fafc">TOTAL</td><td class="r bold neg">' + fmt(r.aberto + r.tramite) + '</td><td></td></tr>';
   html += '</tbody></table></div>';
 
+  // ── TOP 10 FORNECEDORES ──
+  html += renderTop10(d.abertoFornec, d.tramiteFornec, r.aberto, r.tramite);
+
   // ── COMPARATIVO MENSAL ──
   html += '<div class="sec-title">📊 % AVARIAS POR MÊS</div>';
   html += '<div class="mensal-grid">';
@@ -288,6 +311,58 @@ function renderTudo(d) {
       document.getElementById('pct-avarias').className = 'val ' + (pct > 0 ? 'neg' : '');
     });
   }
+}
+
+function renderTop10(abertoFornec, tramiteFornec, totalAberto, totalTramite) {
+  var html = '<div class="sec-title">🏆 TOP 10 FORNECEDORES — ITENS CRÍTICOS</div>';
+  html += '<div class="top10-wrapper">';
+
+  // Coluna Em Aberto
+  var abTop = abertoFornec.slice(0, 10);
+  var abMax = abTop.length ? abTop[0].total : 1;
+  html += '<div class="top10-col">';
+  html += '<h3><span class="dot" style="background:#f87171"></span><span style="color:#f87171">Em Aberto</span> <span style="color:#64748b;font-weight:400;font-size:11px">— itens físicos na loja</span></h3>';
+  if (!abTop.length) {
+    html += '<div class="empty" style="padding:12px">Nenhum item em aberto.</div>';
+  } else {
+    for (var i = 0; i < abTop.length; i++) {
+      var f = abTop[i];
+      var pct = abMax > 0 ? (f.total / abMax * 100) : 0;
+      html += '<div class="top10-item">';
+      html += '<span class="top10-rank">' + (i + 1) + '</span>';
+      html += '<div class="top10-info"><div class="top10-nome" title="' + f.nome + '">' + f.nome + '</div>';
+      html += '<div class="top10-bar-bg"><div class="top10-bar" style="width:' + pct + '%;background:#f87171"></div></div></div>';
+      html += '<span class="top10-val" style="color:#f87171">' + fmt(f.total) + '</span>';
+      html += '</div>';
+    }
+  }
+  html += '<div class="top10-total"><span>Total</span><span style="color:#f87171">' + fmt(totalAberto) + '</span></div>';
+  html += '</div>';
+
+  // Coluna Em Trâmite
+  var trTop = tramiteFornec.slice(0, 10);
+  var trMax = trTop.length ? trTop[0].total : 1;
+  html += '<div class="top10-col">';
+  html += '<h3><span class="dot" style="background:#f59e0b"></span><span style="color:#f59e0b">Em Trâmite</span> <span style="color:#64748b;font-weight:400;font-size:11px">— itens descartados a resolver</span></h3>';
+  if (!trTop.length) {
+    html += '<div class="empty" style="padding:12px">Nenhum item em trâmite.</div>';
+  } else {
+    for (var i = 0; i < trTop.length; i++) {
+      var f = trTop[i];
+      var pct = trMax > 0 ? (f.total / trMax * 100) : 0;
+      html += '<div class="top10-item">';
+      html += '<span class="top10-rank">' + (i + 1) + '</span>';
+      html += '<div class="top10-info"><div class="top10-nome" title="' + f.nome + '">' + f.nome + '</div>';
+      html += '<div class="top10-bar-bg"><div class="top10-bar" style="width:' + pct + '%;background:#f59e0b"></div></div></div>';
+      html += '<span class="top10-val" style="color:#f59e0b">' + fmt(f.total) + '</span>';
+      html += '</div>';
+    }
+  }
+  html += '<div class="top10-total"><span>Total</span><span style="color:#f59e0b">' + fmt(totalTramite) + '</span></div>';
+  html += '</div>';
+
+  html += '</div>';
+  return html;
 }
 
 function renderFornecedorSection(titulo, fornecList, itens, prefix, total) {

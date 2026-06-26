@@ -272,7 +272,7 @@ function renderConsolidado(d) {
 
   // ── AVARIAS POR MÊS (%) ──
   html += '<div class="sec-title">📋 AVARIAS POR MÊS (%) — POR LOJA</div>';
-  html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Valores como na planilha (negativo = perda). ' + MF[d.mesAtual] + ' é o fechamento atual.</p>';
+  html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Meta: <b style="color:#4ade80">≤ 1%</b> · Acima = <b style="color:#f87171">fora do limite</b>. ' + MF[d.mesAtual] + ' é o fechamento atual.</p>';
   html += '<div class="table-wrap"><table class="t">';
   html += '<thead><tr><th style="min-width:140px">LOJA</th>';
   for (var m = 1; m <= d.mesAtual; m++) html += '<th class="r">' + MF[m] + '</th>';
@@ -286,7 +286,8 @@ function renderConsolidado(d) {
       if (pct === 0) {
         html += '<td class="r" style="color:#475569">—</td>';
       } else {
-        html += '<td class="r bold neg">-' + fmtN(pct) + '%</td>';
+        var cor = pct > 1 ? 'neg' : 'pos';
+        html += '<td class="r bold ' + cor + '">-' + fmtN(pct) + '%</td>';
       }
     }
     html += '</tr>';
@@ -310,7 +311,7 @@ function renderConsolidado(d) {
     var lj = d.lojas[i];
     var avFinal = lj.saldo - lj.bonif;
     var corFinal = avFinal < 0 ? 'pos' : 'neg';
-    var corPct = lj.pctMes > 1.5 ? 'neg' : lj.pctMes > 1 ? 'warn' : '';
+    var corPct = lj.pctMes > 1 ? 'neg' : 'pos';
 
     html += '<tr>';
     html += '<td class="bold" style="padding-left:16px">' + lj.nome + '</td>';

@@ -363,7 +363,7 @@ function proximoSlide() {
         location.href = '/comprador.html?nome=' + ORDEM_CICLO[prox] + '&auto=1&idx=' + prox;
         return;
       }
-      location.href = '/compras.html';
+      try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}
       return;
     } else {
       try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}

@@ -587,7 +587,9 @@ function kellyHoje() {
       {nome:'FRUTA INDUSTRIA & COMERCIO LTDA',status:'r',cod:337},
       {nome:'BUNGE ALIMENTOS S/A',status:'r',cod:370},
       {nome:'BRITO&SANTOS FRIOS IND. ALIM.',status:'r',cod:345},
-      {nome:'JBS S.A.',status:'r',cod:431}]}],
+      {nome:'JBS S.A.',status:'r',cod:431}]},
+    {nome:'Higiene & Limpeza',fornecedores:[
+      {nome:'REDIJOHN DIST PROD HIG LIMP',status:'r',cod:430}]}],
    atividades:[]};
 
   const qua_par = {categorias:[
@@ -679,11 +681,8 @@ function sthephannyHoje() {
       {nome:'INTERLANDIA LTDA',status:'r',cod:319}]},
     {nome:'Limpeza & Utilidades',fornecedores:[
       {nome:'LABORTECNE IND. DE EMBAL LTDA',status:'r',cod:388},
-      {nome:'LUIZ HENRIQUE PAULINO DIAS',status:'r',cod:386},
       {nome:'MAIS COM. DIST. MAT LIMPEZA',status:'r',cod:361},
       {nome:'REDIJOHN DIST PROD HIG LIMP',status:'r',cod:429},
-      {nome:'REDIJOHN DIST PROD HIG LIMP',status:'r',cod:430},
-      {nome:'UBAIA COSMETICOS LTDA',status:'r',cod:511},
       {nome:'UNIL E INDUSTRIA E COMERCIO',status:'r',cod:416}]}],
    atividades:[]};
 
@@ -701,8 +700,7 @@ function sthephannyHoje() {
       {nome:'DCL CARDEAL DISTRIBUIDORA (GALLO,PERFUMARIA)',status:'r',cod:519},
       {nome:'E.B.A. DISTRIBUIDORA LTDA',status:'r',cod:540},
       {nome:'E.B.A. DISTRIBUIDORA LTDA',status:'r',cod:505},
-      {nome:'GRIFOS COMERCIO DE ALIMENTOS',status:'r',cod:373},
-      {nome:'META 55 COM E REP LTDA',status:'r',cod:453}]}],
+      {nome:'GRIFOS COMERCIO DE ALIMENTOS',status:'r',cod:373}]}],
    atividades:[]};
 
   const qui_par = {categorias:[
@@ -712,7 +710,6 @@ function sthephannyHoje() {
       {nome:'COMERCIAL VITA NORTE LTDA',status:'r',cod:469},
       {nome:'CRISTIANO LEITE VELOSO',status:'r',cod:279},
       {nome:'DF DISTRIBUIDORA DE DESCARTAVEIS',status:'r',cod:418},
-      {nome:'GB PASSOS FILHO DISTRIBUIDORA',status:'r',cod:438},
       {nome:'KELLDRIN INDUSTRIAL LTDA',status:'r',cod:365},
       {nome:'PADELLE DIST',status:'r',cod:501}]}],
    atividades:[]};
@@ -1093,8 +1090,12 @@ let countdown = 40;
 function updateCountdown() {
   countdown--;
   document.getElementById('countdown').textContent = countdown+'s';
-  if (countdown<=0)
-    location.href='/comprador.html?nome='+encodeURIComponent(ORDEM[0])+'&auto=1&idx=0';
+  if (countdown<=0) {
+    try { window.parent.postMessage({ type: 'comprasCycleComplete' }, '*'); } catch(_) {}
+    if (window.parent === window) {
+      location.href='/comprador.html?nome='+encodeURIComponent(ORDEM[0])+'&auto=1&idx=0';
+    }
+  }
 }
 
 /* ══ ERP REAL ══ */

@@ -44,7 +44,11 @@ app.use((req, res, next) => {
 });
 
 // Arquivos estáticos (após auth)
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+  }
+}));
 
 // ── AUTH ENDPOINTS ──────────────────────────────────
 app.post('/api/login', async (req, res) => {
@@ -1638,7 +1642,7 @@ app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
           FROM central.avariaconsumo a LEFT JOIN central.fornecedor f ON f.CodFornec=a.CodFornec
           WHERE a.nLoja=? AND a.Tipo=1 AND a.nPedido IN (?)`, [loja, pedIds]) : [],
         q(`SELECT Status, Total FROM central.avariaconsumo
-          WHERE nLoja=? AND Status IN (0,3)`, [loja]),
+          WHERE nLoja=? AND Status IN (0,3) AND DataLan BETWEEN ? AND ?`, [loja, dIni, dFim]),
         q(`SELECT SUM(ValorTotalNovo) as total FROM \`ln${loja}${mm}\`.zcupomitens
           WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFim]).catch(() => [{ total: 0 }]),
         q(`SELECT SUM(ValorTotal) as total FROM central.bonificacao_averbacao

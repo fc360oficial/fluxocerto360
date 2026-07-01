@@ -9,6 +9,23 @@ const { exec } = require('child_process');
 const app = express();
 app.use(express.json());
 
+// ── CACHE EM MEMÓRIA ─────────────────────────────────────
+const _cache = new Map();
+function withCache(ttlMin) {
+  return (req, res, next) => {
+    const key = req.originalUrl;
+    const hit = _cache.get(key);
+    if (hit && Date.now() < hit.exp) return res.json(hit.data);
+    const origJson = res.json.bind(res);
+    res.json = (data) => {
+      if (res.statusCode === 200 && data && !data.error)
+        _cache.set(key, { data, exp: Date.now() + ttlMin * 60 * 1000 });
+      return origJson(data);
+    };
+    next();
+  };
+}
+
 // Carrega usuários do arquivo
 const usuarios = JSON.parse(fs.readFileSync(path.join(__dirname, 'usuarios.json'), 'utf8'));
 
@@ -135,7 +152,7 @@ function dFimMes(ano, mes) {
 }
 
 // KPIs resumo — aceita ?loja=1..6 e ?mes=1..12
-app.get('/api/kpis', async (req, res) => {
+app.get('/api/kpis', withCache(60), async (req, res) => {
   try {
     const hoje = new Date();
     const ano  = hoje.getFullYear();
@@ -226,7 +243,7 @@ app.get('/api/kpis', async (req, res) => {
 });
 
 // KPIs por loja — painel diretoria
-app.get('/api/diretoria/kpis', async (req, res) => {
+app.get('/api/diretoria/kpis', withCache(30), async (req, res) => {
   try {
     const hoje   = new Date();
     const ano    = hoje.getFullYear();
@@ -313,7 +330,7 @@ app.get('/api/produtos-semana', async (req, res) => {
 });
 
 // 2. Faturamento mensal do ano
-app.get('/api/faturamento-mensal', async (req, res) => {
+app.get('/api/faturamento-mensal', withCache(240), async (req, res) => {
   try {
     const ano     = new Date().getFullYear();
     const lojaSel = req.query.loja && req.query.loja !== 'todas' ? parseInt(req.query.loja) : null;
@@ -328,7 +345,7 @@ app.get('/api/faturamento-mensal', async (req, res) => {
 });
 
 // 3. Top 10 mais vendidos por loja e mês
-app.get('/api/top-vendidos', async (req, res) => {
+app.get('/api/top-vendidos', withCache(120), async (req, res) => {
   try {
     const hoje   = new Date();
     const mesSel = req.query.mes ? parseInt(req.query.mes) : hoje.getMonth() + 1;
@@ -383,7 +400,7 @@ app.get('/api/top-vendidos', async (req, res) => {
 });
 
 // Top mercadológico por mês
-app.get('/api/top-mercadologico', async (req, res) => {
+app.get('/api/top-mercadologico', withCache(240), async (req, res) => {
   try {
     const hoje    = new Date();
     const mesSel  = req.query.mes  ? parseInt(req.query.mes)  : hoje.getMonth() + 1;
@@ -917,7 +934,7 @@ async function getItensGrupo() {
 }
 
 // Comparativo TV: dados combinados (diário + mercadológico) para uma loja — mês atual
-app.get('/api/comparativo-tv', async (req, res) => {
+app.get('/api/comparativo-tv', withCache(120), async (req, res) => {
   try {
     const hoje    = new Date();
     const mesSel  = hoje.getMonth() + 1;
@@ -996,7 +1013,7 @@ app.get('/api/comparativo-tv', async (req, res) => {
 });
 
 // Comparativo diário: vendas dia-a-dia 2025 vs 2026 para o mês selecionado
-app.get('/api/comparativo-diario', async (req, res) => {
+app.get('/api/comparativo-diario', withCache(60), async (req, res) => {
   try {
     const hoje   = new Date();
     const mesSel = req.query.mes  ? parseInt(req.query.mes)  : hoje.getMonth() + 1;
@@ -1035,7 +1052,7 @@ app.get('/api/comparativo-diario', async (req, res) => {
 });
 
 // Comparativo por mercadológico (grupo + subgrupo): 2025 vs 2026 para loja+mês
-app.get('/api/comparativo-mercadologico', async (req, res) => {
+app.get('/api/comparativo-mercadologico', withCache(240), async (req, res) => {
   try {
     const hoje    = new Date();
     const mesSel  = req.query.mes  ? parseInt(req.query.mes)  : hoje.getMonth() + 1;
@@ -1105,7 +1122,7 @@ app.get('/api/comparativo-mercadologico', async (req, res) => {
 });
 
 // Comparativo por lojas: todas as 6 lojas 2025 vs 2026 para um mês
-app.get('/api/comparativo-lojas', async (req, res) => {
+app.get('/api/comparativo-lojas', withCache(120), async (req, res) => {
   try {
     const hoje    = new Date();
     const mesSel  = req.query.mes ? parseInt(req.query.mes) : hoje.getMonth() + 1;
@@ -1140,7 +1157,7 @@ app.get('/api/comparativo-lojas', async (req, res) => {
 const _mensalCache = {}, _mensalCacheTs = {};
 
 // Comparativo mensal: todos os meses do ano 2025 vs 2026
-app.get('/api/comparativo-mensal', async (req, res) => {
+app.get('/api/comparativo-mensal', withCache(240), async (req, res) => {
   try {
     const lojaSel = req.query.loja ? parseInt(req.query.loja) : 1;
     const cacheKey = String(lojaSel);
@@ -1487,7 +1504,7 @@ const SETOR_MAP = (() => {
 })();
 function getSetor(codMotivo) { return SETOR_MAP[codMotivo] || 'LOJA'; }
 
-app.get('/api/pendencias/prevencao', async (req, res) => {
+app.get('/api/pendencias/prevencao', withCache(60), async (req, res) => {
   try {
     const loja = parseInt(req.query.loja) || 1;
     const hoje = new Date();
@@ -1621,7 +1638,7 @@ app.get('/api/pendencias/prevencao', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/pendencias/prevencao-consolidado', async (req, res) => {
+app.get('/api/pendencias/prevencao-consolidado', withCache(60), async (req, res) => {
   try {
     const hoje = new Date();
     const mesSel = req.query.mes || `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
@@ -2495,7 +2512,7 @@ app.get('/deploy', (req, res) => {
 });
 
 // ── IA RUPTURAS ─────────────────────────────────────────
-app.get('/api/ruptura', async (req, res) => {
+app.get('/api/ruptura', withCache(60), async (req, res) => {
   try {
     const hoje = new Date();
     const mes = hoje.getMonth() + 1;

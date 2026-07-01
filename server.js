@@ -1664,6 +1664,11 @@ app.get('/api/pendencias/prevencao', withCache(60), async (req, res) => {
     const pctTotal = valorVenda > 0 ? +(emitido / valorVenda * 100).toFixed(2) : 0;
     const pctFiltrada = valorVenda > 0 ? +(avariasFinal / valorVenda * 100).toFixed(2) : 0;
 
+    // Bonifs salvos para meses históricos desta loja
+    const bonifHistRows = await q(`SELECT mes, valor FROM central.prevencao_bonif WHERE nLoja=? AND mes LIKE ?`, [loja, `${ano}-%`]).catch(() => []);
+    const bonifHistMap = {};
+    for (const r of bonifHistRows) bonifHistMap[r.mes] = parseFloat(r.valor || 0);
+
     // Comparativo mensal — Jan/Fev/Mai fixos do ERP, Mar/Abr vazios, Jun+ do banco
     const pctFixoLoja = {
       1: {1:1.28,2:1.82,5:1.65}, 2: {1:1.08,2:0.85,5:1.13}, 3: {1:0.71,2:0.93,5:0.84},
@@ -1708,7 +1713,8 @@ app.get('/api/pendencias/prevencao', withCache(60), async (req, res) => {
           else if (r.Status === 3) mTramite += parseFloat(r.Total);
         }
         const mSaldo = mEmit - mSetor.AÇOUGUE - mSetor.HORTFRUTI - mSetor.PADARIA;
-        const mAvMes = mSaldo + mAberto + mTramite;
+        const mBonif = bonifHistMap[mesKey] || 0;
+        const mAvMes = (mSaldo - mBonif) + mAberto + mTramite;
         const vdT = parseFloat(mVd[0]?.t || 0);
         mensal.push({ mes: mesKey, emitido: mAvMes, vendas: vdT,
           pct: vdT > 0 ? +(mAvMes / vdT * 100).toFixed(2) : 0 });
@@ -1742,7 +1748,7 @@ app.get('/api/pendencias/prevencao-consolidado', withCache(60), async (req, res)
     const [anoSel, mesNum] = mesSel.split('-').map(Number);
     const LOJAS = {1:'CAHU',2:'MURIBECA',3:'PONTE',4:'ATACAREJO',5:'PORTA LARGA',6:'JARDIM JD JORDÃO'};
 
-    async function processLoja(loja) {
+    async function processLoja(loja, bonifMap = {}) {
       const dIni = `${anoSel}-${String(mesNum).padStart(2,'0')}-01`;
       const dFim = dFimMes(anoSel, mesNum);
       const mm = mesDB(mesNum);
@@ -1840,7 +1846,9 @@ app.get('/api/pendencias/prevencao-consolidado', withCache(60), async (req, res)
             else if (r.Status === 3) mTramite += parseFloat(r.Total);
           }
           const mSaldo = mEmit - mSetor.AÇOUGUE - mSetor.HORTFRUTI - mSetor.PADARIA;
-          const mAvMes = mSaldo + mAberto + mTramite;
+          const mMesStr = `${anoSel}-${String(m).padStart(2,'0')}`;
+          const mBonif = bonifMap[`${loja}-${mMesStr}`] || 0;
+          const mAvMes = (mSaldo - mBonif) + mAberto + mTramite;
           const vdT = parseFloat(mVd[0]?.t || 0);
           mensal.push({ mes: m, pct: vdT > 0 ? +(mAvMes / vdT * 100).toFixed(2) : 0 });
         } catch { mensal.push({ mes: m, pct: 0 }); }
@@ -1855,7 +1863,12 @@ app.get('/api/pendencias/prevencao-consolidado', withCache(60), async (req, res)
       };
     }
 
-    const lojas = await Promise.all([1,2,3,4,5,6].map(l => processLoja(l)));
+    // Bonifs salvos pelo usuário (para aplicar nos meses históricos)
+    const bonifSavedRows = await q(`SELECT nLoja, mes, valor FROM central.prevencao_bonif WHERE mes LIKE ?`, [`${anoSel}-%`]).catch(() => []);
+    const bonifMap = {};
+    for (const r of bonifSavedRows) bonifMap[`${r.nLoja}-${r.mes}`] = parseFloat(r.valor || 0);
+
+    const lojas = await Promise.all([1,2,3,4,5,6].map(l => processLoja(l, bonifMap)));
     res.json({ lojas, ano: anoSel, mesAtual: mesNum });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

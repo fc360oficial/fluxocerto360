@@ -1221,49 +1221,102 @@ app.get('/api/margem-lojas', withCache(60), async (req, res) => {
       };
     }));
 
-    // Compras com NF por loja (mês selecionado) — central.compras = NFs de entrada recebidas
-    const diaFiltroCompra = mesSel === mesHoje ? ` AND DAY(DataLan) <= ${diaHoje}` : '';
-    const compraRows = await q(
-      `SELECT nLoja, YEAR(DataLan) as ano, SUM(TotalNota) as total
-       FROM central.compras
-       WHERE Movimentacao='COMPRA' AND MONTH(DataLan)=? AND YEAR(DataLan) IN (2025,2026)
-         AND nLoja IN (1,2,3,4,5,6)${diaFiltroCompra}
-       GROUP BY nLoja, ano`,
-      [mesSel]
-    );
-    const compraMap = {};
-    for (const r of compraRows) {
-      if (!compraMap[r.nLoja]) compraMap[r.nLoja] = { c25: 0, c26: 0 };
-      if (r.ano == 2025) compraMap[r.nLoja].c25 = parseFloat(r.total || 0);
-      else               compraMap[r.nLoja].c26 = parseFloat(r.total || 0);
-    }
-    for (const l of porLoja) {
-      const cm = compraMap[l.loja] || { c25: 0, c26: 0 };
-      l.compra2025 = +cm.c25.toFixed(2);
-      l.compra2026 = +cm.c26.toFixed(2);
-      l.cv2025 = l.venda2025 > 0 ? +((cm.c25 / l.venda2025) * 100).toFixed(2) : null;
-      l.cv2026 = l.venda2026 > 0 ? +((cm.c26 / l.venda2026) * 100).toFixed(2) : null;
-    }
-
     const tv25=porLoja.reduce((s,l)=>s+l.venda2025,0);
     const tc25=porLoja.reduce((s,l)=>s+l.custo2025,0);
     const tv26=porLoja.reduce((s,l)=>s+l.venda2026,0);
     const tc26=porLoja.reduce((s,l)=>s+l.custo2026,0);
-    const tCompra25=porLoja.reduce((s,l)=>s+l.compra2025,0);
-    const tCompra26=porLoja.reduce((s,l)=>s+l.compra2026,0);
 
     res.json({
       por_mes: porMes, por_loja: porLoja,
       totais: {
         venda2025:+tv25.toFixed(2), custo2025:+tc25.toFixed(2), msv2025: tv25>0?+((tv25-tc25)/tv25*100).toFixed(2):null,
         venda2026:+tv26.toFixed(2), custo2026:+tc26.toFixed(2), msv2026: tv26>0?+((tv26-tc26)/tv26*100).toFixed(2):null,
-        compra2025:+tCompra25.toFixed(2), cv2025: tv25>0?+((tCompra25/tv25)*100).toFixed(2):null,
-        compra2026:+tCompra26.toFixed(2), cv2026: tv26>0?+((tCompra26/tv26)*100).toFixed(2):null,
       },
       mes: mesSel, loja: lojaSel,
       diaHoje, mesHoje
     });
   } catch(err){ res.status(500).json({error: err.message}); }
+});
+
+// ── COMPRA x VENDA por loja ────────────────────────────────────────────────
+// Venda = NFC-e (zcupomitens) + NF-e saída (central.compras Tipo=NF Movimentacao=VENDA)
+// Compra = central.compras Tipo=NF Movimentacao=COMPRA
+app.get('/api/compra-venda', withCache(30), async (req, res) => {
+  try {
+    const hoje   = new Date();
+    const mesSel = req.query.mes ? parseInt(req.query.mes) : hoje.getMonth() + 1;
+    const diaHoje = hoje.getDate();
+    const mesHoje = hoje.getMonth() + 1;
+    const lojas  = [1,2,3,4,5,6];
+    const mm     = String(mesSel).padStart(2,'0');
+    const diaFiltroV = mesSel === mesHoje ? ` AND DAY(Data) <= ${diaHoje}` : '';
+    const diaFiltroC = mesSel === mesHoje ? ` AND DAY(DataLan) <= ${diaHoje}` : '';
+    const NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    // NFC-e por loja (6 queries em paralelo)
+    const nfceMap = {};
+    await Promise.all(lojas.map(async ln => {
+      try {
+        const [r] = await q(
+          `SELECT COALESCE(SUM(ValorTotalNovo),0) as venda
+           FROM \`ln${ln}mes${mm}\`.zcupomitens
+           WHERE YEAR(Data)=2026 AND IndCancel='N'${diaFiltroV}`);
+        nfceMap[ln] = parseFloat(r?.venda || 0);
+      } catch(_) { nfceMap[ln] = 0; }
+    }));
+
+    // NF-e saída e Compra por loja — uma só query
+    const cvRows = await q(
+      `SELECT nLoja, Movimentacao, COALESCE(SUM(TotalNota),0) as total
+       FROM central.compras
+       WHERE MONTH(DataLan)=? AND YEAR(DataLan)=2026
+         AND nLoja IN (1,2,3,4,5,6)
+         AND Movimentacao IN ('COMPRA','VENDA') AND Tipo='NF'${diaFiltroC}
+       GROUP BY nLoja, Movimentacao`,
+      [mesSel]
+    );
+    const nfeVendaMap = {}, compraMap = {};
+    for (const r of cvRows) {
+      const v = parseFloat(r.total || 0);
+      if (r.Movimentacao === 'VENDA')  nfeVendaMap[r.nLoja] = v;
+      if (r.Movimentacao === 'COMPRA') compraMap[r.nLoja]   = v;
+    }
+
+    const por_loja = lojas.map(ln => {
+      const nfce   = nfceMap[ln]    || 0;
+      const nfe    = nfeVendaMap[ln] || 0;
+      const compra = compraMap[ln]  || 0;
+      const total  = nfce + nfe;
+      return {
+        loja: ln,
+        venda_nfce:  +nfce.toFixed(2),
+        venda_nfe:   +nfe.toFixed(2),
+        venda_total: +total.toFixed(2),
+        compra:      +compra.toFixed(2),
+        cv: total > 0 ? +((compra / total) * 100).toFixed(2) : null,
+      };
+    });
+
+    const tnfce   = por_loja.reduce((s,l)=>s+l.venda_nfce,0);
+    const tnfe    = por_loja.reduce((s,l)=>s+l.venda_nfe,0);
+    const ttotal  = por_loja.reduce((s,l)=>s+l.venda_total,0);
+    const tcompra = por_loja.reduce((s,l)=>s+l.compra,0);
+
+    res.json({
+      por_loja,
+      totais: {
+        venda_nfce:  +tnfce.toFixed(2),
+        venda_nfe:   +tnfe.toFixed(2),
+        venda_total: +ttotal.toFixed(2),
+        compra:      +tcompra.toFixed(2),
+        cv: ttotal > 0 ? +((tcompra / ttotal) * 100).toFixed(2) : null,
+      },
+      mes: mesSel,
+      nome_mes: NOMES[mesSel - 1],
+      diaHoje, mesHoje,
+      parcial: mesSel === mesHoje,
+    });
+  } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
 const _mensalCache = {}, _mensalCacheTs = {};

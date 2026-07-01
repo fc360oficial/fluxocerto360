@@ -203,6 +203,7 @@ table.dt tbody tr:hover{background:#ffffff06}
       <button class="tab-btn"        id="tab-btn-merc"   onclick="setTab('merc')">Venda por Mercadológico</button>
       <button class="tab-btn"        id="tab-btn-lojas"  onclick="setTab('lojas')">Por Lojas</button>
       <button class="tab-btn"        id="tab-btn-margem" onclick="setTab('margem')">Margem s/ Venda</button>
+      <button class="tab-btn"        id="tab-btn-cv"     onclick="setTab('cv')">Compra x Venda</button>
     </div>
 
     <!-- Tab: Diário -->
@@ -315,11 +316,31 @@ table.dt tbody tr:hover{background:#ffffff06}
               <th class="r">Venda 2026</th>
               <th class="r">MSV 2026</th>
               <th class="r">Δ Margem</th>
-              <th class="r" style="color:#60a5fa" title="Total de compras com NF-e recebidas no mês">Compra c/ NF</th>
-              <th class="r" style="color:#60a5fa" title="Compras com NF-e / Venda 2026">C/V%</th>
             </tr>
           </thead>
-          <tbody id="tbody-margem-loja"><tr><td colspan="8" class="loading">Selecione a aba para carregar</td></tr></tbody>
+          <tbody id="tbody-margem-loja"><tr><td colspan="6" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Compra x Venda -->
+    <div id="tab-cv" style="display:none">
+      <p id="cv-subtitulo" style="font-size:11px;color:#64748b;margin-bottom:14px">
+        Venda = NFC-e (PDV) + NF-e saída &nbsp;·&nbsp; Compra = NF-e de entrada recebidas &nbsp;·&nbsp; C/V% = Compra ÷ Venda Total × 100
+      </p>
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Loja</th>
+              <th class="r">Venda NFC-e</th>
+              <th class="r">Venda NF-e</th>
+              <th class="r">Venda Total</th>
+              <th class="r" style="color:#60a5fa">Compra c/ NF</th>
+              <th class="r" style="color:#60a5fa">C/V%</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cv"><tr><td colspan="6" class="loading">Selecione a aba para carregar</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -517,16 +538,16 @@ function renderizar(data) {
   `);
 }
 
-const _carregado = { diario: false, mensal: false, merc: false, lojas: false, margem: false };
+const _carregado = { diario: false, mensal: false, merc: false, lojas: false, margem: false, cv: false };
 let abaAtual = 'diario';
 // Visibilidade de filtros por aba: [mostra-loja, mostra-mes]
-const _filtros = { diario:[1,1], mensal:[1,0], merc:[1,1], lojas:[0,1], margem:[1,1] };
+const _filtros = { diario:[1,1], mensal:[1,0], merc:[1,1], lojas:[0,1], margem:[1,1], cv:[0,1] };
 // Label do 4º KPI por aba
-const _kpiLabel = { diario:'Média Diária 2026', mensal:'Média Mensal 2026', merc:'Total Mercad. 2026', lojas:'Melhor Loja 2026', margem:'Melhor Margem 2026' };
+const _kpiLabel = { diario:'Média Diária 2026', mensal:'Média Mensal 2026', merc:'Total Mercad. 2026', lojas:'Melhor Loja 2026', margem:'Melhor Margem 2026', cv:'C/V% Rede' };
 
 function setTab(aba) {
   abaAtual = aba;
-  ['diario','mensal','merc','lojas','margem'].forEach(t => {
+  ['diario','mensal','merc','lojas','margem','cv'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === aba ? '' : 'none';
     document.getElementById('tab-btn-' + t).classList.toggle('active', t === aba);
   });
@@ -782,7 +803,7 @@ function carregarMargem() {
   const mes  = document.getElementById('sel-mes').value;
   const loja = document.getElementById('sel-loja-margem').value;
   document.getElementById('tbody-margem-mes').innerHTML  = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
-  document.getElementById('tbody-margem-loja').innerHTML = '<tr><td colspan="8" class="loading">Carregando...</td></tr>';
+  document.getElementById('tbody-margem-loja').innerHTML = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
   fetch(`/api/margem-lojas?mes=${mes}&loja=${loja}`)
     .then(r => { if(r.status===401){location.href='/login.html';return null;} return r.json(); })
     .then(data => {
@@ -868,8 +889,6 @@ function carregarMargem() {
             <td class="r">${l.venda2026>0?BRL(l.venda2026):'<span style="color:#334155">—</span>'}</td>
             <td class="r ${c26}">${l.msv2026!==null?l.msv2026.toFixed(2)+'%':'—'}</td>
             <td class="r ${dc}">${d!==null?(d>=0?'+':'')+d.toFixed(2)+' pp':'—'}</td>
-            <td class="r" style="color:#93c5fd">${l.compra2026>0?BRL(l.compra2026):'<span style="color:#334155">—</span>'}</td>
-            <td class="r" style="color:#93c5fd">${l.cv2026!==null?l.cv2026.toFixed(1)+'%':'—'}</td>
           </tr>`);
       }
       const rv25=t.msv2025,rv26=t.msv2026;
@@ -882,18 +901,72 @@ function carregarMargem() {
           <td class="r">${BRL(t.venda2026)}</td>
           <td class="r">${rv26!==null?rv26.toFixed(2)+'%':'—'}</td>
           <td class="r ${rd!==null?(rd>=0?'var-pos':'var-neg'):'var-zero'}">${rd!==null?(rd>=0?'+':'')+rd.toFixed(2)+' pp':'—'}</td>
-          <td class="r" style="color:#93c5fd">${t.compra2026>0?BRL(t.compra2026):'—'}</td>
-          <td class="r" style="color:#93c5fd">${t.cv2026!==null?t.cv2026.toFixed(1)+'%':'—'}</td>
         </tr>`);
     })
     .catch(e => {
       const msg = e?.message || String(e);
       document.getElementById('tbody-margem-mes').innerHTML  = `<tr><td colspan="6" class="loading">Erro: ${msg}</td></tr>`;
-      document.getElementById('tbody-margem-loja').innerHTML = `<tr><td colspan="8" class="loading">Erro: ${msg}</td></tr>`;
+      document.getElementById('tbody-margem-loja').innerHTML = `<tr><td colspan="6" class="loading">Erro: ${msg}</td></tr>`;
     });
 }
 
-const _carregar = { diario: carregar, mensal: carregarMensal, merc: carregarMerc, lojas: carregarLojas, margem: carregarMargem };
+function carregarCV() {
+  const mes = document.getElementById('sel-mes').value;
+  const tb = document.getElementById('tbody-cv');
+  tb.innerHTML = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
+  fetch(`/api/compra-venda?mes=${mes}`)
+    .then(r => { if (r.status === 401) { location.href='/login.html'; throw new Error('401'); } return r.json(); })
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      _carregado.cv = true;
+
+      // Atualiza KPI com C/V% da rede
+      const t = data.totais;
+      document.getElementById('k-tot26').textContent = t.cv !== null ? t.cv.toFixed(1) + '%' : '—';
+      document.getElementById('k-sub26').textContent = 'C/V% rede ' + data.nome_mes;
+      document.getElementById('k-tot25').textContent = BRL(t.compra);
+      document.getElementById('k-sub25').textContent = 'Total compras c/ NF';
+      document.getElementById('k-var').textContent = '';
+      document.getElementById('k-var').className = 'kpi-v';
+      document.getElementById('k-med26').textContent = BRL(t.venda_total);
+      document.getElementById('k-med-label').textContent = 'Venda Total';
+
+      const parcialLabel = data.parcial ? ` <span style="color:#94a3b8;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
+      document.getElementById('cv-subtitulo').innerHTML =
+        `Venda = NFC-e (PDV) + NF-e saída${parcialLabel} &nbsp;·&nbsp; Compra = NF-e de entrada recebidas &nbsp;·&nbsp; C/V% = Compra ÷ Venda Total × 100`;
+
+      tb.innerHTML = '';
+      const LOJAS = ['','CAHU','CARUARU','GARANHUNS','ARCOVERDE','BELO JARDIM','CARUARU 2'];
+      for (const l of data.por_loja) {
+        const cvCls = l.cv !== null ? (l.cv <= 80 ? 'var-pos' : l.cv <= 95 ? '' : 'var-neg') : 'var-zero';
+        tb.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>Loja ${l.loja}</strong><span style="color:#64748b;font-size:10px;margin-left:6px">${LOJAS[l.loja]||''}</span></td>
+            <td class="r">${l.venda_nfce > 0 ? BRL(l.venda_nfce) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.venda_nfe  > 0 ? BRL(l.venda_nfe)  : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.venda_total > 0 ? BRL(l.venda_total) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r" style="color:#93c5fd">${l.compra > 0 ? BRL(l.compra) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r ${cvCls}" style="font-weight:700">${l.cv !== null ? l.cv.toFixed(1) + '%' : '—'}</td>
+          </tr>`);
+      }
+      const totCvCls = t.cv !== null ? (t.cv <= 80 ? 'var-pos' : t.cv <= 95 ? '' : 'var-neg') : 'var-zero';
+      tb.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total Rede</td>
+          <td class="r">${BRL(t.venda_nfce)}</td>
+          <td class="r">${BRL(t.venda_nfe)}</td>
+          <td class="r">${BRL(t.venda_total)}</td>
+          <td class="r" style="color:#93c5fd">${BRL(t.compra)}</td>
+          <td class="r ${totCvCls}" style="font-weight:700">${t.cv !== null ? t.cv.toFixed(1) + '%' : '—'}</td>
+        </tr>`);
+    })
+    .catch(e => {
+      if (e?.message === '401') return;
+      tb.innerHTML = `<tr><td colspan="6" class="loading">Erro: ${e?.message || e}</td></tr>`;
+    });
+}
+
+const _carregar = { diario: carregar, mensal: carregarMensal, merc: carregarMerc, lojas: carregarLojas, margem: carregarMargem, cv: carregarCV };
 
 // Ao trocar loja: recarrega abas que usam loja (diario, mensal, merc)
 document.getElementById('sel-loja').addEventListener('change', () => {
@@ -907,7 +980,7 @@ document.getElementById('sel-loja-margem').addEventListener('change', () => {
 // Ao trocar mês: recarrega abas que usam mês (diario, merc, lojas, margem)
 document.getElementById('sel-mes').addEventListener('change', () => {
   _carregado[abaAtual] = false;
-  if (['diario','merc','lojas','margem'].includes(abaAtual)) _carregar[abaAtual]();
+  if (['diario','merc','lojas','margem','cv'].includes(abaAtual)) _carregar[abaAtual]();
 });
 
 initSelects();

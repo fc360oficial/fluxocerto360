@@ -3,6 +3,8 @@
   var BUILD = '191';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
+  var vLogin = document.getElementById('login-versao');
+  if (vLogin) vLogin.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
     localStorage.setItem('fc360_build', BUILD);
     sessionStorage.removeItem('eco_last_page');

@@ -503,7 +503,7 @@ function renderTudo(d) {
   html += '<tr><td class="bold warn">EM ABERTO</td><td class="r bold warn">' + fmt(r.aberto) + '</td><td style="color:#94a3b8">Produtos na loja (mês)</td></tr>';
   html += '<tr><td class="bold info">EM TRÂMITE</td><td class="r bold info">' + fmt(r.tramite) + '</td><td style="color:#94a3b8">Produtos descartados (mês)</td></tr>';
   html += '<tr><td class="bold neg">AVARIAS FINAL</td><td class="r bold neg" id="pendencias-final">' + fmt(r.avariasFinal) + '</td><td style="color:#94a3b8">Notas emitidas líquidas (mês)</td></tr>';
-  html += '<tr style="border-top:2px solid #334155"><td class="bold" style="color:#f8fafc">TOTAL AVARIA MÊS</td><td class="r bold neg" id="pendencias-total">' + fmt(r.aberto + r.tramite + r.avariasFinal) + '</td><td style="color:#64748b;font-size:11px">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '% s/ venda</td></tr>';
+  html += '<tr style="border-top:2px solid #334155"><td class="bold" style="color:#f8fafc">TOTAL AVARIA MÊS</td><td class="r bold neg" id="pendencias-total">' + fmt(r.aberto + r.tramite + r.avariasFinal) + '</td><td style="color:#64748b;font-size:11px" id="pendencias-pct">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '% s/ venda</td></tr>';
   html += '</tbody></table></div>';
 
   // ── TOTAL GERAL (SEM FILTRO DE MÊS) ──
@@ -538,6 +538,8 @@ function renderTudo(d) {
       document.getElementById('pendencias-total').textContent = fmt(totalMes);
       document.getElementById('pct-avarias').textContent = fmtN(pct) + '%';
       document.getElementById('pct-avarias').className = 'val ' + (pct > 0 ? 'neg' : '');
+      var pendPct = document.getElementById('pendencias-pct');
+      if (pendPct) pendPct.textContent = fmtN(pct) + '% s/ venda';
       var selCard = document.getElementById('mensal-sel-pct');
       if (selCard) { selCard.textContent = fmtN(pct) + '%'; selCard.className = 'mes-val ' + (pct > 1 ? 'neg' : 'pos'); }
       salvarBonif(lojaVal, mesVal, val);

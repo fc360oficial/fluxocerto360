@@ -1265,18 +1265,30 @@ app.get('/api/compra-venda', withCache(30), async (req, res) => {
       } catch(_) { nfceMap[ln] = 0; }
     }));
 
-    // NF-e saída e Compra por loja — uma só query
-    // COMPRA Tipo='PNF': pedidos recebidos com NF (mesmo critério do ERP "com NF")
-    // VENDA NF-e Tipo='NF': notas fiscais de saída eletrônicas
-    const cvRows = await q(
-      `SELECT nLoja, Movimentacao, COALESCE(SUM(TotalNota),0) as total
+    // Compra por loja: DataRecto (recebimento) + Tipo='PNF' + Status='F' = igual ao ERP "com NF"
+    // Venda NF-e: DataLan + Tipo='NF'
+    const compraRows = await q(
+      `SELECT nLoja, COALESCE(SUM(TotalNota),0) as total
+       FROM central.compras
+       WHERE MONTH(DataRecto)=? AND YEAR(DataRecto)=2026
+         AND nLoja IN (1,2,3,4,5,6)
+         AND Movimentacao='COMPRA' AND Tipo='PNF' AND Status='F'${diaFiltroC.replace('DataLan','DataRecto')}
+       GROUP BY nLoja`,
+      [mesSel]
+    );
+    const nfeVendaRows = await q(
+      `SELECT nLoja, COALESCE(SUM(TotalNota),0) as total
        FROM central.compras
        WHERE MONTH(DataLan)=? AND YEAR(DataLan)=2026
          AND nLoja IN (1,2,3,4,5,6)
-         AND ((Movimentacao='COMPRA' AND Tipo='PNF') OR (Movimentacao='VENDA' AND Tipo='NF'))${diaFiltroC}
-       GROUP BY nLoja, Movimentacao`,
+         AND Movimentacao='VENDA' AND Tipo='NF'${diaFiltroC}
+       GROUP BY nLoja`,
       [mesSel]
     );
+    const cvRows = [
+      ...compraRows.map(r => ({ ...r, Movimentacao: 'COMPRA' })),
+      ...nfeVendaRows.map(r => ({ ...r, Movimentacao: 'VENDA' })),
+    ];
     const nfeVendaMap = {}, compraMap = {};
     for (const r of cvRows) {
       const v = parseFloat(r.total || 0);

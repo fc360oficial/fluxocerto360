@@ -312,8 +312,8 @@ function renderConsolidado(d) {
   function getTrend(cur, prv) {
     if (!prv) return '<span style="color:#475569;font-size:11px">—</span>';
     var df = +(cur - prv).toFixed(2);
-    if (df > 0.05)  return '<span class="trend-up">▲ +' + fmtN(Math.abs(df)) + '%</span>';
-    if (df < -0.05) return '<span class="trend-down">▼ ' + fmtN(Math.abs(df)) + '%</span>';
+    if (df > 0.01)  return '<span class="trend-up">▲ +' + fmtN(Math.abs(df)) + '%</span>';
+    if (df < -0.01) return '<span class="trend-down">▼ ' + fmtN(Math.abs(df)) + '%</span>';
     return '<span style="color:#64748b;font-size:11px">→</span>';
   }
 
@@ -563,8 +563,8 @@ function renderConsolidado(d) {
       var prv = prevPct[di];
       if (prv === undefined) continue;
       var df3 = +(curPct - prv).toFixed(2);
-      if (df3 < -0.05) mel.push({nome: d.lojas[di].nome, df: df3, pct: curPct});
-      else if (df3 > 0.05) pio.push({nome: d.lojas[di].nome, df: df3, pct: curPct});
+      if (df3 < -0.01) mel.push({nome: d.lojas[di].nome, df: df3, pct: curPct});
+      else if (df3 > 0.01) pio.push({nome: d.lojas[di].nome, df: df3, pct: curPct});
     }
     mel.sort(function(a,b){return a.df - b.df;});
     pio.sort(function(a,b){return b.df - a.df;});

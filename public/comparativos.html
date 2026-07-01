@@ -782,8 +782,10 @@ function carregarMargem() {
   document.getElementById('tbody-margem-mes').innerHTML  = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
   document.getElementById('tbody-margem-loja').innerHTML = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
   fetch(`/api/margem-lojas?mes=${mes}&loja=${loja}`)
-    .then(r => r.json())
+    .then(r => { if(r.status===401){location.href='/login.html';return null;} return r.json(); })
     .then(data => {
+      if(!data) return;
+      if(data.error) throw new Error(data.error);
       _carregado.margem = true;
       const t = data.totais;
       const MESES2 = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -870,9 +872,10 @@ function carregarMargem() {
           <td class="r ${rd!==null?(rd>=0?'var-pos':'var-neg'):'var-zero'}">${rd!==null?(rd>=0?'+':'')+rd.toFixed(2)+' pp':'—'}</td>
         </tr>`);
     })
-    .catch(() => {
-      document.getElementById('tbody-margem-mes').innerHTML  = '<tr><td colspan="6" class="loading">Erro ao carregar</td></tr>';
-      document.getElementById('tbody-margem-loja').innerHTML = '<tr><td colspan="6" class="loading">Erro ao carregar</td></tr>';
+    .catch(e => {
+      const msg = e?.message || String(e);
+      document.getElementById('tbody-margem-mes').innerHTML  = `<tr><td colspan="6" class="loading">Erro: ${msg}</td></tr>`;
+      document.getElementById('tbody-margem-loja').innerHTML = `<tr><td colspan="6" class="loading">Erro: ${msg}</td></tr>`;
     });
 }
 

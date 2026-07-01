@@ -497,18 +497,23 @@ function renderTudo(d) {
   // ── COMPARATIVO MENSAL ──
   html += '<div class="sec-title">📊 % AVARIAS POR MÊS</div>';
   html += '<div class="mensal-grid">';
+  var avMesSel = r.aberto + r.tramite + r.avariasFinal;
+  var pctMesSel = r.valorVenda > 0 ? (avMesSel / r.valorVenda * 100) : 0;
   for (var j = 0; j < d.mensal.length; j++) {
     var m = d.mensal[j];
     var mParts = m.mes.split('-');
     var mNome = MESES[parseInt(mParts[1])] + '/' + mParts[0];
-    html += '<div class="mensal-card"><div class="mes-label">' + mNome + '</div>';
-    if (m.pct === 0 && m.emitido === 0) {
+    var isSel = m.mes === mesVal;
+    var pctExib = isSel ? pctMesSel : m.pct;
+    var subExib = isSel ? avMesSel  : m.emitido;
+    html += '<div class="mensal-card"' + (isSel ? ' style="border-color:#F9C20066"' : '') + '><div class="mes-label">' + mNome + '</div>';
+    if (!isSel && pctExib === 0 && subExib === 0) {
       html += '<div class="mes-val" style="color:#475569">—</div>';
       html += '<div class="mes-sub" style="color:#334155">—</div>';
     } else {
-      var cor = m.pct > 1 ? 'neg' : 'pos';
-      html += '<div class="mes-val ' + cor + '">' + fmtN(m.pct) + '%</div>';
-      html += '<div class="mes-sub">' + fmt(m.emitido) + '</div>';
+      var cor = pctExib > 1 ? 'neg' : 'pos';
+      html += '<div class="mes-val ' + cor + '">' + fmtN(pctExib) + '%</div>';
+      html += '<div class="mes-sub">' + fmt(subExib) + '</div>';
     }
     html += '</div>';
   }

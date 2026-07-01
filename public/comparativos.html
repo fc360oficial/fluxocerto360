@@ -304,7 +304,7 @@ table.dt tbody tr:hover{background:#ffffff06}
         </table>
       </div>
 
-      <h3 style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Loja — Mês Selecionado</h3>
+      <h3 id="titulo-margem-loja" style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Loja — Mês Selecionado</h3>
       <div class="table-wrap">
         <table class="dt">
           <thead>
@@ -812,6 +812,7 @@ function carregarMargem() {
       tbM.innerHTML = '';
       let tv25=0,tc25=0,tv26=0,tc26=0;
       const mesSel = parseInt(mes);
+      const diaLabel = data.diaHoje ? ` <span style="color:#94a3b8;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
       for (const m of data.por_mes) {
         tv25+=m.venda2025; tc25+=m.custo2025; tv26+=m.venda2026; tc26+=m.custo2026;
         const d = (m.msv2025!==null && m.msv2026!==null) ? +(m.msv2026-m.msv2025).toFixed(2) : null;
@@ -821,7 +822,7 @@ function carregarMargem() {
         const destaque = m.mes===mesSel ? 'background:#F9C20012;' : '';
         tbM.insertAdjacentHTML('beforeend', `
           <tr style="${destaque}">
-            <td><strong>${m.nome}</strong>${m.mes===mesSel?' <span style="color:#F9C200;font-size:10px">◀</span>':''}</td>
+            <td><strong>${m.nome}</strong>${m.parcial?diaLabel:''}${m.mes===mesSel?' <span style="color:#F9C200;font-size:10px">◀</span>':''}</td>
             <td class="r">${m.venda2025>0?BRL(m.venda2025):'<span style="color:#334155">—</span>'}</td>
             <td class="r ${msvCls25}">${m.msv2025!==null?m.msv2025.toFixed(2)+'%':'—'}</td>
             <td class="r">${m.venda2026>0?BRL(m.venda2026):'<span style="color:#334155">—</span>'}</td>
@@ -843,6 +844,13 @@ function carregarMargem() {
         </tr>`);
 
       // Tabela por loja
+      const tituloLoja = document.getElementById('titulo-margem-loja');
+      if (tituloLoja) {
+        const nomeMesSel = MESES2[mesSel] || 'Mês';
+        tituloLoja.textContent = data.mesHoje === mesSel
+          ? `Por Loja — ${nomeMesSel} (até dia ${data.diaHoje})`
+          : `Por Loja — ${nomeMesSel}`;
+      }
       const tbL = document.getElementById('tbody-margem-loja');
       tbL.innerHTML = '';
       for (const l of data.por_loja) {

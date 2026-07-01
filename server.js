@@ -1163,43 +1163,50 @@ app.get('/api/margem-lojas', withCache(60), async (req, res) => {
     const lojas   = [1,2,3,4,5,6];
     const NOMES   = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-    // Por mês (Jan–Dez): loja selecionada ou soma da rede
-    const porMes = await Promise.all(
-      Array.from({length:12},(_,i)=>i+1).map(async m => {
-        const mm = String(m).padStart(2,'0');
-        const lojasFiltro = lojaSel > 0 ? [lojaSel] : lojas;
-        let v25=0,c25=0,v26=0,c26=0;
-        await Promise.all(lojasFiltro.map(async ln => {
-          try {
-            const rows = await q(
-              `SELECT YEAR(Data) as ano, SUM(ValorTotalNovo) as venda, SUM(Custo) as custo
-               FROM \`ln${ln}mes${mm}\`.zcupomitens
-               WHERE YEAR(Data) IN (2025,2026) AND IndCancel='N' GROUP BY ano`);
-            for (const r of rows) {
-              const v=parseFloat(r.venda||0),c=parseFloat(r.custo||0);
-              if(r.ano==2025){v25+=v;c25+=c;}else{v26+=v;c26+=c;}
-            }
-          } catch(_){}
-        }));
-        return {
-          mes: m, nome: NOMES[m-1],
-          venda2025:+v25.toFixed(2), custo2025:+c25.toFixed(2),
-          msv2025: v25>0 ? +((v25-c25)/v25*100).toFixed(2) : null,
-          venda2026:+v26.toFixed(2), custo2026:+c26.toFixed(2),
-          msv2026: v26>0 ? +((v26-c26)/v26*100).toFixed(2) : null,
-        };
-      })
-    );
+    // Para o mês atual: limitar 2025 ao mesmo dia para comparação justa
+    const diaHoje  = hoje.getDate();
+    const mesHoje  = hoje.getMonth() + 1;
 
-    // Por loja (mês selecionado)
+    // Por mês (Jan–Dez): sequencial para não sobrecarregar o MySQL
+    const porMes = [];
+    for (let m = 1; m <= 12; m++) {
+      const mm2 = String(m).padStart(2,'0');
+      const lojasFiltro = lojaSel > 0 ? [lojaSel] : lojas;
+      let v25=0,c25=0,v26=0,c26=0;
+      // mês corrente: limita ambos os anos ao mesmo dia (comparação justa)
+      const diaFiltro = m === mesHoje ? ` AND DAY(Data) <= ${diaHoje}` : '';
+      await Promise.all(lojasFiltro.map(async ln => {
+        try {
+          const rows = await q(
+            `SELECT YEAR(Data) as ano, SUM(ValorTotalNovo) as venda, COALESCE(SUM(Custo),0) as custo
+             FROM \`ln${ln}mes${mm2}\`.zcupomitens
+             WHERE YEAR(Data) IN (2025,2026) AND IndCancel='N'${diaFiltro} GROUP BY ano`);
+          for (const r of rows) {
+            const v=parseFloat(r.venda||0),c=parseFloat(r.custo||0);
+            if(r.ano==2025){v25+=v;c25+=c;}else{v26+=v;c26+=c;}
+          }
+        } catch(_){}
+      }));
+      porMes.push({
+        mes: m, nome: NOMES[m-1],
+        parcial: m === mesHoje, // indica que é mês corrente (até diaHoje)
+        venda2025:+v25.toFixed(2), custo2025:+c25.toFixed(2),
+        msv2025: v25>0 ? +((v25-c25)/v25*100).toFixed(2) : null,
+        venda2026:+v26.toFixed(2), custo2026:+c26.toFixed(2),
+        msv2026: v26>0 ? +((v26-c26)/v26*100).toFixed(2) : null,
+      });
+    }
+
+    // Por loja (mês selecionado) — 6 queries em paralelo é OK
     const mm = String(mesSel).padStart(2,'0');
+    const diaFiltroLoja = mesSel === mesHoje ? ` AND DAY(Data) <= ${diaHoje}` : '';
     const porLoja = await Promise.all(lojas.map(async ln => {
       let v25=0,c25=0,v26=0,c26=0;
       try {
         const rows = await q(
-          `SELECT YEAR(Data) as ano, SUM(ValorTotalNovo) as venda, SUM(Custo) as custo
+          `SELECT YEAR(Data) as ano, SUM(ValorTotalNovo) as venda, COALESCE(SUM(Custo),0) as custo
            FROM \`ln${ln}mes${mm}\`.zcupomitens
-           WHERE YEAR(Data) IN (2025,2026) AND IndCancel='N' GROUP BY ano`);
+           WHERE YEAR(Data) IN (2025,2026) AND IndCancel='N'${diaFiltroLoja} GROUP BY ano`);
         for (const r of rows) {
           const v=parseFloat(r.venda||0),c=parseFloat(r.custo||0);
           if(r.ano==2025){v25+=v;c25+=c;}else{v26+=v;c26+=c;}
@@ -1225,7 +1232,8 @@ app.get('/api/margem-lojas', withCache(60), async (req, res) => {
         venda2025:+tv25.toFixed(2), custo2025:+tc25.toFixed(2), msv2025: tv25>0?+((tv25-tc25)/tv25*100).toFixed(2):null,
         venda2026:+tv26.toFixed(2), custo2026:+tc26.toFixed(2), msv2026: tv26>0?+((tv26-tc26)/tv26*100).toFixed(2):null,
       },
-      mes: mesSel, loja: lojaSel
+      mes: mesSel, loja: lojaSel,
+      diaHoje, mesHoje
     });
   } catch(err){ res.status(500).json({error: err.message}); }
 });

@@ -283,8 +283,8 @@ function renderConsolidado(d) {
     var lj = d.lojas[i];
     html += '<tr><td class="bold" style="padding-left:16px">' + lj.nome + '</td>';
     for (var mi = 0; mi < lj.mensal.length; mi++) {
-      var pct = lj.mensal[mi].pct;
       var isUltimo = mi === lj.mensal.length - 1;
+      var pct = isUltimo ? lj.pctMes : lj.mensal[mi].pct;
       var idAttr = isUltimo ? ' id="mensal-' + i + '"' : '';
       if (pct === 0) {
         html += '<td class="r" style="color:#475569">—</td>';

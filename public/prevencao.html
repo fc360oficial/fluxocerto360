@@ -483,15 +483,13 @@ function renderTudo(d) {
     var mNome = MESES[parseInt(mParts[1])] + '/' + mParts[0];
     var isSel = m.mes === mesVal;
     var pctExib = isSel ? pctMesSel : m.pct;
-    var subExib = isSel ? avMesSel  : m.emitido;
     html += '<div class="mensal-card"' + (isSel ? ' style="border-color:#F9C20066"' : '') + '><div class="mes-label">' + mNome + '</div>';
-    if (!isSel && pctExib === 0 && subExib === 0) {
+    if (!isSel && pctExib === 0) {
       html += '<div class="mes-val" style="color:#475569">—</div>';
-      html += '<div class="mes-sub" style="color:#334155">—</div>';
     } else {
       var cor = pctExib > 1 ? 'neg' : 'pos';
-      html += '<div class="mes-val ' + cor + '">' + fmtN(pctExib) + '%</div>';
-      html += '<div class="mes-sub">' + fmt(subExib) + '</div>';
+      var idAttr = isSel ? ' id="mensal-sel-pct"' : '';
+      html += '<div class="mes-val ' + cor + '"' + idAttr + '>' + fmtN(pctExib) + '%</div>';
     }
     html += '</div>';
   }
@@ -540,6 +538,8 @@ function renderTudo(d) {
       document.getElementById('pendencias-total').textContent = fmt(totalMes);
       document.getElementById('pct-avarias').textContent = fmtN(pct) + '%';
       document.getElementById('pct-avarias').className = 'val ' + (pct > 0 ? 'neg' : '');
+      var selCard = document.getElementById('mensal-sel-pct');
+      if (selCard) { selCard.textContent = fmtN(pct) + '%'; selCard.className = 'mes-val ' + (pct > 1 ? 'neg' : 'pos'); }
       salvarBonif(lojaVal, mesVal, val);
     });
 

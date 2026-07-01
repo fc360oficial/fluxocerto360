@@ -936,7 +936,7 @@ function carregarCV() {
         `Venda = NFC-e (PDV) + NF-e saída${parcialLabel} &nbsp;·&nbsp; Compra = NF-e de entrada recebidas &nbsp;·&nbsp; C/V% = Compra ÷ Venda Total × 100`;
 
       tb.innerHTML = '';
-      const LOJAS = ['','CAHU','CARUARU','GARANHUNS','ARCOVERDE','BELO JARDIM','CARUARU 2'];
+      const LOJAS = ['','CAHU','MURIBECA','PONTE','ATACAREJO','PORTA LARGA','JARDIM JORDÃO'];
       for (const l of data.por_loja) {
         const cvCls = l.cv !== null ? (l.cv <= 80 ? 'var-pos' : l.cv <= 95 ? '' : 'var-neg') : 'var-zero';
         tb.insertAdjacentHTML('beforeend', `

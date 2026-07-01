@@ -1321,6 +1321,7 @@ function nav(page, el) {
   if (page==='central') {
     // Reload resultados from Firebase before rendering central
     loadResultadosFromFirebase(function(){
+      gerarPillsMesCentral();
       switchCentralTab('checklist', document.querySelector('#central-tabs .tab'));
     });
   }
@@ -3949,7 +3950,61 @@ function limparFiltrosCentral() {
     var el = document.getElementById(id);
     if (el) el.value='';
   });
+  // Destaca pill "Tudo"
+  document.querySelectorAll('.cf-mes-pill').forEach(function(b){ b.classList.remove('btn-p'); b.classList.add('btn-s'); });
+  document.querySelectorAll('.cf-mes-pill[data-ano=""]').forEach(function(b){ b.classList.remove('btn-s'); b.classList.add('btn-p'); });
   renderCentral();
+}
+
+function gerarPillsMesCentral() {
+  var container = document.getElementById('cf-mes-pills');
+  if (!container) return;
+  var agora = new Date();
+  var anoAtual = agora.getFullYear(), mesAtual = agora.getMonth() + 1;
+  var nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var html = '';
+  for (var i = 5; i >= 0; i--) {
+    var d = new Date(anoAtual, mesAtual - 1 - i, 1);
+    var ano = d.getFullYear(), mes = d.getMonth() + 1;
+    var ativo = (mes === mesAtual && ano === anoAtual);
+    html += '<button class="btn btn-sm cf-mes-pill ' + (ativo ? 'btn-p' : 'btn-s') + '" '
+          + 'data-ano="' + ano + '" data-mes="' + mes + '" '
+          + 'onclick="setCentralMes(' + ano + ',' + mes + ')" '
+          + 'style="padding:5px 12px;font-size:12px">'
+          + nomes[mes - 1] + '/' + String(ano).slice(2) + '</button>';
+  }
+  html += '<button class="btn btn-s btn-sm cf-mes-pill" data-ano="" data-mes="" '
+        + 'onclick="setCentralMes(null)" style="padding:5px 12px;font-size:12px">Tudo</button>';
+  container.innerHTML = html;
+  // Pré-preenche data range com o mês atual
+  var mm = String(mesAtual).padStart(2, '0');
+  var ult = new Date(anoAtual, mesAtual, 0).getDate();
+  var ini = document.getElementById('cf-dt-ini');
+  var fim = document.getElementById('cf-dt-fim');
+  if (ini) ini.value = anoAtual + '-' + mm + '-01';
+  if (fim) fim.value = anoAtual + '-' + mm + '-' + String(ult).padStart(2, '0');
+}
+
+function setCentralMes(ano, mes) {
+  document.querySelectorAll('.cf-mes-pill').forEach(function(b){ b.classList.remove('btn-p'); b.classList.add('btn-s'); });
+  var ini = document.getElementById('cf-dt-ini');
+  var fim = document.getElementById('cf-dt-fim');
+  if (!ano) {
+    if (ini) ini.value = '';
+    if (fim) fim.value = '';
+    document.querySelectorAll('.cf-mes-pill[data-ano=""]').forEach(function(b){ b.classList.remove('btn-s'); b.classList.add('btn-p'); });
+  } else {
+    var mm = String(mes).padStart(2, '0');
+    var ult = new Date(ano, mes, 0).getDate();
+    if (ini) ini.value = ano + '-' + mm + '-01';
+    if (fim) fim.value = ano + '-' + mm + '-' + String(ult).padStart(2, '0');
+    document.querySelectorAll('.cf-mes-pill').forEach(function(b){
+      if (parseInt(b.dataset.ano) === ano && parseInt(b.dataset.mes) === mes) {
+        b.classList.remove('btn-s'); b.classList.add('btn-p');
+      }
+    });
+  }
+  renderCentralAtual();
 }
 
 function limparCentral() {

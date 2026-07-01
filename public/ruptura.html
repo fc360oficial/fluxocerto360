@@ -176,6 +176,18 @@ table.t td.bold{font-weight:700}
       <p>Análise inteligente de estoque · Previsão de ruptura · Plano de ação diário</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="sel-loja" style="background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;padding:6px 10px;font-size:12px">
+        <option value="">Todas as Lojas</option>
+        <option value="1">CAHU</option>
+        <option value="2">MURIBECA</option>
+        <option value="3">PONTE</option>
+        <option value="4">ATACAREJO</option>
+        <option value="5">PORTA LARGA</option>
+        <option value="6">JARDIM JORDÃO</option>
+      </select>
+      <select id="sel-comprador" style="background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;padding:6px 10px;font-size:12px">
+        <option value="">Todos os Compradores</option>
+      </select>
       <span class="stamp" id="stamp"><span class="dot-live"></span> Aguardando análise</span>
       <button class="btn btn-brand" onclick="carregar()" id="btn-analisar">⚡ Analisar Agora</button>
     </div>
@@ -188,6 +200,15 @@ table.t td.bold{font-weight:700}
 
 <script>
 fetch('/api/me').then(r=>r.json()).then(u=>{ if(u.nome) document.getElementById('sidebar-user').textContent='👤 '+u.nome }).catch(()=>{});
+
+fetch('/api/ruptura/compradores').then(r=>r.json()).then(lista=>{
+  const sel = document.getElementById('sel-comprador');
+  lista.forEach(nome => {
+    const opt = document.createElement('option');
+    opt.value = nome; opt.textContent = nome;
+    sel.appendChild(opt);
+  });
+}).catch(()=>{});
 
 const fmtR = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
 const fmtN = v => Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0});
@@ -263,28 +284,28 @@ function renderTudo(d) {
     </div>
     <div class="kpi-card warning">
       <div class="val">${fmtN(r.em_risco)}</div>
-      <div class="lbl">Em Risco de Ruptura</div>
-      <div class="sub">Cobertura ≤ 15 dias</div>
+      <div class="lbl">Abaixo do Mínimo</div>
+      <div class="sub">Cobertura &lt; ${d.min_cob||10} dias</div>
     </div>
     <div class="kpi-card info">
       <div class="val">${fmtN(r.sem_pedido)}</div>
-      <div class="lbl">Sem Pedido Emitido</div>
-      <div class="sub">Estoque baixo sem compra</div>
+      <div class="lbl">Urgência ≤ 3 dias</div>
+      <div class="sub">Pedir imediatamente</div>
+    </div>
+    <div class="kpi-card" style="border-color:#7c3aed">
+      <div class="val" style="color:#a78bfa">${fmtN(r.excesso||0)}</div>
+      <div class="lbl">Excesso de Estoque</div>
+      <div class="sub">Cobertura &gt; ${d.max_cob||45} dias</div>
     </div>
     <div class="kpi-card danger">
       <div class="val">${fmtR(r.perdaDia)}</div>
       <div class="lbl">Perda Estimada Hoje</div>
-      <div class="sub">Vendas não realizadas</div>
+      <div class="sub">Por ruptura ativa</div>
     </div>
     <div class="kpi-card warning">
       <div class="val">${fmtR(r.perdaSemana)}</div>
       <div class="lbl">Perda na Semana</div>
       <div class="sub">7 dias sem ação</div>
-    </div>
-    <div class="kpi-card brand">
-      <div class="val">${fmtR(r.perdaMes)}</div>
-      <div class="lbl">Perda no Mês</div>
-      <div class="sub">30 dias sem ação</div>
     </div>
   </div>`;
 
@@ -323,10 +344,10 @@ function renderTudo(d) {
   const emRisco = [...(d.em_risco||[])].sort((a,b)=>a.cobertura-b.cobertura);
   const riscoPrevContent = `
   <div class="prev-tabs" id="risco-tabs">
-    <div class="prev-tab active" onclick="switchTab(this,'rc0')">🟠 Crítico (&le;1d)</div>
-    <div class="prev-tab" onclick="switchTab(this,'rc1')">🟡 Alto (&le;3d)</div>
-    <div class="prev-tab" onclick="switchTab(this,'rc2')">🔵 Médio (&le;7d)</div>
-    <div class="prev-tab" onclick="switchTab(this,'rc3')">🟢 Baixo (&le;15d)</div>
+    <div class="prev-tab active" onclick="switchTab(this,'rc0')">🔴 Crítico (&le;1d)</div>
+    <div class="prev-tab" onclick="switchTab(this,'rc1')">🟠 Alto (&le;3d)</div>
+    <div class="prev-tab" onclick="switchTab(this,'rc2')">🟡 Médio (&le;7d)</div>
+    <div class="prev-tab" onclick="switchTab(this,'rc3')">🔵 Baixo (7-10d)</div>
   </div>
   <div class="prev-content active" id="rc0">${tblProd(emRisco.filter(x=>x.risco==='CRITICO'))}</div>
   <div class="prev-content" id="rc1">${tblProd(emRisco.filter(x=>x.risco==='ALTO'))}</div>
@@ -335,8 +356,25 @@ function renderTudo(d) {
   const riscoSec = secao('risco','⚠️','PRODUTOS EM RISCO',r.em_risco,'badge-orange',riscoPrevContent);
 
   /* Sem pedido */
-  const semPedidoSec = secao('smpedido','🛒','PRODUTOS SEM PEDIDO EMITIDO',
+  const semPedidoSec = secao('smpedido','🛒','URGÊNCIA — PEDIR EM ATÉ 3 DIAS',
     r.sem_pedido,'badge-orange', tblProd(d.sem_pedido));
+
+  /* Excesso de estoque */
+  function tblExcesso(items) {
+    if (!items || !items.length) return '<div class="empty">Nenhum produto com excesso de estoque.</div>';
+    const rows = items.slice(0,200).map(r2 => `
+      <tr>
+        <td><b>${r2.lj}</b></td>
+        <td class="bold">${r2.produto}</td>
+        <td style="color:var(--text2)">${r2.fornecedor||'—'}</td>
+        <td class="r">${fmtN(r2.estoque)}</td>
+        <td class="r">${(r2.vmd||0).toFixed(3)}</td>
+        <td class="r" style="color:#a78bfa;font-weight:700">${fmtD(r2.cobertura)}</td>
+      </tr>`).join('');
+    return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Loja</th><th>Produto</th><th>Fornecedor</th><th class="r">Estoque</th><th class="r">VMD un</th><th class="r">Cobertura</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  const excessoSec = secao('excesso','📦','EXCESSO DE ESTOQUE (&gt;${d.max_cob||45} dias)',
+    r.excesso||0,'badge-brand', tblExcesso(d.excesso));
 
   /* Alertas */
   const alertasHtml = (d.alertas||[]).map(a => {
@@ -364,28 +402,17 @@ function renderTudo(d) {
   const finHtml = `
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:16px 18px">
     <div class="kpi-card danger"><div class="val">${fmtR(r.perdaDia)}</div><div class="lbl">Perda Hoje</div></div>
-    <div class="kpi-card warning"><div class="val">${fmtR(r.perdaSemana)}</div><div class="lbl">Perda Semana</div></div>
-    <div class="kpi-card brand"><div class="val">${fmtR(r.perdaMes)}</div><div class="lbl">Perda Mês</div></div>
-    <div class="kpi-card info"><div class="val">${fmtR(r.perdaAno)}</div><div class="lbl">Perda Ano (estimada)</div></div>
+    <div class="kpi-card warning"><div class="val">${fmtR(r.perdaSemana)}</div><div class="lbl">Perda Semana (est.)</div></div>
   </div>`;
-  const finSec = secao('financeiro','💰','DINHEIRO PERDIDO',null,null,finHtml);
-
-  /* Stub sections for future */
-  const stubFornec = secao('fornec','🏭','RANKING DE FORNECEDORES',null,null,
-    '<div class="empty" style="padding:24px">🔧 Em desenvolvimento — requer dados de lead time e histórico de entregas.</div>');
-  const stubCompr = secao('comprador','👤','ANÁLISE POR COMPRADOR',null,null,
-    '<div class="empty" style="padding:24px">🔧 Em desenvolvimento — mapeamento comprador × produtos em risco.</div>');
-  const stubTransf = secao('transf','🔄','TRANSFERÊNCIAS ENTRE LOJAS',null,null,
-    '<div class="empty" style="padding:24px">🔧 Em desenvolvimento — análise de excesso em loja A × ruptura em loja B.</div>');
+  const finSec = secao('financeiro','💰','DINHEIRO PERDIDO (RUPTURA)',null,null,finHtml);
 
   document.getElementById('conteudo').innerHTML =
     kpis + resumoSec + planoSec + previsaoSec + rupturasSec + riscoSec +
-    semPedidoSec + alertasSec + lojasSec + finSec +
-    stubFornec + stubCompr + stubTransf;
+    semPedidoSec + excessoSec + alertasSec + lojasSec + finSec;
 
-  // Collapse sections by default except first 3
-  ['rupturas','risco','smpedido','alertas','lojas','financeiro','fornec','comprador','transf']
-    .slice(3).forEach(id => {
+  // Collapse sections by default except first 4
+  ['rupturas','risco','smpedido','excesso','alertas','lojas','financeiro']
+    .slice(4).forEach(id => {
       const el = document.getElementById('sec-'+id);
       if (el) el.classList.add('collapsed');
     });
@@ -412,8 +439,14 @@ function carregar() {
 
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 120000);
+  const loja = document.getElementById('sel-loja').value;
+  const comprador = document.getElementById('sel-comprador').value;
+  const params = new URLSearchParams();
+  if (loja) params.set('loja', loja);
+  if (comprador) params.set('comprador', comprador);
+  const url = '/api/ruptura' + (params.toString() ? '?' + params.toString() : '');
 
-  fetch('/api/ruptura', { signal: ctrl.signal })
+  fetch(url, { signal: ctrl.signal })
     .then(r => { clearTimeout(tid); if (r.status === 401) { location.href='/login.html'; return null; } return r.json(); })
     .then(d => {
       if (!d) return;

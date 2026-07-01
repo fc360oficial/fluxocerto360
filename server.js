@@ -2494,6 +2494,166 @@ app.get('/deploy', (req, res) => {
   });
 });
 
+// ── IA RUPTURAS ─────────────────────────────────────────
+app.get('/api/ruptura', async (req, res) => {
+  try {
+    const hoje = new Date();
+    const mes = hoje.getMonth() + 1;
+    const ano = hoje.getFullYear();
+    const mesPrev = mes === 1 ? 12 : mes - 1;
+    const mm = mesDB(mes);
+    const mmPrev = mesDB(mesPrev);
+    const DIAS = 30;
+    const dIni = new Date(hoje.getTime() - DIAS * 86400000);
+    const dIniStr = dIni.toISOString().slice(0, 10);
+    const hojStr = hoje.toISOString().slice(0, 10);
+    const LOJAS = [1, 2, 3, 4, 5, 6];
+    const LOJAS_NOMES = { 1: 'CAHU', 2: 'MURIBECA', 3: 'PONTE', 4: 'ATACAREJO', 5: 'PORTA LARGA', 6: 'JARDIM JORDÃO' };
+
+    // Sales from last 30 days (current + previous month tables, all lojas)
+    const salesQs = LOJAS.flatMap(l => [
+      q(`SELECT CodigoBarras, ${l} as l, SUM(Qtd) as qt, SUM(Valor) as vl
+         FROM ln${l}${mm}.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N'
+         GROUP BY CodigoBarras`, [dIniStr, hojStr]).catch(() => []),
+      q(`SELECT CodigoBarras, ${l} as l, SUM(Qtd) as qt, SUM(Valor) as vl
+         FROM ln${l}${mmPrev}.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N'
+         GROUP BY CodigoBarras`, [dIniStr, hojStr]).catch(() => [])
+    ]);
+
+    const salesArr = await Promise.all(salesQs);
+
+    // Aggregate sales by EAN + loja
+    const salesMap = {};
+    for (const rows of salesArr) {
+      for (const r of rows) {
+        const ean = r.CodigoBarras; const loja = Number(r.l);
+        if (!salesMap[ean]) salesMap[ean] = {};
+        if (!salesMap[ean][loja]) salesMap[ean][loja] = { qt: 0, vl: 0 };
+        salesMap[ean][loja].qt += parseFloat(r.qt) || 0;
+        salesMap[ean][loja].vl += parseFloat(r.vl) || 0;
+      }
+    }
+
+    const eans = Object.keys(salesMap);
+    if (!eans.length) return res.json({ resumo: { total_rupturas: 0, em_risco: 0, sem_pedido: 0, alertas: 0, perdaDia: 0, perdaSemana: 0, perdaMes: 0, perdaAno: 0 }, rupturas: [], em_risco: [], sem_pedido: [], alertas: [], plano: [], lojas: [], previsao: {}, resumo_texto: 'Nenhuma venda encontrada no período.' });
+
+    // Products + stock for sold EANs (batched)
+    const BATCH = 1500;
+    let prods = [];
+    for (let i = 0; i < eans.length; i += BATCH) {
+      const batch = eans.slice(i, i + BATCH);
+      const rows = await q(`
+        SELECT i.nInterno, i.CodigoBarra, i.Descricao, i.CodFornec, i.GrupoSub,
+               i.P1, i.P2, i.P3, i.P4, i.P5, i.P6,
+               i.M1, i.M2, i.M3, i.M4, i.M5, i.M6,
+               COALESCE(e1.Estoque,0) est1, COALESCE(e2.Estoque,0) est2,
+               COALESCE(e3.Estoque,0) est3, COALESCE(e4.Estoque,0) est4,
+               COALESCE(e5.Estoque,0) est5, COALESCE(e6.Estoque,0) est6,
+               f.NomeCompleto as fornecedor
+        FROM central.itens i
+        LEFT JOIN central.estoquen1 e1 ON e1.nInterno=i.nInterno
+        LEFT JOIN central.estoquen2 e2 ON e2.nInterno=i.nInterno
+        LEFT JOIN central.estoquen3 e3 ON e3.nInterno=i.nInterno
+        LEFT JOIN central.estoquen4 e4 ON e4.nInterno=i.nInterno
+        LEFT JOIN central.estoquen5 e5 ON e5.nInterno=i.nInterno
+        LEFT JOIN central.estoquen6 e6 ON e6.nInterno=i.nInterno
+        LEFT JOIN central.fornecedor f ON f.CodFornec=i.CodFornec
+        WHERE i.CodigoBarra IN (?) AND i.CodDesativado=0`, [batch]).catch(() => []);
+      prods = prods.concat(rows);
+    }
+
+    // Pending purchase list items
+    const pedRows = await q(`SELECT DISTINCT nInterno FROM central.c_cotacao_lista_itens`).catch(() => []);
+    const pedSet = new Set(pedRows.map(r => r.nInterno));
+
+    const LEAD = 3;
+    const rupturas = [], emRisco = [], semPedido = [], alertas = [];
+
+    for (const prod of prods) {
+      const ean = prod.CodigoBarra;
+      const saleProd = salesMap[ean] || {};
+      for (const loja of LOJAS) {
+        const sale = saleProd[loja];
+        if (!sale || sale.qt <= 0) continue;
+        const estoque = parseFloat(prod[`est${loja}`]) || 0;
+        const vmd = sale.qt / DIAS;
+        const vmd_valor = sale.vl / DIAS;
+        const cobertura = vmd > 0 ? Math.max(0, estoque) / vmd : 999;
+        const temPedido = pedSet.has(prod.nInterno);
+
+        const item = {
+          loja, lj: LOJAS_NOMES[loja], nInterno: prod.nInterno, ean,
+          produto: prod.Descricao, fornecedor: prod.fornecedor || 'N/I',
+          estoque: +estoque.toFixed(2), vmd: +vmd.toFixed(2),
+          vmd_valor: +vmd_valor.toFixed(2), cobertura: +cobertura.toFixed(1),
+          tem_pedido: temPedido
+        };
+
+        if (estoque <= 0) {
+          rupturas.push({ ...item, risco: 'RUPTURA', cobertura: 0 });
+        } else if (cobertura <= 1) {
+          emRisco.push({ ...item, risco: 'CRITICO' });
+        } else if (cobertura <= 3) {
+          emRisco.push({ ...item, risco: 'ALTO' });
+        } else if (cobertura <= 7) {
+          emRisco.push({ ...item, risco: 'MEDIO' });
+        } else if (cobertura <= 15) {
+          emRisco.push({ ...item, risco: 'BAIXO' });
+        }
+
+        if (cobertura > 0 && cobertura <= LEAD && !temPedido) {
+          semPedido.push({ ...item, motivo: `Cobertura ${cobertura.toFixed(1)}d ≤ lead time ${LEAD}d` });
+          alertas.push({ tipo: 'SEM_PEDIDO', ...item, msg: `${prod.Descricao} (${LOJAS_NOMES[loja]}): ${cobertura.toFixed(1)}d de estoque, sem pedido emitido` });
+        }
+        if (estoque < 0) alertas.push({ tipo: 'NEGATIVO', ...item, msg: `Estoque negativo: ${prod.Descricao} (${LOJAS_NOMES[loja]}): ${estoque}` });
+      }
+    }
+
+    rupturas.sort((a, b) => b.vmd_valor - a.vmd_valor);
+    emRisco.sort((a, b) => a.cobertura - b.cobertura);
+    semPedido.sort((a, b) => b.vmd_valor - a.vmd_valor);
+
+    const perdaDia = rupturas.reduce((s, r) => s + r.vmd_valor, 0);
+    const lojasMap = {};
+    for (const loja of LOJAS) lojasMap[loja] = { loja, nome: LOJAS_NOMES[loja], rupturas: 0, em_risco: 0, perda: 0 };
+    for (const r of rupturas) { lojasMap[r.loja].rupturas++; lojasMap[r.loja].perda += r.vmd_valor; }
+    for (const r of emRisco) lojasMap[r.loja].em_risco++;
+
+    const plano = [];
+    for (const p of semPedido.slice(0, 5)) plano.push({ prioridade: 1, tipo: 'COMPRA', acao: `Emitir pedido: ${p.produto} → ${p.lj} (${p.cobertura}d restantes, ${(p.vmd_valor).toFixed(2)}/dia)` });
+    for (const r of rupturas.slice(0, 5)) plano.push({ prioridade: 2, tipo: 'RUPTURA', acao: `Resolver ruptura urgente: ${r.produto} → ${r.lj} (perdendo R$ ${r.vmd_valor.toFixed(2)}/dia)` });
+    for (const a of alertas.filter(x => x.tipo === 'NEGATIVO').slice(0, 3)) plano.push({ prioridade: 3, tipo: 'INVENTARIO', acao: `Inventário urgente: ${a.produto} → ${a.lj} (estoque negativo detectado)` });
+
+    const nCritico = emRisco.filter(x => ['CRITICO', 'ALTO'].includes(x.risco)).length;
+    const txt = `Foram encontrados ${rupturas.length} produto(s) em ruptura e ${emRisco.length} em risco de ruptura nos próximos 15 dias. ` +
+      `Sem ação imediata, a previsão é perder R$ ${perdaDia.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} hoje e ` +
+      `R$ ${(perdaDia * 7).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} na semana. ` +
+      `Principais causas: ${semPedido.length} produto(s) sem pedido emitido com estoque abaixo do lead time; ` +
+      `${alertas.filter(x => x.tipo === 'NEGATIVO').length} produto(s) com estoque negativo (divergência). ` +
+      `${nCritico > 0 ? `Atenção: ${nCritico} produto(s) em risco crítico/alto entrarão em ruptura nos próximos 3 dias se nenhuma compra for feita.` : 'Não há produtos em risco crítico no momento.'} ` +
+      `Execute o plano de ação listado abaixo para mitigar as perdas.`;
+
+    res.json({
+      gerado_em: new Date().toISOString(),
+      resumo: { total_rupturas: rupturas.length, em_risco: emRisco.length, sem_pedido: semPedido.length, alertas: alertas.length, perdaDia, perdaSemana: perdaDia * 7, perdaMes: perdaDia * 30, perdaAno: perdaDia * 365 },
+      resumo_texto: txt,
+      rupturas: rupturas.slice(0, 300),
+      em_risco: emRisco.slice(0, 300),
+      sem_pedido: semPedido.slice(0, 100),
+      alertas: alertas.slice(0, 100),
+      plano,
+      lojas: Object.values(lojasMap).sort((a, b) => b.perda - a.perda),
+      previsao: {
+        hoje: rupturas.length,
+        amanha: emRisco.filter(x => x.risco === 'CRITICO').length,
+        tres_dias: emRisco.filter(x => ['CRITICO', 'ALTO'].includes(x.risco)).length,
+        sete_dias: emRisco.filter(x => ['CRITICO', 'ALTO', 'MEDIO'].includes(x.risco)).length,
+        quinze_dias: emRisco.length
+      }
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 q(`CREATE TABLE IF NOT EXISTS central.prevencao_bonif (
   nLoja INT NOT NULL, mes VARCHAR(7) NOT NULL, valor DECIMAL(12,2) NOT NULL DEFAULT 0,
   PRIMARY KEY (nLoja, mes)) ENGINE=InnoDB`).catch(() => {});

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IA Rupturas — Econômico Relatórios</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f172a;--card:#1e293b;--card2:#0f172a;--border:#334155;
+  --brand:#F9C200;--red:#ef4444;--green:#22c55e;--orange:#f97316;--yellow:#eab308;
+  --blue:#38bdf8;--purple:#a78bfa;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+}
+html,body{height:100%;font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+.layout{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:#1e293b;border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;overflow-y:auto}
+.sidebar-logo{padding:20px 16px 14px;border-bottom:1px solid var(--border);text-align:center}
+.sidebar-logo img{height:70px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
+.sidebar-nav{padding:8px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#334155;color:#f1f5f9}
+.nav-item.active{background:#F9C20018;color:var(--brand);border-right:3px solid var(--brand)}
+.nav-item .ic{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;padding:24px;min-height:100vh}
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.page-hdr h1{font-size:20px;font-weight:800;color:#f8fafc}
+.page-hdr p{font-size:12px;color:var(--text3);margin-top:2px}
+.btn{border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.btn-brand{background:var(--brand);color:#0f0f1a}.btn-brand:hover{background:#e0ae00}
+.btn-slate{background:#334155;color:#cbd5e1}.btn-slate:hover{background:#475569}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.kpi-card .val{font-size:22px;font-weight:800;line-height:1}
+.kpi-card .lbl{font-size:11px;color:var(--text3);margin-top:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi-card .sub{font-size:10px;color:var(--text3);margin-top:3px}
+.kpi-card.danger{border-color:#ef444440}.kpi-card.danger .val{color:var(--red)}
+.kpi-card.warning{border-color:#f9730040}.kpi-card.warning .val{color:var(--orange)}
+.kpi-card.info{border-color:#38bdf840}.kpi-card.info .val{color:var(--blue)}
+.kpi-card.ok{border-color:#22c55e40}.kpi-card.ok .val{color:var(--green)}
+.kpi-card.brand{border-color:#F9C20040}.kpi-card.brand .val{color:var(--brand)}
+
+/* SECTION */
+.sec{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.sec-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.sec-hdr h2{font-size:14px;font-weight:800;color:#f8fafc;display:flex;align-items:center;gap:8px}
+.sec-hdr .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
+.badge-red{background:#ef444422;color:var(--red)}
+.badge-orange{background:#f9730022;color:var(--orange)}
+.badge-yellow{background:#eab30822;color:var(--yellow)}
+.badge-green{background:#22c55e22;color:var(--green)}
+.badge-blue{background:#38bdf822;color:var(--blue)}
+.badge-purple{background:#a78bfa22;color:var(--purple)}
+.sec-body{padding:0}
+.sec-toggle{font-size:11px;color:var(--text3);transition:transform .2s}
+.sec.collapsed .sec-toggle{transform:rotate(-90deg)}
+.sec.collapsed .sec-body{display:none}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:12px}
+table.t thead{background:#0f172a}
+table.t th{padding:9px 12px;text-align:left;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--border)}
+table.t td{padding:8px 12px;border-bottom:1px solid #1e293b66;vertical-align:middle}
+table.t tr:hover{background:#ffffff05}
+table.t th.r,table.t td.r{text-align:right}
+table.t td.bold{font-weight:700}
+.risk{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.risk-ruptura{background:#ef444422;color:var(--red)}
+.risk-critico{background:#f9730022;color:var(--orange)}
+.risk-alto{background:#eab30822;color:var(--yellow)}
+.risk-medio{background:#38bdf822;color:var(--blue)}
+.risk-baixo{background:#22c55e22;color:var(--green)}
+
+/* PREVISAO TABS */
+.prev-tabs{display:flex;gap:6px;padding:14px 18px 0;flex-wrap:wrap}
+.prev-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--text2);transition:all .2s}
+.prev-tab.active{background:var(--brand);color:#0f0f1a;border-color:var(--brand)}
+.prev-content{display:none;padding:0 0 4px}
+.prev-content.active{display:block}
+
+/* RESUMO */
+.resumo-box{padding:18px;background:#0f172a;border-radius:10px;margin:14px 18px;border-left:3px solid var(--brand);font-size:13px;line-height:1.6;color:var(--text)}
+.plano-item{display:flex;gap:12px;padding:10px 18px;border-bottom:1px solid #334155;align-items:flex-start}
+.plano-item:last-child{border-bottom:none}
+.plano-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
+.plano-tipo-COMPRA{background:#F9C20022;color:var(--brand)}
+.plano-tipo-RUPTURA{background:#ef444422;color:var(--red)}
+.plano-tipo-INVENTARIO{background:#a78bfa22;color:var(--purple)}
+.plano-tipo-TRANSFERENCIA{background:#38bdf822;color:var(--blue)}
+.plano-acao{font-size:13px;font-weight:500;line-height:1.4}
+.plano-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:4px;display:inline-block}
+
+/* LOJA RANK */
+.loja-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;padding:14px 18px}
+.loja-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.loja-card .rank{font-size:20px;font-weight:900;color:var(--brand);line-height:1}
+.loja-card .nome{font-size:12px;font-weight:700;margin:4px 0 8px;color:#f8fafc}
+.loja-card .stat{font-size:11px;color:var(--text3)}
+.loja-card .stat span{font-weight:700;color:var(--text)}
+
+/* ALERT */
+.alerta-item{display:flex;gap:10px;padding:10px 18px;border-bottom:1px solid #334155;align-items:flex-start;font-size:12px}
+.alerta-item:last-child{border-bottom:none}
+.alerta-ic{font-size:16px;flex-shrink:0}
+.alerta-msg{flex:1;line-height:1.4}
+.alerta-tipo{font-size:10px;font-weight:700;color:var(--text3);margin-top:2px}
+
+/* HORIZON BADGE */
+.horizon-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px 18px}
+.hcard{background:var(--card2);border-radius:10px;border:1px solid var(--border);padding:12px;text-align:center}
+.hcard .num{font-size:28px;font-weight:900;line-height:1}
+.hcard .sub{font-size:11px;font-weight:600;margin-top:4px}
+.hcard .lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.hcard.h0{border-color:#ef444440}.hcard.h0 .num{color:var(--red)}
+.hcard.h1{border-color:#f9730040}.hcard.h1 .num{color:var(--orange)}
+.hcard.h3{border-color:#eab30840}.hcard.h3 .num{color:var(--yellow)}
+.hcard.h7{border-color:#38bdf840}.hcard.h7 .num{color:var(--blue)}
+.hcard.h15{border-color:#64748b40}.hcard.h15 .num{color:var(--text2)}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;gap:12px;color:var(--text3);font-size:14px}
+.spin{width:20px;height:20px;border:2px solid #334155;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
+
+/* STAMP */
+.stamp{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .horizon-cards{grid-template-columns:repeat(3,1fr)}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo.png" alt="Econômico">
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html"       class="nav-item"><span class="ic">📊</span> Dashboard</a>
+    <a href="consulta.html"    class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
+    <a href="itens.html"       class="nav-item"><span class="ic">📂</span> Mercadológico</a>
+    <a href="fornecedores.html"class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
+    <a href="pendencias.html"  class="nav-item"><span class="ic">⚠️</span> Pendências</a>
+    <a href="comparativos.html"class="nav-item"><span class="ic">📈</span> Comparativos</a>
+    <a href="prevencao.html"   class="nav-item"><span class="ic">🛡️</span> Prevenção</a>
+    <a href="ruptura.html"     class="nav-item active"><span class="ic">🤖</span> IA Rupturas</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="sidebar-user">👤 ...</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="page-hdr">
+    <div>
+      <h1>🤖 IA Especialista em Rupturas</h1>
+      <p>Análise inteligente de estoque · Previsão de ruptura · Plano de ação diário</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="stamp" id="stamp"><span class="dot-live"></span> Aguardando análise</span>
+      <button class="btn btn-brand" onclick="carregar()" id="btn-analisar">⚡ Analisar Agora</button>
+    </div>
+  </div>
+
+  <div id="conteudo"><div class="loading"><span class="spin"></span> Clique em "Analisar Agora" para iniciar a análise...</div></div>
+
+</main>
+</div>
+
+<script>
+fetch('/api/me').then(r=>r.json()).then(u=>{ if(u.nome) document.getElementById('sidebar-user').textContent='👤 '+u.nome }).catch(()=>{});
+
+const fmtR = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+const fmtN = v => Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0});
+const fmtD = v => Number(v||0).toFixed(1) + 'd';
+
+function riskBadge(r) {
+  const map = {
+    RUPTURA: ['risk-ruptura','🔴 RUPTURA'],
+    CRITICO: ['risk-critico','🟠 CRÍTICO'],
+    ALTO:    ['risk-alto','🟡 ALTO'],
+    MEDIO:   ['risk-medio','🔵 MÉDIO'],
+    BAIXO:   ['risk-baixo','🟢 BAIXO'],
+  };
+  const [cls, lbl] = map[r] || ['risk-baixo', r];
+  return `<span class="risk ${cls}">${lbl}</span>`;
+}
+
+function tblProd(items, showLoja=true) {
+  if (!items || !items.length) return '<div class="empty">Nenhum registro encontrado.</div>';
+  const cols = [
+    showLoja ? '<th>Loja</th>' : '',
+    '<th>Produto</th>',
+    '<th>Fornecedor</th>',
+    '<th class="r">Estoque</th>',
+    '<th class="r">VMD un</th>',
+    '<th class="r">VMD R$</th>',
+    '<th class="r">Cobertura</th>',
+    '<th>Risco</th>',
+    '<th class="r">Perda/dia</th>',
+  ].join('');
+
+  const rows = items.slice(0,200).map(r => `
+    <tr>
+      ${showLoja ? `<td><b>${r.lj||r.loja}</b></td>` : ''}
+      <td class="bold">${r.produto||''}</td>
+      <td style="color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.fornecedor||'—'}</td>
+      <td class="r">${fmtN(r.estoque)}</td>
+      <td class="r">${(r.vmd||0).toFixed(2)}</td>
+      <td class="r">${fmtR(r.vmd_valor)}</td>
+      <td class="r" style="color:${r.cobertura<=3?'var(--red)':r.cobertura<=7?'var(--orange)':'inherit'}">${r.cobertura===0?'—':fmtD(r.cobertura)}</td>
+      <td>${riskBadge(r.risco)}</td>
+      <td class="r" style="color:var(--red);font-weight:700">${fmtR(r.vmd_valor)}</td>
+    </tr>`).join('');
+
+  return `<div class="tbl-wrap"><table class="t"><thead><tr>${cols}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function secao(id, icon, titulo, badge, badgeCls, corpo, startOpen=false) {
+  return `
+  <div class="sec${startOpen?'':''}" id="sec-${id}">
+    <div class="sec-hdr" onclick="toggleSec('${id}')">
+      <h2>${icon} ${titulo} ${badge!==null?`<span class="badge ${badgeCls}">${badge}</span>`:''}` + `</h2>
+      <span class="sec-toggle">▼</span>
+    </div>
+    <div class="sec-body">${corpo}</div>
+  </div>`;
+}
+
+function toggleSec(id) {
+  document.getElementById('sec-'+id).classList.toggle('collapsed');
+}
+
+function renderTudo(d) {
+  const r = d.resumo;
+
+  /* KPIs */
+  const kpis = `
+  <div class="kpi-grid">
+    <div class="kpi-card danger">
+      <div class="val">${fmtN(r.total_rupturas)}</div>
+      <div class="lbl">Produtos em Ruptura</div>
+      <div class="sub">Estoque zerado com vendas</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="val">${fmtN(r.em_risco)}</div>
+      <div class="lbl">Em Risco de Ruptura</div>
+      <div class="sub">Cobertura ≤ 15 dias</div>
+    </div>
+    <div class="kpi-card info">
+      <div class="val">${fmtN(r.sem_pedido)}</div>
+      <div class="lbl">Sem Pedido Emitido</div>
+      <div class="sub">Estoque baixo sem compra</div>
+    </div>
+    <div class="kpi-card danger">
+      <div class="val">${fmtR(r.perdaDia)}</div>
+      <div class="lbl">Perda Estimada Hoje</div>
+      <div class="sub">Vendas não realizadas</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="val">${fmtR(r.perdaSemana)}</div>
+      <div class="lbl">Perda na Semana</div>
+      <div class="sub">7 dias sem ação</div>
+    </div>
+    <div class="kpi-card brand">
+      <div class="val">${fmtR(r.perdaMes)}</div>
+      <div class="lbl">Perda no Mês</div>
+      <div class="sub">30 dias sem ação</div>
+    </div>
+  </div>`;
+
+  /* Resumo executivo */
+  const resumoSec = secao('resumo','📋','RESUMO EXECUTIVO',null,null,
+    `<div class="resumo-box">${d.resumo_texto}</div>`, true);
+
+  /* Plano de ação */
+  const planoItens = (d.plano||[]).map((p,i) => `
+    <div class="plano-item">
+      <div class="plano-num plano-tipo-${p.tipo}">${i+1}</div>
+      <div>
+        <div class="plano-acao">${p.acao}</div>
+        <span class="plano-tag plano-tipo-${p.tipo}" style="background:${p.tipo==='COMPRA'?'#F9C20022':p.tipo==='RUPTURA'?'#ef444422':'#a78bfa22'};color:${p.tipo==='COMPRA'?'var(--brand)':p.tipo==='RUPTURA'?'var(--red)':'var(--purple)'}">${p.tipo}</span>
+      </div>
+    </div>`).join('') || '<div class="empty">Nenhuma ação gerada.</div>';
+  const planoSec = secao('plano','✅','PLANO DE AÇÃO — O QUE FAZER HOJE',d.plano?.length||0,'badge-brand',planoItens,true);
+
+  /* Previsão horizonte */
+  const pv = d.previsao || {};
+  const horizonte = `
+  <div class="horizon-cards">
+    <div class="hcard h0"><div class="num">${pv.hoje||0}</div><div class="sub">HOJE</div><div class="lbl">Já zerados</div></div>
+    <div class="hcard h1"><div class="num">${pv.amanha||0}</div><div class="sub">AMANHÃ</div><div class="lbl">≤ 1 dia</div></div>
+    <div class="hcard h3"><div class="num">${pv.tres_dias||0}</div><div class="sub">3 DIAS</div><div class="lbl">Crítico/Alto</div></div>
+    <div class="hcard h7"><div class="num">${pv.sete_dias||0}</div><div class="sub">7 DIAS</div><div class="lbl">Risco médio</div></div>
+    <div class="hcard h15"><div class="num">${pv.quinze_dias||0}</div><div class="sub">15 DIAS</div><div class="lbl">Risco baixo</div></div>
+  </div>`;
+  const previsaoSec = secao('previsao','📅','PREVISÃO DE RUPTURA',null,null,horizonte,true);
+
+  /* Rupturas atuais */
+  const rupturasSec = secao('rupturas','🔴','RUPTURA ATUAL — PRODUTOS ZERADOS',
+    r.total_rupturas,'badge-red', tblProd(d.rupturas));
+
+  /* Em risco */
+  const emRisco = [...(d.em_risco||[])].sort((a,b)=>a.cobertura-b.cobertura);
+  const riscoPrevContent = `
+  <div class="prev-tabs" id="risco-tabs">
+    <div class="prev-tab active" onclick="switchTab(this,'rc0')">🟠 Crítico (&le;1d)</div>
+    <div class="prev-tab" onclick="switchTab(this,'rc1')">🟡 Alto (&le;3d)</div>
+    <div class="prev-tab" onclick="switchTab(this,'rc2')">🔵 Médio (&le;7d)</div>
+    <div class="prev-tab" onclick="switchTab(this,'rc3')">🟢 Baixo (&le;15d)</div>
+  </div>
+  <div class="prev-content active" id="rc0">${tblProd(emRisco.filter(x=>x.risco==='CRITICO'))}</div>
+  <div class="prev-content" id="rc1">${tblProd(emRisco.filter(x=>x.risco==='ALTO'))}</div>
+  <div class="prev-content" id="rc2">${tblProd(emRisco.filter(x=>x.risco==='MEDIO'))}</div>
+  <div class="prev-content" id="rc3">${tblProd(emRisco.filter(x=>x.risco==='BAIXO'))}</div>`;
+  const riscoSec = secao('risco','⚠️','PRODUTOS EM RISCO',r.em_risco,'badge-orange',riscoPrevContent);
+
+  /* Sem pedido */
+  const semPedidoSec = secao('smpedido','🛒','PRODUTOS SEM PEDIDO EMITIDO',
+    r.sem_pedido,'badge-orange', tblProd(d.sem_pedido));
+
+  /* Alertas */
+  const alertasHtml = (d.alertas||[]).map(a => {
+    const icons = { NEGATIVO:'⛔', SEM_PEDIDO:'🛒', COBERTURA_MENOR_LEAD:'⏰', VENDA_ACIMA:'📈' };
+    return `<div class="alerta-item">
+      <span class="alerta-ic">${icons[a.tipo]||'⚠️'}</span>
+      <div><div class="alerta-msg">${a.msg}</div><div class="alerta-tipo">${a.tipo}</div></div>
+    </div>`;
+  }).join('') || '<div class="empty">Nenhum alerta encontrado.</div>';
+  const alertasSec = secao('alertas','🚨','ALERTAS AUTOMÁTICOS',r.alertas,'badge-red',alertasHtml);
+
+  /* Lojas ranking */
+  const lojasHtml = `<div class="loja-cards">` +
+    (d.lojas||[]).map((l,i) => `
+    <div class="loja-card">
+      <div class="rank">#${i+1}</div>
+      <div class="nome">${l.nome}</div>
+      <div class="stat">Rupturas: <span style="color:var(--red)">${l.rupturas}</span></div>
+      <div class="stat">Em risco: <span style="color:var(--orange)">${l.em_risco||0}</span></div>
+      <div class="stat">Perda/dia: <span style="color:var(--brand)">${fmtR(l.perda)}</span></div>
+    </div>`).join('') + '</div>';
+  const lojasSec = secao('lojas','🏪','RANKING DE LOJAS',null,null,lojasHtml);
+
+  /* Financeiro */
+  const finHtml = `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:16px 18px">
+    <div class="kpi-card danger"><div class="val">${fmtR(r.perdaDia)}</div><div class="lbl">Perda Hoje</div></div>
+    <div class="kpi-card warning"><div class="val">${fmtR(r.perdaSemana)}</div><div class="lbl">Perda Semana</div></div>
+    <div class="kpi-card brand"><div class="val">${fmtR(r.perdaMes)}</div><div class="lbl">Perda Mês</div></div>
+    <div class="kpi-card info"><div class="val">${fmtR(r.perdaAno)}</div><div class="lbl">Perda Ano (estimada)</div></div>
+  </div>`;
+  const finSec = secao('financeiro','💰','DINHEIRO PERDIDO',null,null,finHtml);
+
+  /* Stub sections for future */
+  const stubFornec = secao('fornec','🏭','RANKING DE FORNECEDORES',null,null,
+    '<div class="empty" style="padding:24px">🔧 Em desenvolvimento — requer dados de lead time e histórico de entregas.</div>');
+  const stubCompr = secao('comprador','👤','ANÁLISE POR COMPRADOR',null,null,
+    '<div class="empty" style="padding:24px">🔧 Em desenvolvimento — mapeamento comprador × produtos em risco.</div>');
+  const stubTransf = secao('transf','🔄','TRANSFERÊNCIAS ENTRE LOJAS',null,null,
+    '<div class="empty" style="padding:24px">🔧 Em desenvolvimento — análise de excesso em loja A × ruptura em loja B.</div>');
+
+  document.getElementById('conteudo').innerHTML =
+    kpis + resumoSec + planoSec + previsaoSec + rupturasSec + riscoSec +
+    semPedidoSec + alertasSec + lojasSec + finSec +
+    stubFornec + stubCompr + stubTransf;
+
+  // Collapse sections by default except first 3
+  ['rupturas','risco','smpedido','alertas','lojas','financeiro','fornec','comprador','transf']
+    .slice(3).forEach(id => {
+      const el = document.getElementById('sec-'+id);
+      if (el) el.classList.add('collapsed');
+    });
+
+  document.getElementById('stamp').innerHTML =
+    `<span class="dot-live"></span> Atualizado em ${new Date().toLocaleTimeString('pt-BR')}`;
+}
+
+function switchTab(btn, contentId) {
+  const parent = btn.closest('.sec-body') || btn.parentElement.parentElement;
+  parent.querySelectorAll('.prev-tab').forEach(t => t.classList.remove('active'));
+  parent.querySelectorAll('.prev-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const el = document.getElementById(contentId);
+  if (el) el.classList.add('active');
+}
+
+function carregar() {
+  const btn = document.getElementById('btn-analisar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analisando...';
+  document.getElementById('stamp').innerHTML = '<span class="spin"></span> Buscando dados...';
+  document.getElementById('conteudo').innerHTML = '<div class="loading"><span class="spin"></span> Analisando estoque, vendas e cobertura de todos os produtos...</div>';
+
+  fetch('/api/ruptura')
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) throw new Error(d.error);
+      renderTudo(d);
+    })
+    .catch(e => {
+      document.getElementById('conteudo').innerHTML =
+        `<div class="empty">❌ Erro ao carregar: ${e.message}</div>`;
+      document.getElementById('stamp').innerHTML = '<span style="color:var(--red)">● Erro</span>';
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '⚡ Analisar Agora';
+    });
+}
+</script>
+</body>
+</html>

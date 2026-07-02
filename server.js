@@ -2791,24 +2791,46 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
       if (!fornecFiltro.length) fornecFiltro = [-1]; // nenhum fornecedor → retorna vazio
     }
 
-    // Passo 1: produtos da lista de compras + estoque
-    const prodWhere = fornecFiltro ? `AND i.CodFornec IN (${fornecFiltro.map(()=>'?').join(',')})` : '';
-    const prods = await q(`
-      SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao, i.CodFornec,
-             COALESCE(e1.Estoque,0) est1, COALESCE(e2.Estoque,0) est2,
-             COALESCE(e3.Estoque,0) est3, COALESCE(e4.Estoque,0) est4,
-             COALESCE(e5.Estoque,0) est5, COALESCE(e6.Estoque,0) est6,
-             f.NomeCompleto as fornecedor
-      FROM central.c_cotacao_lista_itens cli
-      JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0 ${prodWhere}
-      LEFT JOIN central.estoquen1 e1 ON e1.nInterno = i.nInterno
-      LEFT JOIN central.estoquen2 e2 ON e2.nInterno = i.nInterno
-      LEFT JOIN central.estoquen3 e3 ON e3.nInterno = i.nInterno
-      LEFT JOIN central.estoquen4 e4 ON e4.nInterno = i.nInterno
-      LEFT JOIN central.estoquen5 e5 ON e5.nInterno = i.nInterno
-      LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
-      LEFT JOIN central.fornecedor f ON f.CodFornec = i.CodFornec
-    `, fornecFiltro || []).catch(() => []);
+    // Passo 1: produtos + estoque
+    // Com comprador: busca todos os itens ativos desse fornecedor (não depende da lista ativa)
+    // Sem comprador: usa a lista de compras para limitar o escopo
+    let prods;
+    if (fornecFiltro) {
+      const ph = fornecFiltro.map(()=>'?').join(',');
+      prods = await q(`
+        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao, i.CodFornec,
+               COALESCE(e1.Estoque,0) est1, COALESCE(e2.Estoque,0) est2,
+               COALESCE(e3.Estoque,0) est3, COALESCE(e4.Estoque,0) est4,
+               COALESCE(e5.Estoque,0) est5, COALESCE(e6.Estoque,0) est6,
+               f.NomeCompleto as fornecedor
+        FROM central.itens i
+        LEFT JOIN central.estoquen1 e1 ON e1.nInterno = i.nInterno
+        LEFT JOIN central.estoquen2 e2 ON e2.nInterno = i.nInterno
+        LEFT JOIN central.estoquen3 e3 ON e3.nInterno = i.nInterno
+        LEFT JOIN central.estoquen4 e4 ON e4.nInterno = i.nInterno
+        LEFT JOIN central.estoquen5 e5 ON e5.nInterno = i.nInterno
+        LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
+        LEFT JOIN central.fornecedor f ON f.CodFornec = i.CodFornec
+        WHERE i.CodDesativado = 0 AND i.CodFornec IN (${ph})
+      `, fornecFiltro).catch(() => []);
+    } else {
+      prods = await q(`
+        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao, i.CodFornec,
+               COALESCE(e1.Estoque,0) est1, COALESCE(e2.Estoque,0) est2,
+               COALESCE(e3.Estoque,0) est3, COALESCE(e4.Estoque,0) est4,
+               COALESCE(e5.Estoque,0) est5, COALESCE(e6.Estoque,0) est6,
+               f.NomeCompleto as fornecedor
+        FROM central.c_cotacao_lista_itens cli
+        JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
+        LEFT JOIN central.estoquen1 e1 ON e1.nInterno = i.nInterno
+        LEFT JOIN central.estoquen2 e2 ON e2.nInterno = i.nInterno
+        LEFT JOIN central.estoquen3 e3 ON e3.nInterno = i.nInterno
+        LEFT JOIN central.estoquen4 e4 ON e4.nInterno = i.nInterno
+        LEFT JOIN central.estoquen5 e5 ON e5.nInterno = i.nInterno
+        LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
+        LEFT JOIN central.fornecedor f ON f.CodFornec = i.CodFornec
+      `, []).catch(() => []);
+    }
 
     if (!prods.length) return res.json({
       resumo: { total_rupturas: 0, em_risco: 0, sem_pedido: 0, excesso: 0, alertas: 0, perdaDia: 0, perdaSemana: 0 },

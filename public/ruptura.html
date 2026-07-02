@@ -373,7 +373,7 @@ function renderTudo(d) {
       </tr>`).join('');
     return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Loja</th><th>Produto</th><th>Fornecedor</th><th class="r">Estoque</th><th class="r">VMD un</th><th class="r">Cobertura</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
-  const excessoSec = secao('excesso','📦','EXCESSO DE ESTOQUE (&gt;${d.max_cob||45} dias)',
+  const excessoSec = secao('excesso','📦',`EXCESSO DE ESTOQUE (&gt;${d.max_cob||45} dias)`,
     r.excesso||0,'badge-brand', tblExcesso(d.excesso));
 
   /* Alertas */

@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '196';
+  var BUILD = '197';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -5465,14 +5465,6 @@ function renderRelRanking() {
   var userPerfilMap = {};
   users.forEach(function(u){ if (u.nome) userPerfilMap[u.nome] = u.perfil; });
   function perfilReal(r) { return userPerfilMap[r.operador] || r.perfil || ''; }
-
-  // DEBUG TEMPORÁRIO — remove depois
-  console.log('[RANK DEBUG] resultados total:', getResultados().length,
-    '| res filtrado (mes/ano):', res.length,
-    '| mesSel:', mesSel, '| anoSel:', anoSel);
-  res.forEach(function(r,i){
-    if(i<10) console.log('  r['+i+']', r.operador, '| perfil salvo:', r.perfil, '| perfilReal:', perfilReal(r), '| dataHora:', r.dataHora, '| loja:', r.loja);
-  });
 
   // ── RANKING DE OPERADORES ─────────────────────────────────────────
   var opList = buildRankList(res.filter(function(r){ return perfilReal(r) === 'operator'; }));

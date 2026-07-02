@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '194';
+  var BUILD = '195';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -5461,18 +5461,23 @@ function renderRelRanking() {
     }).join('') : '<tr class="erow"><td colspan="6">'+(emptyMsg||'Nenhum dado')+'</td></tr>';
   }
 
-  // ── RANKING DE OPERADORES (por perfil do usuario) ─────────────────
-  var opList = buildRankList(res.filter(function(r){ return r.perfil === 'operator'; }));
+  // Mapas de nome → perfil real do cadastro de usuários (fonte verdade)
+  var userPerfilMap = {};
+  users.forEach(function(u){ if (u.nome) userPerfilMap[u.nome] = u.perfil; });
+  function perfilReal(r) { return userPerfilMap[r.operador] || r.perfil || ''; }
+
+  // ── RANKING DE OPERADORES ─────────────────────────────────────────
+  var opList = buildRankList(res.filter(function(r){ return perfilReal(r) === 'operator'; }));
   buildPodio('rank-podio', opList);
   buildRankTable('rank-tbody', opList, 'Nenhum operador enviou no período');
 
-  // ── RANKING DE GERÊNCIA (por perfil do usuario) ───────────────────
-  var gerList = buildRankList(res.filter(function(r){ return r.perfil === 'gerencia'; }));
+  // ── RANKING DE GERÊNCIA ───────────────────────────────────────────
+  var gerList = buildRankList(res.filter(function(r){ var p=perfilReal(r); return p==='gerencia'||p==='supervisor'; }));
   buildPodio('rank-gerencia-podio', gerList);
   buildRankTable('rank-gerencia-tbody', gerList, 'Nenhum membro de gerência enviou no período');
 
-  // ── RANKING DE PREVENÇÃO (por perfil do usuario) ─────────────────
-  var prevList = buildRankList(res.filter(function(r){ return r.perfil === 'prevencao'; }));
+  // ── RANKING DE PREVENÇÃO ──────────────────────────────────────────
+  var prevList = buildRankList(res.filter(function(r){ return perfilReal(r) === 'prevencao'; }));
   buildPodio('rank-prevencao-podio', prevList);
   buildRankTable('rank-prevencao-tbody', prevList, 'Nenhum membro de prevenção enviou no período');
 

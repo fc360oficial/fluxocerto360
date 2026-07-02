@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '197';
+  var BUILD = '198';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -447,28 +447,7 @@ var PLANO_KEY = 'eco_planos';
 // ===========================================
 var ADMIN_PROFILE = {id:'admin',nome:'Administrador Central',email:'admin@economico.com',perfil:'admin',setor:'Central',cargo:'Admin do sistema',ativo:true};
 
-function gerarSenhaAleatoria() {
-  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
-  var senha = '';
-  for (var i = 0; i < 12; i++) {
-    senha += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return senha;
-}
-
-function hashPassword(pwd) {
-  var encoder = new TextEncoder();
-  var data = encoder.encode(pwd);
-  return crypto.subtle.digest('SHA-256', data).then(function(buf) {
-    return Array.from(new Uint8Array(buf))
-      .map(function(b){ return b.toString(16).padStart(2,'0'); })
-      .join('');
-  });
-}
-
-function isHashed(str) {
-  return typeof str === 'string' && /^[0-9a-f]{64}$/.test(str);
-}
+// hashPassword / isHashed / gerarSenhaAleatoria removidos — auth via Firebase Authentication
 
 // Mantido só para compatibilidade de estrutura — sem senha em texto claro
 var DEFAULT_USERS = [];
@@ -497,22 +476,6 @@ function saveUsers(list) {
 function loadUsersFromFirebase(callback) {
   db.collection('usuarios').get().then(function(snap){
     var list = snap.docs.map(function(d){return d.data();});
-    var hasAdmin = list.some(function(u){return u.id==='admin';});
-    if (!hasAdmin) {
-      // Primeiro boot: gera senha aleatória e cria admin no Firebase
-      var senhaGerada = gerarSenhaAleatoria();
-      hashPassword(senhaGerada).then(function(hash){
-        var adminDoc = Object.assign({}, ADMIN_PROFILE, {senha: hash, _primeiroAcesso: true});
-        db.collection('usuarios').doc('admin').set(adminDoc).catch(function(){});
-        list.unshift(adminDoc);
-        S.usersCache = list;
-        localStorage.setItem(UKEY, JSON.stringify(list));
-        // Exibe senha gerada — deve ser anotada e trocada imediatamente
-        alert('PRIMEIRO ACESSO — ANOTE A SENHA ABAIXO:\n\nE-mail: admin@economico.com\nSenha: ' + senhaGerada + '\n\nTroque a senha imediatamente após o primeiro login!');
-        if (callback) callback();
-      });
-      return;
-    }
     S.usersCache = list;
     localStorage.setItem(UKEY, JSON.stringify(list));
     if (callback) callback();
@@ -938,55 +901,32 @@ function doLogin() {
   err.style.color = '#856404';
   err.style.display = 'block';
 
-  // Calcula hash antes de consultar o Firebase
-  hashPassword(pass).then(function(passHash){
-    db.collection('usuarios').where('email','==',email).get().then(function(snap){
-      if (snap.empty) {
-        err.textContent = 'E-mail ou senha incorretos.';
-        err.style.color = 'var(--r)';
-        return;
-      }
-      var found = null;
-      snap.docs.forEach(function(doc){
-        var u = doc.data();
-        if (!u.ativo) return;
-        var match = false;
-        if (isHashed(u.senha)) {
-          // Senha já hasheada — comparação segura
-          match = u.senha === passHash;
-        } else {
-          // Migração: senha ainda em texto claro → compara e atualiza
-          match = u.senha === pass;
-          if (match) {
-            db.collection('usuarios').doc(u.id).update({senha: passHash}).catch(function(){});
-            u.senha = passHash;
-            // Atualiza cache local
-            var idx = (S.usersCache||[]).findIndex(function(x){return x.id===u.id;});
-            if (idx >= 0) S.usersCache[idx].senha = passHash;
-          }
-        }
-        if (match) found = u;
-      });
-      if (!found) {
-        err.textContent = 'E-mail ou senha incorretos.';
-        err.style.color = 'var(--r)';
-        return;
-      }
+  firebase.auth().signInWithEmailAndPassword(email, pass)
+    .then(function(cred) {
+      return db.collection('usuarios').where('email', '==', cred.user.email).get();
+    })
+    .then(function(snap) {
+      if (snap.empty) throw { code: 'perfil/nao-encontrado' };
+      var found = snap.docs[0].data();
+      if (found.ativo === false) throw { code: 'auth/user-disabled' };
       err.style.display = 'none';
       finalizarLogin(found);
-    }).catch(function(e){
-      err.textContent = 'Erro: ' + (e.message||'Verifique sua conexao.');
+    })
+    .catch(function(e) {
+      var msg = 'E-mail ou senha incorretos.';
+      if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
+      if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
+      if (e.code === 'auth/user-disabled') msg = 'Usuário inativo. Contate o administrador.';
+      err.textContent = msg;
       err.style.color = 'var(--r)';
       err.style.display = 'block';
     });
-  });
 }
 
 function finalizarLogin(found) {
   document.getElementById('lErr').style.display='none';
   S.role = found.perfil;
   S.currentUser = found;
-  sessionStorage.setItem('eco_session', JSON.stringify(found));
   // Aviso de primeiro acesso: admin deve trocar a senha
   if (found._primeiroAcesso) {
     setTimeout(function(){
@@ -1182,8 +1122,8 @@ function finalizarLogin(found) {
 }
 
 function doLogout() {
+  firebase.auth().signOut().catch(function(){});
   if (_resultadosUnsub) { _resultadosUnsub(); _resultadosUnsub = null; }
-  sessionStorage.removeItem('eco_session');
   sessionStorage.removeItem('eco_last_page');
   localStorage.removeItem('inv_detalhe_state');
   document.getElementById('loginScreen').style.display='flex';
@@ -3228,8 +3168,7 @@ function renderCentral() {
   var PLABEL={admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção'};
   var PCLS={admin:'st-info',gerencia:'st-info',supervisor:'st-warn',operator:'st-ok',prevencao:'st-err'};
   var reversed = lista.slice().reverse();
-  tbody.innerHTML = reversed.map(function(r,i){
-    var realIdx = lista.length-1-i;
+  tbody.innerHTML = reversed.map(function(r){
     var st = r.reprovado?'st-err':r.pct===100?'st-ok':r.pct>=50?'st-warn':'st-err';
     var pctLabel = r.reprovado ? '🚨 REPROVADO' : r.pct+'%'+(r.resetado?' ↺':'');
     return '<tr>'
@@ -3240,14 +3179,14 @@ function renderCentral() {
       +'<td><span class="st '+(PCLS[r.perfil]||'st-ok')+'">'+(PLABEL[r.perfil]||r.perfil)+'</span></td>'
       +'<td><span class="st '+st+'">'+pctLabel+'</span></td>'
       +'<td style="font-size:12px">'+r.feitos+'/'+r.total+'</td>'
-      +'<td><button class="btn btn-s btn-sm" onclick="verDetalhe('+realIdx+')">Ver</button></td>'
+      +'<td><button class="btn btn-s btn-sm" onclick="verDetalhe(\''+r.id+'\')">Ver</button></td>'
       +'</tr>';
   }).join('');
 }
 
-function verDetalhe(idx) {
+function verDetalhe(id) {
   var resultados = getResultados();
-  var r = resultados[idx];
+  var r = resultados.find(function(x){ return x.id === id; });
   if (!r) return;
   var todasFotos = [];
   (r.itens||[]).forEach(function(item){

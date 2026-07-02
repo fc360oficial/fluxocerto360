@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '199';
+  var BUILD = '200';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -727,10 +727,15 @@ function iniciarResultadosRealtime() {
     // Re-renderiza a página ativa se depende de resultados
     var dashPanel = document.getElementById('panel-dashboard');
     var centralPanel = document.getElementById('panel-central');
+    var relPanel = document.getElementById('panel-relatorios');
     if (dashPanel && dashPanel.classList.contains('active')) updateDash();
     if (centralPanel && centralPanel.classList.contains('active')) {
       var activeTab = centralPanel.querySelector('#central-tabs .tab.on');
       switchCentralTab('checklist', activeTab);
+    }
+    if (relPanel && relPanel.classList.contains('active')) {
+      var rankEl = document.getElementById('rel-cl-ranking');
+      if (rankEl && rankEl.style.display !== 'none') renderRelRanking();
     }
   }, function(err) {
     console.warn('Falha no listener de resultados:', err);

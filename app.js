@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '198';
+  var BUILD = '199';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -447,7 +447,28 @@ var PLANO_KEY = 'eco_planos';
 // ===========================================
 var ADMIN_PROFILE = {id:'admin',nome:'Administrador Central',email:'admin@economico.com',perfil:'admin',setor:'Central',cargo:'Admin do sistema',ativo:true};
 
-// hashPassword / isHashed / gerarSenhaAleatoria removidos — auth via Firebase Authentication
+function gerarSenhaAleatoria() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+  var senha = '';
+  for (var i = 0; i < 12; i++) {
+    senha += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return senha;
+}
+
+function hashPassword(pwd) {
+  var encoder = new TextEncoder();
+  var data = encoder.encode(pwd);
+  return crypto.subtle.digest('SHA-256', data).then(function(buf) {
+    return Array.from(new Uint8Array(buf))
+      .map(function(b){ return b.toString(16).padStart(2,'0'); })
+      .join('');
+  });
+}
+
+function isHashed(str) {
+  return typeof str === 'string' && /^[0-9a-f]{64}$/.test(str);
+}
 
 // Mantido só para compatibilidade de estrutura — sem senha em texto claro
 var DEFAULT_USERS = [];
@@ -901,32 +922,50 @@ function doLogin() {
   err.style.color = '#856404';
   err.style.display = 'block';
 
-  firebase.auth().signInWithEmailAndPassword(email, pass)
-    .then(function(cred) {
-      return db.collection('usuarios').where('email', '==', cred.user.email).get();
-    })
-    .then(function(snap) {
-      if (snap.empty) throw { code: 'perfil/nao-encontrado' };
-      var found = snap.docs[0].data();
-      if (found.ativo === false) throw { code: 'auth/user-disabled' };
-      err.style.display = 'none';
-      finalizarLogin(found);
-    })
-    .catch(function(e) {
-      var msg = 'E-mail ou senha incorretos.';
-      if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
-      if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
-      if (e.code === 'auth/user-disabled') msg = 'Usuário inativo. Contate o administrador.';
-      err.textContent = msg;
+  loadUsersFromFirebase(function() {
+    var users = getUsers();
+    var found = users.find(function(u) {
+      return (u.email || '').toLowerCase() === email;
+    });
+
+    if (!found) {
+      err.textContent = 'E-mail ou senha incorretos.';
       err.style.color = 'var(--r)';
       err.style.display = 'block';
-    });
+      return;
+    }
+
+    if (found.ativo === false) {
+      err.textContent = 'Usuário inativo. Contate o administrador.';
+      err.style.color = 'var(--r)';
+      err.style.display = 'block';
+      return;
+    }
+
+    function finishCheck(ok) {
+      if (!ok) {
+        err.textContent = 'E-mail ou senha incorretos.';
+        err.style.color = 'var(--r)';
+        err.style.display = 'block';
+        return;
+      }
+      err.style.display = 'none';
+      finalizarLogin(found);
+    }
+
+    if (isHashed(found.senha)) {
+      hashPassword(pass).then(function(h) { finishCheck(h === found.senha); });
+    } else {
+      finishCheck(pass === found.senha);
+    }
+  });
 }
 
 function finalizarLogin(found) {
   document.getElementById('lErr').style.display='none';
   S.role = found.perfil;
   S.currentUser = found;
+  try { sessionStorage.setItem('eco_session', JSON.stringify(found)); } catch(e) {}
   // Aviso de primeiro acesso: admin deve trocar a senha
   if (found._primeiroAcesso) {
     setTimeout(function(){
@@ -1122,8 +1161,8 @@ function finalizarLogin(found) {
 }
 
 function doLogout() {
-  firebase.auth().signOut().catch(function(){});
   if (_resultadosUnsub) { _resultadosUnsub(); _resultadosUnsub = null; }
+  sessionStorage.removeItem('eco_session');
   sessionStorage.removeItem('eco_last_page');
   localStorage.removeItem('inv_detalhe_state');
   document.getElementById('loginScreen').style.display='flex';

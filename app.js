@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '200';
+  var BUILD = '201';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -5387,13 +5387,29 @@ function buildPodio(elId, rankList) {
   }).join('');
 }
 
-function renderRelRanking() {
-  var resultados = getResultados();
+function renderRelRanking(_skipFetch) {
   var agora = new Date();
-  // Inicializa selects no mês/ano atual na primeira chamada
   var mesEl = document.getElementById('rank-mes');
   var anoEl = document.getElementById('rank-ano');
   if (mesEl && mesEl.value === '') mesEl.value = String(agora.getMonth());
+
+  if (!_skipFetch) {
+    var loadingEl = document.getElementById('rank-gerencia-tbody');
+    if (loadingEl) loadingEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">Carregando...</td></tr>';
+    db.collection('resultados').get().then(function(snap) {
+      var list = snap.docs.map(function(d){ return d.data(); });
+      list.sort(function(a,b){ return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1; });
+      S.resultadosCache = list;
+      try {
+        var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
+        localStorage.setItem(RESKEY, JSON.stringify(semAssina));
+      } catch(e){}
+      renderRelRanking(true);
+    }).catch(function(){ renderRelRanking(true); });
+    return;
+  }
+
+  var resultados = getResultados();
   var mesSel = mesEl ? mesEl.value : '';
   var anoSel = anoEl ? parseInt(anoEl.value) : agora.getFullYear();
 

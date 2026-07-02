@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '201';
+  var BUILD = '202';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -5396,7 +5396,7 @@ function renderRelRanking(_skipFetch) {
   if (!_skipFetch) {
     var loadingEl = document.getElementById('rank-gerencia-tbody');
     if (loadingEl) loadingEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">Carregando...</td></tr>';
-    db.collection('resultados').get().then(function(snap) {
+    db.collection('resultados').get({source: 'server'}).then(function(snap) {
       var list = snap.docs.map(function(d){ return d.data(); });
       list.sort(function(a,b){ return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1; });
       S.resultadosCache = list;

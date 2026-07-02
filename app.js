@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '191';
+  var BUILD = '192';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -1314,6 +1314,7 @@ function nav(page, el) {
   if (page==='relatorios') {
     initRelCharts();
     loadResultadosFromFirebase(function(){
+      gerarSelectRelMes();
       renderRelatorios();
     });
   }
@@ -3949,35 +3950,36 @@ function excluirPlanoCentral(planoId) {
 
 function limparFiltrosCentral() {
   ['cf-setor','cf-op','cf-dt-ini','cf-dt-fim'].forEach(function(id){
-    var el = document.getElementById(id);
-    if (el) el.value='';
+    var el = document.getElementById(id); if (el) el.value = '';
   });
-  // Destaca pill "Tudo"
-  document.querySelectorAll('.cf-mes-pill').forEach(function(b){ b.classList.remove('btn-p'); b.classList.add('btn-s'); });
-  document.querySelectorAll('.cf-mes-pill[data-ano=""]').forEach(function(b){ b.classList.remove('btn-s'); b.classList.add('btn-p'); });
+  // Reseta select para "Todos"
+  var sel = document.getElementById('cf-mes-sel');
+  if (sel) sel.value = '';
   renderCentral();
 }
 
-function gerarPillsMesCentral() {
-  var container = document.getElementById('cf-mes-pills');
-  if (!container) return;
+// Popula o select de mês (Central de Resultados e Relatórios)
+function _popularSelectMes(selId, valorPadrao) {
+  var sel = document.getElementById(selId);
+  if (!sel) return;
   var agora = new Date();
   var anoAtual = agora.getFullYear(), mesAtual = agora.getMonth() + 1;
-  var nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  var html = '';
-  for (var i = 5; i >= 0; i--) {
+  var nomesLongos = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var html = '<option value="">Todos os meses</option>';
+  for (var i = 11; i >= 0; i--) {
     var d = new Date(anoAtual, mesAtual - 1 - i, 1);
     var ano = d.getFullYear(), mes = d.getMonth() + 1;
-    var ativo = (mes === mesAtual && ano === anoAtual);
-    html += '<button class="btn btn-sm cf-mes-pill ' + (ativo ? 'btn-p' : 'btn-s') + '" '
-          + 'data-ano="' + ano + '" data-mes="' + mes + '" '
-          + 'onclick="setCentralMes(' + ano + ',' + mes + ')" '
-          + 'style="padding:5px 12px;font-size:12px">'
-          + nomes[mes - 1] + '/' + String(ano).slice(2) + '</button>';
+    var val = ano + '-' + mes;
+    html += '<option value="' + val + '">' + nomesLongos[mes - 1] + '/' + ano + '</option>';
   }
-  html += '<button class="btn btn-s btn-sm cf-mes-pill" data-ano="" data-mes="" '
-        + 'onclick="setCentralMes(null)" style="padding:5px 12px;font-size:12px">Tudo</button>';
-  container.innerHTML = html;
+  sel.innerHTML = html;
+  sel.value = valorPadrao !== undefined ? valorPadrao : (anoAtual + '-' + mesAtual);
+}
+
+function gerarPillsMesCentral() {
+  var agora = new Date();
+  var anoAtual = agora.getFullYear(), mesAtual = agora.getMonth() + 1;
+  _popularSelectMes('cf-mes-sel', anoAtual + '-' + mesAtual);
   // Pré-preenche data range com o mês atual
   var mm = String(mesAtual).padStart(2, '0');
   var ult = new Date(anoAtual, mesAtual, 0).getDate();
@@ -3987,26 +3989,55 @@ function gerarPillsMesCentral() {
   if (fim) fim.value = anoAtual + '-' + mm + '-' + String(ult).padStart(2, '0');
 }
 
-function setCentralMes(ano, mes) {
-  document.querySelectorAll('.cf-mes-pill').forEach(function(b){ b.classList.remove('btn-p'); b.classList.add('btn-s'); });
+function setCentralMesDrop(sel) {
+  var val = sel ? sel.value : '';
   var ini = document.getElementById('cf-dt-ini');
   var fim = document.getElementById('cf-dt-fim');
-  if (!ano) {
-    if (ini) ini.value = '';
-    if (fim) fim.value = '';
-    document.querySelectorAll('.cf-mes-pill[data-ano=""]').forEach(function(b){ b.classList.remove('btn-s'); b.classList.add('btn-p'); });
+  if (!val) {
+    if (ini) ini.value = ''; if (fim) fim.value = '';
   } else {
+    var parts = val.split('-');
+    var ano = parseInt(parts[0]), mes = parseInt(parts[1]);
     var mm = String(mes).padStart(2, '0');
     var ult = new Date(ano, mes, 0).getDate();
     if (ini) ini.value = ano + '-' + mm + '-01';
     if (fim) fim.value = ano + '-' + mm + '-' + String(ult).padStart(2, '0');
-    document.querySelectorAll('.cf-mes-pill').forEach(function(b){
-      if (parseInt(b.dataset.ano) === ano && parseInt(b.dataset.mes) === mes) {
-        b.classList.remove('btn-s'); b.classList.add('btn-p');
-      }
-    });
   }
   renderCentralAtual();
+}
+
+// ── Relatórios: seletor de mês ──────────────────────────────────────
+var _relMesSel = { ano: new Date().getFullYear(), mes: new Date().getMonth() + 1 };
+
+function gerarSelectRelMes() {
+  var agora = new Date();
+  var anoAtual = agora.getFullYear(), mesAtual = agora.getMonth() + 1;
+  _popularSelectMes('rel-mes-sel', anoAtual + '-' + mesAtual);
+  _relMesSel = { ano: anoAtual, mes: mesAtual };
+}
+
+function setRelMesDrop(sel) {
+  var val = sel ? sel.value : '';
+  if (!val) {
+    _relMesSel = null;
+  } else {
+    var parts = val.split('-');
+    _relMesSel = { ano: parseInt(parts[0]), mes: parseInt(parts[1]) };
+  }
+  renderRelChecklist();
+}
+
+function getResultadosFiltradosMes() {
+  var todos = getResultados();
+  if (!_relMesSel) return todos;
+  var ano = _relMesSel.ano, mes = _relMesSel.mes;
+  return todos.filter(function(r) {
+    if (!r.dataHora) return false;
+    var p = r.dataHora.split(' ')[0].split('/');
+    if (p.length < 3) return false;
+    var d = new Date(p[2] + '-' + p[1] + '-' + p[0]);
+    return d.getFullYear() === ano && (d.getMonth() + 1) === mes;
+  });
 }
 
 function limparCentral() {
@@ -4849,7 +4880,8 @@ function getResultadosFiltradosDia() {
       return d>=limite;
     });
   } else if (resumoDiaFiltro === 'mes') {
-    var mes = agora.getMonth(); var ano = agora.getFullYear();
+    var mes = (_relMesSel ? _relMesSel.mes - 1 : agora.getMonth());
+    var ano = (_relMesSel ? _relMesSel.ano : agora.getFullYear());
     return resultados.filter(function(r){
       if (!r.dataHora) return false;
       var p=r.dataHora.split(' ')[0].split('/');
@@ -4866,7 +4898,7 @@ function getResultadosFiltradosDia() {
 }
 
 function renderRelChecklist() {
-  var resultados = getResultados();
+  var resultados = getResultadosFiltradosMes();
   var totalEnv = resultados.length;
   var totalComp = resultados.filter(function(r){return r.pct===100;}).length;
   var taxa = totalEnv ? Math.round(totalComp/totalEnv*100) : 0;

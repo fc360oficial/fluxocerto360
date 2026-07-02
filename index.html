@@ -340,7 +340,10 @@
         </div>
 
         <!-- Seletor de mês -->
-        <div id="cf-mes-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <label style="font-size:12px;font-weight:600;color:var(--t3);white-space:nowrap">Mês:</label>
+          <select id="cf-mes-sel" onchange="setCentralMesDrop(this)" style="padding:7px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;min-width:160px"></select>
+        </div>
 
         <!-- Filtros comuns -->
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
@@ -452,6 +455,10 @@
 
           <!-- VISAO GERAL -->
           <div id="rel-cl-geral">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <label style="font-size:12px;font-weight:600;color:var(--t3);white-space:nowrap">Mês:</label>
+              <select id="rel-mes-sel" onchange="setRelMesDrop(this)" style="padding:7px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;min-width:160px"></select>
+            </div>
             <div class="card" style="margin-bottom:14px">
               <div class="card-hdr">
                 <div class="card-title">Resumo do Dia — Status por Operador</div>

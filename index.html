@@ -1,0 +1,1755 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Fluxo Certo 360 — Gestão de Loja</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#FFC600"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Fluxo Certo 360"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<link rel="stylesheet" href="style.css?v=163"/>
+</head>
+<body>
+
+<!-- BANNER OFFLINE -->
+<div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#c0392b;color:#fff;text-align:center;padding:9px 16px;font-size:13px;font-weight:600;letter-spacing:.3px">
+  📡 Sem conexão — trabalhando offline. Os dados serão sincronizados quando a internet voltar.
+</div>
+
+<!-- PAINEL DE ALERTAS DE PENDÊNCIAS -->
+<div id="modal-pendentes" class="modal-bg" style="display:none">
+  <div class="modal-box" style="width:500px;max-height:80vh;overflow-y:auto">
+    <div class="modal-title" id="pendentes-titulo" style="color:#c0392b">⚠️ Checklists Pendentes</div>
+    <div id="pendentes-lista" style="display:flex;flex-direction:column;gap:10px;margin:12px 0"></div>
+    <div class="btn-row"><button class="btn btn-p btn-sm" onclick="enviarWhatsApp()" style="background:#25D366;border-color:#25D366">📱 Avisar WhatsApp</button><button class="btn btn-s" onclick="document.getElementById('modal-pendentes').style.display='none'">Fechar</button></div>
+  </div>
+</div>
+
+<!-- === LOGIN === -->
+<div id="loginScreen">
+  <div style="display:flex;width:min(820px,95vw);border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <!-- Lado esquerdo amarelo -->
+    <div style="flex:1;background:#FFC600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;min-width:220px">
+      <img src="logo.png" alt="Fluxo Certo 360" style="width:100%;max-width:220px;height:auto;mix-blend-mode:multiply;display:block;"/>
+    </div>
+    <!-- Lado direito branco -->
+    <div style="flex:1.3;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:44px 40px">
+      <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:4px;color:#111">Bem-vindo</div>
+      <p style="font-size:13px;color:#9ca3af;margin-bottom:28px">Acesse com seu e-mail e senha</p>
+      <div class="lf"><label>E-mail</label><input id="lEmail" type="text" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')document.getElementById('lPass').focus()"/></div>
+      <div class="lf"><label>Senha</label><div style="position:relative"><input id="lPass" type="password" placeholder="Sua senha" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding-right:42px"/><button type="button" onclick="var i=document.getElementById('lPass');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:0">👁</button></div></div>
+      <div class="lerr" id="lErr">E-mail ou senha incorretos.</div>
+      <button class="lbtn" onclick="doLogin()">Entrar no Sistema</button>
+      <div id="login-versao" style="text-align:center;margin-top:14px;font-size:9px;color:rgba(0,0,0,.3)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- === LOGIN === -->
+<div id="app" style="display:none">
+  <div id="sb-overlay" onclick="toggleSidebar()"></div>
+  <div class="sb">
+        <div class="sb-logo" style="padding:12px 12px 10px;border-bottom:1px solid rgba(0,0,0,.12)">
+      <img src="logo.png" alt="Fluxo Certo 360" style="width:100%;max-width:150px;height:auto;mix-blend-mode:multiply;display:block;"/>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-sec" id="nav-sec-checklist">FC360 Checklist</div>
+      <div class="sb-item active" id="nav-dashboard" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+      </div>
+      <div class="sb-item" id="nav-checklist" onclick="nav('checklist',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Checklist
+      </div>
+      <div class="sb-item" id="nav-plano" style="display:none;position:relative" onclick="nav('plano',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Plano de Ação
+        <span id="badge-plano" style="display:none;position:absolute;top:6px;right:10px;background:#e67e22;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;line-height:1">0</span>
+      </div>
+      <div class="sb-item" id="nav-alertas" style="display:none;position:relative" onclick="abrirPendentes()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        Alertas
+        <span id="badge-alertas" style="display:none;position:absolute;top:6px;right:10px;background:#c0392b;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;line-height:1">0</span>
+      </div>
+
+      <div class="sb-item" id="nav-central" style="display:none" onclick="nav('central',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Central de Resultados
+      </div>
+      <div class="sb-item" id="nav-relat" style="display:none" onclick="nav('relatorios',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Relatórios
+      </div>
+
+      <!-- Módulos futuros (ocultos até ativação) -->
+      <div class="sb-item" onclick="nav('perdas',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Lançar Perdas
+      </div>
+
+      <div class="sb-sec" id="sb-inv-sec" style="display:none">FC360 Inventário</div>
+      <div class="sb-item" id="nav-inv-gestao" style="display:none" onclick="nav('inv',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Gestão
+      </div>
+      <div class="sb-item sb-item-sub" id="nav-inv-coleta" style="display:none" onclick="nav('inv-coleta',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h1v6H9M13 9l3 3-3 3"/></svg>Minha Coleta
+      </div>
+
+      <div class="sb-sec" id="sb-adm-sec" style="display:none">Administração</div>
+      <div class="sb-item" id="nav-assistente" style="display:none" onclick="nav('assistente',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>Assistente IA
+      </div>
+      <div class="sb-item" id="nav-users" style="display:none" onclick="nav('usuarios',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>Usuários
+      </div>
+      <div class="sb-item" id="nav-monitor" style="display:none" onclick="nav('monitor',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Monitor
+      </div>
+
+    </div>
+    <div class="sb-user">
+      <div class="role" id="sbRole">Operador</div>
+      <div class="name" id="sbName">—</div>
+      <span class="sb-out" onclick="doLogout()">Sair do sistema</span>
+      <span class="sb-out" onclick="forcarAtualizacao()" style="margin-top:4px;color:rgba(0,0,0,.45)">🔄 Verificar atualização</span>
+      <span id="btn-zerar-dados" class="sb-out" onclick="zerarRelatoriosEPlanos()" style="display:none;margin-top:4px;color:#c0392b">🗑 Zerar Relatórios e Planos</span>
+      <div style="font-size:9px;color:rgba(0,0,0,.3);margin-top:4px" id="sb-versao"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="btn-hamburger" onclick="toggleSidebar()" style="display:none">☰</button>
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+      </div>
+      <div class="topbar-r">
+        <span class="badge badge-op" id="tbBadge">Operador</span>
+        <span class="tdate" id="tbDate"></span>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="panel-dashboard" class="panel active">
+
+        <!-- Header de status -->
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--gray2);border-radius:14px;padding:16px 22px;margin-bottom:20px;box-shadow:var(--sh)">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--t)" id="dash-loja-nome">Fluxo Certo 360</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:2px" id="dash-data-full"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-p btn-sm" onclick="exportarRelatorioSupervisor()" style="display:flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Relatório Supervisor
+            </button>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:20px;border:1.5px solid var(--gray2);transition:border-color .3s" id="dash-saude">
+              <div style="width:9px;height:9px;border-radius:50%;background:var(--gray3);transition:background .3s" id="dash-saude-dot"></div>
+              <div style="font-size:12px;font-weight:600;color:var(--t3);transition:color .3s" id="dash-saude-label">Carregando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="g4">
+          <div class="mc">
+            <div class="lbl">Checklists Hoje</div>
+            <div class="val up" id="dck-val">0/0</div>
+            <div class="pbar"><div class="pfill" id="dck-bar" style="width:0%;background:var(--g2)"></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
+              <div class="sub" id="dck-pct">0%</div>
+              <div id="dck-trend" style="font-size:11px;font-weight:600"></div>
+            </div>
+          </div>
+          <div class="mc">
+            <div class="lbl">Conformidade Geral</div>
+            <div class="val" id="dconf-val" style="color:var(--g)">—</div>
+            <div class="sub" style="margin-top:5px" id="dconf-sub">100% completos: 0</div>
+            <div id="dconf-trend" style="font-size:11px;font-weight:600;margin-top:4px"></div>
+          </div>
+          <div class="mc">
+            <div class="lbl">Pendentes Hoje</div>
+            <div class="val" id="dpend-val" style="color:var(--r)">—</div>
+            <div class="sub" style="margin-top:5px" id="dpend-sub">checklists em aberto</div>
+          </div>
+          <div class="mc">
+            <div class="lbl">Operadores Ativos</div>
+            <div class="val" id="dops-val">0</div>
+            <div class="sub" style="margin-top:5px" id="dops-sub">enviaram hoje</div>
+          </div>
+          <!-- elementos preservados para compatibilidade (ocultos) -->
+          <div style="display:none">
+            <div id="dp-val">R$ 0,00</div><div id="dp-cnt">0</div>
+            <div id="ddiv-val">0</div><div id="dinv-val">0</div>
+          </div>
+        </div>
+
+        <!-- Status da equipe -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-hdr">
+            <div class="card-title">Status da Equipe — Hoje</div>
+            <div id="dash-equipe-resumo" style="font-size:12px;color:var(--t3)"></div>
+          </div>
+          <div class="tabs" style="margin:0 0 12px 0" id="dash-equipe-tabs">
+            <div class="tab on" id="dash-eq-tab-todos"      onclick="_dashEquipeTab('todos',this)">Todos</div>
+            <div class="tab"    id="dash-eq-tab-operador"   onclick="_dashEquipeTab('operator',this)">Operadores</div>
+            <div class="tab"    id="dash-eq-tab-gerencia"   onclick="_dashEquipeTab('gerencia',this)">Gerência</div>
+            <div class="tab"    id="dash-eq-tab-supervisor" onclick="_dashEquipeTab('supervisor',this)">Supervisão</div>
+            <div class="tab"    id="dash-eq-tab-prevencao"  onclick="_dashEquipeTab('prevencao',this)">Prevenção</div>
+          </div>
+          <div id="dash-equipe" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px">
+            <div style="text-align:center;color:var(--t3);font-size:13px;padding:20px;grid-column:1/-1">Nenhum envio hoje</div>
+          </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="g2" style="margin-bottom:14px">
+          <div class="card" style="display:none"><div class="card-hdr"><div class="card-title">Perdas por Setor</div></div><div style="position:relative;height:210px"><canvas id="chartPerdas"></canvas></div></div>
+          <div class="card"><div class="card-hdr"><div class="card-title">Conformidade por Setor — Hoje</div></div><div id="setor-empty" style="display:none;padding:50px 20px;text-align:center;color:var(--t3);font-size:13px">Nenhum checklist enviado hoje</div><div id="setor-chart-wrap" style="position:relative;height:210px"><canvas id="chartSetor"></canvas></div></div>
+          <div class="card"><div class="card-hdr"><div class="card-title">Conformidade — Últimos 7 dias</div></div><div style="position:relative;height:210px"><canvas id="chartCheck"></canvas></div></div>
+          <div class="card"><div class="card-hdr"><div class="card-title">Planos de Ação — Últimos 7 dias</div></div><div style="position:relative;height:210px"><canvas id="chartPlanoEvol"></canvas></div></div>
+          <div class="card"><div class="card-hdr"><div class="card-title">Operadores Ativos Hoje</div><span id="dash-ops-hoje-count" style="font-size:12px;color:var(--t3)"></span></div><div id="dash-ops-hoje" style="max-height:210px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-top:4px"></div></div>
+        </div>
+
+        <!-- Planos de Ação Abertos -->
+        <div class="card" id="dash-planos-card" style="display:none;margin-bottom:14px">
+          <div class="card-hdr">
+            <div class="card-title">Planos de Ação Abertos</div>
+            <button class="btn btn-s btn-sm" onclick="nav('plano',document.getElementById('nav-plano'))">Ver todos →</button>
+          </div>
+          <div id="dash-planos-lista" style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+            <div style="text-align:center;color:var(--t3);font-size:13px;padding:16px">Nenhum plano de ação aberto</div>
+          </div>
+        </div>
+
+        <!-- Ocorrências -->
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title">Últimas Ocorrências</div>
+            <div id="dash-occ-count" style="font-size:12px;color:var(--t3)"></div>
+          </div>
+          <table><thead><tr><th>Hora</th><th>Tipo</th><th>Descrição</th><th>Setor</th><th>Operador</th><th>Status</th></tr></thead>
+          <tbody id="d-hist"><tr class="erow"><td colspan="6">Nenhuma ocorrência registrada hoje</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- CHECKLIST -->
+      <div id="panel-checklist" class="panel">
+        <!-- Modo: executar ou gerenciar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="tabs" style="margin-bottom:0" id="cl-mode-tabs">
+            <div class="tab on" onclick="setCLMode('executar',this)">✅ Executar</div>
+            <div class="tab" id="tab-gerenciar" onclick="setCLMode('gerenciar',this)">⚙️ Gerenciar</div>
+          </div>
+          <div id="cl-add-btn" style="display:none">
+            <button class="btn btn-p btn-sm" onclick="abrirModalCL()">+ Novo Checklist</button>
+          </div>
+        </div>
+
+        <!-- MODO EXECUTAR -->
+        <div id="cl-mode-executar">
+          <!-- Banner de alertas de planos de ação -->
+          <div id="plano-alert-banner" style="display:none;margin-bottom:12px"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="tabs" style="margin-bottom:0" id="cl-tabs"></div>
+            <div style="font-size:12px;color:var(--t3);background:var(--gray);padding:5px 12px;border-radius:20px;border:1px solid var(--gray2)" id="cl-data-hoje"></div>
+          </div>
+          <div id="cl-content"></div>
+        </div>
+
+        <!-- MODO GERENCIAR -->
+        <div id="cl-mode-gerenciar" style="display:none">
+          <div class="tabs" id="cl-criar-tabs" style="flex-wrap:wrap">
+            <div class="tab on" onclick="filtrarCL('todos',this)">Todos</div>
+            <div class="tab" onclick="filtrarCL('Açougue',this)">Açougue</div>
+            <div class="tab" onclick="filtrarCL('Hortifruti',this)">Hortifruti</div>
+            <div class="tab" onclick="filtrarCL('Frios',this)">Frios</div>
+            <div class="tab" onclick="filtrarCL('Padaria',this)">Padaria</div>
+            <div class="tab" onclick="filtrarCL('Mercearia',this)">Mercearia</div>
+            <div class="tab" onclick="filtrarCL('Prevenção',this)">Prevenção</div>
+            <div class="tab" onclick="filtrarCL('Gerência',this)">Gerência</div>
+          </div>
+          <div id="cl-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px"></div>
+        </div>
+      </div>
+
+      <!-- INVENTÁRIO -->
+      <div id="panel-inventario" class="panel">
+        <div id="inv-alert" class="alert alert-ok" style="display:none">✅ Inventário enviado para a central!</div>
+        <div class="g2" style="margin-bottom:16px">
+          <div class="card"><div class="card-hdr"><div class="card-title">Novo Lançamento</div></div>
+            <div class="frow c2"><div class="fg"><label>Código EAN</label><input id="inv-cod" type="text" placeholder="Ex: 7891234567890"/></div><div class="fg"><label>Descrição</label><input id="inv-desc" type="text" placeholder="Ex: Arroz Tio João 5kg"/></div></div>
+            <div class="frow c3"><div class="fg"><label>Setor</label><select id="inv-setor"><option>Mercearia</option><option>Perecíveis</option><option>Frios</option><option>Hortifruti</option><option>Açougue</option><option>Padaria</option><option>Bebidas</option><option>Limpeza</option></select></div><div class="fg"><label>Qtd. Sistema</label><input id="inv-sist" type="number" placeholder="0" min="0"/></div><div class="fg"><label>Qtd. Física</label><input id="inv-fis" type="number" placeholder="0" min="0"/></div></div>
+            <div class="frow c2"><div class="fg"><label>Unidade</label><select id="inv-unid"><option>UN</option><option>KG</option><option>CX</option><option>FD</option></select></div><div class="fg"><label>Observação</label><input id="inv-obs" type="text" placeholder="Opcional"/></div></div>
+            <div class="btn-row"><button class="btn btn-p" onclick="addInv()">+ Incluir</button><button class="btn btn-s" onclick="enviarInv()">Enviar para Central ↗</button></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="mc"><div class="lbl">Itens Lançados</div><div class="val" id="inv-cnt">0</div></div>
+            <div class="mc"><div class="lbl">Divergências</div><div class="val dn" id="inv-div">0</div></div>
+            <div class="mc"><div class="lbl">Saldo Total</div><div class="val" id="inv-saldo" style="font-size:20px">0 un</div></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-hdr"><div class="card-title">Itens Inventariados</div><button class="btn btn-s btn-sm" onclick="limparInv()">Limpar</button></div>
+          <table><thead><tr><th>Código</th><th>Descrição</th><th>Setor</th><th>Sistema</th><th>Físico</th><th>Dif.</th><th>Obs</th><th>Status</th></tr></thead>
+          <tbody id="inv-tbody"><tr class="erow"><td colspan="8">Nenhum item lançado ainda</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- PERDAS -->
+      <div id="panel-perdas" class="panel">
+        <div id="p-alert" class="alert alert-ok" style="display:none">✅ Perda registrada!</div>
+        <div class="g2" style="margin-bottom:16px">
+          <div class="card"><div class="card-hdr"><div class="card-title">Registrar Perda</div></div>
+            <div class="frow c2"><div class="fg"><label>Produto</label><input id="p-prod" type="text" placeholder="Descrição do produto"/></div><div class="fg"><label>Código EAN</label><input id="p-cod" type="text" placeholder="Opcional"/></div></div>
+            <div class="frow c2"><div class="fg"><label>Setor</label><select id="p-setor"><option>Perecíveis</option><option>Frios</option><option>Hortifruti</option><option>Açougue</option><option>Padaria</option><option>Mercearia</option><option>Bebidas</option><option>Limpeza</option></select></div><div class="fg"><label>Motivo</label><select id="p-motivo"><option>Vencimento</option><option>Avaria</option><option>Furto</option><option>Erro de Processo</option><option>Devolução</option><option>Deterioração</option><option>Outro</option></select></div></div>
+            <div class="frow c2"><div class="fg"><label>Quantidade</label><input id="p-qtd" type="number" placeholder="0" min="0"/></div><div class="fg"><label>Valor Unitário (R$)</label><input id="p-valor" type="number" placeholder="0.00" step="0.01" min="0"/></div></div>
+            <div class="frow c1"><div class="fg"><label>Observação</label><textarea id="p-obs" rows="2" placeholder="Detalhes..."></textarea></div></div>
+            <div class="btn-row"><button class="btn btn-p" onclick="addPerda()">Registrar Perda</button></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="mc"><div class="lbl">Total Perdas — Hoje</div><div class="val dn" id="p-total">R$ 0,00</div></div>
+            <div class="mc"><div class="lbl">Registros Hoje</div><div class="val" id="p-cnt">0</div></div>
+            <div class="mc"><div class="lbl">Maior Perda</div><div class="val dn" id="p-maior" style="font-size:18px">—</div><div class="sub" id="p-maior-prod">—</div></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-hdr"><div class="card-title">Registros de Perdas</div><button class="btn btn-s btn-sm" onclick="limparPerdas()">Limpar</button></div>
+          <table><thead><tr><th>Hora</th><th>Produto</th><th>Setor</th><th>Motivo</th><th>Qtd</th><th>Unit.</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="p-tbody"><tr class="erow"><td colspan="8">Nenhuma perda registrada hoje</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- CENTRAL DE RESULTADOS -->
+      <div id="panel-central" class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700">Central de Resultados</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Resultados enviados pela equipe</div></div>
+          <button class="btn btn-d btn-sm" onclick="limparCentral()">🗑 Limpar histórico</button>
+        </div>
+        <!-- Abas da Central -->
+        <div class="tabs" id="central-tabs" style="margin-bottom:16px;flex-wrap:wrap">
+          <div class="tab on" onclick="switchCentralTab('checklist',this)">✅ Checklist</div>
+          <div class="tab" onclick="switchCentralTab('inventario',this)" style="display:none">📦 Inventário</div>
+          <div class="tab" onclick="switchCentralTab('perdas',this)" style="display:none">📉 Perdas</div>
+          <div class="tab" onclick="switchCentralTab('plano',this)">📋 Plano de Ação</div>
+          <div class="tab" onclick="switchCentralTab('pendencias',this)">⚠️ Pendências</div>
+        </div>
+
+        <!-- Seletor de mês -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <label style="font-size:12px;font-weight:600;color:var(--t3);white-space:nowrap">Mês:</label>
+          <select id="cf-mes-sel" onchange="setCentralMesDrop(this)" style="padding:7px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;min-width:160px"></select>
+        </div>
+
+        <!-- Filtros comuns -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <div class="fg" style="min-width:160px"><label>Filtrar setor</label><select id="cf-setor" onchange="renderCentralAtual()"><option value="">Todos</option><option>Açougue</option><option>Hortifruti</option><option>Frios</option><option>Padaria</option><option>Mercearia</option><option>Bebidas</option><option>Prevenção</option><option>Geral</option><option>Gerência</option></select></div>
+          <div class="fg" style="min-width:160px"><label>Filtrar operador</label><select id="cf-op" onchange="renderCentralAtual()"><option value="">Todos</option></select></div>
+          <div class="fg" style="min-width:130px"><label>Data início</label><input type="date" id="cf-dt-ini" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit"/></div>
+          <div class="fg" style="min-width:130px"><label>Data fim</label><input type="date" id="cf-dt-fim" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit"/></div>
+          <div class="fg" style="display:flex;align-items:flex-end;gap:6px">
+            <button class="btn btn-p btn-sm" onclick="renderCentralAtual()">🔍 Filtrar</button>
+            <button class="btn btn-s btn-sm" onclick="limparFiltrosCentral()">✕ Limpar</button>
+          </div>
+        </div>
+
+        <!-- ABA CHECKLIST -->
+        <div id="central-tab-checklist">
+          <div class="g4" style="margin-bottom:16px">
+            <div class="mc"><div class="lbl">Envios</div><div class="val" id="c-total">0</div></div>
+            <div class="mc"><div class="lbl">100% Completos</div><div class="val up" id="c-comp">0</div></div>
+            <div class="mc"><div class="lbl">Incompletos</div><div class="val" style="color:var(--am)" id="c-incomp">0</div></div>
+            <div class="mc"><div class="lbl">Média</div><div class="val" id="c-media">—</div></div>
+          </div>
+          <div class="card"><div class="card-hdr"><div class="card-title">Checklists Recebidos</div></div>
+            <table><thead><tr><th>Data/Hora</th><th>Checklist</th><th>Setor</th><th>Operador</th><th>Perfil</th><th>%</th><th>Itens</th><th>Ver</th></tr></thead>
+            <tbody id="c-tbody"><tr class="erow"><td colspan="8">Nenhum resultado ainda</td></tr></tbody></table>
+          </div>
+        </div>
+
+        <!-- ABA INVENTÁRIO -->
+        <div id="central-tab-inventario" style="display:none">
+          <div class="g4" style="margin-bottom:16px">
+            <div class="mc"><div class="lbl">Total Lançados</div><div class="val" id="cinv-total">0</div></div>
+            <div class="mc"><div class="lbl">Divergências</div><div class="val dn" id="cinv-div">0</div></div>
+            <div class="mc"><div class="lbl">Itens OK</div><div class="val up" id="cinv-ok">0</div></div>
+            <div class="mc"><div class="lbl">Operadores</div><div class="val" id="cinv-ops">0</div></div>
+          </div>
+          <div class="card"><div class="card-hdr"><div class="card-title">Inventários Recebidos</div></div>
+            <div style="padding:40px;text-align:center;color:var(--t3);font-size:13px">Lance inventários na aba Inventário para ver aqui.</div>
+          </div>
+        </div>
+
+        <!-- ABA PERDAS -->
+        <div id="central-tab-perdas" style="display:none">
+          <div class="g4" style="margin-bottom:16px">
+            <div class="mc"><div class="lbl">Total Perdas</div><div class="val dn" id="cperd-total">R$ 0,00</div></div>
+            <div class="mc"><div class="lbl">Registros</div><div class="val" id="cperd-cnt">0</div></div>
+            <div class="mc"><div class="lbl">Maior Perda</div><div class="val dn" id="cperd-maior">R$ 0,00</div></div>
+            <div class="mc"><div class="lbl">Operadores</div><div class="val" id="cperd-ops">0</div></div>
+          </div>
+          <div class="card"><div class="card-hdr"><div class="card-title">Perdas Registradas</div></div>
+            <div style="padding:40px;text-align:center;color:var(--t3);font-size:13px">Lance perdas na aba Lançar Perdas para ver aqui.</div>
+          </div>
+        </div>
+
+        <!-- ABA PENDÊNCIAS -->
+        <div id="central-tab-pendencias" style="display:none">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+            <div class="fg" style="min-width:140px">
+              <label>Data</label>
+              <input type="date" id="pend-data" onchange="renderPendencias()" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%"/>
+            </div>
+            <button class="btn btn-s btn-sm" style="margin-bottom:2px" onclick="exportarPDFPendencias()">📄 PDF</button>
+          </div>
+          <div id="pend-lista"></div>
+        </div>
+
+        <!-- ABA PLANO DE AÇÃO -->
+        <div id="central-tab-plano" style="display:none">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end">
+            <div class="fg" style="min-width:160px"><label>Filtrar loja</label><select id="cf-loja-plano" onchange="renderCentralPlanos()" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%"><option value="">Todas</option></select></div>
+            <div class="fg" style="min-width:120px"><label>Status</label><select id="cf-status-plano" onchange="renderCentralPlanos()" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%"><option value="">Todos</option><option value="aberto">Aberto</option><option value="andamento">Em Andamento</option><option value="resolvido">Resolvido</option></select></div>
+            <div class="fg" style="min-width:130px"><label>Criado de</label><input type="date" id="cf-plano-dt-ini" onchange="renderCentralPlanos()" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%"/></div>
+            <div class="fg" style="min-width:130px"><label>Criado até</label><input type="date" id="cf-plano-dt-fim" onchange="renderCentralPlanos()" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%"/></div>
+            <div style="display:flex;align-items:flex-end;gap:6px">
+              <button class="btn btn-s btn-sm" onclick="exportarPDFPlanos()">📄 PDF</button>
+              <button class="btn btn-s btn-sm" onclick="limparFiltrosPlanos()">✕ Limpar</button>
+            </div>
+          </div>
+          <div class="g4" style="margin-bottom:16px">
+            <div class="mc"><div class="lbl">Total Planos</div><div class="val" id="cplano-total">0</div></div>
+            <div class="mc"><div class="lbl">Resolvidos</div><div class="val up" id="cplano-resolvidos">0</div></div>
+            <div class="mc"><div class="lbl">Em Andamento</div><div class="val" style="color:var(--am)" id="cplano-andamento">0</div></div>
+            <div class="mc"><div class="lbl">Abertos</div><div class="val dn" id="cplano-abertos">0</div></div>
+          </div>
+          <div class="card">
+            <div class="card-hdr"><div class="card-title">Planos de Ação</div></div>
+            <div id="cplano-lista"><div class="erow" style="padding:32px;text-align:center;color:var(--t3);font-size:13px">Carregando...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RELATÓRIOS -->
+      <div id="panel-relatorios" class="panel">
+        <!-- 3 abas principais -->
+        <div class="tabs" id="rel-tabs" style="margin-bottom:20px;flex-wrap:wrap">
+          <div class="tab on" onclick="switchRelTab('checklist',this)">✅ Checklist</div>
+        </div>
+
+        <!-- ===== ABA CHECKLIST ===== -->
+        <div id="rel-tab-checklist">
+          <!-- 4 sub-abas dentro de checklist -->
+          <div class="tabs" id="rel-cl-subtabs" style="margin-bottom:16px;flex-wrap:wrap">
+            <div class="tab on" onclick="switchRelClTab('geral',this)">📊 Visao Geral</div>
+            <div class="tab" onclick="switchRelClTab('executivo',this)">📈 Executivo</div>
+            <div class="tab" onclick="switchRelClTab('naoconformidade',this)">⚠️ Nao Conformidade</div>
+            <div class="tab" onclick="switchRelClTab('ranking',this)">🏆 Ranking</div>
+            <div class="tab" onclick="switchRelClTab('execucao',this)">📅 Execução</div>
+            <div class="tab" onclick="switchRelClTab('corporativo',this)">🏢 Corporativo</div>
+          </div>
+
+          <!-- VISAO GERAL -->
+          <div id="rel-cl-geral">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <label style="font-size:12px;font-weight:600;color:var(--t3);white-space:nowrap">Mês:</label>
+              <select id="rel-mes-sel" onchange="setRelMesDrop(this)" style="padding:7px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;min-width:160px"></select>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr">
+                <div class="card-title">Resumo do Dia — Status por Operador</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+                <button class="btn btn-s btn-sm rel-dia-btn active-dia" onclick="filtrarResumoDia('hoje',this)">Hoje</button>
+                <button class="btn btn-s btn-sm rel-dia-btn" onclick="filtrarResumoDia('ontem',this)">Ontem</button>
+                <button class="btn btn-s btn-sm rel-dia-btn" onclick="filtrarResumoDia('7dias',this)">Ultimos 7 dias</button>
+                <button class="btn btn-s btn-sm rel-dia-btn" onclick="filtrarResumoDia('mes',this)">Este mes</button>
+                <input type="date" id="rel-dia-custom" onchange="filtrarResumoDia('custom',null)" style="padding:6px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit"/>
+                <span style="font-size:12px;color:var(--t3)" id="rel-data-hoje"></span>
+              </div>
+              <div id="rel-resumo-dia" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">
+                <div style="text-align:center;color:var(--t3);padding:20px;font-size:13px;grid-column:1/-1">Nenhum envio hoje</div>
+              </div>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Desempenho por Setor</div></div>
+              <table><thead><tr><th>Setor</th><th>Enviados</th><th>100%</th><th>Media %</th><th>Status</th></tr></thead>
+              <tbody id="rel-setor-tbody"><tr class="erow"><td colspan="5">Nenhum dado ainda</td></tr></tbody></table>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Envios por Dia — Ultimos 7 dias</div></div>
+              <div style="position:relative;height:220px"><canvas id="chartEvolDiaria"></canvas></div>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Checklists com Menor Conclusao</div></div>
+              <table><thead><tr><th>Checklist</th><th>Envios</th><th>Media %</th><th>Alerta</th></tr></thead>
+              <tbody id="rel-problemas-tbody"><tr class="erow"><td colspan="4">Nenhum dado</td></tr></tbody></table>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Desempenho Completo da Equipe</div></div>
+              <table><thead><tr><th>Nome</th><th>Perfil</th><th>Enviados</th><th>100%</th><th>Media %</th><th>Ultimo Envio</th></tr></thead>
+              <tbody id="rel-equipe-tbody"><tr class="erow"><td colspan="6">Nenhum checklist enviado ainda</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- EXECUÇÃO VS AGENDADO -->
+          <div id="rel-cl-execucao" style="display:none">
+            <div class="g4" style="margin-bottom:16px">
+              <div class="mc"><div class="lbl">Agendados (período)</div><div class="val" id="ex-agendados">0</div></div>
+              <div class="mc"><div class="lbl">Executados</div><div class="val up" id="ex-executados">0</div></div>
+              <div class="mc"><div class="lbl">Pendentes</div><div class="val dn" id="ex-pendentes">0</div></div>
+              <div class="mc"><div class="lbl">Taxa de Execução</div><div class="val" id="ex-taxa">—</div></div>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Execução por Checklist</div></div>
+              <table><thead><tr><th>Checklist</th><th>Setor</th><th>Dias Agendados</th><th>Executados</th><th>Pendentes</th><th>Taxa</th></tr></thead>
+              <tbody id="ex-cl-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Execução por Dia — Últimos 7 dias</div></div>
+              <table><thead><tr><th>Data</th><th>Dia</th><th>Agendados</th><th>Executados</th><th>Taxa</th><th>Status</th></tr></thead>
+              <tbody id="ex-dia-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- EXECUTIVO -->
+          <div id="rel-cl-executivo" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+              <div><div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800">Relatorio Executivo</div><div style="font-size:13px;color:var(--t3)" id="exec-data-label">Hoje</div></div>
+              <button class="btn btn-p btn-sm" onclick="exportarPDF('executivo')">Exportar PDF</button>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+              <button class="btn btn-s btn-sm rel-dia-btn active-dia" onclick="filtrarExecutivo('hoje',this)">Hoje</button>
+              <button class="btn btn-s btn-sm rel-dia-btn" onclick="filtrarExecutivo('ontem',this)">Ontem</button>
+              <button class="btn btn-s btn-sm rel-dia-btn" onclick="filtrarExecutivo('7dias',this)">Últimos 7 dias</button>
+              <button class="btn btn-s btn-sm rel-dia-btn" onclick="filtrarExecutivo('mes',this)">Este mês</button>
+              <input type="date" id="exec-dia-custom" onchange="filtrarExecutivo('custom',null)" style="padding:6px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit"/>
+            </div>
+            <div class="g4" style="margin-bottom:16px">
+              <div class="mc" style="border-left:4px solid var(--g)"><div class="lbl">Total Enviados</div><div class="val up" id="exec-total">0</div></div>
+              <div class="mc" style="border-left:4px solid #2d9e62"><div class="lbl">Concluidos 100%</div><div class="val up" id="exec-comp">0</div></div>
+              <div class="mc" style="border-left:4px solid var(--am)"><div class="lbl">Pendentes</div><div class="val" style="color:var(--am)" id="exec-pend">0</div></div>
+              <div class="mc" style="border-left:4px solid var(--bl)"><div class="lbl">Taxa Conformidade</div><div class="val" style="color:var(--bl)" id="exec-taxa">0%</div></div>
+            </div>
+            <div class="g4" style="margin-bottom:20px">
+              <div class="mc"><div class="lbl">Operadores Ativos</div><div class="val" id="exec-ops">0</div></div>
+              <div class="mc"><div class="lbl">Media Geral</div><div class="val" id="exec-media">—</div></div>
+              <div class="mc"><div class="lbl">Fotos Enviadas</div><div class="val" id="exec-fotos">0</div></div>
+              <div class="mc"><div class="lbl">Ocorrencias</div><div class="val dn" id="exec-ocorr">0</div></div>
+            </div>
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-hdr"><div class="card-title">Status da Equipe</div></div>
+              <div id="exec-equipe" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:4px 0"></div>
+            </div>
+            <div class="g2" style="margin-bottom:16px">
+              <div class="card"><div class="card-hdr"><div class="card-title">Envios por Hora</div></div><div style="position:relative;height:200px"><canvas id="chartHora"></canvas></div></div>
+              <div class="card"><div class="card-hdr"><div class="card-title">Conclusao por Setor</div></div><div style="position:relative;height:200px"><canvas id="chartExecSetor"></canvas></div></div>
+            </div>
+          </div>
+
+          <!-- NAO CONFORMIDADE -->
+          <div id="rel-cl-naoconformidade" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <div><div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800">Nao Conformidade</div><div style="font-size:13px;color:var(--t3)">Checklists abaixo da meta</div></div>
+              <button class="btn btn-p btn-sm" onclick="exportarPDF('naoconformidade')">Exportar PDF</button>
+            </div>
+            <div class="g4" style="margin-bottom:16px">
+              <div class="mc" style="border-left:4px solid var(--r)"><div class="lbl">Nao Conformes</div><div class="val dn" id="nc-total">0</div></div>
+              <div class="mc" style="border-left:4px solid var(--am)"><div class="lbl">Parciais</div><div class="val" style="color:var(--am)" id="nc-parciais">0</div></div>
+              <div class="mc" style="border-left:4px solid var(--r)"><div class="lbl">Setor Critico</div><div class="val" style="font-size:16px" id="nc-setor">—</div></div>
+              <div class="mc" style="border-left:4px solid var(--r)"><div class="lbl">Operador Critico</div><div class="val" style="font-size:16px" id="nc-op">—</div></div>
+            </div>
+            <div class="g2" style="margin-bottom:16px">
+              <div class="card"><div class="card-hdr"><div class="card-title">Setores com Mais Falhas</div></div><div style="position:relative;height:200px"><canvas id="chartNcSetor"></canvas></div></div>
+              <div class="card"><div class="card-hdr"><div class="card-title">Operadores com Mais Ocorrencias</div></div><div style="position:relative;height:200px"><canvas id="chartNcOp"></canvas></div></div>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Itens Nao Concluidos</div></div>
+              <table><thead><tr><th>Checklist</th><th>Operador</th><th>Setor</th><th>Data/Hora</th><th>%</th><th>Pendentes</th></tr></thead>
+              <tbody id="nc-tbody"><tr class="erow"><td colspan="6">Nenhuma nao conformidade</td></tr></tbody></table>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Reincidencias</div></div>
+              <table><thead><tr><th>Operador</th><th>Checklist</th><th>Ocorrencias</th><th>Media %</th><th>Alerta</th></tr></thead>
+              <tbody id="nc-reincid-tbody"><tr class="erow"><td colspan="5">Nenhuma reincidencia</td></tr></tbody></table>
+            </div>
+            <div class="g3" style="margin:16px 0">
+              <div class="mc"><div class="lbl">Questões Analisadas</div><div class="val" id="pq-total">0</div></div>
+              <div class="mc"><div class="lbl">Maior Taxa de Falha</div><div class="val dn" id="pq-pior">—</div></div>
+              <div class="mc"><div class="lbl">Questões Críticas Reprovadas</div><div class="val dn" id="pq-criticas">0</div></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">🔍 Questões com Maior Taxa de Falha</div><div style="font-size:12px;color:var(--t3)">Ordenado por % de falha</div></div>
+              <table><thead><tr><th>#</th><th>Questão</th><th>Checklist</th><th>Apareceu</th><th>Falhou</th><th>% Falha</th><th>Tipo</th></tr></thead>
+              <tbody id="pq-tbody"><tr class="erow"><td colspan="7">Nenhum resultado para analisar</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- RANKING -->
+          <div id="rel-cl-ranking" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800">Ranking</div>
+                <div class="tabs" style="margin:0"><div class="tab" id="rank-tab-op" onclick="switchRankView('operadores',this)">Operadores</div><div class="tab" id="rank-tab-gerencia" onclick="switchRankView('gerencia',this)">Gerência</div><div class="tab on" id="rank-tab-prevencao" onclick="switchRankView('prevencao',this)">Prevenção</div><div class="tab" id="rank-tab-loja" onclick="switchRankView('lojas',this)">Lojas</div><div class="tab" id="rank-tab-extrato" onclick="switchRankView('extrato',this)">Histórico por Loja</div></div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select id="rank-mes" onchange="renderRelRanking()" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit">
+                  <option value="">Todos</option><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Marco</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                </select>
+                <select id="rank-ano" onchange="renderRelRanking()" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit">
+                  <option value="2026">2026</option><option value="2025">2025</option>
+                </select>
+                <button class="btn btn-p btn-sm" onclick="exportarPDF('ranking')">PDF</button>
+              </div>
+            </div>
+            <!-- VIEW OPERADORES -->
+            <div id="rank-view-op" style="display:none">
+              <div id="rank-podio" style="display:flex;gap:12px;justify-content:center;align-items:flex-end;margin-bottom:20px;min-height:140px"></div>
+              <div class="card">
+                <div class="card-hdr"><div class="card-title">Ranking de Operadores</div><div style="font-size:11px;color:var(--t3)">100%=10pts · 80-99%=7pts · 60-79%=4pts · abaixo=1pt</div></div>
+                <table><thead><tr><th>#</th><th>Operador</th><th>Pontos</th><th>Enviados</th><th>100%</th><th>Media %</th></tr></thead>
+                <tbody id="rank-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+              </div>
+            </div>
+            <!-- VIEW GERÊNCIA -->
+            <div id="rank-view-gerencia" style="display:none">
+              <div id="rank-gerencia-podio" style="display:flex;gap:12px;justify-content:center;align-items:flex-end;margin-bottom:20px;min-height:140px"></div>
+              <div class="card">
+                <div class="card-hdr"><div class="card-title">Ranking de Gerência</div><div style="font-size:11px;color:var(--t3)">100%=10pts · 80-99%=7pts · 60-79%=4pts · abaixo=1pt</div></div>
+                <table><thead><tr><th>#</th><th>Nome</th><th>Pontos</th><th>Enviados</th><th>100%</th><th>Media %</th></tr></thead>
+                <tbody id="rank-gerencia-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+              </div>
+            </div>
+            <!-- VIEW PREVENÇÃO -->
+            <div id="rank-view-prevencao">
+              <div id="rank-prevencao-podio" style="display:flex;gap:12px;justify-content:center;align-items:flex-end;margin-bottom:20px;min-height:140px"></div>
+              <div class="card">
+                <div class="card-hdr"><div class="card-title">Ranking de Prevenção</div><div style="font-size:11px;color:var(--t3)">100%=10pts · 80-99%=7pts · 60-79%=4pts · abaixo=1pt</div></div>
+                <table><thead><tr><th>#</th><th>Nome</th><th>Pontos</th><th>Enviados</th><th>100%</th><th>Media %</th></tr></thead>
+                <tbody id="rank-prevencao-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+              </div>
+            </div>
+            <!-- VIEW LOJAS -->
+            <div id="rank-view-lojas" style="display:none">
+              <div id="rank-lojas-podio" style="display:flex;gap:12px;justify-content:center;align-items:flex-end;margin-bottom:20px;min-height:140px"></div>
+              <div class="card">
+                <div class="card-hdr"><div class="card-title">Ranking de Lojas</div><div style="font-size:11px;color:var(--t3)">Soma de todos os setores por loja</div></div>
+                <table><thead><tr><th>#</th><th>Loja</th><th>Pontos</th><th>Enviados</th><th>100%</th><th>Media %</th><th>📷 Sem Foto</th></tr></thead>
+                <tbody id="rank-lojas-tbody"><tr class="erow"><td colspan="7">Nenhum dado</td></tr></tbody></table>
+              </div>
+            </div>
+            <!-- VIEW EXTRATO POR LOJA -->
+            <div id="rank-view-extrato" style="display:none">
+              <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <label style="font-size:12px;font-weight:700;color:var(--t2)">Loja:</label>
+                <select id="rank-extrato-loja" onchange="renderRelRankExtrato()" style="padding:7px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;min-width:180px"><option value="">Selecione a loja</option></select>
+              </div>
+              <div id="rank-extrato-resumo" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px"></div>
+              <div class="card">
+                <div class="card-hdr">
+                  <div class="card-title" id="rank-extrato-titulo">Extrato Diário de Pontuação</div>
+                  <div style="font-size:11px;color:var(--t3)">100%=10pts &middot; 80-99%=7pts &middot; 60-79%=4pts &middot; abaixo=1pt</div>
+                </div>
+                <div id="rank-extrato-tabela"><div class="erow" style="padding:20px;text-align:center;color:var(--t3)">Selecione uma loja para visualizar</div></div>
+              </div>
+            </div>
+          </div>
+
+        
+            <!-- CORPORATIVO -->
+            <div id="rel-cl-corporativo" style="display:none">
+          <!-- Filtros período -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+            <div class="fg" style="min-width:140px">
+              <label>Mês</label>
+              <select id="corp-mes" onchange="renderRelCorporativoTab()" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit">
+                <option value="">Todos</option><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+              </select>
+            </div>
+            <div class="fg" style="min-width:110px">
+              <label>Ano</label>
+              <select id="corp-ano" onchange="renderRelCorporativoTab()" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit">
+                <option value="2026">2026</option><option value="2025">2025</option>
+              </select>
+            </div>
+          </div>
+          <!-- Sub-abas -->
+          <div class="tabs" id="rel-corp-subtabs" style="margin-bottom:16px;flex-wrap:wrap">
+            <div class="tab on" onclick="switchRelCorpTab('adesao',this)">📋 Adesão</div>
+            <div class="tab" onclick="switchRelCorpTab('tendencia',this)">📈 Tendência</div>
+            <div class="tab" onclick="switchRelCorpTab('naoconf',this)">⚠️ Não Conf. por Loja</div>
+            <div class="tab" onclick="switchRelCorpTab('comparativo',this)">🏪 Comparativo Lojas</div>
+            <div class="tab" onclick="switchRelCorpTab('pontualidade',this)">⏰ Pontualidade</div>
+            <div class="tab" onclick="switchRelCorpTab('perdasxcl',this)" style="display:none">📉 Perdas×CL</div>
+            <button class="btn btn-p btn-sm" onclick="exportarPDFConsolidado()" style="margin-left:auto">📄 PDF Completo</button>
+          </div>
+
+          <!-- SUB: ADESÃO -->
+          <div id="rel-corp-adesao">
+            <div class="g3" style="margin-bottom:16px">
+              <div class="mc"><div class="lbl">Total de Lojas</div><div class="val" id="corp-ad-lojas">0</div></div>
+              <div class="mc"><div class="lbl">Média de Adesão</div><div class="val" id="corp-ad-media">—</div></div>
+              <div class="mc"><div class="lbl">Melhor Loja</div><div class="val" style="font-size:16px" id="corp-ad-melhor">—</div></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Adesão por Loja</div></div>
+              <table><thead><tr><th>Loja</th><th>Dias c/ Envio</th><th>Total Enviados</th><th>Completados 100%</th><th>Adesão %</th></tr></thead>
+              <tbody id="corp-adesao-tbody"><tr class="erow"><td colspan="5">Nenhum dado</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- SUB: TENDÊNCIA -->
+          <div id="rel-corp-tendencia" style="display:none">
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr">
+                <div class="card-title">Tendência de Conformidade</div>
+                <div style="display:flex;gap:6px">
+                  <button class="tend-btn" onclick="setTendPeriod(7,this)">7 dias</button>
+                  <button class="tend-btn tend-btn-active" onclick="setTendPeriod(30,this)">30 dias</button>
+                  <button class="tend-btn" onclick="setTendPeriod(90,this)">90 dias</button>
+                </div>
+              </div>
+              <div id="tend-empty" style="display:none;text-align:center;padding:60px 20px;color:var(--t3)"><div style="font-size:30px;margin-bottom:10px">📊</div><div style="font-size:13px">Nenhum dado no período.<br>Envie checklists para ver a tendência.</div></div>
+              <div id="tend-chart-wrap" style="position:relative;height:380px"><canvas id="chart-tendencia"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Resumo Diário</div></div>
+              <table><thead><tr><th>Data</th><th>Enviados</th><th>Média %</th><th>Variação</th></tr></thead>
+              <tbody id="corp-tendencia-tbody"><tr class="erow"><td colspan="4">Nenhum dado</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- SUB: NÃO CONFORMIDADES -->
+          <div id="rel-corp-naoconf" style="display:none">
+            <div class="g3" style="margin-bottom:16px">
+              <div class="mc"><div class="lbl">Total Não Conformidades</div><div class="val dn" id="corp-nc-total">0</div></div>
+              <div class="mc"><div class="lbl">Item Mais Crítico</div><div class="val" style="font-size:14px" id="corp-nc-critico">—</div></div>
+              <div class="mc"><div class="lbl">Média Conformidade</div><div class="val" id="corp-nc-media">—</div></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Top 10 Itens Mais Falhos</div></div>
+              <table><thead><tr><th>Item</th><th>Falhas</th><th>% de Falha</th><th>Gravidade</th></tr></thead>
+              <tbody id="corp-naoconf-tbody"><tr class="erow"><td colspan="4">Nenhum dado</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- SUB: COMPARATIVO LOJAS -->
+          <div id="rel-corp-comparativo" style="display:none">
+            <div class="g2" style="margin-bottom:14px">
+              <div class="card"><div class="card-hdr"><div class="card-title">Radar — Métricas por Loja</div></div><div style="position:relative;height:350px"><canvas id="chart-radar"></canvas></div></div>
+              <div class="card">
+                <div class="card-hdr"><div class="card-title">Comparativo</div></div>
+                <table><thead><tr><th>Loja</th><th>CL Geral</th><th>Prevenção</th><th>Operacional</th><th>Adesão</th><th>Score</th></tr></thead>
+                <tbody id="corp-comparativo-tbody"><tr class="erow"><td colspan="6">Nenhum dado</td></tr></tbody></table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB: PONTUALIDADE -->
+          <div id="rel-corp-pontualidade" style="display:none">
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Envios por Faixa de Horário</div></div>
+              <div style="position:relative;height:300px"><canvas id="chart-pontualidade"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Horário Comercial vs Fora</div></div>
+              <table><thead><tr><th>Loja</th><th>Comercial (06-18h)</th><th>Fora do Horário</th><th>% Comercial</th></tr></thead>
+              <tbody id="corp-pontualidade-tbody"><tr class="erow"><td colspan="4">Nenhum dado</td></tr></tbody></table>
+            </div>
+          </div>
+
+          <!-- SUB: PERDAS × CL -->
+          <div id="rel-corp-perdasxcl" style="display:none">
+            <div class="g3" style="margin-bottom:16px">
+              <div class="mc"><div class="lbl">Correlação Crítica</div><div class="val dn" id="corp-px-correlacao">—</div></div>
+              <div class="mc"><div class="lbl">Dias Analisados</div><div class="val" id="corp-px-dias">0</div></div>
+              <div class="mc"><div class="lbl">Dias CL &lt; 80%</div><div class="val" style="color:var(--am)" id="corp-px-baixo">0</div></div>
+            </div>
+            <div class="card" style="margin-bottom:14px" id="corp-px-loading" style="display:none">
+              <div style="padding:30px;text-align:center;color:var(--t3)">Carregando dados de perdas...</div>
+            </div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-hdr"><div class="card-title">Perdas vs Checklist Prevenção</div></div>
+              <div style="position:relative;height:350px"><canvas id="chart-perdasxcl"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title">Detalhamento Diário</div></div>
+              <table><thead><tr><th>Data</th><th>Perdas R$</th><th>CL Prevenção %</th><th>Status</th></tr></thead>
+              <tbody id="corp-perdasxcl-tbody"><tr class="erow"><td colspan="4">Nenhum dado</td></tr></tbody></table>
+            </div>
+          </div>
+
+        
+            </div>
+            <!-- /CORPORATIVO -->
+        </div><!-- /rel-tab-checklist -->
+
+
+
+
+      </div><!-- /panel-relatorios -->
+
+            <div id="panel-usuarios" class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700">Cadastro de Usuários</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Gerencie os acessos da equipe</div></div>
+          <button class="btn btn-p" onclick="abrirModalUser()">+ Novo Usuário</button>
+        </div>
+        <div class="tabs" id="u-filter-tabs">
+          <div class="tab on" onclick="filtrarUsers('todos',this)">Todos</div>
+          <div class="tab" onclick="filtrarUsers('gerencia',this)">Gerência</div>
+          <div class="tab" onclick="filtrarUsers('supervisor',this)">Supervisores</div>
+          <div class="tab" onclick="filtrarUsers('operator',this)">Operadores</div>
+          <div class="tab" onclick="filtrarUsers('prevencao',this)">Prevenção</div>
+        </div>
+        <div class="card"><div class="card-hdr"><div class="card-title">Usuários</div></div>
+          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Loja</th><th>Setor</th><th>Cargo</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="u-tbody"></tbody></table>
+        </div>
+        <div class="g3" style="margin-top:14px">
+          <div class="mc"><div class="lbl">Gerências</div><div class="val" id="u-ger">0</div></div>
+          <div class="mc"><div class="lbl">Supervisores</div><div class="val" id="u-sup">0</div></div>
+          <div class="mc"><div class="lbl">Operadores</div><div class="val" id="u-op">0</div></div>
+          <div class="mc"><div class="lbl">Prevenção</div><div class="val" id="u-prev">0</div></div>
+        </div>
+
+        <!-- SEGURANÇA -->
+        <div class="card" id="auth-migr-section" style="margin-top:20px;border:2px solid #e3b800">
+          <div class="card-hdr" style="background:#fffbe6">
+            <div class="card-title" style="color:#856404">🔐 Segurança — Firebase Authentication</div>
+          </div>
+          <div style="padding:16px">
+            <p style="margin:0 0 12px;font-size:13px;color:var(--t2)">Ferramentas de migração e limpeza de segurança.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+              <button class="btn btn-p" onclick="migrarFirebaseAuth()">Recriar Contas Firebase Auth</button>
+              <button class="btn btn-d" onclick="limparSenhasFirestore()" id="btn-limpar-senhas">Remover Senhas do Firestore</button>
+            </div>
+            <div id="auth-migr-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAINEL PLANO DE AÇÃO -->
+      <div id="panel-plano" class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700">Plano de Ação</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Não-conformidades e ações corretivas</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label id="foto-obrig-toggle" title="Quando ativo, operador deve anexar foto ao concluir" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--t2);cursor:pointer;padding:6px 10px;border:1.5px solid var(--gray2);border-radius:8px;background:#fff">
+              <input type="checkbox" id="foto-obrig-check" onchange="toggleFotoObrig(this)" style="accent-color:var(--am);width:14px;height:14px"/> 📷 Foto obrigatória
+            </label>
+            <button class="btn btn-p" onclick="abrirModalPlano(null)">+ Novo Plano</button>
+          </div>
+        </div>
+        <div class="tabs" id="plano-filter-tabs">
+          <div class="tab on" onclick="filtrarPlanos('aberto',this)">🔴 Abertos</div>
+          <div class="tab" onclick="filtrarPlanos('andamento',this)">🟡 Em Andamento</div>
+          <div class="tab" onclick="filtrarPlanos('resolvido',this)">✅ Resolvidos</div>
+          <div class="tab" onclick="filtrarPlanos('todos',this)">Todos</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+          <div style="font-size:12px;color:var(--t3)">📅 Período:</div>
+          <input type="date" id="plano-dt-ini" onchange="renderPlanos(planoFiltroAtual)" style="padding:6px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit"/>
+          <span style="font-size:12px;color:var(--t3)">até</span>
+          <input type="date" id="plano-dt-fim" onchange="renderPlanos(planoFiltroAtual)" style="padding:6px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit"/>
+          <button class="btn btn-s btn-sm" onclick="document.getElementById('plano-dt-ini').value='';document.getElementById('plano-dt-fim').value='';renderPlanos(planoFiltroAtual)">✕</button>
+        </div>
+        <div id="plano-lista" style="margin-top:14px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- === FC360 INVENTÁRIO — GESTÃO (admin/gerencia) === -->
+      <div id="panel-inv" class="panel">
+        <!-- Lista de inventários -->
+        <div id="inv-lista-wrap">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700">FC360 Inventário</div>
+              <div style="font-size:13px;color:var(--t3);margin-top:2px">Gestão de inventários da loja</div>
+            </div>
+            <button class="btn btn-p" onclick="abrirModalNovoInv()">+ Novo Inventário</button>
+          </div>
+          <div class="tabs" id="inv-lista-tabs" style="margin-bottom:14px">
+            <div class="tab on" onclick="switchInvListTab('ativos',this)">Ativos</div>
+            <div class="tab" onclick="switchInvListTab('historico',this)">Histórico</div>
+            <div class="tab" onclick="switchInvListTab('comparativo',this)">Comparativo</div>
+          </div>
+          <div id="inv-lista-ativos"><div id="inv-lista"></div></div>
+          <div id="inv-lista-historico" style="display:none"></div>
+          <div id="inv-lista-comparativo" style="display:none"></div>
+        </div>
+
+        <!-- Detalhe do inventário -->
+        <div id="inv-detalhe-wrap" style="display:none">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+            <button class="btn btn-s btn-sm" onclick="voltarInvLista()">← Voltar</button>
+            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;flex:1" id="inv-detalhe-nome"></div>
+            <span id="inv-detalhe-status" style="padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#d1f0e0;color:#1a5c34">ABERTO</span>
+          </div>
+          <div class="tabs" id="inv-detalhe-tabs">
+            <div class="tab on" onclick="switchInvTab('enderecos',this)">Endereços</div>
+            <div class="tab" onclick="switchInvTab('coletores',this)">Coletores ●</div>
+            <div class="tab" onclick="switchInvTab('dashboard',this)">Dashboard ●</div>
+            <div class="tab" onclick="switchInvTab('bipagens',this)">Bipagens</div>
+            <div class="tab" onclick="switchInvTab('auditoria',this)">Auditoria</div>
+            <div class="tab" onclick="switchInvTab('exportar',this)">Exportar</div>
+          </div>
+
+          <!-- Tab Endereços -->
+          <div id="inv-tab-enderecos" style="margin-top:14px">
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+              <div id="inv-cat-status"><button class="btn btn-s btn-sm" onclick="abrirImportCat()">📥 Importar Catálogo TXT</button></div>
+              <input type="file" id="inv-import-file" accept=".txt,.csv" style="display:none" onchange="importarCatalogo(event)"/>
+              <button class="btn btn-s btn-sm" onclick="gerarQREnderecos()">🖨️ Imprimir QR dos Endereços</button>
+            </div>
+            <div class="card">
+              <table><thead><tr><th>Endereço</th><th>Modo</th><th>Coletores</th><th>Bipagens</th><th>Status</th><th></th></tr></thead>
+              <tbody id="inv-end-tbody"></tbody></table>
+            </div>
+            <div id="inv-end-actions" style="margin-top:14px;display:none;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-sm" style="color:var(--r);border:1.5px solid var(--r);background:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="encerrarInventario(_invAtivo&&_invAtivo.id)">Encerrar Inventário</button>
+              <button class="btn btn-sm" style="background:var(--r);color:#fff;border:1.5px solid var(--r);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="abrirModalExcluirInv(_invAtivo&&_invAtivo.id)">🗑 Excluir</button>
+            </div>
+          </div>
+
+          <!-- Tab Coletores -->
+          <div id="inv-tab-coletores" style="display:none;margin-top:14px">
+            <div id="inv-coletores-wrap"></div>
+          </div>
+
+          <!-- Tab Dashboard (tempo real) -->
+          <div id="inv-tab-dashboard" style="display:none;margin-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <div style="font-size:12px;color:var(--t3)">Atualização em tempo real via Firestore</div>
+              <span id="dash-inv-status" style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;background:#f0f0f0;color:#666">—</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:16px">
+              <div class="mc"><div class="lbl">Total Bipagens</div><div class="val" id="dash-inv-bips">0</div></div>
+              <div class="mc"><div class="lbl">Concluídos</div><div class="val up" id="dash-inv-concluidos">0/0</div></div>
+              <div class="mc"><div class="lbl">Coletores</div><div class="val" id="dash-inv-coletores" style="color:var(--y-dark,#b38600)">0</div></div>
+              <div class="mc"><div class="lbl">Sem Coletor</div><div class="val" id="dash-inv-semcol" style="color:var(--am)">0</div></div>
+              <div class="mc"><div class="lbl">Divergências</div><div class="val" id="dash-inv-diverg" style="color:var(--r)">0</div></div>
+              <div class="mc"><div class="lbl">Estimativa</div><div class="val" id="dash-inv-eta" style="font-size:18px">—</div></div>
+            </div>
+            <div class="card">
+              <table><thead><tr><th>Endereço</th><th>Modo</th><th>Coletores</th><th>Bipagens</th><th>Status</th><th>Divergências</th></tr></thead>
+              <tbody id="dash-inv-tbody"></tbody></table>
+            </div>
+          </div>
+
+          <!-- Tab Auditoria -->
+          <div id="inv-tab-auditoria" style="display:none;margin-top:14px">
+            <!-- Relatório PDF -->
+            <div class="card" style="max-width:520px;margin-bottom:14px">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Relatório PDF</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Relatório completo com resumo, endereços, coletores e divergências.</p>
+              <button class="btn btn-s" onclick="gerarRelPDF()">📄 Baixar Relatório PDF</button>
+            </div>
+            <!-- Itens não coletados -->
+            <div class="card" style="max-width:520px;margin-bottom:14px">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Itens Não Coletados</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Lista produtos do catálogo que não receberam nenhuma bipagem neste inventário.</p>
+              <button class="btn btn-s" onclick="mostrarItensNaoColetados()">🔍 Verificar Itens Não Coletados</button>
+              <div id="inv-nao-coletados-wrap" style="margin-top:14px"></div>
+            </div>
+            <!-- Produtividade -->
+            <div class="card" style="max-width:520px;margin-bottom:14px">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Produtividade por Coletor</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Bipagens por hora de cada coletor ativo neste inventário.</p>
+              <button class="btn btn-s" onclick="renderProdutividade()">📊 Calcular Produtividade</button>
+              <div id="inv-produtividade-wrap" style="margin-top:14px"></div>
+            </div>
+            <!-- Trilha de auditoria -->
+            <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Trilha de ações: criação, atribuições, rodadas, resoluções de divergência.</div>
+            <div class="card">
+              <table><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead>
+              <tbody id="auditoria-tbody"></tbody></table>
+            </div>
+          </div>
+
+          <!-- Tab Bipagens -->
+          <div id="inv-tab-bipagens" style="display:none;margin-top:14px">
+            <!-- Filtros -->
+            <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <label style="font-size:12px;font-weight:600;color:var(--t2)">Endereço:</label>
+              <select id="inv-bip-filter" onchange="renderInvBipagens(this.value||null,null,document.getElementById('inv-bip-setor-filter').value||null)" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit"></select>
+              <select id="inv-bip-col-filter" onchange="renderInvBipagens(document.getElementById('inv-bip-filter').value||null,this.value||null,document.getElementById('inv-bip-setor-filter').value||null)" style="display:none;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit"></select>
+              <label style="font-size:12px;font-weight:600;color:var(--t2)">Setor:</label>
+              <select id="inv-bip-setor-filter" onchange="renderInvBipagens(document.getElementById('inv-bip-filter').value||null,document.getElementById('inv-bip-col-filter').value||null,this.value||null)" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit">
+                <option value="">Todos</option>
+                <option value="ESTOQUE">ESTOQUE</option>
+                <option value="LOJA">LOJA</option>
+              </select>
+              <button class="btn btn-s btn-sm" onclick="renderInvBipagens(null,null,null);document.getElementById('inv-bip-filter').value='';document.getElementById('inv-bip-setor-filter').value='';document.getElementById('inv-bip-col-filter').style.display='none';_fecharCorrecaoView()">Todos</button>
+            </div>
+            <!-- Botões Correção + PDF -->
+            <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <button id="bip-btn-correcao" onclick="toggleCorrecaoBipagem()" style="padding:9px 20px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--t2);display:flex;align-items:center;gap:6px">✏ Correção de Bipagem</button>
+              <button onclick="gerarPDFBipagens()" style="padding:9px 20px;background:#FFC600;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:#111;display:flex;align-items:center;gap:6px">📄 Relatório de Bipagens PDF</button>
+            </div>
+            <!-- Tabela -->
+            <div id="inv-bip-tabela-wrap">
+              <div class="card">
+                <table><thead><tr><th>Seq</th><th>EAN</th><th>Descrição</th><th>Qtd</th><th>Coletor</th><th>End. / Hora</th></tr></thead>
+                <tbody id="inv-bip-tbody"></tbody></table>
+              </div>
+            </div>
+            <!-- Formulário de Correção -->
+            <div id="inv-bip-sub-correcao" style="display:none">
+              <div id="inv-correcao-wrap"></div>
+            </div>
+          </div>
+
+          <!-- Tab Exportar -->
+          <div id="inv-tab-exportar" style="display:none;margin-top:14px">
+            <div class="card" style="max-width:520px">
+              <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Exportar para ERP</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Gera arquivo <code>.txt</code> com todas as bipagens em formato padrão para importação no ERP.</p>
+              <div style="background:var(--gray);border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:var(--t2);margin-bottom:16px;line-height:1.7">
+                ENDERECO;EAN;QUANTIDADE;SEQUENCIAL;DESCRICAO;UNIDADE<br>
+                01;7891234567890;5;1;FEIJAO CARIOCA 1KG;UN<br>
+                01;7891234567891;3;2;ARROZ TIPO 1 5KG;SC<br>
+                <span style="color:var(--t3)">...</span>
+              </div>
+              <button class="btn btn-p" onclick="exportarTxtErp()">⬇ Baixar TXT para ERP</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-inv -->
+
+      <!-- === FC360 INVENTÁRIO — MINHA COLETA === -->
+      <div id="panel-inv-coleta" class="panel">
+        <div id="inv-coleta-wrap"></div>
+      </div><!-- /panel-inv-coleta -->
+
+      <!-- === FC360 INVENTÁRIO — COLETA AVULSA === -->
+      <div id="panel-inv-avulsa" class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800">Coleta Avulsa</div>
+          <span style="padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;background:#e8f4ff;color:#1a5c9c">Sem endereço fixo</span>
+        </div>
+        <div id="inv-avulsa-wrap"></div>
+      </div><!-- /panel-inv-avulsa -->
+
+      <!-- ASSISTENTE IA -->
+      <div id="panel-assistente" class="panel">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+          <div style="width:44px;height:44px;background:#FFC600;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✨</div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800">Assistente IA</div>
+            <div style="font-size:12px;color:var(--t3)">Powered by Google Gemini · responde em segundos</div>
+          </div>
+        </div>
+        <div id="ia-quick-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+        <div id="ia-chat-msgs" style="background:#f4f6f9;border-radius:14px;padding:16px;margin-bottom:12px;min-height:280px;max-height:calc(100vh - 340px);overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
+        <div style="display:flex;gap:8px">
+          <input id="ia-input" type="text" placeholder="Pergunte sobre checklists, inventário, dicas de gestão..."
+            style="flex:1;padding:13px 16px;border:1.5px solid var(--gray2);border-radius:12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensagemIA()}">
+          <button onclick="enviarMensagemIA()" style="background:#FFC600;border:none;color:#0d0d0d;font-weight:700;padding:13px 22px;border-radius:12px;cursor:pointer;font-size:13px;white-space:nowrap">Enviar →</button>
+        </div>
+      </div><!-- /panel-assistente -->
+
+      <!-- MONITOR CONFIG -->
+      <div id="panel-monitor" class="panel">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+          <div style="width:44px;height:44px;background:#FFC600;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📺</div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800">Monitor Ao Vivo</div>
+            <div style="font-size:12px;color:var(--t3)">Configure o que será exibido na tela de monitoramento</div>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:680px;margin-bottom:16px">
+          <div class="card-hdr"><div class="card-title">Módulos disponíveis nesta conta</div></div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;cursor:pointer">
+              <input type="checkbox" id="mon-mod-check" checked style="width:16px;height:16px;accent-color:var(--am)"> FC360 Checklist
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;cursor:pointer">
+              <input type="checkbox" id="mon-mod-inv" style="width:16px;height:16px;accent-color:var(--am)" onchange="monModChange()"> FC360 Inventário
+            </label>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:10px">Marque os módulos contratados pelo cliente. Isso define quais opções de modo aparecem abaixo.</div>
+        </div>
+
+        <div class="card" style="max-width:680px;margin-bottom:16px">
+          <div class="card-hdr"><div class="card-title">O que exibir no monitor?</div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="mon-modo-cards">
+            <div class="mon-modo-card active" data-modo="checklist" onclick="setMonModo('checklist',this)">
+              <div style="font-size:28px;margin-bottom:8px">📋</div>
+              <div style="font-size:13px;font-weight:700">Só Checklist</div>
+              <div style="font-size:11px;opacity:.6;margin-top:4px">Exibe apenas a tela de conformidade</div>
+            </div>
+            <div class="mon-modo-card" data-modo="inventario" id="mon-card-inv" onclick="setMonModo('inventario',this)" style="display:none">
+              <div style="font-size:28px;margin-bottom:8px">📦</div>
+              <div style="font-size:13px;font-weight:700">Só Inventário</div>
+              <div style="font-size:11px;opacity:.6;margin-top:4px">Exibe apenas a tela de inventário</div>
+            </div>
+            <div class="mon-modo-card" data-modo="ambos" id="mon-card-ambos" onclick="setMonModo('ambos',this)" style="display:none">
+              <div style="font-size:28px;margin-bottom:8px">📺</div>
+              <div style="font-size:13px;font-weight:700">Checklist + Inventário</div>
+              <div style="font-size:11px;opacity:.6;margin-top:4px">Alterna automaticamente entre as duas telas</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="mon-intervalo-wrap" style="max-width:680px;margin-bottom:20px;display:none">
+          <div class="card-hdr"><div class="card-title">Tempo por tela (modo alternado)</div></div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <input type="range" id="mon-intervalo" min="10" max="60" step="5" value="20"
+              style="flex:1;accent-color:var(--am)"
+              oninput="document.getElementById('mon-intervalo-val').textContent=this.value+'s'">
+            <span id="mon-intervalo-val" style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--am);min-width:52px">20s</span>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:8px">O monitor ficará este tempo em cada tela antes de alternar automaticamente.</div>
+        </div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button onclick="saveAndOpenMonitor()" style="background:var(--am);border:none;color:#fff;font-weight:700;font-size:14px;padding:13px 24px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:8px">
+            📺 Abrir Monitor
+          </button>
+          <button onclick="saveMonitorConfig()" style="background:var(--gray);border:1.5px solid var(--gray2);color:var(--t);font-weight:600;font-size:13px;padding:13px 20px;border-radius:12px;cursor:pointer">
+            💾 Salvar configuração
+          </button>
+        </div>
+      </div><!-- /panel-monitor -->
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GERENCIAR ENDEREÇO (multi-coletor / modo) -->
+<div class="modal-bg" id="modal-inv-gerenciar">
+  <div class="modal-box" style="width:440px">
+    <div class="modal-title" id="modal-ger-end-titulo">Endereço: —</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);margin-bottom:8px">Modo de contagem</div>
+      <div id="ger-end-modo" style="display:flex;gap:8px"></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);margin-bottom:8px">Coletores atribuídos</div>
+      <div id="ger-end-coletores"></div>
+    </div>
+    <div id="ger-end-add"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-s" onclick="fecharModalGerenciarEnd()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DIVERGÊNCIAS -->
+<div class="modal-bg" id="modal-inv-diverg">
+  <div class="modal-box" style="width:580px;max-height:85vh;overflow-y:auto">
+    <div class="modal-title" id="modal-diverg-titulo">Divergências</div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:14px">Itens com quantidades diferentes entre Rodada 1 e Rodada 2.</div>
+    <div class="card" style="margin-bottom:14px">
+      <table>
+        <thead>
+          <tr><th>EAN</th><th>Descrição</th><th id="diverg-col-r1">Rodada 1</th><th id="diverg-col-r2">Rodada 2</th><th>Diferença</th></tr>
+        </thead>
+        <tbody id="modal-diverg-tbody"></tbody>
+      </table>
+    </div>
+    <div style="background:var(--gray);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--t2)">Resolução — qual rodada usar na exportação?</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" id="btn-usar-r1" onclick="resolverDivergencia(1)" style="flex:1">✓ Usar Rodada 1</button>
+        <button class="btn btn-sm" id="btn-usar-r2" onclick="resolverDivergencia(2)" style="flex:1">✓ Usar Rodada 2</button>
+      </div>
+      <div id="diverg-resolucao-atual" style="margin-top:8px;font-size:12px;color:var(--g);font-weight:600"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="fecharModalDiverg()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO INVENTÁRIO -->
+<div class="modal-bg" id="modal-inv">
+  <div class="modal-box" style="width:500px">
+    <div class="modal-title">Novo Inventário</div>
+
+    <!-- Nome -->
+    <div class="fg" style="margin-bottom:14px">
+      <label>Nome do inventário</label>
+      <input id="ninv-nome" type="text" placeholder="Ex: Inventário Geral — Maio 2026"/>
+    </div>
+
+    <!-- Tipo -->
+    <div class="fg" style="margin-bottom:16px">
+      <label>Tipo</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <label id="ninv-tipo-geral" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 14px;border-radius:8px;border:1.5px solid var(--y);background:var(--y);font-size:13px;font-weight:700;transition:.15s">
+          <input type="radio" name="ninv-tipo" value="geral" style="display:none" checked onchange="_ninvTipoChange()"> Geral
+        </label>
+        <label id="ninv-tipo-parcial" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 14px;border-radius:8px;border:1.5px solid var(--gray2);background:#fff;font-size:13px;font-weight:700;color:var(--t2);transition:.15s">
+          <input type="radio" name="ninv-tipo" value="parcial" style="display:none" onchange="_ninvTipoChange()"> Parcial
+        </label>
+        <label id="ninv-tipo-surpresa" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 14px;border-radius:8px;border:1.5px solid var(--gray2);background:#fff;font-size:13px;font-weight:700;color:var(--t2);transition:.15s">
+          <input type="radio" name="ninv-tipo" value="surpresa" style="display:none" onchange="_ninvTipoChange()"> Surpresa
+        </label>
+      </div>
+    </div>
+
+    <!-- Endereços -->
+    <div class="fg" style="margin-bottom:6px">
+      <label>Endereços <span style="font-weight:400;color:var(--t3);font-size:11px">(um por linha)</span></label>
+      <!-- Gerador em lote -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:var(--gray);border-radius:8px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--t2)">Gerar do</span>
+        <input type="number" id="ninv-end-de" min="0" value="0" style="width:64px;padding:5px 8px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit;text-align:center"/>
+        <span style="font-size:12px;font-weight:600;color:var(--t2)">ao</span>
+        <input type="number" id="ninv-end-ate" min="0" placeholder="50" style="width:64px;padding:5px 8px;border:1.5px solid var(--gray2);border-radius:7px;font-size:13px;font-family:inherit;text-align:center"/>
+        <button class="btn btn-p btn-sm" onclick="gerarEnderecosFaixa()">Gerar</button>
+        <button class="btn btn-sm" style="color:var(--r);border-color:var(--r)" onclick="document.getElementById('ninv-enderecos').value=''">Limpar</button>
+      </div>
+      <textarea id="ninv-enderecos" rows="6" placeholder="0&#10;1&#10;2&#10;..." style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:9px;font-size:13px;font-family:monospace;resize:vertical;background:#fff;color:var(--t)"></textarea>
+    </div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px">💡 Use o gerador ou cole a lista do seu ERP, um endereço por linha.</div>
+
+    <!-- Modo Fila -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:var(--gray);border-radius:8px">
+      <input type="checkbox" id="ninv-modoFila" checked style="width:17px;height:17px;accent-color:var(--y);cursor:pointer"/>
+      <label for="ninv-modoFila" style="font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;user-select:none">Modo Fila — coletores escolhem o endereço manualmente</label>
+    </div>
+
+    <!-- Setores personalizados -->
+    <div class="fg" style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Setores <span style="font-weight:400;color:var(--t3);font-size:11px">(separe por vírgula)</span></label>
+      <input id="ninv-setores" type="text" value="ESTOQUE,LOJA" placeholder="ESTOQUE,LOJA,DEPOSITO" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:9px;font-size:13px;font-family:inherit"/>
+    </div>
+
+    <!-- Meta de acuracidade -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 12px;background:var(--gray);border-radius:8px">
+      <label for="ninv-meta" style="font-size:13px;font-weight:600;color:var(--t2);white-space:nowrap">Meta de acurácia</label>
+      <input id="ninv-meta" type="number" min="1" max="100" value="98" style="width:70px;padding:6px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:14px;font-weight:700;font-family:monospace;text-align:center"/>
+      <span style="font-size:13px;color:var(--t3)">% (opcional)</span>
+    </div>
+
+    <div class="modal-err" id="ninv-err"></div>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="criarInventario()">Criar Inventário</button>
+      <button class="btn btn-s" onclick="fecharModalInv()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR INVENTÁRIO -->
+<div class="modal-bg" id="modal-excluir-inv">
+  <div class="modal-box" style="width:440px">
+    <div class="modal-title" style="color:var(--r)">Excluir Inventário</div>
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px" id="excluir-inv-nome"></div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px">Esta ação é <strong>irreversível</strong>. Todas as bipagens, catálogo e trilha de auditoria serão apagados permanentemente.</p>
+    <div class="fg" style="margin-bottom:14px">
+      <label>Confirme sua senha de acesso</label>
+      <input type="password" id="excluir-inv-senha" placeholder="Sua senha" onkeydown="if(event.key==='Enter')confirmarExcluirInv()"/>
+    </div>
+    <div class="modal-err" id="excluir-inv-err"></div>
+    <div class="btn-row">
+      <button id="btn-confirmar-excluir" class="btn btn-sm" style="background:var(--r);color:#fff;border-color:var(--r);flex:1" onclick="confirmarExcluirInv()">🗑 Excluir permanentemente</button>
+      <button class="btn btn-s" onclick="fecharModalExcluirInv()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUÁRIO -->
+<div class="modal-bg" id="modal-user">
+  <div class="modal-box" style="width:460px">
+    <div class="modal-title" id="mu-title">Novo Usuário</div>
+    <div class="frow c2"><div class="fg"><label>Nome completo</label><input id="u-nome" type="text" placeholder="Ex: João Silva"/></div><div class="fg"><label>E-mail (login)</label><input id="u-email" type="text" placeholder="joao@fluxocerto360.com"/></div></div>
+    <div class="frow c2"><div class="fg"><label>Senha <span id="senha-hint" style="font-size:11px;color:var(--t3);font-weight:400"></span></label><input id="u-senha" type="password" placeholder="Mínimo 4 caracteres"/></div><div class="fg"><label>Confirmar senha</label><input id="u-senha2" type="password" placeholder="Repita a senha"/></div></div>
+    <div class="frow c2">
+      <div class="fg"><label>Perfil</label><select id="u-perfil"><option value="gerencia">👔 Gerência de Loja</option><option value="supervisor">🔎 Supervisor</option><option value="operator">🛒 Operador</option><option value="prevencao">🔍 Aux. Prevenção</option><option value="coletor">📦 Coletor (Inventário)</option></select></div>
+      <div class="fg"><label>Setor</label><select id="u-setor"><option>Gerência</option><option>Mercearia</option><option>Perecíveis</option><option>Frios</option><option>Hortifruti</option><option>Açougue</option><option>Padaria</option><option>Bebidas</option><option>Caixa</option><option>Prevenção</option><option>Geral</option></select></div>
+    </div>
+    <div class="frow c2"><div class="fg"><label>Cargo / Observação</label><input id="u-cargo" type="text" placeholder="Ex: Encarregado de Mercearia"/></div><div class="fg"><label>Loja</label><input id="u-loja" type="text" placeholder="Ex: Loja Centro, Filial Norte"/></div></div>
+    <div class="fg"><label>WhatsApp (DDD + número) <span style="font-size:11px;font-weight:400;color:var(--t3)">— para alertas automáticos</span></label><input id="u-telefone" type="tel" inputmode="numeric" placeholder="Ex: 11999990000" style="font-family:monospace;letter-spacing:1px"/></div>
+    <div class="modal-err" id="mu-err"></div>
+    <div class="btn-row"><button class="btn btn-p" onclick="salvarUser()">Salvar</button><button class="btn btn-s" onclick="fecharModalUser()">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- MODAL CHECKLIST -->
+<div class="modal-bg" id="modal-cl">
+  <div class="modal-box" style="width:500px">
+    <div class="modal-title" id="mcl-title">Novo Checklist</div>
+    <div class="frow c2"><div class="fg"><label>Nome</label><input id="ncl-nome" type="text" placeholder="Ex: Açougue — Tarde"/></div><div class="fg"><label>Setor</label><select id="ncl-setor"><option>Açougue</option><option>Hortifruti</option><option>Frios</option><option>Padaria</option><option>Mercearia</option><option>Bebidas</option><option>Limpeza</option><option>Caixa</option><option>Prevenção</option><option>Gerência</option><option>Geral</option></select></div></div>
+    <div class="frow c2"><div class="fg"><label>Perfil que executa</label><select id="ncl-perfil"><option value="operator">Operador</option><option value="supervisor">Supervisor</option><option value="prevencao">Prevenção</option><option value="gerencia">Gerência</option><option value="todos">Todos</option></select></div><div class="fg"><label>Turno</label><select id="ncl-turno"><option>Abertura</option><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Fechamento</option><option>Qualquer</option></select></div></div>
+    <div class="frow c1"><div class="fg"><label>Descrição</label><input id="ncl-desc" type="text" placeholder="Objetivo deste checklist"/></div></div>
+    <div style="background:var(--gray);border-radius:10px;padding:12px 14px;margin-top:4px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:8px">📅 Agenda obrigatória (opcional)</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="dia-0" value="0"/> Dom</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="dia-1" value="1"/> Seg</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="dia-2" value="2"/> Ter</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="dia-3" value="3"/> Qua</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="dia-4" value="4"/> Qui</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="dia-5" value="5"/> Sex</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="dia-6" value="6"/> Sáb</label>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label style="font-size:12px;color:var(--t2);white-space:nowrap">Hora limite:</label>
+        <input id="ncl-hora-limite" type="time" value="10:00" style="padding:6px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff"/>
+        <span style="font-size:11px;color:var(--t3)">Alerta se não enviado até este horário</span>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin:14px 0 8px">Itens do Checklist</div>
+    <div id="ncl-itens-wrap" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:12px;background:var(--gray);border-radius:9px">
+      <div style="display:flex;gap:8px">
+        <input id="ncl-item-txt" type="text" placeholder="Ex: Verificar temperatura da câmara fria..." style="flex:1;padding:8px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff" onkeydown="if(event.key==='Enter')addItemNCL()"/>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="ncl-item-obs" type="text" placeholder="Observação / instrução extra (opcional)" style="flex:1;min-width:160px;padding:8px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff"/>
+        <select id="ncl-item-tipo" onchange="togglePlanilhaRow(this)" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="checkbox">☑ Checkbox</option>
+          <option value="simNao">✅ Sim/Não</option>
+          <option value="nota">⭐ Nota 1–5</option>
+          <option value="texto">📝 Texto</option>
+          <option value="planilha">📊 Planilha</option>
+        </select>
+        <select id="ncl-item-foto" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff" onchange="toggleFotoQtd(this)">
+          <option value="none">Sem foto</option>
+          <option value="depois">📷 Foto</option>
+          <option value="antes_depois">📷📷 Foto antes e depois</option>
+          <option value="multiplas">📷＋ Múltiplas fotos</option>
+        </select>
+        <div id="ncl-foto-qtd-row" style="display:none;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:600;color:var(--t2);white-space:nowrap">Qtd de fotos:</span>
+          <input type="number" id="ncl-foto-qtd" value="2" min="1" max="10" style="width:56px;padding:7px 8px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;text-align:center"/>
+        </div>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--r);white-space:nowrap;cursor:pointer" title="Item crítico reprova a inspeção inteira se marcado Não">
+          <input type="checkbox" id="ncl-item-critico" style="accent-color:var(--r);width:15px;height:15px"/> ⚠️ Crítico
+        </label>
+        <button id="ncl-add-btn" class="btn btn-p btn-sm" onclick="addItemNCL()">+ Adicionar</button>
+        <span id="ncl-edit-cancel" style="display:none;font-size:12px;color:var(--r);cursor:pointer;padding:4px 2px" onclick="cancelarEditItem()">✕ cancelar</span>
+      </div>
+      <div id="ncl-simnao-prazo-row" style="display:none;margin-top:6px;padding:7px 10px;background:#fff8e1;border-left:3px solid #f39c12;border-radius:6px;font-size:12px">
+        <span style="color:var(--t2);font-weight:600">⏱ Prazo padrão do plano de ação gerado ao marcar "Não":</span>
+        <select id="ncl-item-prazo-plano" style="margin-left:8px;padding:5px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:12px;font-family:inherit;background:#fff">
+          <option value="24">24 horas (1 dia)</option>
+          <option value="48">48 horas (2 dias)</option>
+          <option value="72" selected>72 horas (3 dias)</option>
+          <option value="120">120 horas (5 dias)</option>
+          <option value="168">168 horas (7 dias)</option>
+          <option value="336">336 horas (14 dias)</option>
+        </select>
+      </div>
+      <div id="ncl-planilha-row" style="display:none;margin-top:8px">
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:8px;padding:7px 10px;background:var(--gray);border-radius:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--t2)">Modo:</span>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+            <input type="radio" name="ncl-planilha-modo" value="fixa" checked onchange="onPlanilhaModoChange('fixa')">
+            📌 Fixa (mesmos produtos todo dia)
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+            <input type="radio" name="ncl-planilha-modo" value="diaria" onchange="onPlanilhaModoChange('diaria')">
+            📅 Diária (operador envia CSV novo todo dia)
+          </label>
+        </div>
+        <div id="ncl-planilha-fixa-section">
+          <div id="ncl-planilha-lojas-lista" style="margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="ncl-planilha-loja-nome" placeholder="Nome da loja (ex: Muribeca)" style="flex:1;min-width:120px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit;background:#fff"/>
+            <input type="file" id="ncl-planilha-csv" accept=".csv,.txt" onchange="onPlanilhaCSVChange(this)" style="flex:2;min-width:140px;font-size:12px;padding:6px;border:1.5px solid var(--gray2);border-radius:8px;background:#fff"/>
+            <button class="btn btn-s btn-sm" onclick="adicionarLojaPlanilha()">+ Loja</button>
+          </div>
+          <div id="ncl-planilha-info" style="font-size:11px;color:var(--t3);margin-top:4px">Formato: código, descrição, setor — um produto por linha</div>
+        </div>
+        <div id="ncl-planilha-diaria-section" style="display:none;padding:8px 10px;background:#e8f4fd;border-left:3px solid #3498db;border-radius:6px">
+          <div style="font-size:11px;color:var(--t2);margin-bottom:8px">📅 Upload por loja — a Central envia um CSV novo todo dia. Tudo some à meia-noite.</div>
+          <div id="ncl-diaria-lojas-lista" style="margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="ncl-diaria-loja-nome" placeholder="Nome da loja (ex: Muribeca)" style="flex:1;min-width:120px;font-size:12px;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:8px"/>
+            <input type="file" id="ncl-diaria-csv" accept=".csv,.txt" onchange="onDiariaCSVChange(this)" style="flex:2;min-width:140px;font-size:12px;padding:6px;border:1.5px solid var(--gray2);border-radius:8px;background:#fff"/>
+            <button class="btn btn-s btn-sm" onclick="adicionarLojaDiaria()">+ Loja</button>
+          </div>
+          <div id="ncl-diaria-info" style="font-size:11px;color:var(--t3);margin-top:4px">Formato: código, descrição, setor — um produto por linha</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-err" id="mcl-err"></div>
+    <div class="btn-row"><button class="btn btn-p" onclick="salvarCL()">Salvar Checklist</button><button class="btn btn-s" onclick="fecharModalCL()">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- MODAL FOTOS PENDENTES -->
+<div class="modal-bg" id="modal-foto-pendente">
+  <div class="modal-box" style="width:460px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:36px;margin-bottom:8px">📷</div>
+      <div class="modal-title">Fotos obrigatórias pendentes</div>
+      <div style="font-size:13px;color:var(--t2);margin-top:4px">Os itens abaixo exigem foto antes de enviar para a central:</div>
+    </div>
+    <input type="hidden" id="fp-cl-id"/>
+    <input type="hidden" id="fp-cl-label"/>
+    <div id="fp-lista" style="margin-bottom:16px"></div>
+    <div style="font-size:13px;color:var(--t2);text-align:center;margin-bottom:16px">Deseja ir para os itens pendentes agora?</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-p" onclick="irParaFotosPendentes()">Sim, adicionar fotos</button>
+      <button class="btn btn-d" onclick="enviarSemFoto()">Enviar mesmo assim</button>
+      <button class="btn btn-s" onclick="document.getElementById('modal-foto-pendente').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FOTO FULLSCREEN -->
+<div id="modal-foto-full" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:300;align-items:center;justify-content:center;flex-direction:column">
+  <div style="position:absolute;top:16px;right:16px;display:flex;gap:10px">
+    <button onclick="downloadFotoAtual()" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px">⬇ Baixar</button>
+    <button onclick="document.getElementById('modal-foto-full').style.display='none'" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:20px">✕</button>
+  </div>
+  <div style="position:absolute;top:50%;left:16px;transform:translateY(-50%)">
+    <button onclick="navFoto(-1)" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:20px">‹</button>
+  </div>
+  <div style="position:absolute;top:50%;right:16px;transform:translateY(-50%)">
+    <button onclick="navFoto(1)" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:20px">›</button>
+  </div>
+  <img id="foto-full-img" src="" style="max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain"/>
+  <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+    <span id="foto-full-label" style="color:#fff;font-size:13px;font-weight:500"></span>
+    <span id="foto-full-counter" style="color:rgba(255,255,255,.5);font-size:12px"></span>
+  </div>
+  <div id="foto-full-thumbnails" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:600px"></div>
+</div>
+
+<!-- MODAL JÁ ENVIADO HOJE -->
+<div class="modal-bg" id="modal-ja-enviado">
+  <div class="modal-box" style="width:400px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">✅</div>
+    <div class="modal-title" style="justify-content:center;margin-bottom:8px">Checklist já enviado hoje!</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:6px">O checklist <strong id="env-ja-enviado-nome"></strong> já foi enviado para a central hoje.</div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:20px">Cada checklist pode ser enviado apenas uma vez por dia por operador.</div>
+    <button class="btn btn-p" onclick="document.getElementById('modal-ja-enviado').style.display='none'">Entendido</button>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ENVIO -->
+<div class="modal-bg" id="modal-enviar">
+  <div class="modal-box" style="width:420px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:40px;margin-bottom:8px" id="env-icon">✅</div>
+      <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;margin-bottom:4px" id="env-titulo"></div>
+      <div style="font-size:13px;color:var(--t3);margin-bottom:12px" id="env-msg"></div>
+    </div>
+    <!-- Resumo de progresso -->
+    <div style="background:var(--gray);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--t2)" id="env-itens"></span>
+        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800" id="env-pct"></span>
+      </div>
+      <div style="height:8px;background:var(--gray2);border-radius:4px;overflow:hidden">
+        <div id="env-bar-fill" style="height:100%;border-radius:4px;transition:width .3s;width:0%"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--t2);text-align:center;margin-bottom:18px">Deseja confirmar o envio para a central?</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-p" onclick="abrirAssinatura()">✍ Assinar e Enviar</button>
+      <button class="btn btn-s" onclick="cancelarEnviar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LIMPAR CENTRAL -->
+<div class="modal-bg" id="modal-limpar-central">
+  <div class="modal-box" style="width:380px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🗑️</div>
+    <div class="modal-title">Limpar histórico?</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:16px">Todos os resultados enviados serão apagados permanentemente.<br><span style="font-size:12px;color:var(--t3)">Esta ação não pode ser desfeita.</span></div>
+    <div class="fg" style="text-align:left;margin-bottom:8px">
+      <label>Confirme sua senha de administrador</label>
+      <input id="limpar-senha-input" type="password" placeholder="Senha do admin" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit"/>
+    </div>
+    <div id="limpar-senha-err" style="font-size:12px;color:var(--r);margin-bottom:10px;display:none">Senha incorreta.</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-d" onclick="confirmarLimparCentral()">Sim, apagar tudo</button>
+      <button class="btn btn-s" onclick="document.getElementById('modal-limpar-central').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESET CHECKLIST -->
+<div class="modal-bg" id="modal-reset">
+  <div class="modal-box" style="width:480px">
+    <!-- Step 1: Selecionar itens -->
+    <div id="reset-step1">
+      <div class="modal-title">↺ Resetar itens do checklist</div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:16px">Selecione quais itens deseja resetar em: <strong id="reset-cl-nome"></strong></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="btn btn-s btn-sm" onclick="selecionarTodosReset()">Selecionar todos</button>
+      </div>
+      <div id="reset-itens-wrap" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;margin-bottom:14px"></div>
+      <div id="reset-err" style="font-size:12px;color:var(--r);margin-bottom:10px;display:none">Selecione pelo menos 1 item.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-p" onclick="confirmarReset()">Continuar →</button>
+        <button class="btn btn-s" onclick="fecharModalReset()">Cancelar</button>
+      </div>
+    </div>
+    <!-- Step 2: Selecionar usuários -->
+    <div id="reset-step2" style="display:none">
+      <div class="modal-title">Resetar para quais usuários?</div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:14px">Selecione os usuários que devem ter os itens resetados:</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <button class="btn btn-s btn-sm" onclick="selecionarTodosUsers()">Selecionar todos</button>
+      </div>
+      <div id="reset-users-wrap" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;margin-bottom:12px"></div>
+      <div id="reset-users-err" style="font-size:12px;color:var(--r);margin-bottom:10px;display:none">Selecione pelo menos 1 usuário.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-p" onclick="confirmarResetUsers()">Continuar →</button>
+        <button class="btn btn-s" onclick="fecharModalReset()">Cancelar</button>
+      </div>
+    </div>
+    <!-- Step 3: Confirmar -->
+    <div id="reset-step3" style="display:none;text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+      <div class="modal-title">Confirmar reset?</div>
+      <div style="font-size:13px;color:var(--t2);margin:12px 0 6px">Resetar <strong id="reset-confirm-count"></strong> no checklist <strong id="reset-cl-nome2"></strong></div>
+      <div style="font-size:13px;color:var(--t2);margin-bottom:16px">para <strong id="reset-confirm-users"></strong>.</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:20px">Os itens voltarão para não concluído e o operador poderá refazer.</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-d" onclick="executarReset()">Sim, resetar</button>
+        <button class="btn btn-s" onclick="fecharModalReset()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR EXCLUSÃO -->
+<div class="modal-bg" id="modal-excluir">
+  <div class="modal-box" style="width:380px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🗑️</div>
+    <div class="modal-title" style="justify-content:center">Excluir Checklist?</div>
+    <div style="font-size:14px;color:var(--t2);margin-bottom:16px">Você está prestes a excluir:<br><strong id="excluir-nome"></strong><br><span style="font-size:12px;color:var(--t3)">Esta ação não pode ser desfeita.</span></div>
+    <div style="margin-bottom:16px;text-align:left">
+      <label style="font-size:12px;font-weight:700;color:var(--t2);display:block;margin-bottom:6px">Digite sua senha para confirmar:</label>
+      <input id="excluir-senha" type="password" placeholder="Sua senha" autocomplete="current-password"
+        style="width:100%;padding:11px 13px;border:2px solid var(--gray2);border-radius:9px;font-size:14px;box-sizing:border-box;font-family:inherit"
+        onkeydown="if(event.key==='Enter')confirmarExcluir()"/>
+      <div id="excluir-senha-err" style="display:none;color:var(--r);font-size:12px;margin-top:5px;font-weight:600">Senha incorreta.</div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-d" onclick="confirmarExcluir()">Sim, excluir</button>
+      <button class="btn btn-s" onclick="cancelarExcluir()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAINEL DETALHE RESULTADO (tela cheia) -->
+<div id="modal-det" style="display:none;position:fixed;inset:0;z-index:200;background:#eef1f5;overflow-y:auto">
+  <!-- Barra superior fixa -->
+  <div style="position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--gray2);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <button onclick="document.getElementById('modal-det').style.display='none'" class="btn btn-s btn-sm">← Voltar</button>
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--t);flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="det-titulo"></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button onclick="exportarDetalhePDF()" class="btn btn-p btn-sm" style="white-space:nowrap">📄 PDF</button>
+      <span id="det-badge" class="st" style="white-space:nowrap;font-size:12px"></span>
+    </div>
+  </div>
+  <!-- Conteúdo -->
+  <div style="max-width:860px;margin:0 auto;padding:24px 16px 40px">
+    <!-- Meta -->
+    <div id="det-meta" style="font-size:13px;color:var(--t2);margin-bottom:18px;display:flex;flex-wrap:wrap;gap:6px 16px"></div>
+    <!-- KPIs -->
+    <div id="det-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px"></div>
+    <!-- Barra de progresso -->
+    <div style="background:#fff;border-radius:12px;padding:16px 20px;margin-bottom:18px;box-shadow:var(--sh)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px">Conformidade</span>
+        <span id="det-pct-label" style="font-size:20px;font-weight:800;color:var(--t)"></span>
+      </div>
+      <div style="height:10px;background:var(--gray2);border-radius:5px;overflow:hidden">
+        <div id="det-prog-bar" style="height:100%;border-radius:5px;transition:width .4s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--t3)">
+        <span id="det-itens-label"></span>
+        <span id="det-data-label"></span>
+      </div>
+    </div>
+    <!-- Não-conformidades -->
+    <div id="det-nconform"></div>
+    <!-- Itens normais -->
+    <div id="det-itens"></div>
+    <!-- Fotos -->
+    <div id="det-fotos"></div>
+    <!-- Assinatura -->
+    <div id="det-assinatura"></div>
+  </div>
+</div>
+
+<!-- MODAL PLANO DE AÇÃO -->
+<div class="modal-bg" id="modal-plano" style="display:none">
+  <div class="modal-box" style="width:540px">
+    <div class="modal-title" id="mplano-title">Novo Plano de Ação</div>
+    <div class="frow c1"><div class="fg"><label>O que precisa ser feito</label><input id="plano-desc" type="text" placeholder="Descreva a ação corretiva necessária..."/></div></div>
+    <div class="frow c2">
+      <div class="fg"><label>Responsável</label><input id="plano-resp" type="text" placeholder="Nome do responsável"/></div>
+      <div class="fg"><label>Prazo (data de referência)</label><input id="plano-prazo" type="date"/></div>
+    </div>
+    <div class="frow c2">
+      <div class="fg">
+        <label>⏱ Prazo de execução</label>
+        <select id="plano-prazo-horas" style="padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;width:100%;background:#fff">
+          <option value="24">24 horas (1 dia)</option>
+          <option value="48">48 horas (2 dias)</option>
+          <option value="72" selected>72 horas (3 dias)</option>
+          <option value="120">120 horas (5 dias)</option>
+          <option value="168">168 horas (7 dias)</option>
+          <option value="336">336 horas (14 dias)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Mensagem / instrução ao operador</label><input id="plano-mensagem" type="text" placeholder="Ex: Corrigir antes da abertura da loja"/></div>
+    </div>
+    <div class="frow c1"><div class="fg"><label>Origem / Motivo</label><input id="plano-origem" type="text" placeholder="Ex: Checklist Açougue — Temperatura fora do padrão"/></div></div>
+    <div class="frow c1"><div class="fg"><label>Observação adicional</label><textarea id="plano-obs" rows="2" placeholder="Detalhes, fotos, referências..."></textarea></div></div>
+    <div class="modal-err" id="mplano-err"></div>
+    <div class="btn-row"><button class="btn btn-p" onclick="salvarPlano()">Salvar Plano</button><button class="btn btn-s" onclick="fecharModalPlano()">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO STATUS PLANO (iniciar / reabrir) -->
+<div class="modal-bg" id="modal-confirm-plano" style="display:none">
+  <div class="modal-box" style="max-width:420px;text-align:center">
+    <div style="font-size:32px;margin-bottom:8px" id="mcp-icon">▶</div>
+    <div class="modal-title" id="mcp-titulo" style="margin-bottom:8px">Iniciar plano?</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:16px" id="mcp-desc"></div>
+    <!-- campos extras para "andamento" -->
+    <div id="mcp-iniciar-fields" style="display:none;text-align:left;background:var(--gray);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:10px">Quem vai executar este plano?</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="mcp-iniciar-nome" placeholder="Nome completo" style="flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit"/>
+        <select id="mcp-iniciar-perfil" style="flex:1;min-width:130px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="operator">Operador</option>
+          <option value="prevencao">Prevenção</option>
+          <option value="gerencia">Gerência</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row" style="justify-content:center;gap:12px">
+      <button class="btn btn-p" id="mcp-sim" onclick="confirmarStatusPlano()">✔ Sim, confirmar</button>
+      <button class="btn btn-s" onclick="document.getElementById('modal-confirm-plano').style.display='none'">✖ Não</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONCLUSÃO PLANO DE AÇÃO -->
+<div class="modal-bg" id="modal-conclusao-plano" style="display:none">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-title">✅ Concluir Plano de Ação</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:14px;padding:8px 10px;background:var(--gray);border-radius:8px" id="mconcl-desc"></div>
+    <div class="frow c1"><div class="fg"><label>O que foi feito <span style="color:var(--r)">*</span></label><textarea id="mconcl-texto" rows="3" placeholder="Descreva o que foi realizado para resolver o problema..."></textarea></div></div>
+    <div class="fg" style="margin-top:10px">
+      <label>Foto comprobatória (opcional)</label>
+      <input type="file" id="mconcl-foto" accept="image/*" capture="environment" onchange="onConcluFotoChange(this)" style="width:100%;padding:6px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;background:#fff;font-family:inherit"/>
+      <div id="mconcl-preview" style="display:none;margin-top:8px;text-align:center">
+        <img id="mconcl-preview-img" style="max-width:100%;max-height:180px;border-radius:8px;object-fit:cover;border:1.5px solid var(--gray2)"/>
+        <div style="font-size:11px;color:var(--g);margin-top:4px">Foto carregada</div>
+      </div>
+    </div>
+    <div class="modal-err" id="mconcl-err" style="display:none"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-p" onclick="confirmarConclusaoPlano()">✅ Confirmar Conclusão</button>
+      <button class="btn btn-s" onclick="document.getElementById('modal-conclusao-plano').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRORROGAÇÃO DE PRAZO -->
+<div class="modal-bg" id="modal-prorrogacao" style="display:none">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-title">⏳ Solicitar Prorrogação</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:14px;padding:8px 10px;background:var(--gray);border-radius:8px" id="mprorrog-desc"></div>
+    <div class="frow c1">
+      <div class="fg">
+        <label>Motivo da prorrogação <span style="color:var(--r)">*</span></label>
+        <textarea id="prorrog-motivo" rows="3" placeholder="Explique por que precisa de mais tempo..."></textarea>
+      </div>
+    </div>
+    <div class="frow c1">
+      <div class="fg">
+        <label>Quantos dias precisa para resolver?</label>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+          <input type="number" id="prorrog-dias" min="1" max="30" value="3"
+            style="width:80px;padding:10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:22px;font-weight:700;text-align:center;color:var(--t)">
+          <span style="font-size:14px;color:var(--t2);line-height:1.4">dias de<br>prazo adicional</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-err" id="mprorrog-err" style="display:none"></div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-p" onclick="salvarProrrogacao()">📨 Enviar Solicitação</button>
+      <button class="btn btn-s" onclick="document.getElementById('modal-prorrogacao').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PLANO VENCIDO — bloqueio de envio -->
+<div class="modal-bg" id="modal-plano-vencido" style="display:none">
+  <div class="modal-box" style="max-width:400px;text-align:center">
+    <div style="font-size:52px;margin-bottom:8px">🚨</div>
+    <div class="modal-title" style="color:var(--r);margin-bottom:8px">Envio Bloqueado</div>
+    <div style="font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:16px">
+      Você possui <strong id="vencido-count" style="color:var(--r)">1</strong> plano(s) de ação vencido(s).<br>
+      Solicite uma prorrogação ou entre em contato com a Central para desbloquear o envio.
+    </div>
+    <div id="vencido-lista" style="text-align:left;margin-bottom:16px"></div>
+    <div class="btn-row" style="justify-content:center;flex-direction:column;gap:8px">
+      <button class="btn btn-p" style="width:100%" onclick="abrirProrrogacaoPrimeiroVencido()">⏳ Solicitar Prorrogação</button>
+      <button class="btn btn-s" style="width:100%" onclick="document.getElementById('modal-plano-vencido').style.display='none'">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASSINATURA DIGITAL -->
+<div class="modal-bg" id="modal-assinatura" style="display:none">
+  <div class="modal-box" style="width:460px">
+    <div class="modal-title">✍️ Assinar e Enviar</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:4px" id="assina-nome"></div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Assine abaixo para confirmar o envio</div>
+    <canvas id="assinatura-canvas" width="480" height="140" style="border:1.5px solid var(--gray2);border-radius:10px;width:100%;touch-action:none;cursor:crosshair;background:#fafafa;display:block"></canvas>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+      <button class="btn btn-s btn-sm" onclick="limparAssinatura()">Limpar</button>
+      <span style="font-size:11px;color:var(--t3)">Assine com o dedo ou mouse</span>
+    </div>
+    <div class="btn-row"><button class="btn btn-p" onclick="confirmarComAssinatura()">✉ Assinar e Enviar</button><button class="btn btn-s" onclick="cancelarEnviar()">Cancelar</button></div>
+  </div>
+</div>
+
+<script>
+// Bloqueia sugestões de senha/usuário fora do login
+(function(){
+  var LOGIN_IDS = ['lEmail','lPass'];
+  function _aoOff(n){
+    if(!n||!n.setAttribute) return;
+    if(LOGIN_IDS.indexOf(n.id)>=0) return;
+    n.setAttribute('autocomplete','off');
+    n.setAttribute('autocorrect','off');
+    n.setAttribute('autocapitalize','off');
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('input').forEach(_aoOff);
+    new MutationObserver(function(ms){
+      ms.forEach(function(m){
+        m.addedNodes.forEach(function(n){
+          if(!n||n.nodeType!==1) return;
+          if(n.tagName==='INPUT') _aoOff(n);
+          if(n.querySelectorAll) n.querySelectorAll('input').forEach(_aoOff);
+        });
+      });
+    }).observe(document.body,{childList:true,subtree:true});
+    // login fields: hint explícito pro browser
+    var le=document.getElementById('lEmail'); if(le) le.autocomplete='username';
+    var lp=document.getElementById('lPass');  if(lp) lp.autocomplete='current-password';
+  });
+})();
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="app.js?v=210" defer></script>
+
+
+</body>
+</html>

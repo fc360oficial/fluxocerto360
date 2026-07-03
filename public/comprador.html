@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detalhe Compradora — Econômico Relatórios</title>
+<style>
+/* ══════════════════════════════════════════════════
+   FC360 COMPRAS · TV PREMIUM v3
+   Dark Enterprise — SAP Fiori / Linear / ClickUp
+══════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  /* Fundo */
+  --bg:           #08111F;
+  --bg2:          #0B1220;
+  /* Cards */
+  --card:         #121B2E;
+  --card2:        #172033;
+  /* Brand */
+  --brand:        #FACC15;
+  --brand2:       #FFC72C;
+  --brand-glow:   rgba(250,204,21,.18);
+  --brand-dim:    rgba(250,204,21,.08);
+  /* Semânticas */
+  --green:        #22C55E;
+  --green-bg:     rgba(34,197,94,.10);
+  --green-glow:   rgba(34,197,94,.22);
+  --amber:        #F59E0B;
+  --amber-bg:     rgba(245,158,11,.10);
+  --red:          #EF4444;
+  --red-bg:       rgba(239,68,68,.10);
+  --red-glow:     rgba(239,68,68,.22);
+  --blue:         #3B82F6;
+  /* Texto */
+  --text:         #FFFFFF;
+  --text2:        #94A3B8;
+  --text3:        #64748B;
+  /* Bordas / raio / sombra */
+  --border:       rgba(255,255,255,.06);
+  --border-md:    rgba(255,255,255,.10);
+  --radius:       20px;
+  --radius-sm:    12px;
+  --shadow:       0 8px 32px rgba(0,0,0,.30);
+  --shadow-lg:    0 16px 48px rgba(0,0,0,.40);
+  --font-sans:    'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg); color: var(--text);
+  height: 100vh; overflow: hidden;
+  background-image: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(250,204,21,.03), transparent);
+}
+
+/* ══ HEADER ══ */
+header {
+  height: 72px;
+  background: linear-gradient(180deg, rgba(18,27,46,.98), rgba(18,27,46,.94));
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-md);
+  padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+}
+.h-left { display: flex; align-items: center; gap: 16px; }
+.h-logo { height: 56px; filter: brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg); }
+.h-back {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--text2); text-decoration: none;
+  font-size: 13px; font-weight: 600;
+  padding: 7px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-md);
+  background: rgba(255,255,255,.04); transition: all .2s ease;
+}
+.h-back:hover { color: var(--brand); border-color: rgba(250,204,21,.3); background: var(--brand-dim); }
+.h-divider { width: 1px; height: 30px; background: var(--border-md); }
+.h-compradora { display: flex; align-items: center; gap: 14px; }
+.h-avatar {
+  width: 46px; height: 46px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 800; flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.h-info h2 { font-size: 22px; font-weight: 800; letter-spacing: .3px; color: var(--text); }
+.h-info p  { font-size: 11px; color: var(--text2); letter-spacing: 1.2px; text-transform: uppercase; margin-top: 2px; font-weight: 500; }
+.h-clock { display: none; }
+.clock-time { font-size: 52px; font-weight: 800; color: #fff; letter-spacing: 3px; font-variant-numeric: tabular-nums; line-height: 1; }
+.clock-sub  { font-size: 11px; color: var(--text2); margin-top: 2px; text-align: right; font-weight: 500; }
+.h-close {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--text2); text-decoration: none;
+  font-size: 13px; font-weight: 600;
+  padding: 7px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-md);
+  background: rgba(255,255,255,.04); transition: all .2s;
+}
+.h-close:hover { color: var(--red); border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.06); }
+
+/* ══ MAIN ══ */
+main {
+  padding: 16px 32px 8px;
+  display: flex; flex-direction: column; gap: 12px;
+  height: calc(100vh - 72px - 40px); overflow: hidden;
+}
+
+/* ══ DAY BANNER ══ */
+.day-banner {
+  background: linear-gradient(135deg, var(--card2) 0%, var(--card) 100%);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.day-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0));
+  pointer-events: none;
+}
+.day-banner::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+  pointer-events: none;
+}
+.day-nome { font-size: 24px; font-weight: 900; color: var(--brand); letter-spacing: 2px; text-transform: uppercase; line-height: 1; }
+.day-data { font-size: 12px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+.day-semana-tag {
+  display: inline-flex; align-items: center;
+  background: var(--brand-dim); border: 1px solid rgba(250,204,21,.2);
+  color: var(--brand); font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-top: 7px; width: fit-content;
+}
+.day-prog { display: flex; align-items: center; gap: 8px; }
+.dp-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+  min-width: 84px;
+  transition: transform .2s, box-shadow .2s;
+}
+.dp-val { font-size: 38px; font-weight: 900; line-height: 1; }
+.dp-lbl { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; font-weight: 700; white-space: nowrap; }
+.dp-item.verde   { border-color: rgba(34,197,94,.2); }
+.dp-item.verde   .dp-val { color: var(--green); }
+.dp-item.verde:hover { box-shadow: 0 0 24px var(--green-glow); transform: translateY(-2px); }
+.dp-item.amber   { border-color: rgba(245,158,11,.2); }
+.dp-item.amber   .dp-val { color: var(--amber); }
+.dp-item.vermelho { border-color: rgba(239,68,68,.2); }
+.dp-item.vermelho .dp-val { color: var(--red); }
+.dp-item.vermelho:hover { box-shadow: 0 0 24px var(--red-glow); transform: translateY(-2px); }
+.dp-sep { width: 1px; height: 48px; background: var(--border-md); }
+.prog-bar-h {
+  min-width: 170px; padding: 10px 18px; border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+  border: 1px solid var(--border);
+}
+.pb-label { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
+.pb-label > span:first-child { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.pb-pct { font-size: 22px; font-weight: 900; color: var(--brand); line-height: 1; }
+.pb-lbl-txt { text-transform: uppercase; letter-spacing: .8px; }
+.pb-track { height: 6px; background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden; position: relative; }
+.pb-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--brand), #FFF176);
+  box-shadow: 0 0 10px rgba(250,204,21,.5);
+  transition: width 1.2s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.pb-fill::after {
+  content: ''; position: absolute; top: 0; left: -60%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent);
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+@keyframes shimmer { 0% { left: -60%; } 100% { left: 160%; } }
+
+/* ══ GRID ══ */
+.cols { display: grid; grid-template-columns: 1fr 290px; gap: 12px; flex: 1; min-height: 0; align-items: stretch; }
+
+/* ══ PANEL ══ */
+.panel {
+  background: linear-gradient(180deg, var(--card2), var(--card));
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column; min-height: 0;
+  box-shadow: var(--shadow); position: relative;
+}
+.panel::after {
+  content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+  pointer-events: none;
+}
+.panel-header {
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; background: rgba(255,255,255,.02);
+}
+.panel-title {
+  font-size: 10px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 2.5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-title::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--brand); flex-shrink: 0;
+}
+.panel-title-dot { display: none; }
+.panel-date { font-size: 12px; color: var(--text2); font-weight: 600; }
+.panel-body { padding: 14px 18px; flex: 1; overflow: hidden; position: relative; }
+
+/* ══ CATEGORY ══ */
+.cat { margin-bottom: 14px; }
+.cat:last-child { margin-bottom: 0; }
+.cat-title {
+  font-size: 9px; font-weight: 800; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.cat-title-tag { background: var(--brand-dim); color: var(--brand); padding: 2px 8px; border-radius: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.cat-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.05); }
+
+/* ══ FORNECEDOR ROW ══ */
+.forn-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 4px;
+  border-left: 3px solid transparent;
+  background: rgba(255,255,255,.025);
+  border: 1px solid transparent;
+  transition: all .2s ease;
+}
+.forn-row:hover { background: rgba(255,255,255,.05); transform: translateX(3px); }
+.forn-row.concluido { border-left: 3px solid var(--green); border-color: rgba(34,197,94,.1); }
+.forn-row.andamento { border-left: 3px solid var(--amber); border-color: rgba(245,158,11,.1); }
+.forn-row.pendente  { border-left: 3px solid var(--red);   border-color: rgba(239,68,68,.08); }
+.forn-icon { font-size: 14px; flex-shrink: 0; }
+.forn-codes { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; align-items: center; }
+.forn-cod { font-size: 10px; font-weight: 800; color: var(--text3); min-width: 38px; text-align: center;
+  background: rgba(255,255,255,.07); border-radius: 4px; padding: 2px 6px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.forn-cod-label { font-size: 8px; color: var(--text3); opacity: .5; text-align: center; letter-spacing: .5px; }
+.forn-fornec { font-size: 10px; font-weight: 800; color: #93c5fd; min-width: 38px; text-align: center;
+  background: rgba(59,130,246,.10); border-radius: 4px; padding: 2px 6px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.forn-nome { flex: 1; font-size: 15px; color: var(--text); font-weight: 600; word-break: break-word; }
+.forn-cat-tag { font-size: 9px; color: var(--text3); background: rgba(255,255,255,.05); padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+.forn-pedido { font-size: 11px; color: var(--text3); white-space: nowrap; font-weight: 500; }
+.forn-status { font-size: 9px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .8px; white-space: nowrap; }
+.forn-status.g { background: var(--green-bg); color: var(--green); }
+.forn-status.a { background: var(--amber-bg); color: var(--amber); }
+.forn-status.r { background: var(--red-bg);   color: var(--red); }
+
+/* Modo compacto — quando há muitos itens no dia */
+.compact .forn-row { padding: 5px 10px; margin-bottom: 2px; gap: 8px; }
+.compact .forn-nome { font-size: 13px; }
+.compact .cat { margin-bottom: 8px; }
+.compact .cat-title { margin-bottom: 3px; }
+/* Modo ultra-compacto — 12+ itens */
+.ultra-compact .forn-row { padding: 3px 8px; margin-bottom: 1px; gap: 6px; }
+.ultra-compact .forn-nome { font-size: 12px; }
+.ultra-compact .forn-status { font-size: 8px; padding: 2px 7px; }
+.ultra-compact .forn-cod, .ultra-compact .forn-fornec { font-size: 9px; padding: 1px 4px; }
+.ultra-compact .forn-icon { font-size: 12px; }
+.ultra-compact .cat { margin-bottom: 4px; }
+.ultra-compact .cat-title { margin-bottom: 2px; font-size: 8px; }
+
+/* ══ ATIVIDADES ══ */
+.ativ-section { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+.ativ-title {
+  font-size: 9px; font-weight: 800; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.ativ-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.05); }
+.ativ-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 4px;
+  background: rgba(255,255,255,.025); border-left: 3px solid transparent;
+  transition: background .2s;
+}
+.ativ-row:hover { background: rgba(255,255,255,.045); }
+.ativ-row.concluido { border-left-color: var(--green); }
+.ativ-row.pendente  { border-left-color: var(--red); }
+.ativ-icon { font-size: 13px; flex-shrink: 0; }
+.ativ-nome { flex: 1; font-size: 14px; color: var(--text2); font-weight: 500; }
+.ativ-status { font-size: 9px; font-weight: 800; }
+.ativ-status.g { color: var(--green); }
+.ativ-status.r { color: var(--red); }
+
+/* ══ HISTÓRICO PANEL ══ */
+.panel-pend {
+  background: linear-gradient(180deg, #16202E, #111A2B);
+  border: 1px solid rgba(59,130,246,.16);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column; min-height: 0;
+  box-shadow: var(--shadow); position: relative;
+}
+.panel-pend::after {
+  content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59,130,246,.35), transparent);
+  pointer-events: none;
+}
+.panel-pend .panel-header { background: rgba(59,130,246,.05); border-bottom: 1px solid rgba(59,130,246,.1); flex-shrink: 0; }
+.panel-pend .panel-title::before { background: #3b82f6; }
+.panel-pend .panel-body { flex: 1; overflow: hidden; position: relative; padding: 0; }
+.panel-pend .panel-body::before,
+.panel-pend .panel-body::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 36px; z-index: 2; pointer-events: none;
+}
+.panel-pend .panel-body::before { top: 0; background: linear-gradient(to bottom, #16202E, transparent); }
+.panel-pend .panel-body::after  { bottom: 0; background: linear-gradient(to top, #111A2B, transparent); }
+.pend-scroll-wrap { overflow: hidden; height: 100%; }
+.pend-scroll-inner { padding: 12px 14px; }
+.pend-scroll-inner.animating { animation: scrollUp var(--dur, 20s) linear infinite; }
+@keyframes scrollUp { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+.pend-date-badge {
+  font-size: 10px; font-weight: 800; color: #93c5fd;
+  background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.2);
+  padding: 3px 10px; border-radius: 20px;
+}
+@keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+.pend-empty { text-align: center; padding: 40px 16px; }
+.pend-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.pend-empty-txt { font-size: 14px; color: var(--brand); font-weight: 700; }
+.pend-section-title {
+  font-size: 10px; font-weight: 900; color: #93c5fd;
+  text-transform: uppercase; letter-spacing: 2px;
+  padding: 12px 6px 5px; border-bottom: 1px solid rgba(59,130,246,.2);
+  margin-bottom: 4px; margin-top: 4px;
+}
+.pend-row {
+  display: flex; align-items: center; gap: 9px; justify-content: space-between;
+  padding: 7px 10px; border-radius: var(--radius-sm); margin-bottom: 3px;
+  border-left: 2px solid var(--red);
+  background: rgba(239,68,68,.05);
+  border: 1px solid rgba(239,68,68,.09);
+  transition: background .15s;
+}
+.pend-row:hover { background: rgba(255,255,255,.04); }
+.pend-row.concluido { border-left-color: var(--green); background: rgba(34,197,94,.04); border-color: rgba(34,197,94,.08); }
+.pend-icon { font-size: 11px; flex-shrink: 0; color: var(--red); font-weight: 700; }
+.pend-row.concluido .pend-icon { color: var(--green); }
+.pend-info { flex: 1; min-width: 0; }
+.pend-nome { font-size: 13px; color: var(--text); font-weight: 600; word-break: break-word; }
+.pend-row.concluido .pend-nome { color: var(--text); opacity: .8; }
+.pend-cat  { font-size: 9px; color: var(--text3); margin-top: 2px; }
+.pend-status { font-size: 8px; font-weight: 800; padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; letter-spacing: .6px; text-transform: uppercase; }
+.pend-status.ok   { background: var(--green-bg); color: var(--green); }
+.pend-status.pend { background: var(--red-bg);   color: var(--red); }
+
+/* ══ MOBILE ══ */
+@media (max-width: 768px) {
+  header { height: auto; flex-wrap: wrap; padding: 10px 16px; gap: 8px; }
+  .h-left { order: 1; flex: 1; }
+  .h-compradora { order: 2; width: 100%; }
+  .h-clock { order: 3; display: none; }
+  .h-close { order: 4; }
+  .h-avatar { width: 36px; height: 36px; border-radius: 10px; font-size: 15px; }
+  .h-info h2 { font-size: 16px; }
+  main { padding: 10px 14px; gap: 8px; }
+  .day-banner { flex-direction: column; gap: 12px; padding: 14px 16px; }
+  .day-nome { font-size: 18px; }
+  .day-prog { gap: 6px; flex-wrap: wrap; }
+  .dp-val { font-size: 28px; }
+  .prog-bar-h { width: 100%; }
+  .cols { grid-template-columns: 1fr; }
+  .forn-pedido { display: none; }
+  .forn-nome { font-size: 14px; }
+}
+
+/* ══ BOTTOM BAR ══ */
+.fixed-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 40px;
+  background: rgba(8,17,31,.98); border-top: 1px solid var(--border-md);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; z-index: 200; backdrop-filter: blur(10px);
+}
+.rdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pglow 2.5s ease-in-out infinite; box-shadow: 0 0 6px var(--green); }
+@keyframes pglow { 0%,100%{opacity:1} 50%{opacity:.35} }
+.fb-txt { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.fb-auto { font-size: 11px; color: var(--brand); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-left">
+    <img src="/logo.png" class="h-logo" alt="FC360">
+    <div class="h-divider"></div>
+    <a href="/compras.html" class="h-back">← Voltar ao Painel</a>
+  </div>
+
+  <div class="h-compradora" id="h-compradora">
+    <div class="h-avatar" id="h-avatar"></div>
+    <div class="h-info">
+      <h2 id="h-nome">—</h2>
+      <p id="h-cargo">Compradora</p>
+    </div>
+  </div>
+
+  <div class="h-clock">
+    <div class="clock-time" id="clock">00:00:00</div>
+    <div class="clock-sub" id="clock-sub">—</div>
+  </div>
+
+  <a href="/compras.html" class="h-close">✕ Fechar</a>
+</header>
+
+<main>
+  <!-- Banner do dia -->
+  <div class="day-banner">
+    <div>
+      <div class="day-nome" id="day-nome">—</div>
+      <div class="day-data" id="day-data">—</div>
+    </div>
+    <div class="day-prog">
+      <div class="dp-item verde"><div class="dp-val" id="dp-done">0</div><div class="dp-lbl">Concluídos</div></div>
+      <div class="dp-item amber"><div class="dp-val" id="dp-and">0</div><div class="dp-lbl">Andamento</div></div>
+      <div class="dp-item vermelho"><div class="dp-val" id="dp-pend">0</div><div class="dp-lbl">Pendentes</div></div>
+      <div class="prog-bar-h">
+        <div class="pb-label"><span>Execução do Dia</span><span class="pb-pct" id="pb-pct">0%</span></div>
+        <div class="pb-track"><div class="pb-fill" id="pb-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Colunas: Hoje | Pendências -->
+  <div class="cols">
+    <!-- ESQUERDA: Cronograma de hoje -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📋 Cronograma de Hoje</div>
+        <div class="panel-date" id="panel-today-date">—</div>
+      </div>
+      <div class="panel-body" id="panel-hoje-outer">
+        <div id="panel-hoje"></div>
+      </div>
+    </div>
+
+    <!-- DIREITA: Histórico da semana -->
+    <div class="panel panel-pend">
+      <div class="panel-header">
+        <div class="panel-title" style="color:var(--brand)">📅 Histórico da Semana</div>
+        <div class="pend-date-badge" id="pend-date-badge">—</div>
+      </div>
+      <div class="panel-body">
+        <div class="pend-scroll-wrap">
+          <div class="pend-scroll-inner" id="panel-pend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="fixed-bar">
+  <div class="fb-txt"><span class="rdot"></span> Sistema online — FC360 Relatórios</div>
+  <div class="fb-txt" id="fb-auto" style="display:none;color:var(--brand);font-weight:600">Próxima tela em <span id="auto-cd">30s</span></div>
+</div>
+<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}</style>
+<button class="btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia (use F11 para manter entre telas)">⛶</button>
+
+<script>
+// ── DADOS POR COMPRADORA + DIA ──
+const DIAS_SEMANA = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
+const DIAS_FULL = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+// Retorna '1e3' ou '2e4' conforme semana do mês
+function grupoSemana(date) {
+  const d = date.getDate();
+  const sem = d <= 7 ? 1 : d <= 14 ? 2 : d <= 21 ? 3 : 4;
+  return (sem === 1 || sem === 3) ? '1e3' : '2e4';
+}
+function labelGrupo(g) { return g === '1e3' ? '1ª e 3ª Semana' : '2ª e 4ª Semana'; }
+
+// Dados reais do CSV com CodFornec corretos do ERP
+function fatimaSeg1e3() {
+  return {
+    categorias: [
+      { nome: 'Arroz e Mix', itens: [
+        { nome: 'CAMIL ALIMENTOS S/A',             status: 'r', pedido: null, cod: 344 },
+      ]},
+      { nome: 'Feijão', itens: [
+        { nome: 'COMERCIAL DE ALIMENTOS (PAI HELENO)',   status: 'r', pedido: null, cod: 310 },
+        { nome: 'FEIJÃO TA GOSTOSO',                    status: 'r', pedido: null, cod: 312 },
+        { nome: 'FLAVIO Q D MORAIS (PERNAMBUCANO)',      status: 'r', pedido: null, cod: 311 },
+        { nome: 'OASIS ALIMENTOS ⚠ fecha 14h',          status: 'r', pedido: null, cod: 309 },
+        { nome: 'PRODUTOS PEROLA (GRÃO DE MINAS)',       status: 'r', pedido: null, cod: 461 },
+        { nome: 'SOMAR COMERCIO (KICALDO)',              status: 'r', pedido: null, cod: 313 },
+      ]},
+      { nome: 'Farinha', itens: [
+        { nome: 'FEIRA NOVA INDUSTRIA',    status: 'r', pedido: null, cod: 314 },
+        { nome: 'MONJOLO INDUSTRIA',       status: 'r', pedido: null, cod: 303 },
+        { nome: 'OMAR LINDEMBERG',         status: 'r', pedido: null, cod: 482 },
+        { nome: 'RONIEL J SILVA FARINHA',  status: 'r', pedido: null, cod: 538 },
+      ]},
+      { nome: 'Arroz', itens: [
+        { nome: 'JOSAPAR JOAQUIM OLIVEIRA SA PART', status: 'r', pedido: null, cod: 342 },
+        { nome: 'NELSON WENDT CIA LTDA',            status: 'r', pedido: null, cod: 380 },
+        { nome: 'URBANO AGROINDUSTRIA LTDA',        status: 'r', pedido: null, cod: 355 },
+        { nome: 'PANELACO ALIMENTOS LTDA',          status: 'r', pedido: null, cod: 534 },
+        { nome: 'RAMPINELLI ALIMENTOS LTDA',        status: 'r', pedido: null, cod: 537 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaSeg2e4() {
+  return {
+    categorias: [
+      { nome: 'Arroz e Mix', itens: [
+        { nome: 'CAMIL ALIMENTOS S/A',             status: 'r', pedido: null, cod: 344 },
+      ]},
+      { nome: 'Feijão', itens: [
+        { nome: 'COMERCIAL DE ALIMENTOS (PAI HELENO)',   status: 'r', pedido: null, cod: 310 },
+        { nome: 'FEIJÃO TA GOSTOSO',                    status: 'r', pedido: null, cod: 312 },
+        { nome: 'FLAVIO Q D MORAIS (PERNAMBUCANO)',      status: 'r', pedido: null, cod: 311 },
+        { nome: 'OASIS ALIMENTOS ⚠ fecha 14h',          status: 'r', pedido: null, cod: 309 },
+        { nome: 'PRODUTOS PEROLA (GRÃO DE MINAS)',       status: 'r', pedido: null, cod: 461 },
+        { nome: 'SOMAR COMERCIO (KICALDO)',              status: 'r', pedido: null, cod: 313 },
+      ]},
+      { nome: 'Farinha', itens: [
+        { nome: 'FEIRA NOVA INDUSTRIA',  status: 'r', pedido: null, cod: 314 },
+        { nome: 'MONJOLO INDUSTRIA',     status: 'r', pedido: null, cod: 303 },
+        { nome: 'OMAR LINDEMBERG',       status: 'r', pedido: null, cod: 482 },
+      ]},
+      { nome: 'Arroz', itens: [
+        { nome: 'JOSAPAR JOAQUIM OLIVEIRA SA PART', status: 'r', pedido: null, cod: 342 },
+        { nome: 'NELSON WENDT CIA LTDA',            status: 'r', pedido: null, cod: 380 },
+        { nome: 'URBANO AGROINDUSTRIA LTDA',        status: 'r', pedido: null, cod: 355 },
+        { nome: 'PANELACO ALIMENTOS LTDA',          status: 'r', pedido: null, cod: 534 },
+        { nome: 'RAMPINELLI ALIMENTOS LTDA',        status: 'r', pedido: null, cod: 537 },
+      ]},
+    ],
+    atividades: [
+      { nome: 'Planilha de Preços de Cereais — enviar para Lene e Rodrigo', status: 'r' },
+    ],
+  };
+}
+function fatimaTer() {
+  return {
+    categorias: [
+      { nome: 'Café', itens: [
+        { nome: 'MOINHO PETINHO INDUSTRIA E COMERCIO LTDA', status: 'r', pedido: null, cod: 347 },
+        { nome: 'SAO BRAZ S/A IND COM DE ALIMENTOS',        status: 'r', pedido: null, cod: 415 },
+        { nome: 'TRES CORACOES ALIMENTOS SA',               status: 'r', pedido: null, cod: 332 },
+      ]},
+      { nome: 'Temperos & Condimentos', itens: [
+        { nome: 'ASA INDUSTRIA E COMERCIO',  status: 'r', pedido: null, cod: 341 },
+      ]},
+      { nome: 'Mercearia', itens: [
+        { nome: 'YOKI C/ CUSTO',  status: 'r', pedido: null, cod: 417 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaQua1e3() {
+  return {
+    categorias: [
+      { nome: 'Flocão', itens: [
+        { nome: 'INDUSTRIA REUNIDAS CORINGA LTDA (3,4 e 6) c/ custo', status: 'r', pedido: null, cod: 419 },
+        { nome: 'SABORMIL IND E COMERCIO LTDA (3,4 e 6) c/ custo',   status: 'r', pedido: null, cod: 457 },
+        { nome: 'VALERIANO VALENTE DE OLIVEIRA',                      status: 'r', pedido: null, cod: 394 },
+      ]},
+      { nome: 'Leite & Mercearia', itens: [
+        { nome: 'ALVOAR LACTEOS NORDESTE SA',  status: 'r', pedido: null, cod: 555 },
+        { nome: 'LACTALIS DO BRASIL',           status: 'r', pedido: null, cod: 543 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaQua2e4() {
+  return {
+    categorias: [
+      { nome: 'Flocão', itens: [
+        { nome: 'INDUSTRIA REUNIDAS CORINGA LTDA (3,4 e 6) c/ custo', status: 'r', pedido: null, cod: 419 },
+        { nome: 'SABORMIL IND E COMERCIO LTDA (3,4 e 6) c/ custo',   status: 'r', pedido: null, cod: 457 },
+      ]},
+      { nome: 'Leite & Mercearia', itens: [
+        { nome: 'ALVOAR LACTEOS NORDESTE SA',  status: 'r', pedido: null, cod: 555 },
+        { nome: 'LACTALIS DO BRASIL',           status: 'r', pedido: null, cod: 543 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaQui() {
+  return {
+    categorias: [
+      { nome: 'Açúcar', itens: [
+        { nome: 'USINA PETRIBU',  status: 'r', pedido: null, cod: 573 },
+        { nome: 'USINA IPOJUCA',  status: 'r', pedido: null, cod: 574 },
+        { nome: 'AVILE/PUREZA',   status: 'r', pedido: null, cod: 572 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+function fatimaSex() {
+  return {
+    categorias: [
+      { nome: 'Cotação', itens: [
+        { nome: 'Cotação de Alimentos', status: 'r', pedido: null, cod: 277 },
+      ]},
+    ],
+    atividades: [],
+  };
+}
+
+const DADOS = {
+  'FÁTIMA': {
+    cor: '#6366f1',
+    cargo: 'Compradora de Alimentos',
+    cronograma: {
+      '1e3': {
+        SEG: fatimaSeg1e3(),
+        TER: fatimaTer(),
+        QUA: fatimaQua1e3(),
+        QUI: fatimaQui(),
+        SEX: fatimaSex(),
+      },
+      '2e4': {
+        SEG: fatimaSeg2e4(),
+        TER: fatimaTer(),
+        QUA: fatimaQua2e4(),
+        QUI: fatimaQui(),
+        SEX: fatimaSex(),
+      },
+    },
+  },
+
+  'KELLY': {
+    cor: '#f43f5e',
+    cargo: 'Compradora de Frios & Laticínios',
+    cronograma: {
+      '1e3': {
+        SEG: { categorias: [
+          { nome: 'Laticínios', itens: [
+            { nome: 'ALVOAR LACTEOS NORDESTE SA',status:'r',pedido:null,cod:338},
+            { nome: 'BOM LEITE INDUSTRIAL LTDA',status:'r',pedido:null,cod:346},
+            { nome: 'LATICINIO BELO VALE LTDA',status:'r',pedido:null,cod:326},
+            { nome: 'LATICINIO GUARARAPES LTDA',status:'r',pedido:null,cod:325},
+            { nome: 'NOBRE IND. LATICINIOS (até 10h)',status:'r',pedido:null,cod:320},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'C E S DISTRIBUIDORA VAREJISTA LTDA',status:'r',pedido:null,cod:366},
+            { nome: 'FRANCISCO CORDEIRO CAMPOS',status:'r',pedido:null,cod:318},
+            { nome: 'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',status:'r',pedido:null,cod:322},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Frios & Embutidos', itens: [
+            { nome: 'AURORA COOP CENTRAL OESTE CATARINENSE',status:'r',pedido:null,cod:403},
+            { nome: 'BRF S A',status:'r',pedido:null,cod:382},
+            { nome: 'SEARA COMERCIO DE ALIMENTOS LT',status:'r',pedido:null,cod:398},
+            { nome: 'BARBOSA & MARQUES REGINA',status:'r',pedido:null,cod:443},
+            { nome: 'J A CALHEIROS DE MELO JR',status:'r',pedido:null,cod:449},
+          ]},
+          { nome: 'Laticínios & Derivados', itens: [
+            { nome: 'LACTALIS DO BRASIL',status:'r',pedido:null,cod:351},
+            { nome: 'MAURICEA ALIMENTOS DO NORDESTE',status:'r',pedido:null,cod:428},
+            { nome: 'NOTARO ALIMENTOS LTDA',status:'r',pedido:null,cod:334},
+            { nome: 'VALELAC IND. DE LATICINIOS',status:'r',pedido:null,cod:372},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'D&D ANGEIRAS DISTRIBUIDORA',status:'r',pedido:null,cod:358},
+            { nome: 'CODICON DISTRIBUICAO DE ALIMENTOS',status:'r',pedido:null,cod:336},
+            { nome: 'INTERBRASIL DISTRIBUICAO LTDA',status:'r',pedido:null,cod:422},
+            { nome: 'LEANDRO BATISTA DE SOUZA',status:'r',pedido:null,cod:473},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos', itens: [
+            { nome: 'NUTRA PLUSS IND. COM. ALIMENTOS',status:'r',pedido:null,cod:424},
+            { nome: 'FRUTA INDUSTRIA & COMERCIO LTDA',status:'r',pedido:null,cod:337},
+            { nome: 'BUNGE ALIMENTOS S/A',status:'r',pedido:null,cod:370},
+            { nome: 'BRITO&SANTOS FRIOS IND. ALIM.',status:'r',pedido:null,cod:345},
+            { nome: 'JBS S.A.',status:'r',pedido:null,cod:431},
+          ]},
+          { nome: 'Higiene & Limpeza', itens: [
+            { nome: 'REDIJOHN DIST PROD HIG LIMP',status:'r',pedido:null,cod:430},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Frios', itens: [
+            { nome: 'PROLAC COMERCIAL',status:'r',pedido:null,cod:423},
+            { nome: 'KARNE & KEIJO LOGISTICA INTEGRADA',status:'r',pedido:null,cod:499},
+            { nome: 'A.B. DE ALBUQUERQUE GUERRA',status:'r',pedido:null,cod:328},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Frios & Distribuição', itens: [
+            { nome: 'FRI-SABOR ALIMENTOS LTDA',status:'r',pedido:null,cod:557},
+            { nome: 'DISNOVA DISTRIBUIDORA LTDA (L6)',status:'r',pedido:null,cod:529},
+          ]},
+        ], atividades: []},
+      },
+      '2e4': {
+        SEG: { categorias: [
+          { nome: 'Laticínios', itens: [
+            { nome: 'ALVOAR LACTEOS NORDESTE SA',status:'r',pedido:null,cod:338},
+            { nome: 'BOM LEITE INDUSTRIAL LTDA',status:'r',pedido:null,cod:346},
+            { nome: 'LATICINIO BELO VALE LTDA',status:'r',pedido:null,cod:326},
+            { nome: 'LATICINIO GUARARAPES LTDA',status:'r',pedido:null,cod:325},
+            { nome: 'NOBRE IND. LATICINIOS (até 10h)',status:'r',pedido:null,cod:320},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'C E S DISTRIBUIDORA VAREJISTA LTDA',status:'r',pedido:null,cod:366},
+            { nome: 'FRANCISCO CORDEIRO CAMPOS',status:'r',pedido:null,cod:318},
+            { nome: 'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',status:'r',pedido:null,cod:322},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Frios & Embutidos', itens: [
+            { nome: 'BRF S A',status:'r',pedido:null,cod:382},
+            { nome: 'SEARA COMERCIO DE ALIMENTOS LT',status:'r',pedido:null,cod:398},
+            { nome: 'EB DISTRIBUIDORA DE SORVETE LTDA',status:'r',pedido:null,cod:359},
+            { nome: 'GOLD STYLE IMP. EXP. ALIMENTOS',status:'r',pedido:null,cod:480},
+          ]},
+          { nome: 'Laticínios & Derivados', itens: [
+            { nome: 'LACTALIS DO BRASIL',status:'r',pedido:null,cod:351},
+            { nome: 'MAURICEA ALIMENTOS DO NORDESTE',status:'r',pedido:null,cod:428},
+            { nome: 'NOTARO ALIMENTOS LTDA',status:'r',pedido:null,cod:334},
+            { nome: 'UNILEVER BRASIL LTDA (L5)',status:'r',pedido:null,cod:327},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'D&D ANGEIRAS DISTRIBUIDORA',status:'r',pedido:null,cod:358},
+            { nome: 'INTERBRASIL DISTRIBUICAO LTDA',status:'r',pedido:null,cod:422},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos', itens: [
+            { nome: 'NUTRA PLUSS IND. COM. ALIMENTOS',status:'r',pedido:null,cod:424},
+            { nome: 'FRUTA INDUSTRIA & COMERCIO LTDA',status:'r',pedido:null,cod:337},
+            { nome: 'BRITO&SANTOS FRIOS IND. ALIM.',status:'r',pedido:null,cod:345},
+            { nome: 'F.N.J. COM. ATACADISTA LEITE LATIC.',status:'r',pedido:null,cod:563},
+            { nome: 'FIPEL FRIGORIFICO IND. PERNAMBUCANA',status:'r',pedido:null,cod:356},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'GRASIELLI DE VASCONCELOS PINTO LTDA',status:'r',pedido:null,cod:561},
+            { nome: 'NORONHA IND. E COMERCIO (L5)',status:'r',pedido:null,cod:442},
+            { nome: 'RECIFE COM. CONGELADOS LTDA (L4)',status:'r',pedido:null,cod:456},
+            { nome: 'GRIFOS COMERCIO DE ALIMENTOS LTDA',status:'r',pedido:null,cod:316},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Frios', itens: [
+            { nome: 'RAINHA PRODUTOS ALIMENTICIOS L',status:'r',pedido:null,cod:440},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Frios & Distribuição', itens: [
+            { nome: 'FRI-SABOR ALIMENTOS LTDA',status:'r',pedido:null,cod:557},
+            { nome: 'DISNOVA DISTRIBUIDORA LTDA (L6)',status:'r',pedido:null,cod:529},
+          ]},
+        ], atividades: []},
+      },
+    },
+  },
+
+  'STHEPHANNY': {
+    cor: '#a855f7',
+    cargo: 'Compradora de Perfumaria & Limpeza',
+    cronograma: {
+      '1e3': {
+        SEG: { categorias: [
+          { nome: 'Perfumaria & Limpeza', itens: [
+            { nome: 'DCL DISTRIBUIDORA CARDEAL (PERFUMARIA)',status:'r',pedido:null,cod:405},
+            { nome: 'DCL DISTRIBUIDORA CARDEAL (VEJA E SBP)',status:'r',pedido:null,cod:406},
+            { nome: 'DCL CARDEAL DISTRIBUIDORA (PET)',status:'r',pedido:null,cod:485},
+            { nome: 'ONDUNORTE CIA DE PAPEIS E PAPELAO',status:'r',pedido:null,cod:293},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Limpeza', itens: [
+            { nome: 'D&D ANGEIRAS DISTRIBUIDORA (LIMPEZA)',status:'r',pedido:null,cod:379},
+            { nome: 'PARATY ATACADO E DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:444},
+            { nome: 'PARATY ATACADO E DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:445},
+            { nome: 'PARATY ATACADO E DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:446},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Cosméticos & Higiene', itens: [
+            { nome: 'ALVO DISTRIBUIDORA DE COSMETIC',status:'r',pedido:null,cod:399},
+            { nome: 'DILNOR DIST E LOGISTICA DO NORDESTE',status:'r',pedido:null,cod:530},
+            { nome: 'DILNOR DIST E LOGISTICA DO NORDESTE',status:'r',pedido:null,cod:411},
+            { nome: 'IND. REUNIDAS RAYMUNDO DA FONTE',status:'r',pedido:null,cod:487},
+            { nome: 'INTERLANDIA LTDA',status:'r',pedido:null,cod:319},
+          ]},
+          { nome: 'Limpeza & Utilidades', itens: [
+            { nome: 'LABORTECNE IND. DE EMBAL LTDA',status:'r',pedido:null,cod:388},
+            { nome: 'MAIS COM. DIST. MAT LIMPEZA',status:'r',pedido:null,cod:361},
+            { nome: 'REDIJOHN DIST PROD HIG LIMP',status:'r',pedido:null,cod:429},
+            { nome: 'UNIL E INDUSTRIA E COMERCIO',status:'r',pedido:null,cod:416},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Perfumaria & Cosméticos', itens: [
+            { nome: 'COMERCIAL VITA NORTE (NEUTROX,KOLENE)',status:'r',pedido:null,cod:516},
+            { nome: 'DCL CARDEAL DISTRIBUIDORA (GALLO,PERFUMARIA)',status:'r',pedido:null,cod:519},
+            { nome: 'E.B.A. DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:540},
+            { nome: 'E.B.A. DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:505},
+            { nome: 'GRIFOS COMERCIO DE ALIMENTOS',status:'r',pedido:null,cod:373},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [], atividades: []},
+      },
+      '2e4': {
+        SEG: { categorias: [
+          { nome: 'Perfumaria', itens: [
+            { nome: 'ATACAREJO ECONOMICO (COTAÇÃO PERFUMARIA)',status:'r',pedido:null,cod:218},
+            { nome: 'DCL CARDEAL DISTRIBUIDORA (GALLO,PERFUMARIA)',status:'r',pedido:null,cod:519},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Velas & Sazonais', itens: [
+            { nome: 'IND. E COMERCIO DE VELAS SANTA LUZIA',status:'r',pedido:null,cod:496},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Limpeza & Utilidades', itens: [
+            { nome: 'DIA DIST E IMPORTACAO AFOGADOS',status:'r',pedido:null,cod:408},
+            { nome: 'MAX GIRO DISTRIB PROD HIGIENE',status:'r',pedido:null,cod:500},
+            { nome: 'REMIX ATACADISTA E DISTRIBUIDOR',status:'r',pedido:null,cod:470},
+            { nome: 'SEDE DAS MIUDESAS ATACADAO',status:'r',pedido:null,cod:458},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Descartáveis & Utilidades', itens: [
+            { nome: 'AL DISTRIBUIDORA COM. VAREJISTA',status:'r',pedido:null,cod:544},
+            { nome: 'ANA PAULA TORRES DA SILVA (CARVÃO)',status:'r',pedido:null,cod:531},
+            { nome: 'COMERCIAL VITA NORTE LTDA',status:'r',pedido:null,cod:469},
+            { nome: 'CRISTIANO LEITE VELOSO',status:'r',pedido:null,cod:279},
+            { nome: 'DF DISTRIBUIDORA DE DESCARTAVEIS',status:'r',pedido:null,cod:418},
+            { nome: 'KELLDRIN INDUSTRIAL LTDA',status:'r',pedido:null,cod:365},
+            { nome: 'PADELLE DIST',status:'r',pedido:null,cod:501},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [], atividades: []},
+      },
+    },
+  },
+
+  'CRISLANE': {
+    cor: '#14b8a6',
+    cargo: 'Compradora de Hortifruti & Padaria',
+    cronograma: {
+      '1e3': {
+        SEG: { categorias: [
+          { nome: 'Padaria & Ovos', itens: [
+            { nome: 'ATACAREJO ECONOMICO (PADARIA)',status:'r',pedido:null,cod:364},
+            { nome: 'ATACAREJO ECONOMICO (CONSUMO)',status:'r',pedido:null,cod:191},
+            { nome: 'OVOS SAO JOSE LTDA',status:'r',pedido:null,cod:335},
+            { nome: 'R. ALBUQUERQUE DISTRIBUIDORA DE OVOS',status:'r',pedido:null,cod:308},
+            { nome: 'SANTOS E MOURA HORTIFRUTIGRANJEIRO',status:'r',pedido:null,cod:323},
+          ]},
+          { nome: 'Distribuição & Embalagens', itens: [
+            { nome: 'EZEQUIAS COSTA DOS SANTOS EMBALAGENS',status:'r',pedido:null,cod:477},
+            { nome: 'JR DISTRIBUICAO LTDA',status:'r',pedido:null,cod:488},
+            { nome: 'RUBI DISTRIBUIDORA (PROTEINA)',status:'r',pedido:null,cod:554},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Panificação & Polpas', itens: [
+            { nome: 'BIMBO DO BRASIL LTDA',status:'r',pedido:null,cod:331},
+            { nome: 'BOLO DE ROLO FABRICACAO PERNAMBUCANA',status:'r',pedido:null,cod:324},
+            { nome: 'UNIRELLA ALIMENTOS LTDA',status:'r',pedido:null,cod:504},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos', itens: [
+            { nome: 'ROMERYS MARIA DA SILVA BRAGA',status:'r',pedido:null,cod:478},
+            { nome: 'S.M.S ALIMENTOS LTDA',status:'r',pedido:null,cod:436},
+            { nome: 'TUDO NOVO ALIMENTOS LTDA',status:'r',pedido:null,cod:352},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Horti-Frios', itens: [
+            { nome: 'COMERCIAL HORTI-FRIOS LTDA',status:'r',pedido:null,cod:559},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Distribuição', itens: [
+            { nome: 'T R A DISTRIBUIDORA E LOGISTICA',status:'r',pedido:null,cod:437},
+          ]},
+        ], atividades: []},
+      },
+      '2e4': {
+        SEG: { categorias: [
+          { nome: 'Padaria & Ovos', itens: [
+            { nome: 'ATACAREJO ECONOMICO (PADARIA)',status:'r',pedido:null,cod:364},
+            { nome: 'OVOS SAO JOSE LTDA',status:'r',pedido:null,cod:335},
+            { nome: 'R. ALBUQUERQUE DISTRIBUIDORA DE OVOS',status:'r',pedido:null,cod:308},
+            { nome: 'SANTOS E MOURA HORTIFRUTIGRANJEIRO',status:'r',pedido:null,cod:323},
+          ]},
+          { nome: 'Distribuição', itens: [
+            { nome: 'JR DISTRIBUICAO LTDA',status:'r',pedido:null,cod:488},
+            { nome: 'LACTALIS DO BRASIL',status:'r',pedido:null,cod:556},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Panificação & Polpas', itens: [
+            { nome: 'BIMBO DO BRASIL LTDA',status:'r',pedido:null,cod:331},
+            { nome: 'MOISES CARLOS DE ALMEIDA FABRICACAO',status:'r',pedido:null,cod:420},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos', itens: [
+            { nome: 'IND E COM PROD. ALIMENTICIOS TERERE',status:'r',pedido:null,cod:381},
+            { nome: 'L.O SOBRINHO EIRELI ME',status:'r',pedido:null,cod:514},
+            { nome: 'TUDO NOVO ALIMENTOS LTDA',status:'r',pedido:null,cod:352},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Horti-Frios & Distribuição', itens: [
+            { nome: 'CIA SANTOS DISTRIBUIDORA E IMPORTADORA',status:'r',pedido:null,cod:535},
+            { nome: 'W.A.MELO EIRELI ME',status:'r',pedido:null,cod:495},
+            { nome: 'COMERCIAL HORTI-FRIOS LTDA',status:'r',pedido:null,cod:559},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Distribuição', itens: [
+            { nome: 'DISTRIBUIDORA SAO LUCAS DE BISCOITO',status:'r',pedido:null,cod:307},
+            { nome: 'T R A DISTRIBUIDORA E LOGISTICA',status:'r',pedido:null,cod:437},
+          ]},
+        ], atividades: []},
+      },
+    },
+  },
+
+  'PATRICIA': {
+    cor: '#f59e0b',
+    cargo: 'Compradora de Bebidas',
+    cronograma: {
+      '1e3': {
+        SEG: { categorias: [
+          { nome: 'Bebidas', itens: [
+            { nome: 'AMBEV S.A CDD CABO',status:'r',pedido:null,cod:295},
+            { nome: 'COCA COLA - SOLAR',status:'r',pedido:null,cod:296},
+            { nome: 'NE COMERCIO ATACADISTA',status:'r',pedido:null,cod:391},
+            { nome: 'COMERCIAL VITA NORTE LTDA',status:'r',pedido:null,cod:507},
+            { nome: 'DIST E LOG PERNAMBICO IMP E EXP',status:'r',pedido:null,cod:494},
+            { nome: 'JP COMERCIALIZACAO DE BEBIDAS',status:'r',pedido:null,cod:306},
+            { nome: 'NORDESTE COM. IND. DE BEBIDAS',status:'r',pedido:null,cod:560},
+            { nome: 'TORRES E PEDROSA COM. DE AGUAS',status:'r',pedido:null,cod:396},
+            { nome: 'VINICOLA VENZ LTDA',status:'r',pedido:null,cod:565},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Distribuição', itens: [
+            { nome: 'D&D ANGEIRAS DISTRIBUIDORA',status:'r',pedido:null,cod:502},
+            { nome: 'AUJO DISTRIBUIDORA DE ALIMENTO',status:'r',pedido:null,cod:401},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos & Distribuição', itens: [
+            { nome: 'DJ INDUSTRIA E COMERCIO DE ALIMENTOS',status:'r',pedido:null,cod:476},
+            { nome: 'IND. E COMERCIO XAVANTE',status:'r',pedido:null,cod:465},
+            { nome: 'INGA DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:317},
+            { nome: 'JURERE IND. DE ALIMENTOS LTDA',status:'r',pedido:null,cod:395},
+            { nome: 'NESTLE BRASIL LTDA',status:'r',pedido:null,cod:376},
+            { nome: 'NESTLE BRASIL LTDA (GAROTO)',status:'r',pedido:null,cod:552},
+            { nome: 'FOCUS DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:493},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Distribuição', itens: [
+            { nome: 'PEPSICO DO BRASIL LTDA',status:'r',pedido:null,cod:368},
+            { nome: 'PORTO A PORTO COMERCIO IMP. EXP.',status:'r',pedido:null,cod:550},
+            { nome: 'DILNOR DIST E LOGISTICA DO NORDESTE',status:'r',pedido:null,cod:410},
+            { nome: 'RUBI DISTRIBUIDORA DE ALIMENTOS',status:'r',pedido:null,cod:450},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Vinhos', itens: [
+            { nome: 'ATACAREJO ECONOMICO (VINHOS)',status:'r',pedido:null,cod:427},
+          ]},
+        ], atividades: []},
+      },
+      '2e4': {
+        SEG: { categorias: [
+          { nome: 'Bebidas', itens: [
+            { nome: 'AMBEV S.A CDD CABO',status:'r',pedido:null,cod:295},
+            { nome: 'COCA COLA - SOLAR',status:'r',pedido:null,cod:296},
+            { nome: 'IND. DE BEBIDAS IGARASSU',status:'r',pedido:null,cod:397},
+            { nome: 'PRUDENTE DISTRIBUIDORA DE BEBIDAS',status:'r',pedido:null,cod:497},
+            { nome: 'VITIVINICOLA QUINTA DE SAO BRAZ',status:'r',pedido:null,cod:392},
+            { nome: 'CERVEJARIA PETROPOLIS',status:'r',pedido:null,cod:467},
+          ]},
+        ], atividades: []},
+        TER: { categorias: [
+          { nome: 'Alimentos & Bebidas', itens: [
+            { nome: 'IANE INDUSTRIA DE ALIMENTOS NORDESTE',status:'r',pedido:null,cod:433},
+            { nome: 'JOSE CLAUDIO & BARROS LTDA',status:'r',pedido:null,cod:454},
+            { nome: 'RA COMERCIO DE BEBIDAS LTDA',status:'r',pedido:null,cod:441},
+            { nome: 'RAMOS INDUSTRIA DE ALIMENTOS LTDA',status:'r',pedido:null,cod:455},
+          ]},
+        ], atividades: []},
+        QUA: { categorias: [
+          { nome: 'Alimentos & Distribuição', itens: [
+            { nome: 'GRAND MARCA DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:329},
+            { nome: 'ALIMENTOS TIA SONIA LTDA',status:'r',pedido:null,cod:462},
+            { nome: 'AUJO DISTRIBUIDORA DE ALIMENTO',status:'r',pedido:null,cod:400},
+            { nome: 'DIA DIST E IMPORTACAO AFOGADOS',status:'r',pedido:null,cod:407},
+            { nome: 'GRAND MARCA DISTRIBUIDORA LTDA',status:'r',pedido:null,cod:521},
+            { nome: 'GRIFOS COMERCIO DE ALIMENTOS',status:'r',pedido:null,cod:551},
+            { nome: 'NATGEO COMERCIO E REPRESENTACAO',status:'r',pedido:null,cod:447},
+            { nome: 'RICARDO BERNARDO DA SILVA',status:'r',pedido:null,cod:439},
+            { nome: 'TALENTOS IND COM ALIMENTOS',status:'r',pedido:null,cod:434},
+            { nome: 'TAMBAU IND. ALIMENTICIA LTDA',status:'r',pedido:null,cod:459},
+          ]},
+        ], atividades: []},
+        QUI: { categorias: [
+          { nome: 'Doces & Atacado', itens: [
+            { nome: 'J.R.ATACADO LIMITADA',status:'r',pedido:null,cod:486},
+            { nome: 'RECIFE DOCES E CARAMELOS LTDA',status:'r',pedido:null,cod:558},
+          ]},
+        ], atividades: []},
+        SEX: { categorias: [
+          { nome: 'Vinhos', itens: [
+            { nome: 'ATACAREJO ECONOMICO (VINHOS)',status:'r',pedido:null,cod:427},
+          ]},
+        ], atividades: []},
+      },
+    },
+  },
+
+};
+
+// ── HELPERS ──
+const STATUS_ICON = { g: '✅', a: '🟡', r: '❌' };
+const STATUS_LABEL = { g: 'Concluído', a: 'Andamento', r: 'Pendente' };
+
+function padData(d) { return String(d).padStart(2,'0'); }
+
+function dateFmt(date) {
+  return `${padData(date.getDate())}/${padData(date.getMonth()+1)}/${date.getFullYear()}`;
+}
+
+function diaAnteriorUtil(diaIdx) {
+  // Pula fim de semana para trás
+  let ant = diaIdx - 1;
+  if (ant === 0) ant = 5; // domingo → sexta
+  if (ant < 0) ant = 5;
+  return DIAS_SEMANA[ant];
+}
+
+function calcStats(cronograma) {
+  const itens = cronograma.categorias.flatMap(c => c.itens);
+  const done = itens.filter(i => i.status === 'g').length;
+  const and  = itens.filter(i => i.status === 'a').length;
+  const pend = itens.filter(i => i.status === 'r').length;
+  return { done, and, pend, total: itens.length, pct: Math.round(done/itens.length*100)||0 };
+}
+
+function renderCronograma(cronograma) {
+  const temFornecedor = cronograma.categorias.some(c => c.itens.length > 0);
+  if (!temFornecedor) {
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px 20px;gap:12px;text-align:center">
+      <div style="font-size:36px">📋</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text2)">Hoje não há fornecedores no cronograma</div>
+    </div>`;
+  }
+  const cats = cronograma.categorias.map(cat => {
+    const rows = cat.itens.map(f => {
+      const listaNum = f.cod || '—';
+      const fornecNum = f.codFornec || '—';
+      const mostrarFornec = f.codFornec && String(f.codFornec) !== String(f.cod);
+      return `
+      <div class="forn-row ${f.status === 'g' ? 'concluido' : f.status === 'a' ? 'andamento' : 'pendente'}">
+        <span class="forn-icon">${STATUS_ICON[f.status]}</span>
+        <span class="forn-codes">
+          <span class="forn-cod" title="Lista">${listaNum}</span>
+          ${mostrarFornec ? `<span class="forn-fornec" title="Cód. Fornecedor">${fornecNum}</span>` : ''}
+        </span>
+        <span class="forn-nome" title="${f.nome}">${f.nome}</span>
+        <span class="forn-pedido">${f.pedido || (f.status === 'g' ? 'Pedido OK' : 'Sem pedido')}</span>
+        <span class="forn-status ${f.status}">${STATUS_LABEL[f.status]}</span>
+      </div>
+      `;
+    }).join('');
+    return `<div class="cat">${rows}</div>`;
+  }).join('');
+
+  return cats;
+}
+
+function renderPendencias(cronograma) {
+  const pendForn = cronograma.categorias.flatMap(cat =>
+    cat.itens.filter(f => f.status !== 'g').map(f => ({ ...f, cat: cat.nome }))
+  );
+
+  if (pendForn.length === 0) {
+    return `<div class="pend-empty">
+      <div class="pend-empty-icon">🏆</div>
+      <div class="pend-empty-txt">Tudo em dia!</div>
+      <div class="pend-empty-sub">Nenhuma pendência do dia anterior</div>
+    </div>`;
+  }
+
+  return pendForn.map(f => `
+    <div class="pend-row">
+      <span class="pend-icon">${f.status === 'a' ? '🟡' : '❌'}</span>
+      <div class="pend-info">
+        <div class="pend-nome">${f.nome}</div>
+        <div class="pend-sub">${f.cat} — ${f.status === 'a' ? 'Em andamento' : 'Sem pedido'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Estado global para atualização periódica
+let _cronHoje  = null;
+let _dados     = null;
+let fornecMap  = {}; // { nReg: { codFornec, nomeFornec } }
+
+async function carregarFornecMap(nRegs) {
+  if (!nRegs.length) return;
+  try {
+    const r = await fetch('/api/compras/fornec-por-lista?listas=' + nRegs.join(','));
+    if (r.ok) fornecMap = await r.json();
+  } catch(_) {}
+}
+
+function injetarFornecNoCronograma(cronograma) {
+  for (const cat of (cronograma?.categorias || [])) {
+    for (const item of cat.itens) {
+      if (item.cod && fornecMap[String(item.cod)]) {
+        item.codFornec = fornecMap[String(item.cod)].codFornec;
+      }
+    }
+  }
+}
+
+function ativarCarrossel(elInner) {
+  if (!elInner || !elInner.textContent.trim()) return;
+  elInner.classList.remove('animating');
+  elInner.style.visibility = 'hidden';
+  const original = elInner.innerHTML;
+  elInner.innerHTML = original + original;
+  // Síncrono: scrollHeight força reflow, sem RAF, sem flash
+  const height = elInner.scrollHeight / 2;
+  const dur = Math.max(10, Math.round(height / 35));
+  elInner.style.setProperty('--dur', dur + 's');
+  elInner.classList.add('animating');
+  elInner.style.visibility = 'visible';
+}
+
+function fitPainelTV() {
+  const inner = document.getElementById('panel-hoje');
+  const outer = document.getElementById('panel-hoje-outer');
+  if (!inner || !outer) return;
+  inner.style.zoom = '';
+  inner.classList.remove('compact', 'ultra-compact');
+  const avail = outer.clientHeight - 10;
+  if (avail <= 50) return;
+  let content = inner.scrollHeight;
+  if (content <= avail) return;
+  let ratio = avail / content;
+  if (ratio < 0.55) {
+    inner.classList.add('ultra-compact');
+    content = inner.scrollHeight;
+    ratio = avail / content;
+  } else if (ratio < 0.75) {
+    inner.classList.add('compact');
+    content = inner.scrollHeight;
+    ratio = avail / content;
+  }
+  if (content > avail) {
+    inner.style.zoom = Math.max(0.35, ratio).toFixed(3);
+  }
+}
+window.addEventListener('resize', fitPainelTV);
+window.addEventListener('load', () => setTimeout(fitPainelTV, 100));
+
+function dataFmtISO(date) {
+  return date.toISOString().split('T')[0];
+}
+
+// ── ATUALIZAÇÃO DE STATUS ──
+async function atualizarStatusERP() {
+  try {
+    // ── Hoje ──
+    if (_cronHoje) {
+      const r = await fetch('/api/compras/pedidos-hoje');
+      if (r.ok) {
+        const { concluidos } = await r.json();
+        const codsOk = new Set(concluidos);
+        for (const cat of _cronHoje.categorias) {
+          for (const item of cat.itens) {
+            if (item.cod) {
+              // item.cod = nReg da lista; traduz para CodFornec real
+              const codFornec = fornecMap[String(item.cod)]?.codFornec ?? item.cod;
+              item.status = codsOk.has(codFornec) ? 'g' : 'r';
+            }
+          }
+        }
+        const st = calcStats(_cronHoje);
+        document.getElementById('dp-done').textContent = st.done;
+        document.getElementById('dp-and').textContent  = st.and;
+        document.getElementById('dp-pend').textContent = st.pend;
+        document.getElementById('pb-pct').textContent  = st.pct + '%';
+        document.getElementById('pb-fill').style.width = st.pct + '%';
+        const _ph1 = document.getElementById('panel-hoje');
+        _ph1.style.visibility = 'hidden';
+        _ph1.innerHTML = renderCronograma(_cronHoje);
+        fitPainelTV();
+        _ph1.style.visibility = 'visible';
+      }
+    }
+
+    // ── Histórico da semana (seg até hoje) ──
+    if (!_dados) return;
+
+    const now = new Date();
+    const diaIdx = now.getDay();
+
+    // Dias úteis desde segunda até hoje (inclusive)
+    const diasVerificar = [];
+    const diasAtras = diaIdx === 1 ? 7 : diaIdx === 0 ? 8 : diaIdx - 1;
+    for (let d = diasAtras; d >= 0; d--) {
+      const dia = new Date(now);
+      dia.setDate(now.getDate() - d);
+      const idx = dia.getDay();
+      if (idx === 0 || idx === 6) continue;
+      diasVerificar.push(dia);
+    }
+
+    if (diasVerificar.length === 0) return;
+
+    // Busca ERP para cada dia em paralelo (hoje e anteriores)
+    const resultados = await Promise.all(diasVerificar.map(async (dia) => {
+      const iso  = dataFmtISO(dia);
+      const sig  = DIAS_SEMANA[dia.getDay()];
+      const grp  = grupoSemana(dia);
+      const cronGrp = _dados.cronograma[grp] || _dados.cronograma['1e3'];
+      const cron = cronGrp[sig];
+      if (!cron || !cron.categorias.length) return null;
+      const ehHoje = d => {
+        const t = new Date(); return d.getDate()===t.getDate()&&d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear();
+      };
+      try {
+        const r = await fetch('/api/compras/pedidos-hoje?data=' + iso);
+        if (!r.ok) return null;
+        const { concluidos } = await r.json();
+        const codsOk = new Set(concluidos);
+        for (const cat of cron.categorias) {
+          for (const item of cat.itens) {
+            if (item.cod) {
+              const codFornec = fornecMap[String(item.cod)]?.codFornec ?? item.cod;
+              item.status = codsOk.has(parseInt(codFornec)) ? 'g' : 'r';
+            }
+          }
+        }
+        const label = ehHoje(dia) ? 'Hoje' : DIAS_FULL[dia.getDay()];
+        return { label, data: dateFmt(dia), cron, ehHoje: ehHoje(dia) };
+      } catch (e) { return null; }
+    }));
+
+    // Monta HTML do histórico — TODOS os itens, concluídos e pendentes
+    const elPend = document.getElementById('panel-pend');
+    if (!elPend) return;
+
+    let html = '';
+    let totalConcluido = 0, totalTotal = 0;
+
+    for (const res of resultados) {
+      if (!res) continue;
+      const todosItens = res.cron.categorias.flatMap(c =>
+        c.itens.filter(i => i.cod).map(i => ({ ...i, cat: c.nome }))
+      );
+      if (!todosItens.length) continue;
+      totalTotal    += todosItens.length;
+      totalConcluido += todosItens.filter(i => i.status === 'g').length;
+
+      html += `<div class="pend-section-title">${res.label} — ${res.data}</div>`;
+      html += todosItens.map(f => `
+        <div class="pend-row ${f.status === 'g' ? 'concluido' : ''}">
+          <span class="pend-icon">${f.status === 'g' ? '✓' : '✕'}</span>
+          <div class="pend-info">
+            <div class="pend-nome">${f.nome}</div>
+            <div class="pend-cat">${f.cat}</div>
+          </div>
+          <span class="pend-status ${f.status === 'g' ? 'ok' : 'pend'}">${f.status === 'g' ? 'CONCLUÍDO' : 'PENDENTE'}</span>
+        </div>`).join('');
+    }
+
+    if (!html) {
+      html = `<div class="pend-empty"><div class="pend-empty-icon">📅</div><div class="pend-empty-txt">Sem histórico esta semana</div></div>`;
+    }
+
+    const badge = document.getElementById('pend-date-badge');
+    if (badge) badge.textContent = totalTotal > 0 ? `${totalConcluido}/${totalTotal} concluídos` : '—';
+
+    elPend.style.visibility = 'hidden';
+    elPend.innerHTML = html;
+    ativarCarrossel(elPend);
+    elPend.style.visibility = 'visible';
+  } catch (e) { console.warn('ERP:', e); }
+}
+
+function semAcento(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+}
+
+// ── INIT ──
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const nomeRaw = (params.get('nome') || '').toUpperCase();
+  // Busca com ou sem acento
+  let dados = DADOS[nomeRaw];
+  if (!dados) {
+    const chaveSemAcento = semAcento(nomeRaw);
+    const chave = Object.keys(DADOS).find(k => semAcento(k) === chaveSemAcento);
+    dados = chave ? DADOS[chave] : null;
+  }
+  const nome = nomeRaw;
+  if (!dados) {
+    document.body.innerHTML = '<div style="padding:40px;color:#ef4444;font-size:18px">Compradora não encontrada: ' + nomeRaw + '</div>';
+    return;
+  }
+  _dados = dados;
+
+  const now = new Date();
+  const diaIdx = now.getDay();
+  const diaSigla = DIAS_SEMANA[diaIdx];
+
+  // Grupo de semana (1e3 ou 2e4)
+  const grupo = grupoSemana(now);
+  const cronGrupo = dados.cronograma[grupo] || dados.cronograma['1e3'];
+
+  let cronHoje = cronGrupo[diaSigla];
+  _cronHoje = cronHoje;
+  const diaHojeLabel = DIAS_FULL[diaIdx];
+  const diaHojeData = dateFmt(now);
+
+  // Dia útil anterior (seg→sex pulando fim de semana)
+  const antIdx = diaIdx === 1 ? 5 : diaIdx === 0 ? 5 : diaIdx - 1;
+  const antSigla = DIAS_SEMANA[antIdx];
+  const antDate = new Date(now); antDate.setDate(now.getDate() - (diaIdx === 1 ? 3 : diaIdx === 0 ? 2 : 1));
+  const grupoAnt = grupoSemana(antDate);
+  const cronGrupoAnt = dados.cronograma[grupoAnt] || dados.cronograma['1e3'];
+  let cronAnt = cronGrupoAnt[antSigla];
+  const antLabel = DIAS_FULL[antIdx];
+  const antData = dateFmt(antDate);
+  // Status inicial: tudo pendente (ERP buscado após render)
+  if (cronHoje) {
+    for (const cat of cronHoje.categorias) {
+      for (const item of cat.itens) { item.status = 'r'; }
+    }
+  }
+  if (cronAnt) {
+    for (const cat of cronAnt.categorias) {
+      for (const item of cat.itens) { item.status = 'r'; }
+    }
+  }
+
+  // Carrega mapa lista→fornecedor para todos os dias do comprador
+  const todosNRegs = [];
+  for (const grp of Object.values(dados.cronograma)) {
+    for (const dia of Object.values(grp)) {
+      for (const cat of (dia?.categorias || [])) {
+        for (const item of cat.itens) {
+          if (item.cod && !todosNRegs.includes(item.cod)) todosNRegs.push(item.cod);
+        }
+      }
+    }
+  }
+  if (todosNRegs.length) await carregarFornecMap(todosNRegs);
+  if (cronHoje) injetarFornecNoCronograma(cronHoje);
+  if (cronAnt)  injetarFornecNoCronograma(cronAnt);
+
+  // Header compradora
+  document.getElementById('h-nome').textContent = nome;
+  document.getElementById('h-cargo').textContent = dados.cargo;
+  const av = document.getElementById('h-avatar');
+  av.style.background = dados.cor + '22';
+  av.style.border = '2px solid ' + dados.cor;
+  av.style.color = dados.cor;
+  av.textContent = nome[0];
+
+  // Day banner
+  document.getElementById('day-nome').textContent = diaHojeLabel;
+  document.getElementById('day-data').textContent = diaHojeData;
+  // Semana tag
+  const oldTag = document.querySelector('.day-semana-tag');
+  if (oldTag) oldTag.remove();
+  const tag = document.createElement('div');
+  tag.className = 'day-semana-tag';
+  tag.textContent = labelGrupo(grupo);
+  document.getElementById('day-data').insertAdjacentElement('afterend', tag);
+
+  if (cronHoje) {
+    const st = calcStats(cronHoje);
+    document.getElementById('dp-done').textContent = st.done;
+    document.getElementById('dp-and').textContent  = st.and;
+    document.getElementById('dp-pend').textContent = st.pend;
+    document.getElementById('pb-pct').textContent  = st.pct + '%';
+    document.getElementById('pb-fill').style.width = st.pct + '%';
+    const _ph2 = document.getElementById('panel-hoje');
+    _ph2.style.visibility = 'hidden';
+    _ph2.innerHTML = renderCronograma(cronHoje);
+    fitPainelTV();
+    _ph2.style.visibility = 'visible';
+    setTimeout(fitPainelTV, 200);
+  } else {
+    document.getElementById('dp-done').textContent = '—';
+    document.getElementById('panel-hoje').innerHTML = `<div style="padding:30px;text-align:center;color:var(--muted2)">Sem cronograma programado para hoje</div>`;
+  }
+
+  document.getElementById('panel-today-date').textContent = diaHojeData;
+
+  // Pendências — placeholder enquanto ERP carrega
+  document.getElementById('pend-date-badge').textContent = 'verificando…';
+  const elPend = document.getElementById('panel-pend');
+  elPend.style.visibility = 'hidden';
+  elPend.innerHTML = renderPendencias(cronAnt || { categorias: [], atividades: [] });
+  ativarCarrossel(elPend);
+  elPend.style.visibility = 'visible';
+
+  // Busca status real do ERP logo após render
+  atualizarStatusERP();
+}
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  const p = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  document.getElementById('clock-sub').textContent = `${dias[now.getDay()]}, ${dateFmt(now)}`;
+}
+
+// ── ROTAÇÃO AUTOMÁTICA ──
+const ORDEM_AUTO = ['FÁTIMA','KELLY','STHEPHANNY','CRISLANE','PATRICIA'];
+const params_auto = new URLSearchParams(location.search);
+const isAuto    = params_auto.get('auto') === '1';
+const idxAtual  = parseInt(params_auto.get('idx') || '0');
+const nomeAtual = params_auto.get('nome') || ORDEM_AUTO[idxAtual];
+
+if (isAuto) {
+  document.getElementById('fb-auto').style.display = 'flex';
+  let cdAuto = 40;
+  setInterval(() => {
+    cdAuto--;
+    document.getElementById('auto-cd').textContent = cdAuto + 's';
+    if (cdAuto <= 0) {
+      // Vai para a visão mensal do mesmo comprador antes de avançar
+      const nomeSemAcento = nomeAtual.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+      location.href = '/mensal.html?nome=' + encodeURIComponent(nomeSemAcento) + '&auto=1&idx=' + idxAtual;
+    }
+  }, 1000);
+}
+
+init();
+updateClock();
+setInterval(updateClock, 1000);
+// Recarrega status do ERP a cada 5 minutos
+setInterval(atualizarStatusERP, 5 * 60 * 1000);
+</script>
+<script src="/tv-fit.js"></script>
+</body>
+</html>

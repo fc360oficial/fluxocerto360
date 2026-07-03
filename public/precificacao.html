@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Precificação — Econômico Relatórios</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08111F;--card:#121B2E;--border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
+  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
+  --red:#EF4444;--orange:#f97316;--green:#22C55E;--brand:#FACC15;
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;
+  display:flex;flex-direction:column}
+
+/* HEADER */
+header{
+  position:relative;z-index:100;height:80px;
+  background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
+  border-bottom:1px solid var(--border-md);
+  box-shadow:0 4px 40px rgba(0,0,0,.55),0 1px 0 rgba(250,204,21,.08);
+  padding:0 32px;
+  display:flex;align-items:center;gap:24px;flex-shrink:0;
+}
+.h-logo{height:56px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);flex-shrink:0}
+.h-brand{flex-shrink:0}
+.h-brand h1{font-size:12px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
+.h-brand p{font-size:8px;color:#fff;letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
+.h-sep{width:1px;height:44px;background:var(--border-md);flex-shrink:0}
+.h-clock{display:none}
+.clock-time{font-size:58px;font-weight:900;color:#fff;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;
+  text-shadow:0 0 40px rgba(255,255,255,.15)}
+.clock-sub{display:flex;gap:12px;justify-content:center;margin-top:3px}
+.clock-date{font-size:10px;color:var(--text3)}
+.clock-semana{font-size:10px;color:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+
+/* STATS BAR */
+.stats{
+  padding:6px 20px;display:flex;align-items:center;gap:20px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  background:rgba(0,0,0,.3);
+}
+.stat{display:flex;align-items:center;gap:6px}
+.sdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sdot.r{background:var(--red)}
+.sdot.o{background:var(--orange)}
+.stat-label{font-size:11px;color:var(--text3);font-weight:500}
+.stat-val{font-size:14px;font-weight:800}
+.stat-val.r{color:var(--red)}
+.stat-val.o{color:var(--orange)}
+.stat-sep{width:1px;height:16px;background:var(--border)}
+.last-upd{margin-left:auto;font-size:10px;color:var(--text3)}
+
+/* GRID */
+.grid{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:8px;padding:8px 8px 50px;flex:1;overflow:hidden;min-height:0;
+}
+.col{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;
+  transition:border-color .4s,box-shadow .4s;
+}
+.col.ativo{
+  border-color:rgba(250,204,21,.5);
+  box-shadow:0 0 24px rgba(250,204,21,.12);
+}
+.col-head{
+  padding:7px 10px;text-align:center;flex-shrink:0;
+  background:rgba(255,198,0,.06);border-bottom:1px solid rgba(255,198,0,.12);
+}
+.col-loja{font-family:'Inter',sans-serif;font-size:14px;font-weight:800;
+  color:var(--brand);letter-spacing:2px;text-transform:uppercase}
+.col-sub{font-size:9px;color:var(--text3);font-weight:600;margin-top:1px}
+.col-body{flex:1;overflow-y:hidden;padding:4px;min-height:0}
+
+/* BARRA MARGEM GERAL */
+.mg-bar{
+  position:fixed;bottom:0;left:0;right:0;height:48px;z-index:500;
+  background:rgba(8,17,31,.96);border-top:1px solid var(--border-md);
+  backdrop-filter:blur(12px);
+  display:flex;align-items:center;gap:0;
+}
+.mg-geral{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 20px;border-right:1px solid var(--border-md);height:100%;flex-shrink:0;
+}
+.mg-geral-label{font-size:9px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1px}
+.mg-geral-val{font-family:'Inter',sans-serif;font-size:20px;font-weight:800;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.mg-lojas{display:grid;grid-template-columns:repeat(6,1fr);flex:1;height:100%}
+.mg-loja{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-right:1px solid var(--border);
+}
+.mg-loja:last-child{border-right:none}
+.mg-loja-nome{font-size:9px;color:var(--brand);font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px}
+.mg-loja-val{font-family:'Inter',sans-serif;font-size:17px;font-weight:800;
+  font-variant-numeric:tabular-nums;line-height:1.1;color:var(--brand)}
+
+.item{
+  display:flex;align-items:center;gap:5px;
+  padding:4px 7px;border-radius:5px;margin-bottom:1px;
+}
+.item.neg{background:rgba(239,68,68,.10);border-left:3px solid var(--red)}
+.item.baixo{background:rgba(249,115,22,.08);border-left:3px solid var(--orange)}
+.item-info{flex:1;min-width:0}
+.item-desc{font-size:12px;font-weight:700;color:#cbd5e1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-row2{display:flex;align-items:center;gap:8px;margin-top:1px}
+.item-cod{font-size:10px;color:#94a3b8;font-weight:600}
+.item-preco{font-size:10px;color:#86efac;font-weight:700}
+.item-custo{font-size:10px;color:#fca5a5;font-weight:700}
+.item-pct{font-size:13px;font-weight:900;min-width:48px;text-align:right;flex-shrink:0}
+.item.neg .item-pct{color:var(--red)}
+.item.baixo .item-pct{color:var(--orange)}
+
+.empty{padding:24px 8px;text-align:center;color:var(--text3);font-size:11px}
+.empty-icon{font-size:22px;margin-bottom:6px}
+
+.loading{padding:24px 8px;text-align:center;color:var(--text3);font-size:10px}
+.h-close{
+  display:flex;align-items:center;gap:5px;color:var(--text3);text-decoration:none;
+  font-size:11px;font-weight:700;padding:7px 14px;
+  border-radius:var(--r);border:1px solid var(--border-md);
+  background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0;margin-left:auto;
+}
+.h-close:hover{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.12)}
+
+/* ── TV MODE (iframe/supervisão) ── */
+body.tv{padding:10px 18px 0}
+body.tv header{height:44px;padding:0 12px;gap:12px}
+body.tv .h-logo{height:32px}
+body.tv .h-sep{height:28px}
+body.tv .h-close{font-size:10px;padding:5px 10px}
+body.tv .stats{padding:3px 10px;gap:12px}
+body.tv .grid{gap:4px;padding:4px 0 40px}
+body.tv .col-head{padding:4px 6px}
+body.tv .col-loja{font-size:12px}
+body.tv .col-sub{font-size:8px}
+body.tv .col-body{padding:2px}
+body.tv .mg-bar{bottom:10px;left:18px;right:18px;height:36px}
+body.tv .mg-geral-val{font-size:15px}
+body.tv .mg-loja-val{font-size:13px}
+body.tv .item{gap:3px;padding:3px 5px}
+body.tv .item.neg{border-left-width:2px}
+body.tv .item.baixo{border-left-width:2px}
+body.tv .item-desc{font-size:10px}
+body.tv .item-row2{gap:4px;flex-wrap:wrap}
+body.tv .item-cod,body.tv .item-preco,body.tv .item-custo{font-size:8px}
+body.tv .item-pct{font-size:11px;min-width:36px}
+</style>
+<script>
+if(new URLSearchParams(location.search).has('tv'))
+  document.documentElement.classList.add('tv-root');
+</script>
+</head>
+<body>
+<script>if(document.documentElement.classList.contains('tv-root'))document.body.classList.add('tv');</script>
+
+<header>
+  <img src="/logo.png" class="h-logo" alt="FC360">
+  <div class="h-brand">
+    <h1>Precificação</h1>
+    <p>Margens Críticas Sobre Custo · Vendas do Dia por Loja</p>
+  </div>
+  <div class="h-sep"></div>
+  <div class="h-clock">
+    <div class="clock-time" id="clock">00:00:00</div>
+    <div class="clock-sub">
+      <span class="clock-date" id="clock-date">—</span>
+    </div>
+  </div>
+  <a href="/api/logout" class="h-close" target="_top">✕ Fechar</a>
+</header>
+
+<div class="stats">
+  <div class="stat">
+    <div class="sdot r"></div>
+    <span class="stat-label">Margem negativa</span>
+    <span class="stat-val r" id="tot-neg">—</span>
+  </div>
+  <div class="stat-sep"></div>
+  <div class="stat">
+    <div class="sdot o"></div>
+    <span class="stat-label">0% a 19,99%</span>
+    <span class="stat-val o" id="tot-baixo">—</span>
+  </div>
+  <div class="stat-sep"></div>
+  <div class="stat">
+    <span class="stat-label">Total alertas</span>
+    <span class="stat-val" id="tot-total" style="color:var(--text2)">—</span>
+  </div>
+  <div class="last-upd" id="last-upd"></div>
+</div>
+
+<div class="grid" id="grid">
+  <div class="loading">Carregando...</div>
+</div>
+
+<div class="mg-bar">
+  <div class="mg-geral">
+    <div class="mg-geral-label">MSV Geral</div>
+    <div class="mg-geral-val" id="mg-val">—</div>
+  </div>
+  <div class="mg-lojas" id="mg-lojas"></div>
+</div>
+
+<script>
+const LOJAS = {1:'Loja 1',2:'Loja 2',3:'Loja 3',4:'Loja 4',5:'Loja 5',6:'Loja 6'};
+
+function tick() {
+  const n = new Date();
+  document.getElementById('clock').textContent = n.toLocaleTimeString('pt-BR');
+  document.getElementById('clock-date').textContent = n.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+}
+setInterval(tick, 1000); tick();
+
+// ── CARROSSEL ──────────────────────────────────────
+const PX_POR_SEG = 18;
+let colBodies      = [];
+let currentIdx     = 0;
+let refreshPending = false;
+
+// Sessão única por ciclo: invalida callbacks de ciclos anteriores
+let _carSessao     = 0;
+let _carTimer      = null;
+let _carTimeout    = null;
+let _ultimoAvanço  = Date.now();
+// Salva posição exata para retomar ao voltar para a tela
+let _savedScroll   = 0;
+
+function pararCarrossel() {
+  if (_carTimer)   { clearInterval(_carTimer); _carTimer = null; }
+  if (_carTimeout) { clearTimeout(_carTimeout); _carTimeout = null; }
+}
+
+function proximaCol(idx, sessao) {
+  if (sessao !== _carSessao) return; // callback de sessão antiga, ignorar
+  const proximo = (idx + 1) % colBodies.length;
+  currentIdx = proximo;
+  if (proximo === 0) {
+    try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
+    const _np = new URLSearchParams(window.location.search).get('next');
+    if (_np && window.parent === window) { window.location.href = '/' + _np + '.html'; return; }
+    if (window.parent !== window) { pararCarrossel(); return; }
+  }
+  if (refreshPending) { refreshPending = false; aplicarRefresh(); return; }
+  _carTimeout = setTimeout(() => iniciarCarrossel(proximo, 0, sessao), 1800);
+}
+
+function iniciarCarrossel(idx, startAt, sessao) {
+  // Sem sessão = chamada externa (nova rodada) → nova sessão
+  if (sessao === undefined) { _carSessao++; sessao = _carSessao; }
+  pararCarrossel();
+  if (!colBodies.length) return;
+
+  // Garante que idx esteja sempre no intervalo 0–(length-1)
+  idx = ((idx % colBodies.length) + colBodies.length) % colBodies.length;
+  currentIdx = idx;
+  _ultimoAvanço = Date.now();
+
+  document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === idx));
+  colBodies.forEach((b, i) => { if (b && i !== idx) b.scrollTop = 0; });
+
+  const body = colBodies[idx];
+  if (!body) { _carTimeout = setTimeout(() => proximaCol(idx, sessao), 2000); return; }
+
+  body.scrollTop = startAt || 0;
+  void body.scrollHeight;
+  const maxScroll = body.scrollHeight - body.clientHeight;
+
+  if (maxScroll <= 0 || body.scrollTop >= maxScroll - 1) {
+    _carTimeout = setTimeout(() => proximaCol(idx, sessao), 3000);
+    return;
+  }
+
+  // setInterval em vez de rAF — continua rodando em iframes ocultos
+  let _lastTime = Date.now();
+  _carTimer = setInterval(() => {
+    if (sessao !== _carSessao) { clearInterval(_carTimer); _carTimer = null; return; }
+    const now = Date.now();
+    const delta = Math.min(now - _lastTime, 80);
+    _lastTime = now;
+    body.scrollTop += PX_POR_SEG * delta / 1000;
+    _ultimoAvanço = now;
+    if (body.scrollTop >= maxScroll - 1) {
+      body.scrollTop = maxScroll;
+      clearInterval(_carTimer); _carTimer = null;
+      proximaCol(idx, sessao);
+    }
+  }, 50);
+}
+
+// Watchdog: se parado >30s, retoma (ignora estado dos timers — podem estar pendurados)
+setInterval(() => {
+  if (colBodies.length && Date.now() - _ultimoAvanço > 30000) {
+    pararCarrossel();
+    iniciarCarrossel((currentIdx + 1) % colBodies.length, 0);
+  }
+}, 5000);
+
+// Reativa quando o pai (supervisão) manda activate
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'activate' && colBodies.length) {
+    iniciarCarrossel(currentIdx, 0);
+  }
+});
+
+// Pausa e retoma com coluna e posição EXATAS ao voltar para a tela
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    const body = colBodies[currentIdx];
+    if (body) _savedScroll = body.scrollTop;
+    pararCarrossel();
+  } else if (colBodies.length) {
+    setTimeout(() => iniciarCarrossel(currentIdx, _savedScroll), 150);
+  }
+});
+
+// Reinicia carrossel ao entrar/sair de tela cheia (layout muda)
+document.addEventListener('fullscreenchange', () => {
+  if (colBodies.length) {
+    pararCarrossel();
+    setTimeout(() => iniciarCarrossel(currentIdx, 0), 300);
+  }
+});
+
+// ── LOAD ───────────────────────────────────────────
+let ultimoData = null; // dados mais recentes da API
+
+async function buscarDados() {
+  try {
+    const r = await fetch('/api/precificacao/margens-criticas');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    ultimoData = await r.json();
+  } catch(e) {
+    if (!ultimoData) {
+      document.getElementById('grid').innerHTML =
+        `<div class="loading" style="color:#ef4444">Erro ao carregar dados (${e.message})<br><br>Verifique se o servidor está acessível.</div>`;
+    }
+  }
+}
+
+function aplicarRefresh() {
+  if (!ultimoData) return;
+  const data = ultimoData;
+  const grid = document.getElementById('grid');
+  const idxAntes = currentIdx;
+
+  pararCarrossel();
+  grid.innerHTML = '';
+  colBodies = [];
+  let totNeg = 0, totBaixo = 0;
+
+  for (let ln = 1; ln <= 6; ln++) {
+    const col    = document.createElement('div');
+    col.className = 'col';
+    const head   = document.createElement('div');
+    head.className = 'col-head';
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'col-body';
+    bodyEl.id = 'body-' + ln;
+
+    try {
+      const items = Array.isArray(data[ln]) ? data[ln] : [];
+      const neg   = items.filter(i => i.margem < 0);
+      const baixo = items.filter(i => i.margem >= 0);
+      totNeg   += neg.length;
+      totBaixo += baixo.length;
+
+      head.innerHTML = `<div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div>
+        <div class="col-sub">${neg.length} neg · ${baixo.length} baixo</div>`;
+
+      if (items.length === 0) {
+        bodyEl.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Sem alertas</div>`;
+      } else {
+        items.forEach(i => {
+          try {
+            const preco = (+(i.preco || 0)).toFixed(2);
+            const custo = (+(i.custo || 0)).toFixed(2);
+            const div = document.createElement('div');
+            div.className = 'item ' + (i.margem < 0 ? 'neg' : 'baixo');
+            div.innerHTML = `<div class="item-info">
+                <div class="item-desc"></div>
+                <div class="item-row2">
+                  <span class="item-cod"></span>
+                  <span class="item-preco">Vda R$${preco}</span>
+                  <span class="item-custo">Cst R$${custo}</span>
+                </div>
+              </div><span class="item-pct">${i.margem}%</span>`;
+            div.querySelector('.item-desc').textContent = i.descricao || '';
+            div.querySelector('.item-cod').textContent  = i.codigo || '';
+            bodyEl.appendChild(div);
+          } catch(_) {}
+        });
+      }
+    } catch(_) {
+      head.innerHTML = `<div class="col-loja">${LOJAS[ln] || 'Loja ' + ln}</div>`;
+    }
+
+    col.appendChild(head);
+    col.appendChild(bodyEl);
+    grid.appendChild(col);
+    colBodies.push(bodyEl);
+  }
+
+  const inicio = (_carSessao === 0) ? 0 : idxAntes;
+  if (window.parent !== window && _carSessao === 0) {
+    currentIdx = 0;
+    document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === 0));
+  } else {
+    setTimeout(() => iniciarCarrossel(inicio, 0), 200);
+  }
+
+  try {
+    document.getElementById('tot-neg').textContent   = totNeg;
+    document.getElementById('tot-baixo').textContent = totBaixo;
+    document.getElementById('tot-total').textContent = totNeg + totBaixo;
+    document.getElementById('last-upd').textContent  = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+  } catch(_) {}
+
+  try {
+    const resumo = data.resumo || {};
+    const msv = resumo.margemMSV ?? 0;
+    const mgVal = document.getElementById('mg-val');
+    mgVal.textContent = msv.toFixed(1) + '%';
+    mgVal.style.color = 'var(--brand)';
+    document.getElementById('mg-lojas').innerHTML = [1,2,3,4,5,6].map(ln => {
+      const d = resumo.porLoja?.[ln] || {};
+      return `<div class="mg-loja"><div class="mg-loja-nome">Loja ${ln}</div><div class="mg-loja-val">${(d.msv ?? 0).toFixed(1)}%</div></div>`;
+    }).join('');
+  } catch(_) {}
+}
+
+async function load() {
+  await buscarDados();
+  aplicarRefresh();
+}
+
+async function agendarRefresh() {
+  await buscarDados(); // baixa dados em background
+  refreshPending = true; // aplica só na próxima transição de coluna
+}
+
+load(); // carga inicial
+setInterval(agendarRefresh, 3 * 60 * 1000); // a cada 3 min busca dados sem interromper scroll
+</script>
+<style>
+.btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
+  transition:all .3s;z-index:999;backdrop-filter:blur(4px);opacity:0}
+.btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+</style>
+<button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
+<script>
+(function(){var b=document.getElementById('btn-fs');function tgl(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});}document.addEventListener('fullscreenchange',function(){b.textContent=document.fullscreenElement?'✕':'⛶';});b.addEventListener('click',tgl);})();
+</script>
+<script src="/tv-fit.js"></script>
+</body>
+</html>

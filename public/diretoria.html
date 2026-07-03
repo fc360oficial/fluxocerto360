@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Diretoria — Econômico Relatórios</title>
+<script src="/chart.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#08111F;--bg2:#0B1220;
+  --card:#121B2E;--card2:#172033;
+  --brand:#FACC15;--brand-glow:rgba(250,204,21,.20);--brand-dim:rgba(250,204,21,.08);
+  --green:#22C55E;--red:#EF4444;
+  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
+  --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
+  --r:20px;--r-sm:12px;
+  --sh:0 8px 32px rgba(0,0,0,.35);
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 55% 70% at 5% 50%,rgba(59,130,246,.04) 0%,transparent 60%),
+    radial-gradient(ellipse 45% 45% at 95% 10%,rgba(250,204,21,.05) 0%,transparent 60%),
+    radial-gradient(ellipse 35% 55% at 50% 105%,rgba(34,197,94,.03) 0%,transparent 50%);
+}
+
+/* ── HEADER ── */
+header{
+  position:relative;z-index:100;height:80px;flex-shrink:0;
+  background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border-md);
+  box-shadow:0 4px 40px rgba(0,0,0,.55),0 1px 0 rgba(250,204,21,.08);
+  padding:0 32px;display:flex;align-items:center;gap:24px;
+}
+.h-logo{height:56px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);flex-shrink:0}
+.h-brand{flex-shrink:0}
+.h-brand h1{font-size:12px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
+.h-brand p{font-size:8px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
+.h-sep{width:1px;height:44px;background:var(--border-md);flex-shrink:0}
+.h-clock{display:none}
+.clock-time{font-size:58px;font-weight:900;color:#fff;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;
+  text-shadow:0 0 40px rgba(255,255,255,.15)}
+.clock-sub{display:flex;gap:12px;justify-content:center;margin-top:3px}
+.clock-date{font-size:10px;color:var(--text3)}
+.clock-semana{font-size:10px;color:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+.h-fill{flex:1}
+.h-title{text-align:right;flex-shrink:0}
+.h-title h2{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2.5px;text-transform:uppercase;line-height:1}
+.h-title p{font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
+.h-close{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:700;color:var(--text3);text-decoration:none;
+  padding:7px 14px;border-radius:8px;border:1px solid var(--border-md);
+  background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0;margin-left:8px;
+}
+.h-close:hover{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.10)}
+
+/* ── TIMER BAR ── */
+.timer-bar-wrap{height:3px;background:rgba(250,204,21,.12);flex-shrink:0;position:relative;z-index:1}
+.timer-bar{height:100%;background:var(--brand);width:100%}
+
+/* ── KPI ROW (6 lojas fixas no topo) ── */
+.kpi-row{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;padding:10px 12px;flex-shrink:0;
+  position:relative;z-index:1;
+  height:clamp(200px,27vh,290px);overflow:hidden;
+}
+.kcard{
+  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 100%);
+  border:1px solid var(--border-md);border-radius:var(--r-sm);
+  padding:14px 16px;position:relative;overflow:hidden;min-width:0;
+  box-shadow:var(--sh);transition:border-color .3s,box-shadow .3s;
+}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--brand),rgba(250,204,21,.2));transition:opacity .3s}
+.kcard.ativo{
+  border-color:rgba(250,204,21,.45);
+  box-shadow:var(--sh),0 0 24px rgba(250,204,21,.12);
+}
+.kc-loja{font-size:9px;font-weight:900;color:var(--brand);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.kc-fat{font-size:26px;font-weight:900;color:#fff;line-height:1;letter-spacing:-0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-ant{font-size:11px;color:var(--text2);margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:2px}
+.badge.up{color:var(--green);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
+.badge.dn{color:var(--red);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25)}
+.kc-bottom{display:flex;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);overflow:hidden}
+.kc-kpi{flex:1}
+.kc-kpi-lbl{font-size:8px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.kc-kpi-val{font-size:14px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-kpi-val.msv{color:var(--brand)}
+
+/* ── CHARTS ROW ── */
+.charts-row{
+  flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-rows:1fr;
+  gap:8px;padding:0 12px 10px;overflow:hidden;
+  position:relative;z-index:1;min-height:0;
+}
+.chart-panel{
+  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 100%);
+  border:1px solid var(--border-md);border-radius:var(--r);
+  padding:14px 16px;display:flex;flex-direction:column;
+  box-shadow:var(--sh);overflow:hidden;min-width:0;
+}
+.chart-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-shrink:0}
+.chart-icon{font-size:14px}
+.chart-title{font-size:12px;font-weight:800;color:var(--text);flex:1}
+.chart-badge{
+  font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;
+  background:rgba(250,204,21,.15);color:var(--brand);border:1px solid rgba(250,204,21,.3);
+}
+.loja-indicator{
+  display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0;
+}
+.loja-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--border-md);transition:background .3s,transform .3s;flex-shrink:0;
+}
+.loja-dot.ativo{background:var(--brand);transform:scale(1.3)}
+.loja-nome{font-size:11px;font-weight:800;color:var(--brand);letter-spacing:1px}
+.chart-wrap{flex:1;position:relative;min-height:0}
+.chart-wrap canvas{width:100%!important;height:100%!important}
+.loading-chart{display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;height:100%}
+
+/* ── TV MODE (iframe/supervisão) ── */
+body.tv{padding:10px 18px 0}
+body.tv header{height:60px;padding:0 20px;gap:16px}
+body.tv .h-logo{height:42px}
+body.tv .h-close{font-size:10px;padding:5px 10px}
+body.tv .kpi-row{gap:8px;padding:8px 10px;height:clamp(180px,26vh,280px)}
+body.tv .kcard{padding:10px 12px}
+body.tv .kc-fat{font-size:clamp(12px,1.4vw,18px);line-height:1.1}
+body.tv .kc-ant{font-size:9px;margin-top:3px;gap:4px}
+body.tv .kc-bottom{gap:6px;margin-top:8px;padding-top:8px}
+body.tv .kc-kpi-val{font-size:clamp(10px,1vw,13px)}
+body.tv .charts-row{padding:0 10px 8px}
+body.tv .chart-panel{padding:10px 14px}
+
+</style>
+<script>
+if(new URLSearchParams(location.search).has('tv'))
+  document.documentElement.classList.add('tv-root');
+</script>
+</head>
+<body>
+<script>if(document.documentElement.classList.contains('tv-root'))document.body.classList.add('tv');</script>
+
+<header>
+  <img class="h-logo" src="/logo.png" alt="Econômico">
+  <div class="h-brand"><h1>Econômico</h1><p>Relatórios</p></div>
+  <div class="h-clock">
+    <div class="clock-time" id="clock">00:00:00</div>
+    <div class="clock-sub">
+      <span class="clock-date" id="clock-date"></span>
+      <span class="clock-semana" id="clock-sem"></span>
+    </div>
+  </div>
+  <div class="h-fill"></div>
+  <div class="h-title">
+    <h2>Diretoria</h2>
+    <p>KPIs do mês · todas as lojas</p>
+  </div>
+  <a href="/api/logout" class="h-close" target="_top">✕ Fechar</a>
+</header>
+
+<div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+
+<div class="kpi-row" id="kpi-row">
+  <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;padding:12px">Carregando...</div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-panel">
+    <div class="chart-head">
+      <span class="chart-icon">🏆</span>
+      <span class="chart-title">Top 10 Produtos Mais Vendidos</span>
+      <span class="chart-badge" id="badge-tv">—</span>
+    </div>
+    <div class="loja-indicator" id="dots-tv"></div>
+    <div class="chart-wrap" id="wrap-tv"><div class="loading-chart">Carregando...</div></div>
+  </div>
+  <div class="chart-panel">
+    <div class="chart-head">
+      <span class="chart-icon">📦</span>
+      <span class="chart-title">Top Mercadológico</span>
+      <span class="chart-badge" id="badge-merc">—</span>
+    </div>
+    <div class="loja-indicator" id="dots-merc"></div>
+    <div class="chart-wrap" id="wrap-merc"><div class="loading-chart">Carregando...</div></div>
+  </div>
+</div>
+
+<script>
+const LOJAS = {1:'Loja 1',2:'Loja 2',3:'Loja 3',4:'Loja 4',5:'Loja 5',6:'Loja 6'};
+const TEMPO_POR_LOJA = 15000; // 15s por loja → 90s para as 6
+
+let chartTV   = null;
+let chartMerc = null;
+let cacheTV   = {};   // { 1: [...], 2: [...], ... }
+let cacheMerc = {};
+let lojaAtual = 1;
+let lojaTimer = null;
+let mesLabel  = '';
+
+// ── RELÓGIO ──
+const SEMANAS  = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MESES_EX = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MESES_N  = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function atualizarRelogio() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('clock-date').textContent = `${n.getDate()} de ${MESES_EX[n.getMonth()]} de ${n.getFullYear()}`;
+  document.getElementById('clock-sem').textContent  = SEMANAS[n.getDay()];
+}
+setInterval(atualizarRelogio, 1000);
+atualizarRelogio();
+
+// ── TIMER BAR (por loja) ──
+function iniciarTimerBarra() {
+  const bar = document.getElementById('timer-bar');
+  bar.style.transition = 'none'; bar.style.width = '100%';
+  void bar.offsetWidth;
+  bar.style.transition = `width ${TEMPO_POR_LOJA}ms linear`;
+  bar.style.width = '0%';
+}
+
+// ── DOTS INDICADORES ──
+function renderDots(lojaAtiva) {
+  ['dots-tv','dots-merc'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    for (let i = 1; i <= 6; i++) {
+      const d = document.createElement('div');
+      d.className = 'loja-dot' + (i === lojaAtiva ? ' ativo' : '');
+      el.appendChild(d);
+    }
+    const nome = document.createElement('span');
+    nome.className = 'loja-nome';
+    nome.textContent = LOJAS[lojaAtiva] || 'Loja ' + lojaAtiva;
+    el.appendChild(nome);
+  });
+}
+
+// ── DESTAQUE NO CARD DA LOJA ATIVA ──
+function destacarCard(loja) {
+  document.querySelectorAll('.kcard').forEach((c, i) => {
+    c.classList.toggle('ativo', i + 1 === loja);
+  });
+}
+
+// ── UTILS ──
+var _isTV = document.body.classList.contains('tv');
+function fmt(v)  { return (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtI(v) { return Math.round(+v).toLocaleString('pt-BR'); }
+function fmtR(v) { return _isTV ? fmtI(v) : fmt(v); }
+function fmtN(v) { return (+v).toLocaleString('pt-BR'); }
+
+// ── KPI CARDS ──
+function renderKPIs(data) {
+  const row = document.getElementById('kpi-row');
+  row.innerHTML = '';
+  for (const lj of data.lojas) {
+    const up = lj.variacao >= 0;
+    const d  = document.createElement('div');
+    d.className = 'kcard';
+    d.innerHTML = `
+      <div class="kc-loja">${LOJAS[lj.loja]||'Loja '+lj.loja}</div>
+      <div class="kc-fat">R$ ${fmtR(lj.faturamento)}</div>
+      <div class="kc-ant">
+        ${data.ano_ant}: R$ ${fmtR(lj.fat_ant_ate_dia)}
+        <span class="badge ${up?'up':'dn'}">${up?'▲':'▼'} ${Math.abs(lj.variacao).toFixed(1)}%</span>
+      </div>
+      <div class="kc-bottom">
+        <div class="kc-kpi"><div class="kc-kpi-lbl">Diário</div><div class="kc-kpi-val">R$ ${fmt(lj.ticket)}</div></div>
+        <div class="kc-kpi"><div class="kc-kpi-lbl">MSV</div><div class="kc-kpi-val msv">${lj.msv.toFixed(1)}%</div></div>
+        <div class="kc-kpi"><div class="kc-kpi-lbl">Cupons</div><div class="kc-kpi-val">${fmtN(lj.cupons)}</div></div>
+      </div>`;
+    row.appendChild(d);
+  }
+  destacarCard(lojaAtual); // re-aplica destaque na loja em exibição
+}
+
+// ── BUSCA KPIs COM TIMEOUT E RETRY ──
+async function buscarKPIs() {
+  for (let tent = 0; tent < 3; tent++) {
+    try {
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 7000);
+      const r    = await fetch('/api/diretoria/kpis', { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (r.ok) { renderKPIs(await r.json()); return; }
+    } catch(_) {
+      if (tent < 2) await new Promise(ok => setTimeout(ok, 2000));
+    }
+  }
+  const row = document.getElementById('kpi-row');
+  if (row && !row.querySelector('[data-kpi-erro]')) {
+    row.innerHTML = '<div data-kpi-erro style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;padding:8px">Dados indisponíveis — recarregando em breve</div>';
+  }
+}
+
+// ── GRÁFICO TOP VENDIDOS ──
+function renderTopVendidos(data) {
+  const wid = 'wrap-tv';
+  document.getElementById(wid).innerHTML = '';
+  const canvas = document.createElement('canvas');
+  document.getElementById(wid).appendChild(canvas);
+  if (chartTV) chartTV.destroy();
+  const sorted = [...data].sort((a,b) => b.qtd - a.qtd).slice(0, 10);
+  chartTV = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(d => d.descricao),
+      datasets: [{ data: sorted.map(d => d.qtd),
+        backgroundColor: sorted.map((_,i) => `hsla(${210+i*8},80%,60%,0.85)`),
+        borderRadius:6, borderSkipped:false }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` ${fmtN(ctx.raw)} unidades`}} },
+      scales:{
+        x:{grid:{color:'#1e293b'},ticks:{color:'#94a3b8',callback:v=>fmtN(v)}},
+        y:{grid:{display:false},ticks:{color:'#e2e8f0',font:{size:11}}}
+      }
+    }
+  });
+}
+
+// ── GRÁFICO MERCADOLÓGICO ──
+function renderMercadologico(data) {
+  const wid = 'wrap-merc';
+  document.getElementById(wid).innerHTML = '';
+  const canvas = document.createElement('canvas');
+  document.getElementById(wid).appendChild(canvas);
+  if (chartMerc) chartMerc.destroy();
+  const top = data.slice(0, 12);
+  chartMerc = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: top.map(d => d.descricao),
+      datasets: [{ data: top.map(d => d.valor),
+        backgroundColor: top.map((_,i) => `hsla(${160+i*12},70%,55%,0.85)`),
+        borderRadius:6, borderSkipped:false }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` R$ ${fmt(ctx.raw)}`}} },
+      scales:{
+        x:{grid:{color:'#1e293b'},ticks:{color:'#94a3b8',callback:v=>'R$'+fmtN(v)}},
+        y:{grid:{display:false},ticks:{color:'#e2e8f0',font:{size:11}}}
+      }
+    }
+  });
+}
+
+// ── TROCAR LOJA (só gráficos) ──
+function trocarLoja(loja) {
+  if (lojaTimer) { clearTimeout(lojaTimer); lojaTimer = null; }
+  lojaAtual = loja;
+
+  const badge = `${mesLabel} · ${LOJAS[loja]||'Loja '+loja}`;
+  document.getElementById('badge-tv').textContent   = badge;
+  document.getElementById('badge-merc').textContent = badge;
+
+  renderDots(loja);
+  destacarCard(loja);
+  iniciarTimerBarra();
+
+  try { if (cacheTV[loja])   renderTopVendidos(cacheTV[loja]);   } catch(_) {}
+  try { if (cacheMerc[loja]) renderMercadologico(cacheMerc[loja]); } catch(_) {}
+
+  lojaTimer = setTimeout(() => {
+    const proxima = loja + 1;
+    if (proxima > 6) {
+      // Avisa supervisão (se estiver em iframe)
+      try { window.parent.postMessage({ type: 'diretoriaCycleComplete' }, '*'); } catch(_) {}
+      // Standalone: vai pra comparativo-tv → precificação → volta
+      if (window.parent === window) {
+        window.location.href = '/comparativo-tv.html?next=precificacao';
+        return;
+      }
+      setTimeout(() => trocarLoja(1), 2000);
+    } else {
+      trocarLoja(proxima);
+    }
+  }, TEMPO_POR_LOJA);
+}
+
+// ── BUSCA DADOS DE UMA LOJA ──
+async function buscarLoja(loja) {
+  const hoje = new Date();
+  const mes  = hoje.getMonth() + 1;
+  const ano  = hoje.getFullYear();
+  try {
+    const [tv, merc] = await Promise.all([
+      fetch(`/api/top-vendidos?loja=${loja}&mes=${mes}&ano=${ano}`).then(r => r.ok ? r.json() : []),
+      fetch(`/api/top-mercadologico?loja=${loja}&mes=${mes}&ano=${ano}`).then(r => r.ok ? r.json() : []),
+    ]);
+    if (Array.isArray(tv)   && tv.length)   cacheTV[loja]   = tv;
+    if (Array.isArray(merc) && merc.length) cacheMerc[loja] = merc;
+    // Se chegou enquanto esta loja está na tela, renderiza imediatamente
+    if (loja === lojaAtual) {
+      try { if (cacheTV[loja])   renderTopVendidos(cacheTV[loja]);   } catch(_) {}
+      try { if (cacheMerc[loja]) renderMercadologico(cacheMerc[loja]); } catch(_) {}
+    }
+  } catch(_) {}
+}
+
+// ── INIT ──
+async function init() {
+  const hoje = new Date();
+  mesLabel = MESES_N[hoje.getMonth() + 1] + '/' + hoje.getFullYear();
+
+  // KPIs independentes: não bloqueiam o ciclo
+  buscarKPIs();
+
+  // Aguarda Loja 1 (max 5s), depois inicia o ciclo de qualquer jeito
+  await Promise.race([buscarLoja(1), new Promise(ok => setTimeout(ok, 5000))]);
+  trocarLoja(1);
+
+  // Pré-carrega lojas 2-6 em background
+  for (let loja = 2; loja <= 6; loja++) buscarLoja(loja);
+}
+
+init();
+
+// Resize dos gráficos quando a resolução muda
+window.addEventListener('resize', () => {
+  requestAnimationFrame(() => {
+    if (chartTV)   chartTV.resize();
+    if (chartMerc) chartMerc.resize();
+  });
+});
+
+// Recarrega a cada 3 min
+setInterval(() => {
+  buscarKPIs();
+  for (let loja = 1; loja <= 6; loja++) buscarLoja(loja);
+}, 3 * 60 * 1000);
+</script>
+
+<style>
+.btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
+  transition:all .3s;z-index:999;backdrop-filter:blur(4px);opacity:0}
+.btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+</style>
+<button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
+<script>
+(function(){
+  var b=document.getElementById('btn-fs');
+  function tgl(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});}
+  document.addEventListener('fullscreenchange',function(){b.textContent=document.fullscreenElement?'✕':'⛶';});
+  b.addEventListener('click',tgl);
+})();
+</script>
+<script src="/tv-fit.js"></script>
+</body>
+</html>

@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fluxo Certo 360 — Apresentação</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--y:#FFC600;--yd:#e6b000;--dark:#0d0d0d;--dark2:#161616;--dark3:#222;--g:#22c55e;--r:#ef4444;--am:#f59e0b}
+html,body{height:100%;overflow:hidden;background:#000;font-family:'Inter',sans-serif}
+
+/* ── DECK ── */
+.deck{width:100vw;height:100vh;position:relative}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 80px;
+  opacity:0;pointer-events:none;
+  transition:opacity .45s ease,transform .45s ease;
+  transform:translateX(40px);
+}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.out{opacity:0;transform:translateX(-40px)}
+
+/* ── BACKGROUNDS ── */
+.bg-dark{background:var(--dark)}
+.bg-dark2{background:var(--dark2)}
+.bg-yellow{background:var(--y)}
+.bg-light{background:#f7f7f7}
+
+/* Dot grid */
+.dot-grid::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(255,198,0,.07) 1px,transparent 1px);
+  background-size:36px 36px;pointer-events:none;
+}
+.dot-grid-dark::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(0,0,0,.06) 1px,transparent 1px);
+  background-size:36px 36px;pointer-events:none;
+}
+
+/* Glow */
+.glow-tl{position:absolute;top:-120px;left:-120px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(255,198,0,.18) 0%,transparent 65%);pointer-events:none}
+.glow-br{position:absolute;bottom:-100px;right:-100px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(255,198,0,.10) 0%,transparent 65%);pointer-events:none}
+
+/* ── TIPOGRAFIA ── */
+.label{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--y);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.label::before{content:'';width:20px;height:2px;background:var(--y);border-radius:2px;display:block}
+.label.dark{color:rgba(0,0,0,.5)}
+.label.dark::before{background:rgba(0,0,0,.3)}
+h1{font-family:'Syne',sans-serif;font-size:clamp(36px,4.5vw,64px);font-weight:800;line-height:1.08;letter-spacing:-2px}
+h2{font-family:'Syne',sans-serif;font-size:clamp(28px,3.5vw,48px);font-weight:800;line-height:1.1;letter-spacing:-1.5px}
+h3{font-family:'Syne',sans-serif;font-size:clamp(18px,2vw,26px);font-weight:700;letter-spacing:-.5px}
+.white{color:#fff}
+.yellow{color:var(--y)}
+.dark-text{color:var(--dark)}
+.sub{font-size:clamp(14px,1.5vw,18px);line-height:1.7;color:rgba(255,255,255,.55);max-width:580px}
+.sub.dark-sub{color:rgba(0,0,0,.55)}
+.slide-inner{max-width:1200px;width:100%;position:relative;z-index:1}
+
+/* ── GRID LAYOUTS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}
+.g2-feat{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* ── CARDS ── */
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:24px}
+.card-light{background:#fff;border:1.5px solid #ebebeb;border-radius:18px;padding:24px}
+.feat-icon{width:48px;height:48px;border-radius:14px;background:rgba(255,198,0,.12);border:1px solid rgba(255,198,0,.2);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px}
+.feat-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:6px}
+.feat-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6}
+
+/* ── PROBLEMA ── */
+.pain-item{display:flex;gap:16px;align-items:flex-start;padding:18px 20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px}
+.pain-icon{font-size:28px;flex-shrink:0;margin-top:2px}
+.pain-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:4px}
+.pain-desc{font-size:13px;color:rgba(255,255,255,.45);line-height:1.5}
+
+/* ── STEP ── */
+.step{text-align:center}
+.step-num{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--y),#ffd900);color:var(--dark);font-family:'Syne',sans-serif;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 24px rgba(255,198,0,.35)}
+.step h3{color:#fff;margin-bottom:8px}
+.step p{font-size:14px;color:rgba(255,255,255,.5);line-height:1.65}
+
+/* ── PLANOS ── */
+.plan{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:28px;transition:transform .2s}
+.plan.featured{background:var(--y);border-color:var(--y);transform:scale(1.04) translateY(-6px);box-shadow:0 24px 60px rgba(255,198,0,.3)}
+.plan-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:6px}
+.plan.featured .plan-name{color:var(--dark)}
+.plan-price{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:#fff;letter-spacing:-2px;line-height:1;margin:14px 0 4px}
+.plan.featured .plan-price{color:var(--dark)}
+.plan-period{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:16px}
+.plan.featured .plan-period{color:rgba(0,0,0,.4)}
+.plan-feat{font-size:13px;color:rgba(255,255,255,.6);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px}
+.plan.featured .plan-feat{color:rgba(0,0,0,.65);border-color:rgba(0,0,0,.1)}
+.plan-feat::before{content:'✓';color:var(--g);font-weight:700;font-size:12px;flex-shrink:0}
+.plan.featured .plan-feat::before{color:var(--dark)}
+
+/* ── MOCKUP PHONE ── */
+.phone-wrap{position:relative;display:flex;justify-content:center;align-items:center}
+.phone-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(255,198,0,.2) 0%,transparent 65%);pointer-events:none}
+.phone{width:240px;background:#161616;border:1.5px solid rgba(255,198,0,.2);border-radius:34px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04);animation:float 4s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.phone-notch{height:24px;background:#0d0d0d;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px}
+.phone-notch-bar{width:72px;height:16px;background:#0d0d0d;border-radius:0 0 12px 12px;border:1px solid #222}
+.phone-bar{background:#222;padding:8px 16px;display:flex;justify-content:space-between}
+.phone-bar span{font-size:10px;color:rgba(255,255,255,.4);font-weight:600}
+.phone-hdr{background:var(--y);padding:12px 14px}
+.phone-hdr-t{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#111}
+.phone-hdr-s{font-size:9px;color:rgba(0,0,0,.5);margin-top:1px}
+.phone-body{background:#f4f4f4;padding:10px}
+.ph-card{background:#fff;border-radius:8px;padding:10px 11px;margin-bottom:7px;border-left:3px solid var(--g)}
+.ph-card.warn{border-color:var(--am)}
+.ph-card.red{border-color:var(--r)}
+.ph-card-t{font-size:10px;font-weight:700;color:#111;margin-bottom:2px}
+.ph-card-s{font-size:9px;color:#999}
+.ph-badge{float:right;font-size:8px;font-weight:700;padding:2px 6px;border-radius:6px}
+.ph-badge.ok{background:#dcfce7;color:#166534}
+.ph-badge.warn{background:#fef9c3;color:#854d0e}
+.ph-badge.red{background:#fee2e2;color:#991b1b}
+.ph-bar{height:3px;background:#eee;border-radius:2px;margin-top:7px}
+.ph-fill{height:100%;border-radius:2px;background:var(--g)}
+
+/* Float badges */
+.fbadge{position:absolute;background:rgba(20,20,20,.92);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);border-radius:10px;padding:8px 12px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.fbadge .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fbadge.b1{top:20px;right:-44px}
+.fbadge.b2{bottom:60px;left:-52px}
+.fbadge.b3{bottom:14px;right:-36px}
+
+/* ── DASHBOARD MOCKUP ── */
+.dash-mock{background:#f7f7f7;border-radius:16px;overflow:hidden;border:1.5px solid #e8e8e8;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.dash-top{background:var(--y);padding:10px 16px;display:flex;align-items:center;gap:8px}
+.dash-top-dot{width:10px;height:10px;border-radius:50%;background:rgba(0,0,0,.2)}
+.dash-top-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#111}
+.dash-body{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dash-kpi{background:#fff;border-radius:10px;padding:12px;border:1.5px solid #ebebeb;text-align:center}
+.dash-kpi strong{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--y);display:block;line-height:1;letter-spacing:-1px}
+.dash-kpi span{font-size:10px;color:#999}
+.dash-chart{background:#fff;border-radius:10px;padding:12px;border:1.5px solid #ebebeb;grid-column:1/-1}
+.chart-title{font-size:10px;font-weight:700;color:#444;margin-bottom:8px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-label{font-size:9px;color:#999;width:52px;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--g)}
+.bar-pct{font-size:9px;font-weight:700;color:var(--g);width:28px}
+
+/* ── RANKING MOCKUP ── */
+.rank-item{display:flex;align-items:center;gap:12px;background:#fff;border-radius:10px;padding:10px 14px;border:1.5px solid #ebebeb;margin-bottom:8px}
+.rank-medal{font-size:20px}
+.rank-name{font-size:13px;font-weight:700;color:#111;flex:1}
+.rank-pct{font-size:15px;font-weight:800;color:var(--g);font-family:'Syne',sans-serif}
+
+/* ── CHECK MOCKUP ── */
+.check-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-radius:10px;border:1.5px solid #ebebeb;margin-bottom:8px}
+.check-box{width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.check-box.yes{background:#dcfce7;color:#166534}
+.check-box.no{background:#fee2e2;color:#991b1b}
+.check-box.pend{background:#f3f4f6;color:#9ca3af;border:1.5px dashed #d1d5db}
+.check-text{font-size:12px;font-weight:600;color:#111;flex:1}
+.check-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fee2e2;color:#991b1b}
+
+/* ── CTA FINAL ── */
+.cta-box{background:var(--y);border-radius:20px;padding:40px 48px;text-align:center;position:relative;overflow:hidden}
+.cta-box::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(0,0,0,.04) 1px,transparent 1px);background-size:28px 28px}
+.cta-box h2{color:var(--dark);position:relative;z-index:1}
+.cta-box p{color:rgba(0,0,0,.55);position:relative;z-index:1;margin-top:12px;font-size:16px;line-height:1.6}
+.cta-wa{display:inline-flex;align-items:center;gap:10px;background:var(--dark);color:var(--y);padding:16px 36px;border-radius:12px;font-weight:700;font-size:16px;text-decoration:none;margin-top:24px;position:relative;z-index:1;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+
+/* ── DIFERENCIAL ── */
+.dif{display:flex;gap:14px;align-items:flex-start;padding:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px}
+.dif-icon{font-size:26px;flex-shrink:0}
+.dif-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.dif-desc{font-size:12px;color:rgba(255,255,255,.45);line-height:1.5}
+
+/* ── NAVEGAÇÃO ── */
+.nav-bar{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px;background:rgba(0,0,0,.7);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:10px 20px;z-index:1000}
+.nav-btn{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:18px;padding:4px 8px;transition:color .2s;line-height:1}
+.nav-btn:hover{color:#fff}
+.nav-counter{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);min-width:40px;text-align:center}
+.nav-dots{display:flex;gap:6px;align-items:center}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:background .2s,transform .2s}
+.nav-dot.on{background:var(--y);transform:scale(1.4)}
+.nav-key{font-size:10px;color:rgba(255,255,255,.3);margin-left:4px}
+
+/* ── LOGO BADGE ── */
+.logo-badge{display:inline-flex;align-items:center;gap:10px;margin-bottom:28px}
+.logo-text{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff}
+.logo-text span{color:var(--y)}
+.logo-tag{background:var(--y);color:var(--dark);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Slide progress bar */
+.progress{position:fixed;top:0;left:0;height:3px;background:var(--y);transition:width .4s ease;z-index:1000}
+
+/* ── PLANO AUTO MOCKUP ── */
+.plano-card{background:#fff;border-radius:12px;padding:14px 16px;border:1.5px solid #fecaca;margin-bottom:8px}
+.plano-title{font-size:13px;font-weight:700;color:#991b1b;margin-bottom:4px}
+.plano-meta{font-size:11px;color:#999;display:flex;gap:12px}
+.plano-badge{display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#991b1b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;float:right}
+
+/* Número do slide canto */
+.slide-num{position:absolute;top:24px;right:32px;font-size:12px;color:rgba(255,255,255,.2);font-weight:600;z-index:1}
+.slide-num.dark-num{color:rgba(0,0,0,.2)}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+<!-- ═══════════ SLIDE 1 — CAPA ═══════════ -->
+<div class="slide bg-dark dot-grid active" id="s0">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+  <div class="slide-inner" style="text-align:center">
+    <div class="logo-badge" style="justify-content:center">
+      <div class="logo-text">Fluxo Certo 360</div>
+    </div>
+    <h1 class="white" style="max-width:700px;margin:0 auto 20px">
+      Gestão de loja <span class="yellow">inteligente</span><br/>para supermercados
+    </h1>
+    <p class="sub" style="margin:0 auto 36px;text-align:center">
+      Checklists digitais, planos de ação automáticos e controle em tempo real — tudo no celular, mesmo sem internet.
+    </p>
+    <div style="display:inline-flex;gap:28px;padding:16px 32px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px">
+      <div style="text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--y)">100%</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.35)">Funciona offline</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--y)">PWA</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.35)">Sem instalar app</div>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,.08)"></div>
+      <div style="text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--y)">Real‑time</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.35)">Firebase na nuvem</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 2 — O PROBLEMA ═══════════ -->
+<div class="slide bg-dark2 dot-grid" id="s1">
+  <div class="slide-num">02</div>
+  <div class="slide-inner">
+    <div class="g2" style="gap:60px">
+      <div>
+        <div class="label">O problema de hoje</div>
+        <h2 class="white" style="margin-bottom:16px">Como sua loja<br/>controla isso agora?</h2>
+        <p class="sub" style="margin-bottom:0">A maioria dos supermercados ainda depende de papel, caderno ou grupo de WhatsApp para controlar o que foi feito ou não.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="pain-item">
+          <div class="pain-icon">📄</div>
+          <div>
+            <div class="pain-title">Papel e caderno</div>
+            <div class="pain-desc">Checklist some, é preenchido depois do horário ou simplesmente não é feito. Sem rastreio.</div>
+          </div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon">💬</div>
+          <div>
+            <div class="pain-title">WhatsApp como controle</div>
+            <div class="pain-desc">Gerente pergunta no grupo, operador responde "feito" — sem evidência, sem foto, sem horário.</div>
+          </div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon">❓</div>
+          <div>
+            <div class="pain-title">Problema registrado, não resolvido</div>
+            <div class="pain-desc">O desvio é anotado mas ninguém acompanha se foi corrigido. O problema volta na semana seguinte.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 3 — A SOLUÇÃO ═══════════ -->
+<div class="slide bg-dark dot-grid" id="s2">
+  <div class="glow-tl"></div>
+  <div class="slide-num">03</div>
+  <div class="slide-inner">
+    <div class="g2" style="gap:60px">
+      <div>
+        <div class="label">A solução</div>
+        <h2 class="white" style="margin-bottom:16px">Fluxo Certo 360</h2>
+        <p class="sub" style="margin-bottom:28px">Um sistema completo que digitaliza toda a operação da sua loja — do checklist do operador ao relatório do gerente.</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:rgba(255,255,255,.7)">
+            <div style="width:22px;height:22px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">✓</div>
+            Operador preenche no celular — qualquer hora, com ou sem internet
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:rgba(255,255,255,.7)">
+            <div style="width:22px;height:22px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">✓</div>
+            Problema detectado → plano de ação criado automaticamente
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:rgba(255,255,255,.7)">
+            <div style="width:22px;height:22px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">✓</div>
+            Gerência vê tudo em tempo real — conformidade, pendências, ranking
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:rgba(255,255,255,.7)">
+            <div style="width:22px;height:22px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">✓</div>
+            Relatório em PDF gerado com um clique para reuniões e auditorias
+          </div>
+        </div>
+      </div>
+      <!-- Mockup phone -->
+      <div class="phone-wrap">
+        <div class="phone-glow"></div>
+        <div class="phone">
+          <div class="phone-notch"><div class="phone-notch-bar"></div></div>
+          <div class="phone-bar"><span>09:41</span><span>●●● 100%</span></div>
+          <div class="phone-hdr">
+            <div class="phone-hdr-t">Fluxo Certo 360</div>
+            <div class="phone-hdr-s">Açougue · Abertura</div>
+          </div>
+          <div class="phone-body">
+            <div class="ph-card">
+              <span class="ph-badge ok">✓ Enviado</span>
+              <div class="ph-card-t">Temperatura da câmara</div>
+              <div class="ph-card-s">Verificado às 07:12</div>
+              <div class="ph-bar"><div class="ph-fill" style="width:100%"></div></div>
+            </div>
+            <div class="ph-card warn">
+              <span class="ph-badge warn">Em andamento</span>
+              <div class="ph-card-t">Higienização do setor</div>
+              <div class="ph-card-s">Limite: 09:00</div>
+              <div class="ph-bar"><div class="ph-fill" style="width:65%;background:var(--am)"></div></div>
+            </div>
+            <div class="ph-card red">
+              <span class="ph-badge red">Pendente</span>
+              <div class="ph-card-t">Plano de ação #03</div>
+              <div class="ph-card-s">Vence em 4h</div>
+              <div class="ph-bar"><div class="ph-fill" style="width:30%;background:var(--r)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="fbadge b1"><div class="dot" style="background:#22c55e"></div>3 lojas online</div>
+        <div class="fbadge b2"><div class="dot" style="background:var(--y)"></div>92% conformidade</div>
+        <div class="fbadge b3"><div class="dot" style="background:#3b82f6"></div>PDF gerado ✓</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 4 — COMO FUNCIONA ═══════════ -->
+<div class="slide bg-dark2 dot-grid" id="s3">
+  <div class="slide-num">04</div>
+  <div class="slide-inner" style="text-align:center">
+    <div class="label" style="justify-content:center">Como funciona</div>
+    <h2 class="white" style="margin-bottom:48px">Simples para o operador.<br/>Poderoso para a gestão.</h2>
+    <div class="g3" style="gap:40px;position:relative">
+      <!-- linha conectora -->
+      <div style="position:absolute;top:28px;left:calc(16% + 28px);right:calc(16% + 28px);height:2px;background:linear-gradient(90deg,rgba(255,198,0,.3),rgba(255,198,0,.3));border-top:2px dashed rgba(255,198,0,.25);z-index:0"></div>
+      <div class="step">
+        <div class="step-num" style="position:relative;z-index:1">1</div>
+        <h3>Admin configura</h3>
+        <p>Cria os checklists por setor e turno, define agenda obrigatória, prazos e itens críticos.</p>
+      </div>
+      <div class="step">
+        <div class="step-num" style="position:relative;z-index:1">2</div>
+        <h3>Operador executa</h3>
+        <p>Abre o app no celular, preenche o checklist e envia. Se reprovar algo, um plano de ação é criado na hora.</p>
+      </div>
+      <div class="step">
+        <div class="step-num" style="position:relative;z-index:1">3</div>
+        <h3>Gestão acompanha</h3>
+        <p>Dashboard em tempo real com conformidade, pendências, planos abertos e relatório pronto para imprimir.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 5 — CHECKLIST DEMO ═══════════ -->
+<div class="slide bg-dark dot-grid" id="s4">
+  <div class="glow-tl"></div>
+  <div class="slide-num">05</div>
+  <div class="slide-inner">
+    <div class="g2" style="gap:60px">
+      <div>
+        <div class="label">Checklist digital</div>
+        <h2 class="white" style="margin-bottom:16px">O operador resolve<br/>no celular</h2>
+        <p class="sub" style="margin-bottom:28px">Cada item respondido é registrado com horário e usuário. Nenhum checklist some ou é preenchido depois.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="dif">
+            <div class="dif-icon">📱</div>
+            <div>
+              <div class="dif-title">Sem papel, sem app store</div>
+              <div class="dif-desc">PWA — acessa pelo navegador do celular como se fosse um app normal.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">📶</div>
+            <div>
+              <div class="dif-title">Funciona sem internet</div>
+              <div class="dif-desc">Câmara fria, depósito sem sinal — preenche normalmente e sincroniza depois.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">📸</div>
+            <div>
+              <div class="dif-title">Foto como evidência</div>
+              <div class="dif-desc">Operador registra foto antes e depois de cada ação. Rastreável para auditorias.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Mockup checklist -->
+      <div style="background:#f7f7f7;border-radius:16px;padding:20px;border:1.5px solid #e8e8e8;box-shadow:0 20px 50px rgba(0,0,0,.15)">
+        <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Açougue — Abertura · Hoje</div>
+        <div class="check-item">
+          <div class="check-box yes">✓</div>
+          <div class="check-text">Temperatura da câmara fria registrada</div>
+        </div>
+        <div class="check-item">
+          <div class="check-box yes">✓</div>
+          <div class="check-text">Uniformes e EPIs completos</div>
+        </div>
+        <div class="check-item" style="border-color:#fecaca;background:#fff5f5">
+          <div class="check-box no">✗</div>
+          <div class="check-text">Higienização das bancadas</div>
+          <div class="check-tag">Plano criado</div>
+        </div>
+        <div class="check-item">
+          <div class="check-box pend">○</div>
+          <div class="check-text">Validade dos produtos verificada</div>
+        </div>
+        <div class="check-item">
+          <div class="check-box pend">○</div>
+          <div class="check-text">Pesagem calibrada</div>
+        </div>
+        <div style="margin-top:14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;font-weight:600;color:#166534">3 de 5 respondidos</span>
+          <div style="width:100px;height:6px;background:#e0e0e0;border-radius:3px;margin:0 12px;overflow:hidden"><div style="width:60%;height:100%;background:#22c55e;border-radius:3px"></div></div>
+          <span style="font-size:12px;font-weight:700;color:#22c55e">60%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 6 — PLANO DE AÇÃO ═══════════ -->
+<div class="slide bg-dark2 dot-grid" id="s5">
+  <div class="slide-num">06</div>
+  <div class="slide-inner">
+    <div class="g2" style="gap:60px">
+      <!-- Mockup plano -->
+      <div>
+        <div style="background:#f7f7f7;border-radius:16px;padding:20px;border:1.5px solid #e8e8e8;box-shadow:0 20px 50px rgba(0,0,0,.15)">
+          <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Planos de Ação</div>
+          <div class="plano-card" style="border-color:#fecaca">
+            <div class="plano-badge" style="background:#fee2e2;color:#991b1b">🔴 Vencido</div>
+            <div class="plano-title">Higienização das bancadas</div>
+            <div class="plano-meta">
+              <span>Açougue</span><span>Loja Centro</span><span>João Silva</span>
+            </div>
+            <div style="margin-top:8px;height:4px;background:#fee2e2;border-radius:2px"><div style="width:15%;height:100%;background:#ef4444;border-radius:2px"></div></div>
+          </div>
+          <div class="plano-card" style="border-color:#fed7aa">
+            <div class="plano-badge" style="background:#fff7ed;color:#c2410c">🟠 Em andamento</div>
+            <div class="plano-title">Calibração da balança</div>
+            <div class="plano-meta">
+              <span>Açougue</span><span>Loja Norte</span><span>Maria Costa</span>
+            </div>
+            <div style="margin-top:8px;height:4px;background:#fed7aa;border-radius:2px"><div style="width:55%;height:100%;background:#f59e0b;border-radius:2px"></div></div>
+          </div>
+          <div class="plano-card" style="border-color:#bbf7d0">
+            <div class="plano-badge" style="background:#f0fdf4;color:#166534">🟢 Resolvido</div>
+            <div class="plano-title">Temperatura da câmara ajustada</div>
+            <div class="plano-meta">
+              <span>Frios</span><span>Loja Sul</span><span>Pedro Alves</span>
+            </div>
+            <div style="margin-top:8px;height:4px;background:#bbf7d0;border-radius:2px"><div style="width:100%;height:100%;background:#22c55e;border-radius:2px"></div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Plano de Ação Automático</div>
+        <h2 class="white" style="margin-bottom:16px">Do problema<br/>à solução rastreada</h2>
+        <p class="sub" style="margin-bottom:28px">Quando o operador marca "Não" em qualquer item, o sistema cria automaticamente um plano de ação com prazo, responsável e acompanhamento.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="dif">
+            <div class="dif-icon">⚡</div>
+            <div>
+              <div class="dif-title">Criado automaticamente</div>
+              <div class="dif-desc">Sem trabalho extra — o sistema gera o plano no mesmo instante da reprovação.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">⏱</div>
+            <div>
+              <div class="dif-title">Prazo configurável por item</div>
+              <div class="dif-desc">De 24h a 14 dias. Vencido sem resolução bloqueia o próximo checklist.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">🕓</div>
+            <div>
+              <div class="dif-title">Histórico completo</div>
+              <div class="dif-desc">Quem iniciou, quem resolveu, quando e com qual justificativa. Perfeito para auditorias.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 7 — DASHBOARD ═══════════ -->
+<div class="slide bg-dark dot-grid" id="s6">
+  <div class="glow-tl"></div>
+  <div class="slide-num">07</div>
+  <div class="slide-inner">
+    <div class="g2" style="gap:60px">
+      <div>
+        <div class="label">Dashboard em tempo real</div>
+        <h2 class="white" style="margin-bottom:16px">Gestão vê tudo<br/>de onde estiver</h2>
+        <p class="sub" style="margin-bottom:28px">Admin, gerência e supervisores têm acesso ao dashboard com métricas atualizadas em tempo real de todas as lojas.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="dif">
+            <div class="dif-icon">📊</div>
+            <div>
+              <div class="dif-title">Conformidade por setor</div>
+              <div class="dif-desc">Gráfico de barras mostrando % de conformidade de cada setor no dia.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">📈</div>
+            <div>
+              <div class="dif-title">Evolução dos últimos 7 dias</div>
+              <div class="dif-desc">Linha mostrando a tendência de conformidade da semana.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">🏆</div>
+            <div>
+              <div class="dif-title">Ranking de lojas</div>
+              <div class="dif-desc">Pódio com as lojas com maior conformidade do mês — gera engajamento da equipe.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Mockup dashboard -->
+      <div class="dash-mock">
+        <div class="dash-top">
+          <div class="dash-top-dot"></div>
+          <div class="dash-top-dot"></div>
+          <div class="dash-top-dot"></div>
+          <div class="dash-top-title" style="margin-left:8px">Dashboard · Fluxo Certo 360</div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-kpi"><strong>94%</strong><span>Conformidade hoje</span></div>
+          <div class="dash-kpi"><strong style="color:#22c55e">12</strong><span>Checklists enviados</span></div>
+          <div class="dash-chart">
+            <div class="chart-title">Conformidade por Setor — Hoje</div>
+            <div class="bar-row"><div class="bar-label">Açougue</div><div class="bar-track"><div class="bar-fill" style="width:98%"></div></div><div class="bar-pct">98%</div></div>
+            <div class="bar-row"><div class="bar-label">Hortifruti</div><div class="bar-track"><div class="bar-fill" style="width:91%"></div></div><div class="bar-pct">91%</div></div>
+            <div class="bar-row"><div class="bar-label">Frios</div><div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--am)"></div></div><div class="bar-pct" style="color:var(--am)">85%</div></div>
+            <div class="bar-row"><div class="bar-label">Padaria</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-pct">100%</div></div>
+            <div class="bar-row"><div class="bar-label">Prevenção</div><div class="bar-track"><div class="bar-fill" style="width:76%;background:var(--am)"></div></div><div class="bar-pct" style="color:var(--am)">76%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 8 — RANKING ═══════════ -->
+<div class="slide bg-dark2 dot-grid" id="s7">
+  <div class="slide-num">08</div>
+  <div class="slide-inner">
+    <div class="g2" style="gap:60px">
+      <!-- Mockup ranking -->
+      <div>
+        <div style="background:#f7f7f7;border-radius:16px;padding:24px;border:1.5px solid #e8e8e8;box-shadow:0 20px 50px rgba(0,0,0,.15)">
+          <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Ranking de Lojas — Maio 2026</div>
+          <div class="rank-item" style="border-color:#fef9c3;background:#fffbeb">
+            <div class="rank-medal">🥇</div>
+            <div>
+              <div class="rank-name">Loja Centro</div>
+              <div style="font-size:11px;color:#999">8 checklists enviados</div>
+            </div>
+            <div style="text-align:right">
+              <div class="rank-pct">98%</div>
+              <div style="font-size:10px;color:#999">142 pts</div>
+            </div>
+          </div>
+          <div class="rank-item">
+            <div class="rank-medal">🥈</div>
+            <div>
+              <div class="rank-name">Loja Norte</div>
+              <div style="font-size:11px;color:#999">7 checklists enviados</div>
+            </div>
+            <div style="text-align:right">
+              <div class="rank-pct" style="color:#64748b">91%</div>
+              <div style="font-size:10px;color:#999">118 pts</div>
+            </div>
+          </div>
+          <div class="rank-item">
+            <div class="rank-medal">🥉</div>
+            <div>
+              <div class="rank-name">Loja Sul</div>
+              <div style="font-size:11px;color:#999">6 checklists enviados</div>
+            </div>
+            <div style="text-align:right">
+              <div class="rank-pct" style="color:#64748b">85%</div>
+              <div style="font-size:10px;color:#999">97 pts</div>
+            </div>
+          </div>
+          <div style="margin-top:14px;text-align:center;font-size:12px;color:#999">📄 Relatório PDF exportado em 1 clique</div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Visão multi-loja</div>
+        <h2 class="white" style="margin-bottom:16px">Qual loja está<br/>performando melhor?</h2>
+        <p class="sub" style="margin-bottom:28px">Com o ranking de lojas e operadores, a gestão sabe exatamente onde focar atenção — e qual equipe reconhecer.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="dif">
+            <div class="dif-icon">🏪</div>
+            <div>
+              <div class="dif-title">Todas as lojas em um lugar</div>
+              <div class="dif-desc">Central de Resultados mostra todos os checklists de todas as lojas em tempo real.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">⚠️</div>
+            <div>
+              <div class="dif-title">Alerta de pendências</div>
+              <div class="dif-desc">Relatório automático de quais lojas não enviaram o checklist obrigatório do dia.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">📄</div>
+            <div>
+              <div class="dif-title">PDF para reuniões</div>
+              <div class="dif-desc">Relatório executivo, de não conformidade e ranking em PDF com um clique.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 9 — FC360 INVENTÁRIO ═══════════ -->
+<div class="slide bg-dark2 dot-grid" id="s8inv">
+  <div class="glow-tl"></div>
+  <div class="slide-num">09</div>
+  <div class="slide-inner">
+    <div class="g2">
+      <div>
+        <div class="label">Novo Módulo</div>
+        <h2 class="white" style="margin-bottom:16px">FC360<br/><span class="yellow">Inventário</span></h2>
+        <p class="sub" style="margin-bottom:28px">Da bipagem em campo ao relatório assinado — controle de estoque sem papel, sem erro de digitação e com rastreio por coletor.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="dif">
+            <div class="dif-icon">📷</div>
+            <div>
+              <div class="dif-title">Câmera ou scanner físico</div>
+              <div class="dif-desc">Bipa EAN com a câmera do celular ou conecta scanner via Bluetooth/USB.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">👥</div>
+            <div>
+              <div class="dif-title">Multi-coletor simultâneo</div>
+              <div class="dif-desc">Vários operadores bipando ao mesmo tempo no mesmo inventário, cada um no seu endereço.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">📄</div>
+            <div>
+              <div class="dif-title">Relatório com assinatura</div>
+              <div class="dif-desc">PDF por endereço/setor/coletor com total de unidades e campos de assinatura para auditoria.</div>
+            </div>
+          </div>
+          <div class="dif">
+            <div class="dif-icon">📺</div>
+            <div>
+              <div class="dif-title">Monitor Ao Vivo</div>
+              <div class="dif-desc">Painel em TV com checklist e inventário em tempo real — ranking por loja, NCs e progresso dos coletores.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,198,0,.18);border-radius:20px;padding:28px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.08)">
+            <span style="font-size:20px">📦</span>
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#fff">Inventário #001 — Fev 2025</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.35)">3 coletores · 12 endereços</div>
+            </div>
+            <span style="margin-left:auto;background:rgba(34,197,94,.15);color:#4ade80;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px">EM ANDAMENTO</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.05);border-radius:9px;padding:9px 12px">
+              <div><div style="font-size:12px;font-weight:600;color:#fff">Corredor A — Bebidas</div><div style="font-size:10px;color:rgba(255,255,255,.35)">48 itens bipados</div></div>
+              <span style="color:#4ade80;font-size:12px;font-weight:700">312 un</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.05);border-radius:9px;padding:9px 12px">
+              <div><div style="font-size:12px;font-weight:600;color:#fff">Corredor B — Frios</div><div style="font-size:10px;color:rgba(255,255,255,.35)">31 itens bipados</div></div>
+              <span style="color:#4ade80;font-size:12px;font-weight:700">187 un</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.05);border-radius:9px;padding:9px 12px;border:1px solid rgba(255,198,0,.2)">
+              <div><div style="font-size:12px;font-weight:600;color:#fff">Corredor C — Hortifruti</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Em coleta...</div></div>
+              <span style="color:var(--y);font-size:12px;font-weight:700">— un</span>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:10px 12px;background:rgba(255,198,0,.1);border-radius:9px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:rgba(255,255,255,.45)">TOTAL GERAL</span>
+            <span style="font-size:13px;font-weight:800;color:var(--y);font-family:'Syne',sans-serif">499 un · 79 itens</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:6px">🗂️</div>
+            <div style="font-size:11px;font-weight:600;color:#fff">Endereços e Setores</div>
+          </div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px;text-align:center">
+            <div style="font-size:20px;margin-bottom:6px">📦</div>
+            <div style="font-size:11px;font-weight:600;color:#fff">Modo Pallet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 10 — FUNCIONALIDADES ═══════════ -->
+<div class="slide bg-dark dot-grid" id="s8">
+  <div class="glow-br"></div>
+  <div class="slide-num">10</div>
+  <div class="slide-inner" style="text-align:center">
+    <div class="label" style="justify-content:center">Funcionalidades</div>
+    <h2 class="white" style="margin-bottom:36px">Tudo que sua operação precisa</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">✅</div>
+        <div class="feat-title">Checklists Personalizados</div>
+        <div class="feat-desc">Por setor, turno e agenda. Sim/não, nota, texto e planilha de preços.</div>
+      </div>
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">📋</div>
+        <div class="feat-title">Planos de Ação Auto</div>
+        <div class="feat-desc">Gerados ao reprovar um item. Com prazo, alerta e prorrogação.</div>
+      </div>
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">📊</div>
+        <div class="feat-title">Relatórios em PDF</div>
+        <div class="feat-desc">Executivo, não conformidade, ranking e pendências.</div>
+      </div>
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">🏪</div>
+        <div class="feat-title">Central de Resultados</div>
+        <div class="feat-desc">Visão de todas as lojas em tempo real para gestão.</div>
+      </div>
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">📱</div>
+        <div class="feat-title">Funciona Offline</div>
+        <div class="feat-desc">PWA — instala no celular, funciona sem internet.</div>
+      </div>
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">👥</div>
+        <div class="feat-title">5 Perfis de Acesso</div>
+        <div class="feat-desc">Admin, Gerência, Supervisor, Operador e Prevenção.</div>
+      </div>
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">⏰</div>
+        <div class="feat-title">Agenda Obrigatória</div>
+        <div class="feat-desc">Define quais checklists são obrigatórios em quais dias e horários.</div>
+      </div>
+      <div class="card" style="text-align:left">
+        <div style="font-size:26px;margin-bottom:10px">📸</div>
+        <div class="feat-title">Evidências com Foto</div>
+        <div class="feat-desc">Foto antes e depois de cada ação, rastreada com data e usuário.</div>
+      </div>
+      <div class="card" style="text-align:left;border-color:rgba(255,198,0,.2);background:rgba(255,198,0,.05)">
+        <div style="font-size:26px;margin-bottom:10px">📦</div>
+        <div class="feat-title">FC360 Inventário</div>
+        <div class="feat-desc">Bipagem por câmera ou scanner. Controle por endereço, setor e coletor com relatório assinado.</div>
+      </div>
+      <div class="card" style="text-align:left;border-color:rgba(255,198,0,.2);background:rgba(255,198,0,.05)">
+        <div style="font-size:26px;margin-bottom:10px">📺</div>
+        <div class="feat-title">Monitor Ao Vivo</div>
+        <div class="feat-desc">Painel em TV com ranking, NCs e inventário em tempo real. Configurável pelo admin.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 11 — PLANOS ═══════════ -->
+<div class="slide bg-dark2 dot-grid" id="s9">
+  <div class="slide-num">11</div>
+  <div class="slide-inner" style="text-align:center">
+    <div class="label" style="justify-content:center">Planos e preços</div>
+    <h2 class="white" style="margin-bottom:36px">Invista no controle<br/>da sua operação</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;max-width:760px;margin:0 auto">
+      <div class="plan">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:12px">FC360 Checklist</div>
+        <div class="plan-name">Checklist</div>
+        <div class="plan-price">R$29<span style="font-size:22px;font-weight:600">,99</span></div>
+        <div class="plan-period">/usuário/mês</div>
+        <div class="plan-feat">Sem custo por dispositivo</div>
+        <div class="plan-feat">Checklists ilimitados</div>
+        <div class="plan-feat">Planos de ação automáticos</div>
+        <div class="plan-feat">Relatórios em PDF</div>
+        <div class="plan-feat">Dashboard com gráficos</div>
+        <div class="plan-feat">Central de Resultados</div>
+        <div class="plan-feat">Evidências com foto</div>
+        <div class="plan-feat">Funciona offline</div>
+        <div class="plan-feat">Suporte por WhatsApp</div>
+      </div>
+      <div class="plan featured">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(0,0,0,.5);text-transform:uppercase;margin-bottom:12px">✦ Mais completo</div>
+        <div class="plan-name">Checklist + Inventário</div>
+        <div class="plan-price">R$49<span style="font-size:22px;font-weight:600">,99</span></div>
+        <div class="plan-period">/usuário/mês</div>
+        <div class="plan-feat">Tudo do Checklist</div>
+        <div class="plan-feat">FC360 Inventário completo</div>
+        <div class="plan-feat">Bipagem por câmera ou scanner</div>
+        <div class="plan-feat">Gestão por endereço e setor</div>
+        <div class="plan-feat">Multi-coletor simultâneo</div>
+        <div class="plan-feat">Relatório com assinatura</div>
+        <div class="plan-feat">Etiquetas QR + Code128</div>
+        <div class="plan-feat">Filtros por endereço, setor e coletor</div>
+        <div class="plan-feat">Monitor Ao Vivo</div>
+        <div class="plan-feat">Inteligência IA</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;font-size:13px;color:rgba(255,255,255,.3)">Sem fidelidade · Cancele quando quiser · Suporte incluso em todos os planos</div>
+  </div>
+</div>
+
+<!-- ═══════════ SLIDE 12 — CTA FINAL ═══════════ -->
+<div class="slide bg-yellow dot-grid-dark" id="s10">
+  <div class="slide-num dark-num">12</div>
+  <div class="slide-inner" style="text-align:center">
+    <div class="label dark" style="justify-content:center">Próximo passo</div>
+    <h2 class="dark-text" style="margin-bottom:16px;max-width:640px;margin-left:auto;margin-right:auto">
+      Pronto para transformar<br/>a gestão da sua loja?
+    </h2>
+    <p style="font-size:18px;color:rgba(0,0,0,.55);margin-bottom:40px;line-height:1.6">
+      Instalamos o sistema essa semana e acompanhamos<br/>sua equipe no primeiro mês — sem custo extra.
+    </p>
+    <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:40px">
+      <div style="background:rgba(0,0,0,.08);border-radius:14px;padding:16px 28px;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#111">🚀</div>
+        <div style="font-size:13px;font-weight:600;color:rgba(0,0,0,.65);margin-top:4px">Implantação<br/>em 1 semana</div>
+      </div>
+      <div style="background:rgba(0,0,0,.08);border-radius:14px;padding:16px 28px;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#111">🎓</div>
+        <div style="font-size:13px;font-weight:600;color:rgba(0,0,0,.65);margin-top:4px">Treinamento<br/>da equipe</div>
+      </div>
+      <div style="background:rgba(0,0,0,.08);border-radius:14px;padding:16px 28px;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#111">💬</div>
+        <div style="font-size:13px;font-weight:600;color:rgba(0,0,0,.65);margin-top:4px">Suporte<br/>por WhatsApp</div>
+      </div>
+      <div style="background:rgba(0,0,0,.08);border-radius:14px;padding:16px 28px;text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#111">❌</div>
+        <div style="font-size:13px;font-weight:600;color:rgba(0,0,0,.65);margin-top:4px">Sem<br/>fidelidade</div>
+      </div>
+    </div>
+    <a class="cta-wa" href="https://wa.me/5581991665457?text=Ol%C3%A1%2C%20quero%20uma%20demonstra%C3%A7%C3%A3o%20do%20Fluxo%20Certo%20360!" target="_blank">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+      Falar com nosso time agora
+    </a>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- NAVEGAÇÃO -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="prev()" title="Anterior">‹</button>
+  <div class="nav-dots" id="nav-dots"></div>
+  <button class="nav-btn" onclick="next()" title="Próximo">›</button>
+  <span class="nav-counter" id="nav-counter">1 / 11</span>
+  <span class="nav-key">← →</span>
+</div>
+
+<script>
+var total = document.querySelectorAll('.slide').length;
+var cur = 0;
+
+// Monta pontos
+var dotsEl = document.getElementById('nav-dots');
+for (var i = 0; i < total; i++) {
+  var d = document.createElement('div');
+  d.className = 'nav-dot' + (i===0?' on':'');
+  d.setAttribute('data-i', i);
+  d.onclick = (function(idx){ return function(){ goTo(idx); }; })(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  var slides = document.querySelectorAll('.slide');
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('out');
+  setTimeout(function(){ slides[cur].classList.remove('out'); }, 450);
+  cur = Math.max(0, Math.min(total-1, n));
+  slides[cur].classList.add('active');
+  document.querySelectorAll('.nav-dot').forEach(function(d,i){ d.classList.toggle('on', i===cur); });
+  document.getElementById('progress').style.width = ((cur+1)/total*100)+'%';
+  document.getElementById('nav-counter').textContent = (cur+1) + ' / ' + total;
+}
+
+function next(){ if (cur < total-1) goTo(cur+1); }
+function prev(){ if (cur > 0) goTo(cur-1); }
+
+document.addEventListener('keydown', function(e) {
+  if (e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' ') { e.preventDefault(); next(); }
+  if (e.key==='ArrowLeft'||e.key==='ArrowUp') { e.preventDefault(); prev(); }
+  if (e.key==='F' || e.key==='f') { toggleFullscreen(); }
+});
+
+// Swipe
+var tx = 0;
+document.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; });
+document.addEventListener('touchend', function(e){
+  var dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 60) { dx < 0 ? next() : prev(); }
+});
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+}
+
+// Inicializa barra
+document.getElementById('progress').style.width = (1/total*100)+'%';
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atualizar FC360</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;background:#0d0d0d;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .card{background:#1a1a1a;border-radius:16px;padding:32px 24px;max-width:380px;width:100%;text-align:center}
+  .logo{font-size:22px;font-weight:800;color:#FFC600;margin-bottom:8px}
+  .sub{font-size:13px;color:#888;margin-bottom:28px}
+  button{width:100%;padding:16px;background:#FFC600;color:#111;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px}
+  button:disabled{background:#444;color:#888;cursor:not-allowed}
+  .msg{font-size:13px;color:#aaa;margin-top:12px;line-height:1.5}
+  .ok{color:#2d9e62;font-weight:700;font-size:15px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">FC360</div>
+  <div class="sub">Forçar atualização do app</div>
+  <button id="btn" onclick="atualizar()">🔄 Atualizar agora</button>
+  <div class="msg" id="msg">Toque no botão para limpar o cache e carregar a versão mais recente.</div>
+</div>
+<script>
+function atualizar() {
+  var btn = document.getElementById('btn');
+  var msg = document.getElementById('msg');
+  btn.disabled = true;
+  btn.textContent = 'Limpando cache...';
+  msg.textContent = 'Removendo service worker e caches antigos...';
+
+  var etapas = [];
+
+  if ('serviceWorker' in navigator) {
+    etapas.push(
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        return Promise.all(regs.map(function(r) { return r.unregister(); }));
+      })
+    );
+  }
+
+  if ('caches' in window) {
+    etapas.push(
+      caches.keys().then(function(keys) {
+        return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+      })
+    );
+  }
+
+  Promise.all(etapas).then(function() {
+    sessionStorage.removeItem('eco_last_page');
+    sessionStorage.removeItem('inv_detalhe_state');
+    msg.innerHTML = '<span class="ok">✓ Cache limpo!</span><br>Redirecionando para o app...';
+    btn.textContent = 'Aguarde...';
+    setTimeout(function() {
+      window.location.href = './index.html?t=' + Date.now();
+    }, 1500);
+  }).catch(function(e) {
+    msg.textContent = 'Erro: ' + e.message + '. Tente limpar o cache manualmente nas configurações do navegador.';
+    btn.disabled = false;
+    btn.textContent = '🔄 Tentar novamente';
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prevenção de Perdas</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #334155}
+.sidebar-nav{padding:10px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#334155;color:#f1f5f9}
+.nav-item.active{background:#F9C20018;color:#F9C200;border-right:3px solid #F9C200}
+.nav-item .ic{font-size:15px;width:20px;text-align:center}
+
+.main{margin-left:220px;padding:24px}
+.page-hdr{margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.page-hdr h1{font-size:21px;font-weight:700;color:#f8fafc}
+.page-hdr p{font-size:12px;color:#64748b;margin-top:2px}
+
+.filtros{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg select,.fg input{background:#0f172a;border:1px solid #334155;border-radius:7px;color:#e2e8f0;padding:7px 11px;font-size:13px;outline:none;min-width:140px}
+.fg select:focus,.fg input:focus{border-color:#F9C200}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end}
+.btn-blue{background:#F9C200;color:#0f0f1a;font-weight:700}.btn-blue:hover{background:#e0ae00}
+.btn-slate{background:#334155;color:#cbd5e1}.btn-slate:hover{background:#475569}
+
+/* KPI CARDS */
+.kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.kpi{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;min-width:120px;flex:1}
+.kpi .v{font-size:18px;font-weight:700}
+.kpi .l{font-size:10px;color:#64748b;margin-top:2px}
+
+/* SECTION TITLES */
+.sec-title{font-size:14px;font-weight:700;color:#f8fafc;padding:10px 0 8px;border-bottom:2px solid #334155;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+
+/* TABLES */
+.table-wrap{overflow-x:auto;margin-bottom:12px}
+table.t{width:100%;border-collapse:collapse;font-size:12px}
+table.t thead{background:#0f172a}
+table.t th{padding:8px 12px;text-align:left;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #334155}
+table.t td{padding:7px 12px;border-bottom:1px solid #1e293b44;vertical-align:middle}
+table.t tbody tr:hover{background:#ffffff06}
+table.t th.r,table.t td.r{text-align:right}
+.cod{color:#94a3b8;font-size:11px;font-family:monospace}
+.desc{font-weight:500;color:#e2e8f0}
+.neg{color:#f87171}
+.pos{color:#4ade80}
+.warn{color:#f59e0b}
+.info{color:#38bdf8}
+.bold{font-weight:700}
+
+/* SETOR GRID */
+.setor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.setor-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 16px;text-align:center}
+.setor-card .nome{font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.setor-card .val{font-size:20px;font-weight:700;color:#f59e0b}
+
+/* GRUPO ACCORDION */
+.grupo-bloco{margin-bottom:8px;border:1px solid #334155;border-radius:10px;overflow:hidden}
+.grupo-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1e293b;cursor:pointer;user-select:none;transition:background .1s}
+.grupo-hdr:hover{background:#263249}
+.grupo-hdr-nome{font-size:13px;font-weight:700;color:#e2e8f0;flex:1}
+.grupo-badge{font-size:11px;font-weight:700;background:#f59e0b22;color:#f59e0b;border-radius:6px;padding:2px 8px}
+.grupo-badge-blue{background:#0c4a6e44;color:#7dd3fc}
+.grupo-toggle{font-size:11px;color:#64748b;transition:transform .2s}
+.grupo-hdr.open .grupo-toggle{transform:rotate(180deg)}
+.grupo-body{display:none;background:#0f172a22}
+.grupo-body.open{display:block}
+
+/* MENSAL TABLE */
+.mensal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px}
+.mensal-card{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 12px;text-align:center}
+.mensal-card .mes-label{font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.mensal-card .mes-val{font-size:16px;font-weight:700}
+.mensal-card .mes-sub{font-size:10px;color:#64748b;margin-top:2px}
+
+/* TOP 10 FORNECEDORES */
+.top10-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.top10-col{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 16px}
+.top10-col h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.top10-col h3 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.top10-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.top10-rank{font-size:10px;font-weight:700;color:#64748b;width:16px;text-align:center;flex-shrink:0}
+.top10-info{flex:1;min-width:0}
+.top10-nome{font-size:11px;color:#cbd5e1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.top10-bar-bg{height:16px;background:#0f172a;border-radius:4px;overflow:hidden;position:relative}
+.top10-bar{height:100%;border-radius:4px;transition:width .5s ease}
+.top10-val{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;min-width:80px;text-align:right}
+.top10-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #334155}
+.top10-total span:first-child{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase}
+.top10-total span:last-child{font-size:14px;font-weight:700}
+
+@media(max-width:768px){
+  .top10-wrapper{grid-template-columns:1fr}
+}
+
+.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #334155;border-top-color:#f59e0b;animation:spin .7s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:30px;text-align:center;color:#475569;font-size:13px}
+
+@media(max-width:768px){
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #334155}
+  .sidebar-logo{padding:8px 12px;border-bottom:none;display:flex;align-items:center}
+  .sidebar-logo img{width:100px !important;height:auto !important}
+  .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+  .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center}
+  .nav-item .ic{font-size:12px;width:auto}
+  .nav-item.active{border-right:none;border-bottom:2px solid #F9C200}
+  .main{margin-left:0;padding:10px}
+  .page-hdr{flex-direction:column;align-items:flex-start}
+  .page-hdr h1{font-size:16px}
+  .filtros{gap:6px}
+  .fg select,.fg input{font-size:16px;min-width:80px}
+  .btn{padding:7px 10px;font-size:12px}
+  .kpi-row{gap:6px}
+  .kpi{min-width:calc(50% - 4px);padding:10px 12px}
+  .kpi .v{font-size:16px}
+  .setor-grid{grid-template-columns:1fr 1fr}
+  .mensal-grid{grid-template-columns:1fr 1fr 1fr}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.t{min-width:600px}
+  table.t th,table.t td{padding:6px 8px;font-size:10px}
+}
+/* CONSOLIDADO TABLE */
+.bonif-input:focus{border-color:#a78bfa!important}
+table.t td.r input{font-family:'Segoe UI',sans-serif}
+
+/* REDE KPIs */
+.rede-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+.rede-kpi{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 16px}
+.rede-kpi .rk-label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.rede-kpi .rk-val{font-size:22px;font-weight:700;line-height:1.2}
+.rede-kpi .rk-sub{font-size:10px;color:#94a3b8;margin-top:4px}
+
+/* TENDÊNCIA */
+.trend-up{color:#f87171;font-size:11px;font-weight:700}
+.trend-down{color:#4ade80;font-size:11px;font-weight:700}
+
+/* BAR CHART */
+.bar-chart{padding:4px 0 12px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.bar-label{font-size:11px;font-weight:700;color:#cbd5e1;width:150px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;height:20px;background:#0f172a;border-radius:4px;position:relative;overflow:visible}
+.bar-fill{height:100%;border-radius:4px;min-width:2px}
+.bar-meta-line{position:absolute;top:-4px;bottom:-4px;width:2px;background:#f8fafc55;border-left:2px dashed #ffffff44}
+.bar-meta-label{position:absolute;top:-16px;font-size:9px;color:#94a3b8;transform:translateX(-50%)}
+.bar-pct-lbl{font-size:11px;font-weight:700;width:52px;text-align:right;flex-shrink:0}
+
+@media print{
+  .sidebar,.filtros,.btn{display:none!important}
+  .main{margin-left:0;padding:0}
+  .grupo-body{display:block!important}
+  body{background:#fff;color:#000;font-size:11px}
+  .page-hdr h1{font-size:16px;color:#000}
+  .kpi{border:1px solid #ccc;background:#f9f9f9}
+  .kpi .v{color:#000!important}.kpi .l{color:#333}
+  .setor-card{border:1px solid #ccc;background:#f9f9f9}
+  .setor-card .nome{color:#333}.setor-card .val{color:#000!important}
+  .mensal-card{border:1px solid #ccc;background:#f9f9f9}
+  .mensal-card .mes-label{color:#333}.mensal-card .mes-val{color:#000!important}
+  .sec-title{color:#000;border-bottom-color:#999}
+  .grupo-bloco{border:1px solid #ccc;break-inside:avoid;margin-bottom:6px}
+  .grupo-hdr{background:#f0f0f0;padding:6px 10px}
+  .grupo-hdr-nome{color:#000;font-size:12px}
+  .grupo-badge,.grupo-badge-blue{background:#eee;color:#333;font-size:10px}
+  .grupo-toggle{display:none}
+  table.t{min-width:0!important}
+  table.t th{background:#e5e5e5;color:#000;border-bottom:1px solid #999;font-size:9px;padding:4px 8px}
+  table.t td{border-bottom:1px solid #ddd;padding:4px 8px;font-size:10px;color:#000}
+  .neg{color:#c00!important}.pos{color:#060!important}.warn{color:#a60!important}.info{color:#069!important}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item"><span class="ic">📊</span> Dashboard</a>
+    <a href="consulta.html" class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
+    <a href="itens.html" class="nav-item"><span class="ic">📂</span> Mercadológico</a>
+    <a href="fornecedores.html" class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
+    <a href="pendencias.html" class="nav-item"><span class="ic">⚠️</span> Pendências</a>
+    <a href="comparativos.html" class="nav-item"><span class="ic">📈</span> Comparativos</a>
+    <a href="prevencao.html" class="nav-item active"><span class="ic">🛡️</span> Prevenção</a>
+    <a href="ruptura.html" class="nav-item"><span class="ic">🤖</span> IA Rupturas</a>
+  </nav>
+  <div style="padding:12px 16px;border-top:1px solid #334155;margin-top:auto">
+    <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="sidebar-user">👤 ...</div>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#f87171;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #7f1d1d;background:#450a0a22;transition:background .15s" onmouseover="this.style.background='#450a0a'" onmouseout="this.style.background='#450a0a22'">🚪 Sair</a>
+  </div>
+</div>
+<script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('sidebar-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
+
+<div class="main">
+  <div class="page-hdr">
+    <div>
+      <h1>🛡️ Prevenção de Perdas</h1>
+      <p>Controle de avarias, notas emitidas e bonificações</p>
+    </div>
+  </div>
+
+  <div class="filtros">
+    <div class="fg">
+      <label>Loja</label>
+      <select id="fil-loja" onchange="carregar()">
+        <option value="0">📊 Consolidado</option>
+        <option value="1">Loja 1 — Cahu</option>
+        <option value="2">Loja 2 — Muribeca</option>
+        <option value="3">Loja 3 — Ponte</option>
+        <option value="4">Loja 4 — Atacarejo</option>
+        <option value="5">Loja 5 — Porta Larga</option>
+        <option value="6">Loja 6 — Jd Jordão</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Mês</label>
+      <input type="month" id="fil-mes" onchange="carregar()">
+    </div>
+    <button class="btn btn-blue" onclick="carregar()">🔍 Filtrar</button>
+    <button class="btn btn-slate" onclick="exportarCSV()">⬇ CSV</button>
+    <button class="btn btn-slate" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+
+  <div id="conteudo"><div class="spinner"></div></div>
+</div>
+
+<script>
+var dadosGlobal = null;
+var _bonifTimer = null;
+var fmt = function(v) { return parseFloat(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); };
+var fmtN = function(v) { return parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+var fmtD = function(d) { return new Date(d).toLocaleDateString('pt-BR'); };
+var MESES = ['','JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
+function salvarBonif(loja, mes, valor) {
+  clearTimeout(_bonifTimer);
+  _bonifTimer = setTimeout(function() {
+    fetch('/api/pendencias/prevencao-bonif', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({loja: loja, mes: mes, valor: valor})
+    });
+  }, 500);
+}
+
+function carregar() {
+  document.getElementById('conteudo').innerHTML = '<div class="spinner"></div>';
+  var loja = document.getElementById('fil-loja').value;
+  var mes = document.getElementById('fil-mes').value;
+
+  if (loja === '0') {
+    var params = new URLSearchParams();
+    if (mes) params.set('mes', mes);
+    fetch('/api/pendencias/prevencao-consolidado?' + params)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) throw new Error(data.error);
+        dadosGlobal = data;
+        renderConsolidado(data);
+      })
+      .catch(function(e) {
+        document.getElementById('conteudo').innerHTML = '<div class="empty">Erro: ' + e.message + '</div>';
+      });
+    return;
+  }
+
+  var params = new URLSearchParams();
+  params.set('loja', loja);
+  if (mes) params.set('mes', mes);
+  fetch('/api/pendencias/prevencao?' + params)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) throw new Error(data.error);
+      dadosGlobal = data;
+      renderTudo(data);
+    })
+    .catch(function(e) {
+      document.getElementById('conteudo').innerHTML = '<div class="empty">Erro: ' + e.message + '</div>';
+    });
+}
+
+function renderConsolidado(d) {
+  var MF = ['','JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+  var html = '';
+
+  // ── PRÉ-CÁLCULO ──
+  var totPre = {venda:0, avMes:0};
+  var melhorLoja = null, piorLoja = null;
+  var prevPct = {};
+  for (var pi = 0; pi < d.lojas.length; pi++) {
+    var plj = d.lojas[pi];
+    totPre.venda += plj.venda; totPre.avMes += plj.avMes;
+    if (!melhorLoja || plj.pctMes < melhorLoja.pctMes) melhorLoja = plj;
+    if (!piorLoja   || plj.pctMes > piorLoja.pctMes)  piorLoja   = plj;
+    for (var pmi = plj.mensal.length - 2; pmi >= 0; pmi--) {
+      if (plj.mensal[pmi].pct !== 0) { prevPct[pi] = plj.mensal[pmi].pct; break; }
+    }
+  }
+  var redePct = totPre.venda > 0 ? (totPre.avMes / totPre.venda * 100) : 0;
+  var prevVals = Object.values(prevPct);
+  var prevRedePct = prevVals.length ? prevVals.reduce(function(a,b){return a+b;},0)/prevVals.length : 0;
+
+  function getTrend(cur, prv) {
+    if (!prv) return '<span style="color:#475569;font-size:11px">—</span>';
+    var df = +(cur - prv).toFixed(2);
+    if (df > 0.01)  return '<span class="trend-up">▲ +' + fmtN(Math.abs(df)) + '%</span>';
+    if (df < -0.01) return '<span class="trend-down">▼ ' + fmtN(Math.abs(df)) + '%</span>';
+    return '<span style="color:#64748b;font-size:11px">→</span>';
+  }
+
+  // ── KPIs DE REDE ──
+  html += '<div class="rede-kpis">';
+  html += '<div class="rede-kpi" style="border-left:3px solid ' + (redePct > 1 ? '#f87171' : '#4ade80') + '">';
+  html += '<div class="rk-label">% Avaria da Rede</div>';
+  html += '<div class="rk-val ' + (redePct > 1 ? 'neg' : 'pos') + '">' + fmtN(redePct) + '%</div>';
+  html += '<div class="rk-sub">R$ ' + fmtN(totPre.avMes) + ' em avarias</div>';
+  html += '</div>';
+
+  html += '<div class="rede-kpi" style="border-left:3px solid #4ade80">';
+  html += '<div class="rk-label">Melhor Loja</div>';
+  html += '<div class="rk-val pos">' + (melhorLoja ? fmtN(melhorLoja.pctMes) + '%' : '—') + '</div>';
+  html += '<div class="rk-sub">' + (melhorLoja ? melhorLoja.nome : '—') + '</div>';
+  html += '</div>';
+
+  html += '<div class="rede-kpi" style="border-left:3px solid #f87171">';
+  html += '<div class="rk-label">Pior Loja</div>';
+  html += '<div class="rk-val neg">' + (piorLoja ? fmtN(piorLoja.pctMes) + '%' : '—') + '</div>';
+  html += '<div class="rk-sub">' + (piorLoja ? piorLoja.nome : '—') + '</div>';
+  html += '</div>';
+
+  var diffRede = prevRedePct ? +(redePct - prevRedePct).toFixed(2) : 0;
+  html += '<div class="rede-kpi" style="border-left:3px solid #a78bfa">';
+  html += '<div class="rk-label">Vs Mês Anterior</div>';
+  html += '<div class="rk-val" style="font-size:16px">' + getTrend(redePct, prevRedePct) + '</div>';
+  html += '<div class="rk-sub">Ant: ' + (prevRedePct ? fmtN(prevRedePct) + '%' : '—') + ' → Atual: ' + fmtN(redePct) + '%</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // ── DESTAQUES: MELHOROU / PIOROU ──
+  var melhoraram = [], pioraram = [];
+  for (var pi = 0; pi < d.lojas.length; pi++) {
+    var plj = d.lojas[pi];
+    if (prevPct[pi] === undefined) continue;
+    var df = +(plj.pctMes - prevPct[pi]).toFixed(2);
+    if (df < -0.05) melhoraram.push({nome: plj.nome, df: df, pct: plj.pctMes});
+    else if (df > 0.05) pioraram.push({nome: plj.nome, df: df, pct: plj.pctMes});
+  }
+  melhoraram.sort(function(a,b){return a.df - b.df;});
+  pioraram.sort(function(a,b){return b.df - a.df;});
+
+  html += '<div id="destaques-section"></div>';
+
+  // ── GRÁFICO DE BARRAS ──
+  html += '<div class="sec-title">📊 Ranking % Avaria — ' + MF[d.mesAtual] + '</div>';
+  var sortedLojas = d.lojas.slice().sort(function(a,b){return b.pctMes - a.pctMes;});
+  var maxPct = Math.max.apply(null, d.lojas.map(function(l){return l.pctMes;}));
+  maxPct = Math.max(maxPct, 2);
+  var metaPos = +(1 / maxPct * 100).toFixed(1);
+  html += '<div class="bar-chart">';
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-left:150px">';
+  html += '<div style="position:relative;flex:1;height:8px">';
+  html += '<div class="bar-meta-line" style="left:' + metaPos + '%;top:-2px;bottom:-2px"><span class="bar-meta-label">META 1%</span></div>';
+  html += '</div></div>';
+  for (var bi = 0; bi < sortedLojas.length; bi++) {
+    var bl = sortedLojas[bi];
+    var bw = maxPct > 0 ? +(bl.pctMes / maxPct * 100).toFixed(1) : 0;
+    var bc = bl.pctMes > 1 ? '#f87171' : '#4ade80';
+    html += '<div class="bar-row">';
+    html += '<div class="bar-label">' + bl.nome + '</div>';
+    html += '<div class="bar-track">';
+    html += '<div class="bar-fill" id="bar-fill-' + bl.loja + '" style="width:' + bw + '%;background:' + bc + ';opacity:0.8"></div>';
+    html += '<div class="bar-meta-line bar-meta-dyn" style="left:' + metaPos + '%"></div>';
+    html += '</div>';
+    html += '<div class="bar-pct-lbl ' + (bl.pctMes > 1 ? 'neg' : 'pos') + '" id="bar-pct-' + bl.loja + '">' + fmtN(bl.pctMes) + '%</div>';
+    html += '</div>';
+  }
+  var redeW = maxPct > 0 ? +(redePct / maxPct * 100).toFixed(1) : 0;
+  var redeC = redePct > 1 ? '#f87171' : '#4ade80';
+  html += '<div class="bar-row" style="margin-top:10px;border-top:1px solid #334155;padding-top:10px">';
+  html += '<div class="bar-label" style="color:#f8fafc">REDE TOTAL</div>';
+  html += '<div class="bar-track">';
+  html += '<div class="bar-fill" id="bar-fill-rede" style="width:' + redeW + '%;background:' + redeC + '"></div>';
+  html += '<div class="bar-meta-line bar-meta-dyn" style="left:' + metaPos + '%"></div>';
+  html += '</div>';
+  html += '<div class="bar-pct-lbl ' + (redePct > 1 ? 'neg' : 'pos') + '" id="bar-pct-rede">' + fmtN(redePct) + '%</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // ── AVARIAS POR MÊS (%) ──
+  html += '<div class="sec-title" style="margin-top:8px">📋 AVARIAS POR MÊS (%) — POR LOJA</div>';
+  html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Meta: <b style="color:#4ade80">≤ 1%</b> · Acima = <b style="color:#f87171">fora do limite</b>. ' + MF[d.mesAtual] + ' é o fechamento atual.</p>';
+  html += '<div class="table-wrap"><table class="t">';
+  html += '<thead><tr><th style="min-width:140px">LOJA</th>';
+  for (var m = 1; m <= d.mesAtual; m++) html += '<th class="r">' + MF[m] + '</th>';
+  html += '<th class="r">TEND.</th>';
+  html += '</tr></thead><tbody>';
+
+  for (var i = 0; i < d.lojas.length; i++) {
+    var lj = d.lojas[i];
+    html += '<tr><td class="bold" style="padding-left:16px">' + lj.nome + '</td>';
+    for (var mi = 0; mi < lj.mensal.length; mi++) {
+      var isUltimo = mi === lj.mensal.length - 1;
+      var pct = lj.mensal[mi].pct;
+      var idAttr = isUltimo ? ' id="mensal-' + i + '"' : '';
+      if (pct === 0) {
+        html += '<td class="r" style="color:#475569">—</td>';
+      } else {
+        var cor = pct > 1 ? 'neg' : 'pos';
+        html += '<td class="r bold ' + cor + '"' + idAttr + '>-' + fmtN(pct) + '%</td>';
+      }
+    }
+    html += '<td class="r" id="tend-mes-' + i + '">' + getTrend(lj.pctMes, prevPct[i]) + '</td>';
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+
+  // ── DESEMPENHO POR LOJA ──
+  html += '<div class="sec-title" style="margin-top:28px">📊 Desempenho por loja</div>';
+  html += '<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Valores em R$.</p>';
+  html += '<div class="table-wrap"><table class="t" id="tbl-desemp">';
+  html += '<thead><tr>';
+  html += '<th>LOJA</th><th class="r">VENDA</th><th class="r">AV. BRUTA</th>';
+  html += '<th class="r">AÇOUG.</th><th class="r">HORTI</th><th class="r">PADARIA</th>';
+  html += '<th class="r">SALDO</th><th class="r">BONIF.</th><th class="r">AV. FINAL</th>';
+  html += '<th class="r">ABERTO</th><th class="r">TRÂMITE</th><th class="r">AV. MÊS</th><th class="r">% MÊS</th><th class="r">TEND.</th>';
+  html += '</tr></thead><tbody>';
+
+  var tot = {venda:0,avBruta:0,acougue:0,horti:0,padaria:0,saldo:0,bonif:0,avFinal:0,aberto:0,tramite:0,avMes:0};
+
+  for (var i = 0; i < d.lojas.length; i++) {
+    var lj = d.lojas[i];
+    var avFinal = lj.saldo - lj.bonif;
+    var corFinal = avFinal < 0 ? 'pos' : 'neg';
+    var corPct = lj.pctMes > 1 ? 'neg' : 'pos';
+
+    html += '<tr>';
+    html += '<td class="bold" style="padding-left:16px">' + lj.nome + '</td>';
+    html += '<td class="r">' + fmtN(lj.venda) + '</td>';
+    html += '<td class="r warn">' + fmtN(lj.avBruta) + '</td>';
+    html += '<td class="r">' + fmtN(lj.acougue) + '</td>';
+    html += '<td class="r">' + fmtN(lj.horti) + '</td>';
+    html += '<td class="r">' + fmtN(lj.padaria) + '</td>';
+    html += '<td class="r">' + fmtN(lj.saldo) + '</td>';
+    html += '<td class="r"><input type="text" class="bonif-input" data-idx="' + i + '" value="' + fmtN(lj.bonif) + '" style="width:80px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#a78bfa;font-size:11px;font-weight:700;padding:3px 6px;text-align:right;outline:none"></td>';
+    html += '<td class="r bold ' + corFinal + '" id="avf-' + i + '">' + fmtN(avFinal) + '</td>';
+    html += '<td class="r neg">' + fmtN(lj.aberto) + '</td>';
+    html += '<td class="r info">' + fmtN(lj.tramite) + '</td>';
+    html += '<td class="r warn" id="avmes-' + i + '">' + fmtN(lj.avMes) + '</td>';
+    html += '<td class="r bold ' + corPct + '" id="pctmes-' + i + '">' + fmtN(lj.pctMes) + '%</td>';
+    html += '<td class="r" id="tend-det-' + i + '">' + getTrend(lj.pctMes, prevPct[i]) + '</td>';
+    html += '</tr>';
+
+    tot.venda += lj.venda; tot.avBruta += lj.avBruta; tot.acougue += lj.acougue;
+    tot.horti += lj.horti; tot.padaria += lj.padaria; tot.saldo += lj.saldo;
+    tot.bonif += lj.bonif; tot.avFinal += avFinal; tot.aberto += lj.aberto;
+    tot.tramite += lj.tramite; tot.avMes += lj.avMes;
+  }
+
+  var totPct = tot.venda > 0 ? +(tot.avMes / tot.venda * 100).toFixed(2) : 0;
+  var totCorFinal = tot.avFinal < 0 ? 'pos' : 'neg';
+
+  html += '<tr style="border-top:2px solid #475569;background:#0f172a">';
+  html += '<td class="bold" style="color:#f8fafc;padding-left:16px">TOTAL</td>';
+  html += '<td class="r bold">' + fmtN(tot.venda) + '</td>';
+  html += '<td class="r bold warn">' + fmtN(tot.avBruta) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.acougue) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.horti) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.padaria) + '</td>';
+  html += '<td class="r bold">' + fmtN(tot.saldo) + '</td>';
+  html += '<td class="r bold" style="color:#a78bfa" id="tot-bonif">' + fmtN(tot.bonif) + '</td>';
+  html += '<td class="r bold ' + totCorFinal + '" id="tot-avfinal">' + fmtN(tot.avFinal) + '</td>';
+  html += '<td class="r bold neg">' + fmtN(tot.aberto) + '</td>';
+  html += '<td class="r bold info">' + fmtN(tot.tramite) + '</td>';
+  html += '<td class="r bold warn">' + fmtN(tot.avMes) + '</td>';
+  html += '<td class="r bold" id="totpct-cons">' + fmtN(totPct) + '%</td>';
+  html += '<td class="r" id="tend-tot">' + getTrend(totPct, prevRedePct) + '</td>';
+  html += '</tr>';
+  html += '</tbody></table></div>';
+
+  // ── AVARIA BRUTA POR SETOR (CONSOLIDADO) ──
+  html += '<div class="sec-title" style="margin-top:28px">🏪 Avaria bruta por setor (consolidado)</div>';
+  html += '<div class="table-wrap"><table class="t">';
+  html += '<thead><tr><th>SETOR</th><th class="r">TOTAL</th><th class="r">%</th></tr></thead><tbody>';
+  var setNomes = ['AÇOUGUE','HORTFRUTI','PADARIA'];
+  var setKeys = ['acougue','horti','padaria'];
+  for (var si = 0; si < setNomes.length; si++) {
+    var setVal = tot[setKeys[si]];
+    var setPct = tot.avMes > 0 ? (setVal / tot.avMes * 100) : 0;
+    html += '<tr><td class="bold">' + setNomes[si] + '</td>';
+    html += '<td class="r warn">' + fmtN(setVal) + '</td>';
+    html += '<td class="r">' + fmtN(setPct) + '%</td></tr>';
+  }
+  var saldoTot = tot.avMes - tot.acougue - tot.horti - tot.padaria;
+  var saldoPct = tot.avMes > 0 ? (saldoTot / tot.avMes * 100) : 0;
+  html += '<tr><td class="bold">SALDO (LOJA)</td><td class="r" style="color:#94a3b8">' + fmtN(saldoTot) + '</td>';
+  html += '<td class="r" style="color:#94a3b8">' + fmtN(saldoPct) + '%</td></tr>';
+  html += '<tr style="border-top:2px solid #475569"><td class="bold" style="color:#f8fafc">TOTAL</td>';
+  html += '<td class="r bold warn">' + fmtN(tot.avMes) + '</td><td class="r bold">100,00%</td></tr>';
+  html += '</tbody></table></div>';
+
+  document.getElementById('conteudo').innerHTML = html;
+
+  // Wire up bonif inputs + save
+  var mesVal = document.getElementById('fil-mes').value;
+  var inputs = document.querySelectorAll('.bonif-input');
+  for (var bi = 0; bi < inputs.length; bi++) {
+    inputs[bi].addEventListener('input', function() {
+      var idx = parseInt(this.getAttribute('data-idx'));
+      var val = parseFloat(this.value.replace(/\./g,'').replace(',','.')) || 0;
+      var lj = d.lojas[idx];
+      var avf = lj.saldo - val;
+      var avMes = lj.aberto + lj.tramite + avf;
+      var el = document.getElementById('avf-' + idx);
+      el.textContent = fmtN(avf);
+      el.className = 'r bold ' + (avf < 0 ? 'pos' : 'neg');
+
+      // Atualizar AV. MÊS
+      var avMesEl = document.getElementById('avmes-' + idx);
+      if (avMesEl) avMesEl.textContent = fmtN(Math.abs(avMes));
+
+      // Atualizar % MÊS e tabela mensal
+      var adjPct = lj.venda > 0 ? Math.abs(avMes / lj.venda * 100) : 0;
+      var corAdj = adjPct > 1 ? 'neg' : 'pos';
+      var pctEl = document.getElementById('pctmes-' + idx);
+      if (pctEl) { pctEl.textContent = fmtN(adjPct) + '%'; pctEl.className = 'r bold ' + corAdj; }
+      var mensalEl = document.getElementById('mensal-' + idx);
+      if (mensalEl) {
+        mensalEl.textContent = '-' + fmtN(adjPct) + '%';
+        mensalEl.className = 'r bold ' + corAdj;
+      }
+
+      salvarBonif(lj.loja, mesVal, val);
+
+      var totalBonif = 0, totalAvFinal = 0;
+      var allInputs = document.querySelectorAll('.bonif-input');
+      for (var j = 0; j < allInputs.length; j++) {
+        var bv = parseFloat(allInputs[j].value.replace(/\./g,'').replace(',','.')) || 0;
+        totalBonif += bv;
+        totalAvFinal += d.lojas[j].saldo - bv;
+      }
+      document.getElementById('tot-bonif').textContent = fmtN(totalBonif);
+      var taf = document.getElementById('tot-avfinal');
+      taf.textContent = fmtN(totalAvFinal);
+      taf.className = 'r bold ' + (totalAvFinal < 0 ? 'pos' : 'neg');
+      atualizarBarras();
+      atualizarDestaques();
+      atualizarTend();
+    });
+  }
+
+  function atualizarTend() {
+    var totalAvMes = 0;
+    for (var ti = 0; ti < d.lojas.length; ti++) {
+      var pctEl = document.getElementById('pctmes-' + ti);
+      if (!pctEl) continue;
+      var curPct = parseFloat(pctEl.textContent.replace('%','').replace(',','.')) || 0;
+      var trendHtml = getTrend(curPct, prevPct[ti]);
+      var tMes = document.getElementById('tend-mes-' + ti);
+      if (tMes) tMes.innerHTML = trendHtml;
+      var tDet = document.getElementById('tend-det-' + ti);
+      if (tDet) tDet.innerHTML = trendHtml;
+      var avmEl = document.getElementById('avmes-' + ti);
+      if (avmEl) totalAvMes += parseFloat(avmEl.textContent.replace(/\./g,'').replace(',','.')) || 0;
+    }
+    var totalVenda = d.lojas.reduce(function(s,l){return s+l.venda;},0);
+    var totPctDyn = totalVenda > 0 ? +(totalAvMes / totalVenda * 100).toFixed(2) : 0;
+    var tTot = document.getElementById('totpct-cons');
+    if (tTot) tTot.textContent = fmtN(totPctDyn) + '%';
+    var tTotTend = document.getElementById('tend-tot');
+    if (tTotTend) tTotTend.innerHTML = getTrend(totPctDyn, prevRedePct);
+  }
+
+  function atualizarDestaques() {
+    var mel = [], pio = [];
+    for (var di = 0; di < d.lojas.length; di++) {
+      var pctEl3 = document.getElementById('pctmes-' + di);
+      if (!pctEl3) continue;
+      var curPct = parseFloat(pctEl3.textContent.replace('%','').replace(',','.')) || 0;
+      var prv = prevPct[di];
+      if (prv === undefined) continue;
+      var df3 = +(curPct - prv).toFixed(2);
+      if (df3 < -0.01) mel.push({nome: d.lojas[di].nome, df: df3, pct: curPct});
+      else if (df3 > 0.01) pio.push({nome: d.lojas[di].nome, df: df3, pct: curPct});
+    }
+    mel.sort(function(a,b){return a.df - b.df;});
+    pio.sort(function(a,b){return b.df - a.df;});
+    var ds = document.getElementById('destaques-section');
+    if (!ds) return;
+    if (mel.length === 0 && pio.length === 0) { ds.innerHTML = ''; return; }
+    var h = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+    h += '<div style="background:#0d2d1f;border:1px solid #166534;border-radius:10px;padding:12px 16px">';
+    h += '<div style="font-size:11px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">▼ Melhoraram este mês</div>';
+    if (mel.length === 0) { h += '<div style="color:#475569;font-size:12px">Nenhuma loja</div>'; }
+    for (var mi3 = 0; mi3 < mel.length; mi3++) {
+      var lm3 = mel[mi3];
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #166534">';
+      h += '<span style="font-size:12px;font-weight:600;color:#e2e8f0">' + lm3.nome + '</span>';
+      h += '<span style="font-size:11px;color:#4ade80;font-weight:700">' + fmtN(lm3.pct) + '% <span style="color:#86efac;font-size:10px">(' + fmtN(lm3.df) + '%)</span></span>';
+      h += '</div>';
+    }
+    h += '</div>';
+    h += '<div style="background:#2d0d0d;border:1px solid #7f1d1d;border-radius:10px;padding:12px 16px">';
+    h += '<div style="font-size:11px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">▲ Pioraram este mês</div>';
+    if (pio.length === 0) { h += '<div style="color:#475569;font-size:12px">Nenhuma loja</div>'; }
+    for (var pi3 = 0; pi3 < pio.length; pi3++) {
+      var lp3 = pio[pi3];
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #7f1d1d">';
+      h += '<span style="font-size:12px;font-weight:600;color:#e2e8f0">' + lp3.nome + '</span>';
+      h += '<span style="font-size:11px;color:#f87171;font-weight:700">' + fmtN(lp3.pct) + '% <span style="color:#fca5a5;font-size:10px">(+' + fmtN(lp3.df) + '%)</span></span>';
+      h += '</div>';
+    }
+    h += '</div></div>';
+    ds.innerHTML = h;
+  }
+
+  function atualizarBarras() {
+    var pctMap = {};
+    for (var bi2 = 0; bi2 < d.lojas.length; bi2++) {
+      var pctEl2 = document.getElementById('pctmes-' + bi2);
+      if (pctEl2) {
+        var pv = parseFloat(pctEl2.textContent.replace('%','').replace(',','.')) || 0;
+        pctMap[d.lojas[bi2].loja] = pv;
+      }
+    }
+    var allPcts = Object.values(pctMap);
+    var maxP = allPcts.length ? Math.max.apply(null, allPcts) : 2;
+    maxP = Math.max(maxP, 2);
+    var metaP = +(1 / maxP * 100).toFixed(1);
+    for (var lj2 in pctMap) {
+      var p = pctMap[lj2];
+      var bw2 = +(p / maxP * 100).toFixed(1);
+      var bc2 = p > 1 ? '#f87171' : '#4ade80';
+      var fEl = document.getElementById('bar-fill-' + lj2);
+      if (fEl) { fEl.style.width = bw2 + '%'; fEl.style.background = bc2; }
+      var lEl = document.getElementById('bar-pct-' + lj2);
+      if (lEl) { lEl.textContent = fmtN(p) + '%'; lEl.className = 'bar-pct-lbl ' + (p > 1 ? 'neg' : 'pos'); }
+    }
+    // Rede total
+    var totAvMes2 = 0, totVenda2 = 0;
+    for (var bi3 = 0; bi3 < d.lojas.length; bi3++) {
+      var inp2 = document.querySelectorAll('.bonif-input')[bi3];
+      var bv2 = inp2 ? (parseFloat(inp2.value.replace(/\./g,'').replace(',','.')) || 0) : 0;
+      totAvMes2 += d.lojas[bi3].aberto + d.lojas[bi3].tramite + (d.lojas[bi3].saldo - bv2);
+      totVenda2 += d.lojas[bi3].venda;
+    }
+    var redePct2 = totVenda2 > 0 ? Math.abs(totAvMes2 / totVenda2 * 100) : 0;
+    var redeW2 = +(redePct2 / maxP * 100).toFixed(1);
+    var redeC2 = redePct2 > 1 ? '#f87171' : '#4ade80';
+    var rf = document.getElementById('bar-fill-rede');
+    if (rf) { rf.style.width = redeW2 + '%'; rf.style.background = redeC2; }
+    var rl = document.getElementById('bar-pct-rede');
+    if (rl) { rl.textContent = fmtN(redePct2) + '%'; rl.className = 'bar-pct-lbl ' + (redePct2 > 1 ? 'neg' : 'pos'); }
+    // Meta lines
+    var mls = document.querySelectorAll('.bar-meta-dyn');
+    for (var mi2 = 0; mi2 < mls.length; mi2++) mls[mi2].style.left = metaP + '%';
+  }
+
+  // Load saved bonifs
+  fetch('/api/pendencias/prevencao-bonif?mes=' + mesVal)
+    .then(function(r) { return r.json(); })
+    .then(function(saved) {
+      for (var si = 0; si < d.lojas.length; si++) {
+        var sv = saved[d.lojas[si].loja];
+        if (sv > 0) {
+          var inp = document.querySelectorAll('.bonif-input')[si];
+          if (inp) { inp.value = fmtN(sv); inp.dispatchEvent(new Event('input')); }
+        }
+      }
+      atualizarBarras();
+      atualizarDestaques();
+      atualizarTend();
+    }).catch(function() { atualizarBarras(); atualizarDestaques(); atualizarTend(); });
+}
+
+function renderTudo(d) {
+  var r = d.resumo;
+  var lojaName = 'LOJA ' + document.getElementById('fil-loja').value;
+  var mesVal = document.getElementById('fil-mes').value;
+  var mesLabel = mesVal ? MESES[parseInt(mesVal.split('-')[1])] + '/' + mesVal.split('-')[0] : '';
+
+  var html = '';
+
+  // ── RESUMO AVARIAS ──
+  html += '<div class="sec-title">📋 AVARIAS — ' + lojaName + ' — ' + mesLabel + '</div>';
+  html += '<div class="kpi-row">';
+  html += '<div class="kpi"><div class="v warn">' + fmt(r.emitido) + '</div><div class="l">Notas Emitidas</div></div>';
+  html += '<div class="kpi"><div class="v neg">' + fmt(r.aberto) + '</div><div class="l">Em Aberto</div></div>';
+  html += '<div class="kpi"><div class="v info">' + fmt(r.tramite) + '</div><div class="l">Em Trâmite</div></div>';
+  html += '<div class="kpi"><div class="v" style="color:#e2e8f0">' + fmt(r.valorVenda) + '</div><div class="l">Valor Venda</div></div>';
+  html += '</div>';
+
+  // ── SETOR BREAKDOWN ──
+  html += '<div class="sec-title">🏪 NOTAS EMITIDAS POR SETOR</div>';
+  html += '<div class="setor-grid">';
+  var setores = ['AÇOUGUE','HORTFRUTI','PADARIA'];
+  for (var i = 0; i < setores.length; i++) {
+    var s = setores[i];
+    var v = d.porSetor[s] || 0;
+    html += '<div class="setor-card"><div class="nome">' + s + '</div><div class="val">' + fmt(v) + '</div></div>';
+  }
+  html += '<div class="setor-card"><div class="nome">SALDO AVARIA</div><div class="val" id="saldo-avaria" style="color:#94a3b8">' + fmt(r.saldoAvaria) + '</div></div>';
+  html += '<div class="setor-card"><div class="nome">BONIFICAÇÕES</div><div style="padding:4px 0"><input type="text" id="input-bonif" value="0,00" style="width:100%;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#a78bfa;font-size:1.1rem;font-weight:700;padding:6px 8px;text-align:center;outline:none" placeholder="Digite o valor"></div></div>';
+  html += '<div class="setor-card"><div class="nome">AVARIAS FINAL</div><div class="val" id="avarias-final" style="color:#f87171">' + fmt(r.saldoAvaria) + '</div></div>';
+  html += '<div class="setor-card"><div class="nome">% AVARIAS MÊS</div><div class="val" id="pct-avarias">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '%</div></div>';
+  html += '</div>';
+
+  // ── COMPARATIVO MENSAL ──
+  html += '<div class="sec-title">📊 % AVARIAS POR MÊS</div>';
+  html += '<div class="mensal-grid">';
+  var avMesSel = r.aberto + r.tramite + r.avariasFinal;
+  var pctMesSel = r.valorVenda > 0 ? (avMesSel / r.valorVenda * 100) : 0;
+  for (var j = 0; j < d.mensal.length; j++) {
+    var m = d.mensal[j];
+    var mParts = m.mes.split('-');
+    var mNome = MESES[parseInt(mParts[1])] + '/' + mParts[0];
+    var isSel = m.mes === mesVal;
+    var pctExib = isSel ? pctMesSel : m.pct;
+    html += '<div class="mensal-card"' + (isSel ? ' style="border-color:#F9C20066"' : '') + '><div class="mes-label">' + mNome + '</div>';
+    if (!isSel && pctExib === 0) {
+      html += '<div class="mes-val" style="color:#475569">—</div>';
+    } else {
+      var cor = pctExib > 1 ? 'neg' : 'pos';
+      var idAttr = isSel ? ' id="mensal-sel-pct"' : '';
+      html += '<div class="mes-val ' + cor + '"' + idAttr + '>' + fmtN(pctExib) + '%</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // ── AVARIA DO MÊS (EM ABERTO + EM TRÂMITE + AVARIA FINAL) ──
+  html += '<div class="sec-title">⚠️ AVARIA DO MÊS</div>';
+  html += '<div class="table-wrap"><table class="t">';
+  html += '<thead><tr><th>Situação</th><th class="r">Valor</th><th>Tipo</th></tr></thead>';
+  html += '<tbody>';
+  html += '<tr><td class="bold warn">EM ABERTO</td><td class="r bold warn">' + fmt(r.aberto) + '</td><td style="color:#94a3b8">Produtos na loja (mês)</td></tr>';
+  html += '<tr><td class="bold info">EM TRÂMITE</td><td class="r bold info">' + fmt(r.tramite) + '</td><td style="color:#94a3b8">Produtos descartados (mês)</td></tr>';
+  html += '<tr><td class="bold neg">AVARIAS FINAL</td><td class="r bold neg" id="pendencias-final">' + fmt(r.avariasFinal) + '</td><td style="color:#94a3b8">Notas emitidas líquidas (mês)</td></tr>';
+  html += '<tr style="border-top:2px solid #334155"><td class="bold" style="color:#f8fafc">TOTAL AVARIA MÊS</td><td class="r bold neg" id="pendencias-total">' + fmt(r.aberto + r.tramite + r.avariasFinal) + '</td><td style="color:#64748b;font-size:11px" id="pendencias-pct">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '% s/ venda</td></tr>';
+  html += '</tbody></table></div>';
+
+  // ── TOTAL GERAL (SEM FILTRO DE MÊS) ──
+  html += '<div class="sec-title">📦 TOTAL GERAL PENDENTE (TODOS OS MESES)</div>';
+  html += '<div class="kpi-row">';
+  html += '<div class="kpi" style="border-left:3px solid #f59e0b"><div class="v warn">' + fmt(r.totalGeralAberto) + '</div><div class="l">Em Aberto — Total Geral</div></div>';
+  html += '<div class="kpi" style="border-left:3px solid #38bdf8"><div class="v info">' + fmt(r.totalGeralTramite) + '</div><div class="l">Em Trâmite — Total Geral</div></div>';
+  html += '<div class="kpi" style="border-left:3px solid #f87171"><div class="v neg">' + fmt(r.totalGeralAberto + r.totalGeralTramite) + '</div><div class="l">Total Pendente</div></div>';
+  html += '</div>';
+
+  // ── TOP 10 FORNECEDORES ──
+  html += renderTop10(d.abertoFornec, d.tramiteFornec, r.aberto, r.tramite);
+
+  // ── EM ABERTOS FÍSICO (por fornecedor) ──
+  html += renderFornecedorSection('🟡 EM ABERTOS FÍSICO', d.abertoFornec, d.abertoItens, 'aberto', r.aberto);
+
+  // ── EM TRÂMITE (por fornecedor) ──
+  html += renderFornecedorSection('🔵 EM TRÂMITE', d.tramiteFornec, d.tramiteItens, 'tramite', r.tramite);
+
+  document.getElementById('conteudo').innerHTML = html;
+
+  var lojaVal = document.getElementById('fil-loja').value;
+  var inputBonif = document.getElementById('input-bonif');
+  if (inputBonif) {
+    inputBonif.addEventListener('input', function() {
+      var val = parseFloat(this.value.replace(/\./g,'').replace(',','.')) || 0;
+      var final_ = r.saldoAvaria - val;
+      var totalMes = r.aberto + r.tramite + final_;
+      var pct = r.valorVenda > 0 ? (totalMes / r.valorVenda * 100) : 0;
+      document.getElementById('avarias-final').textContent = fmt(final_);
+      document.getElementById('pendencias-final').textContent = fmt(final_);
+      document.getElementById('pendencias-total').textContent = fmt(totalMes);
+      document.getElementById('pct-avarias').textContent = fmtN(pct) + '%';
+      document.getElementById('pct-avarias').className = 'val ' + (pct > 0 ? 'neg' : '');
+      var pendPct = document.getElementById('pendencias-pct');
+      if (pendPct) pendPct.textContent = fmtN(pct) + '% s/ venda';
+      var selCard = document.getElementById('mensal-sel-pct');
+      if (selCard) { selCard.textContent = fmtN(pct) + '%'; selCard.className = 'mes-val ' + (pct > 1 ? 'neg' : 'pos'); }
+      salvarBonif(lojaVal, mesVal, val);
+    });
+
+    // Load saved bonif
+    fetch('/api/pendencias/prevencao-bonif?loja=' + lojaVal + '&mes=' + mesVal)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.valor > 0) {
+          inputBonif.value = fmtN(data.valor);
+          inputBonif.dispatchEvent(new Event('input'));
+        }
+      }).catch(function() {});
+  }
+}
+
+function renderTop10(abertoFornec, tramiteFornec, totalAberto, totalTramite) {
+  var html = '<div class="sec-title">🏆 TOP 10 FORNECEDORES — ITENS CRÍTICOS</div>';
+  html += '<div class="top10-wrapper">';
+
+  // Coluna Em Aberto
+  var abTop = abertoFornec.slice(0, 10);
+  var abMax = abTop.length ? abTop[0].total : 1;
+  html += '<div class="top10-col">';
+  html += '<h3><span class="dot" style="background:#f87171"></span><span style="color:#f87171">Em Aberto</span> <span style="color:#64748b;font-weight:400;font-size:11px">— itens físicos na loja</span></h3>';
+  if (!abTop.length) {
+    html += '<div class="empty" style="padding:12px">Nenhum item em aberto.</div>';
+  } else {
+    for (var i = 0; i < abTop.length; i++) {
+      var f = abTop[i];
+      var pct = abMax > 0 ? (f.total / abMax * 100) : 0;
+      html += '<div class="top10-item">';
+      html += '<span class="top10-rank">' + (i + 1) + '</span>';
+      html += '<div class="top10-info"><div class="top10-nome" title="' + f.nome + '">' + f.nome + '</div>';
+      html += '<div class="top10-bar-bg"><div class="top10-bar" style="width:' + pct + '%;background:#f87171"></div></div></div>';
+      html += '<span class="top10-val" style="color:#f87171">' + fmt(f.total) + '</span>';
+      html += '</div>';
+    }
+  }
+  html += '<div class="top10-total"><span>Total</span><span style="color:#f87171">' + fmt(totalAberto) + '</span></div>';
+  html += '</div>';
+
+  // Coluna Em Trâmite
+  var trTop = tramiteFornec.slice(0, 10);
+  var trMax = trTop.length ? trTop[0].total : 1;
+  html += '<div class="top10-col">';
+  html += '<h3><span class="dot" style="background:#f59e0b"></span><span style="color:#f59e0b">Em Trâmite</span> <span style="color:#64748b;font-weight:400;font-size:11px">— itens descartados a resolver</span></h3>';
+  if (!trTop.length) {
+    html += '<div class="empty" style="padding:12px">Nenhum item em trâmite.</div>';
+  } else {
+    for (var i = 0; i < trTop.length; i++) {
+      var f = trTop[i];
+      var pct = trMax > 0 ? (f.total / trMax * 100) : 0;
+      html += '<div class="top10-item">';
+      html += '<span class="top10-rank">' + (i + 1) + '</span>';
+      html += '<div class="top10-info"><div class="top10-nome" title="' + f.nome + '">' + f.nome + '</div>';
+      html += '<div class="top10-bar-bg"><div class="top10-bar" style="width:' + pct + '%;background:#f59e0b"></div></div></div>';
+      html += '<span class="top10-val" style="color:#f59e0b">' + fmt(f.total) + '</span>';
+      html += '</div>';
+    }
+  }
+  html += '<div class="top10-total"><span>Total</span><span style="color:#f59e0b">' + fmt(totalTramite) + '</span></div>';
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function renderFornecedorSection(titulo, fornecList, itens, prefix, total) {
+  var html = '<div class="sec-title">' + titulo + ' — ' + fmt(total) + '</div>';
+
+  if (!fornecList.length) {
+    html += '<div class="empty">Nenhum item neste status.</div>';
+    return html;
+  }
+
+  // Agrupa itens por fornecedor
+  var itensPorFornec = {};
+  for (var j = 0; j < itens.length; j++) {
+    var fn = itens[j].fornecedor || 'SEM FORNECEDOR';
+    if (!itensPorFornec[fn]) itensPorFornec[fn] = [];
+    itensPorFornec[fn].push(itens[j]);
+  }
+
+  // Cada fornecedor é um accordion
+  for (var i = 0; i < fornecList.length; i++) {
+    var f = fornecList[i];
+    var id = prefix + '-f-' + i;
+    var fi = itensPorFornec[f.nome] || [];
+    html += '<div class="grupo-bloco">';
+    html += '<div class="grupo-hdr" onclick="toggleGrupo(\'' + id + '\')">';
+    html += '<span class="grupo-hdr-nome" style="cursor:pointer">' + f.nome + '</span>';
+    html += '<span class="grupo-badge">' + f.qtd + ' itens</span>';
+    html += '<span class="grupo-badge" style="margin-left:4px">' + fmt(f.total) + '</span>';
+    html += '<span class="grupo-toggle">▼</span>';
+    html += '</div>';
+    html += '<div class="grupo-body" id="' + id + '">';
+    html += '<div class="table-wrap"><table class="t">';
+    html += '<thead><tr><th>Código</th><th>Produto</th><th>Und</th><th class="r">Qtd</th>';
+    html += '<th class="r">Valor</th><th class="r">Total</th>';
+    html += '<th>Usuário</th><th>Data</th></tr></thead>';
+    html += '<tbody>';
+    for (var k = 0; k < fi.length; k++) {
+      var p = fi[k];
+      html += '<tr>';
+      html += '<td class="cod">' + p.CodigoBarras + '</td>';
+      html += '<td class="desc">' + (p.Descricao || '') + '</td>';
+      html += '<td style="color:#64748b;font-size:11px">' + (p.Und || '') + '</td>';
+      html += '<td class="r">' + parseFloat(p.Qtd).toLocaleString('pt-BR') + '</td>';
+      html += '<td class="r">' + fmtN(p.Valor) + '</td>';
+      html += '<td class="r bold warn">' + fmtN(p.Total) + '</td>';
+      html += '<td style="font-size:11px;color:#64748b">' + (p.Usuario || '') + '</td>';
+      html += '<td style="font-size:11px;color:#64748b;white-space:nowrap">' + fmtD(p.DataLan) + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table></div></div></div>';
+  }
+
+  return html;
+}
+
+function toggleGrupo(id) {
+  var body = document.getElementById(id);
+  var hdr = body.previousElementSibling;
+  body.classList.toggle('open');
+  hdr.classList.toggle('open');
+}
+
+function exportarCSV() {
+  if (!dadosGlobal) return;
+  var all = (dadosGlobal.abertoItens || []).concat(dadosGlobal.tramiteItens || []);
+  if (!all.length) return;
+  var cols = ['CodigoBarras','Descricao','Und','Qtd','Valor','Total','fornecedor','Usuario','DataLan','Status'];
+  var header = cols.join(';');
+  var linhas = all.map(function(r) {
+    return cols.map(function(c) {
+      var v = (r[c] || '').toString();
+      if (c === 'Status') v = r[c] === 0 ? 'Em Aberto' : 'Em Trâmite';
+      if (c === 'DataLan') v = new Date(r[c]).toLocaleDateString('pt-BR');
+      return '"' + v.replace(/"/g, '""') + '"';
+    }).join(';');
+  });
+  var csv = [header].concat(linhas).join('\n');
+  var blob = new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var loja = document.getElementById('fil-loja').value;
+  var mes = document.getElementById('fil-mes').value || 'todos';
+  a.download = 'prevencao-loja' + loja + '-' + mes + '.csv';
+  a.click();
+}
+
+// Init
+(function() {
+  var hoje = new Date();
+  document.getElementById('fil-mes').value = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+  carregar();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparativos — Econômico Relatórios</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #334155}
+.sidebar-logo h2{font-size:15px;color:#F9C200;font-weight:700;letter-spacing:0.5px}
+.sidebar-logo p{font-size:11px;color:#64748b;margin-top:2px}
+.sidebar-nav{padding:10px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#334155;color:#f1f5f9}
+.nav-item.active{background:#F9C20018;color:#F9C200;border-right:3px solid #F9C200}
+.nav-item .ic{font-size:15px;width:20px;text-align:center}
+.nav-sub{padding-left:36px;font-size:12px}
+.nav-sub.active{background:#F9C20010;color:#F9C200;border-right:3px solid #F9C200}
+
+/* LAYOUT */
+.main{margin-left:220px;padding:24px}
+
+/* HEADER */
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-hdr h1{font-size:21px;font-weight:700;color:#f8fafc}
+.page-hdr p{font-size:12px;color:#64748b;margin-top:2px}
+
+/* FILTROS */
+.filtros{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg select{background:#0f172a;border:1px solid #334155;border-radius:7px;color:#e2e8f0;padding:7px 11px;font-size:13px;outline:none;min-width:120px}
+.fg select:focus{border-color:#F9C200}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end;white-space:nowrap}
+.btn-pri{background:#F9C200;color:#0f0f1a;font-weight:700}.btn-pri:hover{background:#e0ae00}
+
+/* KPI CARDS */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue::before{background:#3b82f6}
+.kpi.green::before{background:#10b981}
+.kpi.amber::before{background:#f59e0b}
+.kpi.rose::before{background:#f43f5e}
+.kpi-l{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-v{font-size:22px;font-weight:700;color:#f1f5f9}
+.kpi-s{font-size:11px;margin-top:4px;color:#64748b}
+.up{color:#10b981}.dn{color:#ef4444}
+
+/* CHART CARD */
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px 20px;margin-bottom:20px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.card-hdr h2{font-size:14px;font-weight:700;color:#f1f5f9}
+.legenda{display:flex;gap:14px;align-items:center}
+.leg-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.leg-txt{font-size:11px;color:#94a3b8}
+.chart-wrap{position:relative;height:320px}
+
+/* TABELA */
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #334155}
+table.dt{width:100%;border-collapse:collapse;font-size:12px}
+table.dt thead{background:#0f172a;position:sticky;top:0;z-index:1}
+table.dt th{padding:9px 12px;text-align:left;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid #334155}
+table.dt th.r{text-align:right}
+table.dt td{padding:8px 12px;border-bottom:1px solid #1e293b;color:#e2e8f0;vertical-align:middle}
+table.dt td.r{text-align:right}
+table.dt tbody tr:hover{background:#ffffff06}
+.var-pos{color:#10b981;font-weight:700}
+.var-neg{color:#ef4444;font-weight:700}
+.var-zero{color:#64748b}
+.loading{text-align:center;padding:40px;color:#64748b;font-size:14px}
+
+/* ABAS */
+.tabs{display:flex;gap:4px;border-bottom:1px solid #334155;margin-bottom:16px}
+.tab-btn{background:none;border:none;cursor:pointer;padding:8px 16px;font-size:13px;font-weight:600;color:#64748b;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:#e2e8f0}
+.tab-btn.active{color:#F9C200;border-bottom-color:#F9C200}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;width:100%;flex-direction:column;border-right:none;border-top:1px solid #334155}
+  .sidebar-logo{display:none}
+  .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px}
+  .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center;border-right:none!important}
+  .nav-item .ic{font-size:12px;width:auto}
+  .nav-sub{display:none}
+  .main{margin-left:0;margin-bottom:80px;padding:14px}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .chart-wrap{height:240px}
+  div[style*="border-top:1px solid #334155"]{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html"       class="nav-item"><span class="ic">📊</span> Dashboard</a>
+    <a href="consulta.html"    class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
+    <a href="itens.html"       class="nav-item"><span class="ic">📂</span> Mercadológico</a>
+    <a href="fornecedores.html"class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
+    <a href="pendencias.html"  class="nav-item"><span class="ic">⚠️</span> Pendências</a>
+    <a href="comparativos.html"class="nav-item active"><span class="ic">📈</span> Comparativos</a>
+    <a href="prevencao.html"  class="nav-item"><span class="ic">🛡️</span> Prevenção</a>
+    <a href="ruptura.html" class="nav-item"><span class="ic">🤖</span> IA Rupturas</a>
+  </nav>
+  <div style="padding:12px 16px;border-top:1px solid #334155;margin-top:auto">
+    <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="sidebar-user">👤 ...</div>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#f87171;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #7f1d1d;background:#450a0a22;transition:background .15s" onmouseover="this.style.background='#450a0a'" onmouseout="this.style.background='#450a0a22'">🚪 Sair</a>
+  </div>
+</div>
+<script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('sidebar-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
+
+<div class="main">
+  <div class="page-hdr">
+    <div>
+      <h1>Comparativos</h1>
+      <p>Comparativo Diário por Mês — vendas 2025 × 2026</p>
+    </div>
+  </div>
+
+  <div class="filtros">
+    <div class="fg" id="fg-loja">
+      <label>Loja</label>
+      <select id="sel-loja">
+        <option value="1">Loja 1</option>
+        <option value="2">Loja 2</option>
+        <option value="3">Loja 3</option>
+        <option value="4">Loja 4</option>
+        <option value="5">Loja 5</option>
+        <option value="6">Loja 6</option>
+      </select>
+    </div>
+    <div class="fg" id="fg-loja-margem" style="display:none">
+      <label>Loja</label>
+      <select id="sel-loja-margem">
+        <option value="0">Rede Toda</option>
+        <option value="1">Loja 1</option>
+        <option value="2">Loja 2</option>
+        <option value="3">Loja 3</option>
+        <option value="4">Loja 4</option>
+        <option value="5">Loja 5</option>
+        <option value="6">Loja 6</option>
+      </select>
+    </div>
+    <div class="fg" id="fg-mes">
+      <label>Mês</label>
+      <select id="sel-mes">
+        <option value="1">Janeiro</option>
+        <option value="2">Fevereiro</option>
+        <option value="3">Março</option>
+        <option value="4">Abril</option>
+        <option value="5">Maio</option>
+        <option value="6">Junho</option>
+        <option value="7">Julho</option>
+        <option value="8">Agosto</option>
+        <option value="9">Setembro</option>
+        <option value="10">Outubro</option>
+        <option value="11">Novembro</option>
+        <option value="12">Dezembro</option>
+      </select>
+    </div>
+    <button class="btn btn-pri" onclick="atualizarAbaAtual()">Atualizar</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi blue">
+      <div class="kpi-l">Total 2025</div>
+      <div class="kpi-v" id="k-tot25">—</div>
+      <div class="kpi-s" id="k-sub25"></div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-l">Total 2026</div>
+      <div class="kpi-v" id="k-tot26">—</div>
+      <div class="kpi-s" id="k-sub26"></div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-l">Variação</div>
+      <div class="kpi-v" id="k-var">—</div>
+      <div class="kpi-s" id="k-dif">diferença</div>
+    </div>
+    <div class="kpi rose">
+      <div class="kpi-l" id="k-med-label">Média Diária 2026</div>
+      <div class="kpi-v" id="k-med26">—</div>
+      <div class="kpi-s" id="k-med25">vs 2025: —</div>
+    </div>
+  </div>
+
+  <!-- Tabelas com abas -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-btn-diario" onclick="setTab('diario')">Venda Diária</button>
+      <button class="tab-btn"        id="tab-btn-mensal" onclick="setTab('mensal')">Venda Mensal</button>
+      <button class="tab-btn"        id="tab-btn-merc"   onclick="setTab('merc')">Venda por Mercadológico</button>
+      <button class="tab-btn"        id="tab-btn-lojas"  onclick="setTab('lojas')">Por Lojas</button>
+      <button class="tab-btn"        id="tab-btn-margem" onclick="setTab('margem')">Margem s/ Venda</button>
+      <button class="tab-btn"        id="tab-btn-cv"     onclick="setTab('cv')">Compra x Venda</button>
+    </div>
+
+    <!-- Tab: Diário -->
+    <div id="tab-diario">
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">Variação</th>
+              <th class="r">Diferença</th>
+              <th class="r">Cupons 2025</th>
+              <th class="r">Cupons 2026</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Mensal -->
+    <div id="tab-mensal" style="display:none">
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">Variação</th>
+              <th class="r">Diferença</th>
+              <th class="r">Cupons 2025</th>
+              <th class="r">Cupons 2026</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-mensal"><tr><td colspan="7" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Por Mercadológico -->
+    <div id="tab-merc" style="display:none">
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Mercadológico</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">Variação</th>
+              <th class="r">Diferença</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-merc"><tr><td colspan="5" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Por Lojas -->
+    <div id="tab-lojas" style="display:none">
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Loja</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">Variação</th>
+              <th class="r">Diferença</th>
+              <th class="r">Cupons 2025</th>
+              <th class="r">Cupons 2026</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-lojas"><tr><td colspan="7" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Margem s/ Venda -->
+    <div id="tab-margem" style="display:none">
+      <p style="font-size:11px;color:#64748b;margin-bottom:14px">Margem Sobre Venda = (Venda − Custo) ÷ Venda × 100 &nbsp;·&nbsp; Fonte: campo Custo de zcupomitens</p>
+
+      <h3 style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Mês — 2025 vs 2026</h3>
+      <div class="table-wrap" style="margin-bottom:24px">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">MSV 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">MSV 2026</th>
+              <th class="r">Δ Margem</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-margem-mes"><tr><td colspan="6" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 id="titulo-margem-loja" style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Loja — Mês Selecionado</h3>
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Loja</th>
+              <th class="r">Venda 2025</th>
+              <th class="r">MSV 2025</th>
+              <th class="r">Venda 2026</th>
+              <th class="r">MSV 2026</th>
+              <th class="r">Δ Margem</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-margem-loja"><tr><td colspan="6" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Compra x Venda -->
+    <div id="tab-cv" style="display:none">
+      <p id="cv-subtitulo" style="font-size:11px;color:#64748b;margin-bottom:14px">
+        Venda = NFC-e (PDV) + NF-e saída &nbsp;·&nbsp; Compra = NF-e de entrada recebidas &nbsp;·&nbsp; C/V% = Compra ÷ Venda Total × 100
+      </p>
+      <div class="table-wrap">
+        <table class="dt">
+          <thead>
+            <tr>
+              <th>Loja</th>
+              <th class="r">Venda NFC-e</th>
+              <th class="r">Venda NF-e</th>
+              <th class="r">Venda Total</th>
+              <th class="r" style="color:#60a5fa">Compra c/ NF</th>
+              <th class="r" style="color:#60a5fa">C/V%</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cv"><tr><td colspan="6" class="loading">Selecione a aba para carregar</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2>Vendas por Dia — <span id="chart-titulo">...</span></h2>
+      <div class="legenda">
+        <div style="display:flex;align-items:center;gap:6px"><div class="leg-dot" style="background:#3b82f6"></div><span class="leg-txt">2025</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="leg-dot" style="background:#F9C200"></div><span class="leg-txt">2026</span></div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="grafico"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+const BRL = v => v.toLocaleString('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits:2 });
+const PCT = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+let chart = null;
+
+function initSelects() {
+  const hoje = new Date();
+  document.getElementById('sel-mes').value = hoje.getMonth() + 1;
+}
+
+function carregar() {
+  const loja = document.getElementById('sel-loja').value;
+  const mes  = document.getElementById('sel-mes').value;
+
+  document.getElementById('k-tot25').textContent = '...';
+  document.getElementById('k-tot26').textContent = '...';
+  document.getElementById('k-var').textContent   = '...';
+  document.getElementById('k-med26').textContent = '...';
+
+  fetch(`/api/comparativo-diario?loja=${loja}&mes=${mes}`)
+    .then(r => r.json())
+    .then(renderizar)
+    .catch(e => console.error(e));
+}
+
+function renderizar(data) {
+  const mes  = parseInt(document.getElementById('sel-mes').value);
+  const loja = document.getElementById('sel-loja').value;
+  document.getElementById('chart-titulo').textContent = `${MESES[mes]} · Loja ${loja}`;
+
+  // KPIs
+  document.getElementById('k-tot25').textContent = BRL(data.total2025);
+  document.getElementById('k-tot26').textContent = BRL(data.total2026);
+
+  // 2025 até o mesmo dia atual (só mostra se for o mês corrente)
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth() + 1;
+  const diaAtual = hoje.getDate();
+  if (mes === mesAtual) {
+    const tot25Periodo = data.dias
+      .filter(d => d.dia <= diaAtual)
+      .reduce((s, d) => s + d.v2025, 0);
+    const varPeriodo = tot25Periodo > 0 ? (data.total2026 - tot25Periodo) / tot25Periodo * 100 : null;
+    const varSpan = varPeriodo !== null
+      ? ` <span style="font-weight:700;color:${varPeriodo >= 0 ? '#10b981' : '#ef4444'}">${PCT(varPeriodo)}</span>`
+      : '';
+    document.getElementById('k-sub25').innerHTML =
+      `mês completo de ${MESES[mes]}<br><span style="color:#60a5fa;font-size:11px">até dia ${diaAtual}: ${BRL(tot25Periodo)}${varSpan}</span>`;
+  } else {
+    document.getElementById('k-sub25').textContent = `mês de ${MESES[mes]}`;
+  }
+  document.getElementById('k-sub26').textContent = `mês de ${MESES[mes]}`;
+
+  // Variação usando mesmo período (2025 até dia atual vs 2026 total)
+  const varPct = data.var_pct;
+  const kVar = document.getElementById('k-var');
+  if (varPct !== null) {
+    kVar.textContent = PCT(varPct);
+    kVar.className = 'kpi-v ' + (varPct >= 0 ? 'up' : 'dn');
+  } else { kVar.textContent = '—'; kVar.className = 'kpi-v'; }
+
+  const dif = data.total2026 - data.total2025;
+  document.getElementById('k-dif').textContent = (dif >= 0 ? '+' : '') + BRL(dif);
+
+  // Média só dos dias com venda em 2026
+  const diasC26 = data.dias.filter(d => d.v2026 > 0);
+  const med26 = diasC26.length > 0 ? diasC26.reduce((s,d) => s+d.v2026, 0) / diasC26.length : 0;
+  const diasC25 = data.dias.filter(d => d.v2025 > 0);
+  const med25 = diasC25.length > 0 ? diasC25.reduce((s,d) => s+d.v2025, 0) / diasC25.length : 0;
+  document.getElementById('k-med26').textContent = BRL(med26);
+  document.getElementById('k-med25').textContent = 'vs 2025: ' + BRL(med25);
+
+  // Gráfico
+  const labels = data.dias.map(d => d.dia);
+  const vals25 = data.dias.map(d => d.v2025);
+  const vals26 = data.dias.map(d => d.v2026);
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('grafico'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '2025',
+          data: vals25,
+          backgroundColor: 'rgba(59,130,246,0.7)',
+          borderColor: 'rgba(59,130,246,1)',
+          borderWidth: 1,
+          borderRadius: 3
+        },
+        {
+          label: '2026',
+          data: vals26,
+          backgroundColor: 'rgba(249,194,0,0.85)',
+          borderColor: 'rgba(249,194,0,1)',
+          borderWidth: 1,
+          borderRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          borderColor: '#334155',
+          borderWidth: 1,
+          titleColor: '#94a3b8',
+          bodyColor: '#f1f5f9',
+          callbacks: {
+            title: ctx => `Dia ${ctx[0].label}`,
+            label: ctx => ` ${ctx.dataset.label}: ${BRL(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#64748b', font: { size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            color: '#64748b',
+            font: { size: 11 },
+            callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
+          }
+        }
+      }
+    }
+  });
+
+  // Tabela
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  let tot25 = 0, tot26 = 0;
+  for (const d of data.dias) {
+    tot25 += d.v2025; tot26 += d.v2026;
+    const dif = d.v2026 - d.v2025;
+    let varCell = '<span class="var-zero">—</span>';
+    if (d.var !== null) {
+      const cls = d.var > 0 ? 'var-pos' : d.var < 0 ? 'var-neg' : 'var-zero';
+      varCell = `<span class="${cls}">${PCT(d.var)}</span>`;
+    }
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td><strong>${String(d.dia).padStart(2,'0')}</strong></td>
+        <td class="r">${d.v2025 > 0 ? BRL(d.v2025) : '<span style="color:#334155">—</span>'}</td>
+        <td class="r">${d.v2026 > 0 ? BRL(d.v2026) : '<span style="color:#334155">—</span>'}</td>
+        <td class="r">${varCell}</td>
+        <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${d.v2025 > 0 || d.v2026 > 0 ? (dif >= 0 ? '+' : '') + BRL(dif) : ''}</td>
+        <td class="r">${d.c2025 || ''}</td>
+        <td class="r">${d.c2026 || ''}</td>
+      </tr>
+    `);
+  }
+  // Totais
+  const difTot = tot26 - tot25;
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+      <td>Total</td>
+      <td class="r">${BRL(tot25)}</td>
+      <td class="r">${BRL(tot26)}</td>
+      <td class="r">${data.var_pct !== null ? `<span class="${data.var_pct >= 0 ? 'var-pos' : 'var-neg'}">${PCT(data.var_pct)}</span>` : ''}</td>
+      <td class="r ${difTot >= 0 ? 'var-pos' : 'var-neg'}">${(difTot >= 0 ? '+' : '') + BRL(difTot)}</td>
+      <td class="r">${data.dias.reduce((s,d)=>s+d.c2025,0)}</td>
+      <td class="r">${data.dias.reduce((s,d)=>s+d.c2026,0)}</td>
+    </tr>
+  `);
+}
+
+const _carregado = { diario: false, mensal: false, merc: false, lojas: false, margem: false, cv: false };
+let abaAtual = 'diario';
+// Visibilidade de filtros por aba: [mostra-loja, mostra-mes]
+const _filtros = { diario:[1,1], mensal:[1,0], merc:[1,1], lojas:[0,1], margem:[1,1], cv:[0,1] };
+// Label do 4º KPI por aba
+const _kpiLabel = { diario:'Média Diária 2026', mensal:'Média Mensal 2026', merc:'Total Mercad. 2026', lojas:'Melhor Loja 2026', margem:'Melhor Margem 2026', cv:'C/V% Rede' };
+
+function setTab(aba) {
+  abaAtual = aba;
+  ['diario','mensal','merc','lojas','margem','cv'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === aba ? '' : 'none';
+    document.getElementById('tab-btn-' + t).classList.toggle('active', t === aba);
+  });
+  const [showLoja, showMes] = _filtros[aba];
+  document.getElementById('fg-loja').style.display        = (showLoja && aba !== 'margem') ? '' : 'none';
+  document.getElementById('fg-loja-margem').style.display = aba === 'margem' ? '' : 'none';
+  document.getElementById('fg-mes').style.display         = showMes ? '' : 'none';
+  document.getElementById('k-med-label').textContent = _kpiLabel[aba];
+  if (!_carregado[aba]) _carregar[aba]();
+}
+
+function atualizarAbaAtual() {
+  _carregado[abaAtual] = false;
+  _carregar[abaAtual]();
+}
+
+function atualizarKpisMensal(data) {
+  document.getElementById('k-tot25').textContent = BRL(data.total2025);
+  document.getElementById('k-tot26').textContent = BRL(data.total2026);
+  document.getElementById('k-sub25').textContent = 'total do ano';
+  document.getElementById('k-sub26').textContent = 'total do ano';
+  document.getElementById('k-med-label').textContent = 'Média Mensal 2026';
+  const varPct = data.var_pct;
+  const kVar = document.getElementById('k-var');
+  if (varPct !== null) {
+    kVar.textContent = PCT(varPct);
+    kVar.className = 'kpi-v ' + (varPct >= 0 ? 'up' : 'dn');
+  } else { kVar.textContent = '—'; kVar.className = 'kpi-v'; }
+  const dif = data.total2026 - data.total2025;
+  document.getElementById('k-dif').textContent = (dif >= 0 ? '+' : '') + BRL(dif);
+  const mesesC26 = data.meses.filter(m => m.v2026 > 0);
+  const med26 = mesesC26.length > 0 ? mesesC26.reduce((s,m) => s+m.v2026, 0) / mesesC26.length : 0;
+  const mesesC25 = data.meses.filter(m => m.v2025 > 0);
+  const med25 = mesesC25.length > 0 ? mesesC25.reduce((s,m) => s+m.v2025, 0) / mesesC25.length : 0;
+  document.getElementById('k-med26').textContent = BRL(med26);
+  document.getElementById('k-med25').textContent = 'vs 2025: ' + BRL(med25);
+}
+
+function carregarMensal() {
+  const loja = document.getElementById('sel-loja').value;
+  document.getElementById('tbody-mensal').innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
+  fetch(`/api/comparativo-mensal?loja=${loja}`)
+    .then(r => r.json())
+    .then(data => {
+      _carregado.mensal = true;
+      atualizarKpisMensal(data);
+      const tbody = document.getElementById('tbody-mensal');
+      tbody.innerHTML = '';
+      for (const m of data.meses) {
+        const dif = m.v2026 - m.v2025;
+        let varCell = '<span class="var-zero">—</span>';
+        if (m.var !== null) {
+          const cls = m.var > 0 ? 'var-pos' : m.var < 0 ? 'var-neg' : 'var-zero';
+          varCell = `<span class="${cls}">${PCT(m.var)}</span>`;
+        }
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>${m.nome}</strong></td>
+            <td class="r">${m.v2025 > 0 ? BRL(m.v2025) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${m.v2026 > 0 ? BRL(m.v2026) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${varCell}</td>
+            <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${m.v2025 > 0 || m.v2026 > 0 ? (dif >= 0 ? '+' : '') + BRL(dif) : ''}</td>
+            <td class="r">${m.c2025 || ''}</td>
+            <td class="r">${m.c2026 || ''}</td>
+          </tr>
+        `);
+      }
+      const difTot = data.total2026 - data.total2025;
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total Ano</td>
+          <td class="r">${BRL(data.total2025)}</td>
+          <td class="r">${BRL(data.total2026)}</td>
+          <td class="r">${data.var_pct !== null ? `<span class="${data.var_pct >= 0 ? 'var-pos' : 'var-neg'}">${PCT(data.var_pct)}</span>` : ''}</td>
+          <td class="r ${difTot >= 0 ? 'var-pos' : 'var-neg'}">${(difTot >= 0 ? '+' : '') + BRL(difTot)}</td>
+          <td class="r">${data.meses.reduce((s,m)=>s+m.c2025,0)}</td>
+          <td class="r">${data.meses.reduce((s,m)=>s+m.c2026,0)}</td>
+        </tr>
+      `);
+    })
+    .catch(() => {
+      document.getElementById('tbody-mensal').innerHTML = '<tr><td colspan="7" class="loading">Erro ao carregar dados</td></tr>';
+    });
+}
+
+function mercRow(item, dif, varCell, indent) {
+  const pad = indent ? 'padding-left:28px;color:#94a3b8;font-size:11px' : 'font-weight:700';
+  return `<tr style="${indent ? 'background:#ffffff04' : ''}">
+    <td style="${pad}">${indent ? '↳ ' : ''}${item.nome}</td>
+    <td class="r">${item.v2025>0 ? BRL(item.v2025) : '<span style="color:#334155">—</span>'}</td>
+    <td class="r">${item.v2026>0 ? BRL(item.v2026) : '<span style="color:#334155">—</span>'}</td>
+    <td class="r">${varCell}</td>
+    <td class="r ${dif>=0?'var-pos':'var-neg'}">${item.v2025>0||item.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
+  </tr>`;
+}
+
+function carregarMerc() {
+  const loja = document.getElementById('sel-loja').value;
+  const mes  = document.getElementById('sel-mes').value;
+  document.getElementById('tbody-merc').innerHTML = '<tr><td colspan="5" class="loading">Carregando...</td></tr>';
+  fetch(`/api/comparativo-mercadologico?loja=${loja}&mes=${mes}`)
+    .then(r => r.json())
+    .then(data => {
+      _carregado.merc = true;
+      atualizarKpisGenerico(data, 'merc');
+      const tbody = document.getElementById('tbody-merc');
+      tbody.innerHTML = '';
+      let gIdx = 0;
+      for (const g of data.grupos) {
+        const gId = 'g' + gIdx++;
+        const dif = g.v2026 - g.v2025;
+        let varCell = '<span class="var-zero">—</span>';
+        if (g.var !== null) {
+          const cls = g.var > 0 ? 'var-pos' : g.var < 0 ? 'var-neg' : 'var-zero';
+          varCell = `<span class="${cls}">${PCT(g.var)}</span>`;
+        }
+        // Linha do grupo — clicável para expandir subgrupos
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr style="cursor:pointer;background:#1a2540" onclick="toggleSubs('${gId}')">
+            <td style="font-weight:700"><span id="ic-${gId}" style="color:#F9C200;margin-right:6px;font-size:10px">▶</span>${g.nome}</td>
+            <td class="r" style="font-weight:700">${g.v2025>0?BRL(g.v2025):'<span style="color:#334155">—</span>'}</td>
+            <td class="r" style="font-weight:700">${g.v2026>0?BRL(g.v2026):'<span style="color:#334155">—</span>'}</td>
+            <td class="r">${varCell}</td>
+            <td class="r ${dif>=0?'var-pos':'var-neg'}" style="font-weight:700">${g.v2025>0||g.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
+          </tr>`);
+        // Subgrupos — ocultos por padrão
+        let sIdx = 0;
+        for (const s of g.subs) {
+          const sId = gId + 's' + sIdx++;
+          const sd = s.v2026 - s.v2025;
+          let svc = '<span class="var-zero">—</span>';
+          if (s.var !== null) {
+            const sc = s.var>0?'var-pos':s.var<0?'var-neg':'var-zero';
+            svc = `<span class="${sc}">${PCT(s.var)}</span>`;
+          }
+          tbody.insertAdjacentHTML('beforeend',
+            `<tr class="sub-${gId}" style="display:none;background:#0d1829;cursor:pointer" onclick="toggleSubs('${sId}')">
+              <td style="padding-left:24px;font-size:12px;font-weight:600"><span id="ic-${sId}" style="color:#60a5fa;margin-right:5px;font-size:9px">▶</span>↳ ${s.nome}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2025>0?BRL(s.v2025):'<span style="color:#334155">—</span>'}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2026>0?BRL(s.v2026):'<span style="color:#334155">—</span>'}</td>
+              <td class="r">${svc}</td>
+              <td class="r ${sd>=0?'var-pos':'var-neg'}" style="font-size:12px;font-weight:600">${s.v2025>0||s.v2026>0?(sd>=0?'+':'')+BRL(sd):''}</td>
+            </tr>`);
+          // Mercadológico (3º nível) — oculto por padrão
+          for (const m of s.mercs) {
+            const md = m.v2026 - m.v2025;
+            let mvc = '<span class="var-zero">—</span>';
+            if (m.var !== null) {
+              const mc = m.var>0?'var-pos':m.var<0?'var-neg':'var-zero';
+              mvc = `<span class="${mc}">${PCT(m.var)}</span>`;
+            }
+            tbody.insertAdjacentHTML('beforeend',
+              `<tr class="sub-${gId} sub-${sId}" style="display:none;background:#080f1e">
+                <td style="padding-left:48px;color:#64748b;font-size:11px">· ${m.nome}</td>
+                <td class="r" style="font-size:11px;color:#94a3b8">${m.v2025>0?BRL(m.v2025):'<span style="color:#1e293b">—</span>'}</td>
+                <td class="r" style="font-size:11px;color:#94a3b8">${m.v2026>0?BRL(m.v2026):'<span style="color:#1e293b">—</span>'}</td>
+                <td class="r">${mvc}</td>
+                <td class="r ${md>=0?'var-pos':'var-neg'}" style="font-size:11px">${m.v2025>0||m.v2026>0?(md>=0?'+':'')+BRL(md):''}</td>
+              </tr>`);
+          }
+        }
+      }
+      const difTot = data.total2026 - data.total2025;
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total</td>
+          <td class="r">${BRL(data.total2025)}</td>
+          <td class="r">${BRL(data.total2026)}</td>
+          <td class="r">${data.var_pct!==null?`<span class="${data.var_pct>=0?'var-pos':'var-neg'}">${PCT(data.var_pct)}</span>`:''}</td>
+          <td class="r ${difTot>=0?'var-pos':'var-neg'}">${(difTot>=0?'+':'')+BRL(difTot)}</td>
+        </tr>`);
+    })
+    .catch(() => { document.getElementById('tbody-merc').innerHTML = '<tr><td colspan="5" class="loading">Erro ao carregar</td></tr>'; });
+}
+
+function toggleSubs(gId) {
+  const subs = document.querySelectorAll('.sub-' + gId);
+  const ic   = document.getElementById('ic-' + gId);
+  const open = subs[0] && subs[0].style.display !== 'none';
+  subs.forEach(r => r.style.display = open ? 'none' : '');
+  // Ao fechar, reseta ícones dos subgrupos filhos e oculta seus mercs
+  if (open) {
+    subs.forEach(r => {
+      const cls = Array.from(r.classList).find(c => c.startsWith('sub-') && c !== 'sub-' + gId);
+      if (cls) {
+        const childIc = document.getElementById('ic-' + cls.replace('sub-',''));
+        if (childIc) childIc.textContent = '▶';
+      }
+    });
+  }
+  if (ic) ic.textContent = open ? '▶' : '▼';
+}
+
+function carregarLojas() {
+  const mes = document.getElementById('sel-mes').value;
+  document.getElementById('tbody-lojas').innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
+  fetch(`/api/comparativo-lojas?mes=${mes}`)
+    .then(r => r.json())
+    .then(data => {
+      _carregado.lojas = true;
+      atualizarKpisGenerico(data, 'lojas');
+      const tbody = document.getElementById('tbody-lojas');
+      tbody.innerHTML = '';
+      for (const l of data.lojas) {
+        const dif = l.v2026 - l.v2025;
+        let varCell = '<span class="var-zero">—</span>';
+        if (l.var !== null) {
+          const cls = l.var > 0 ? 'var-pos' : l.var < 0 ? 'var-neg' : 'var-zero';
+          varCell = `<span class="${cls}">${PCT(l.var)}</span>`;
+        }
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>Loja ${l.loja}</strong></td>
+            <td class="r">${l.v2025 > 0 ? BRL(l.v2025) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.v2026 > 0 ? BRL(l.v2026) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${varCell}</td>
+            <td class="r ${dif>=0?'var-pos':'var-neg'}">${l.v2025>0||l.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
+            <td class="r">${l.c2025||''}</td>
+            <td class="r">${l.c2026||''}</td>
+          </tr>`);
+      }
+      const difTot = data.total2026 - data.total2025;
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total Rede</td>
+          <td class="r">${BRL(data.total2025)}</td>
+          <td class="r">${BRL(data.total2026)}</td>
+          <td class="r">${data.var_pct!==null?`<span class="${data.var_pct>=0?'var-pos':'var-neg'}">${PCT(data.var_pct)}</span>`:''}</td>
+          <td class="r ${difTot>=0?'var-pos':'var-neg'}">${(difTot>=0?'+':'')+BRL(difTot)}</td>
+          <td class="r">${data.lojas.reduce((s,l)=>s+l.c2025,0)}</td>
+          <td class="r">${data.lojas.reduce((s,l)=>s+l.c2026,0)}</td>
+        </tr>`);
+    })
+    .catch(() => { document.getElementById('tbody-lojas').innerHTML = '<tr><td colspan="7" class="loading">Erro ao carregar</td></tr>'; });
+}
+
+function atualizarKpisGenerico(data, aba) {
+  document.getElementById('k-tot25').textContent = BRL(data.total2025);
+  document.getElementById('k-tot26').textContent = BRL(data.total2026);
+  document.getElementById('k-sub25').textContent = aba === 'lojas' ? 'todas as lojas' : 'total selecionado';
+  document.getElementById('k-sub26').textContent = aba === 'lojas' ? 'todas as lojas' : 'total selecionado';
+  const varPct = data.var_pct;
+  const kVar = document.getElementById('k-var');
+  if (varPct !== null) { kVar.textContent = PCT(varPct); kVar.className = 'kpi-v ' + (varPct >= 0 ? 'up' : 'dn'); }
+  else { kVar.textContent = '—'; kVar.className = 'kpi-v'; }
+  const dif = data.total2026 - data.total2025;
+  document.getElementById('k-dif').textContent = (dif >= 0 ? '+' : '') + BRL(dif);
+  document.getElementById('k-med26').textContent = BRL(data.total2026);
+  document.getElementById('k-med25').textContent = 'vs 2025: ' + BRL(data.total2025);
+}
+
+function carregarMargem() {
+  const mes  = document.getElementById('sel-mes').value;
+  const loja = document.getElementById('sel-loja-margem').value;
+  document.getElementById('tbody-margem-mes').innerHTML  = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
+  document.getElementById('tbody-margem-loja').innerHTML = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
+  fetch(`/api/margem-lojas?mes=${mes}&loja=${loja}`)
+    .then(r => { if(r.status===401){location.href='/login.html';return null;} return r.json(); })
+    .then(data => {
+      if(!data) return;
+      if(data.error) throw new Error(data.error);
+      _carregado.margem = true;
+      const t = data.totais;
+      const MESES2 = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+      // KPIs
+      const msv25 = t.msv2025, msv26 = t.msv2026;
+      document.getElementById('k-tot25').textContent = msv25 !== null ? msv25.toFixed(2) + '%' : '—';
+      document.getElementById('k-sub25').textContent = 'MSV rede 2025';
+      document.getElementById('k-tot26').textContent = msv26 !== null ? msv26.toFixed(2) + '%' : '—';
+      document.getElementById('k-sub26').textContent = 'MSV rede 2026';
+      const delta = (msv25 !== null && msv26 !== null) ? +(msv26 - msv25).toFixed(2) : null;
+      const kVar = document.getElementById('k-var');
+      if (delta !== null) { kVar.textContent = (delta >= 0 ? '+' : '') + delta.toFixed(2) + ' pp'; kVar.className = 'kpi-v ' + (delta >= 0 ? 'up' : 'dn'); }
+      else { kVar.textContent = '—'; kVar.className = 'kpi-v'; }
+      document.getElementById('k-dif').textContent = 'diferença em pontos percentuais';
+      const melhores = data.por_loja.filter(l => l.msv2026 !== null).sort((a,b) => b.msv2026 - a.msv2026);
+      if (melhores.length > 0) {
+        document.getElementById('k-med26').textContent = melhores[0].msv2026.toFixed(2) + '%';
+        document.getElementById('k-med25').textContent = 'Loja ' + melhores[0].loja;
+      }
+
+      // Tabela por mês
+      const tbM = document.getElementById('tbody-margem-mes');
+      tbM.innerHTML = '';
+      let tv25=0,tc25=0,tv26=0,tc26=0;
+      const mesSel = parseInt(mes);
+      const diaLabel = data.diaHoje ? ` <span style="color:#94a3b8;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
+      for (const m of data.por_mes) {
+        tv25+=m.venda2025; tc25+=m.custo2025; tv26+=m.venda2026; tc26+=m.custo2026;
+        const d = (m.msv2025!==null && m.msv2026!==null) ? +(m.msv2026-m.msv2025).toFixed(2) : null;
+        const dc = d!==null ? (d>=0?'var-pos':'var-neg') : 'var-zero';
+        const msvCls26 = m.msv2026!==null ? (m.msv2026>=20?'var-pos':m.msv2026>=12?'':'var-neg') : 'var-zero';
+        const msvCls25 = m.msv2025!==null ? (m.msv2025>=20?'var-pos':m.msv2025>=12?'':'var-neg') : 'var-zero';
+        const destaque = m.mes===mesSel ? 'background:#F9C20012;' : '';
+        tbM.insertAdjacentHTML('beforeend', `
+          <tr style="${destaque}">
+            <td><strong>${m.nome}</strong>${m.parcial?diaLabel:''}${m.mes===mesSel?' <span style="color:#F9C200;font-size:10px">◀</span>':''}</td>
+            <td class="r">${m.venda2025>0?BRL(m.venda2025):'<span style="color:#334155">—</span>'}</td>
+            <td class="r ${msvCls25}">${m.msv2025!==null?m.msv2025.toFixed(2)+'%':'—'}</td>
+            <td class="r">${m.venda2026>0?BRL(m.venda2026):'<span style="color:#334155">—</span>'}</td>
+            <td class="r ${msvCls26}">${m.msv2026!==null?m.msv2026.toFixed(2)+'%':'—'}</td>
+            <td class="r ${dc}">${d!==null?(d>=0?'+':'')+d.toFixed(2)+' pp':'—'}</td>
+          </tr>`);
+      }
+      const tmv25=tv25>0?+((tv25-tc25)/tv25*100).toFixed(2):null;
+      const tmv26=tv26>0?+((tv26-tc26)/tv26*100).toFixed(2):null;
+      const td=tmv25!==null&&tmv26!==null?+(tmv26-tmv25).toFixed(2):null;
+      tbM.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total Ano</td>
+          <td class="r">${BRL(tv25)}</td>
+          <td class="r">${tmv25!==null?tmv25.toFixed(2)+'%':'—'}</td>
+          <td class="r">${BRL(tv26)}</td>
+          <td class="r">${tmv26!==null?tmv26.toFixed(2)+'%':'—'}</td>
+          <td class="r ${td!==null?(td>=0?'var-pos':'var-neg'):'var-zero'}">${td!==null?(td>=0?'+':'')+td.toFixed(2)+' pp':'—'}</td>
+        </tr>`);
+
+      // Tabela por loja
+      const tituloLoja = document.getElementById('titulo-margem-loja');
+      if (tituloLoja) {
+        const nomeMesSel = MESES2[mesSel] || 'Mês';
+        tituloLoja.textContent = data.mesHoje === mesSel
+          ? `Por Loja — ${nomeMesSel} (até dia ${data.diaHoje})`
+          : `Por Loja — ${nomeMesSel}`;
+      }
+      const tbL = document.getElementById('tbody-margem-loja');
+      tbL.innerHTML = '';
+      for (const l of data.por_loja) {
+        const d=(l.msv2025!==null&&l.msv2026!==null)?+(l.msv2026-l.msv2025).toFixed(2):null;
+        const dc=d!==null?(d>=0?'var-pos':'var-neg'):'var-zero';
+        const c26=l.msv2026!==null?(l.msv2026>=20?'var-pos':l.msv2026>=12?'':'var-neg'):'var-zero';
+        const c25=l.msv2025!==null?(l.msv2025>=20?'var-pos':l.msv2025>=12?'':'var-neg'):'var-zero';
+        tbL.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>Loja ${l.loja}</strong></td>
+            <td class="r">${l.venda2025>0?BRL(l.venda2025):'<span style="color:#334155">—</span>'}</td>
+            <td class="r ${c25}">${l.msv2025!==null?l.msv2025.toFixed(2)+'%':'—'}</td>
+            <td class="r">${l.venda2026>0?BRL(l.venda2026):'<span style="color:#334155">—</span>'}</td>
+            <td class="r ${c26}">${l.msv2026!==null?l.msv2026.toFixed(2)+'%':'—'}</td>
+            <td class="r ${dc}">${d!==null?(d>=0?'+':'')+d.toFixed(2)+' pp':'—'}</td>
+          </tr>`);
+      }
+      const rv25=t.msv2025,rv26=t.msv2026;
+      const rd=rv25!==null&&rv26!==null?+(rv26-rv25).toFixed(2):null;
+      tbL.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total Rede</td>
+          <td class="r">${BRL(t.venda2025)}</td>
+          <td class="r">${rv25!==null?rv25.toFixed(2)+'%':'—'}</td>
+          <td class="r">${BRL(t.venda2026)}</td>
+          <td class="r">${rv26!==null?rv26.toFixed(2)+'%':'—'}</td>
+          <td class="r ${rd!==null?(rd>=0?'var-pos':'var-neg'):'var-zero'}">${rd!==null?(rd>=0?'+':'')+rd.toFixed(2)+' pp':'—'}</td>
+        </tr>`);
+    })
+    .catch(e => {
+      const msg = e?.message || String(e);
+      document.getElementById('tbody-margem-mes').innerHTML  = `<tr><td colspan="6" class="loading">Erro: ${msg}</td></tr>`;
+      document.getElementById('tbody-margem-loja').innerHTML = `<tr><td colspan="6" class="loading">Erro: ${msg}</td></tr>`;
+    });
+}
+
+function carregarCV() {
+  const mes = document.getElementById('sel-mes').value;
+  const tb = document.getElementById('tbody-cv');
+  tb.innerHTML = '<tr><td colspan="6" class="loading">Carregando...</td></tr>';
+  fetch(`/api/compra-venda?mes=${mes}`)
+    .then(r => { if (r.status === 401) { location.href='/login.html'; throw new Error('401'); } return r.json(); })
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      _carregado.cv = true;
+
+      // Atualiza KPI com C/V% da rede
+      const t = data.totais;
+      document.getElementById('k-tot26').textContent = t.cv !== null ? t.cv.toFixed(1) + '%' : '—';
+      document.getElementById('k-sub26').textContent = 'C/V% rede ' + data.nome_mes;
+      document.getElementById('k-tot25').textContent = BRL(t.compra);
+      document.getElementById('k-sub25').textContent = 'Total compras c/ NF';
+      document.getElementById('k-var').textContent = '';
+      document.getElementById('k-var').className = 'kpi-v';
+      document.getElementById('k-med26').textContent = BRL(t.venda_total);
+      document.getElementById('k-med-label').textContent = 'Venda Total';
+
+      const parcialLabel = data.parcial ? ` <span style="color:#94a3b8;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
+      document.getElementById('cv-subtitulo').innerHTML =
+        `Venda = NFC-e (PDV) + NF-e saída${parcialLabel} &nbsp;·&nbsp; Compra = NF-e de entrada recebidas &nbsp;·&nbsp; C/V% = Compra ÷ Venda Total × 100`;
+
+      tb.innerHTML = '';
+      const LOJAS = ['','CAHU','MURIBECA','PONTE','ATACAREJO','PORTA LARGA','JARDIM JORDÃO'];
+      for (const l of data.por_loja) {
+        const cvCls = l.cv !== null ? (l.cv <= 80 ? 'var-pos' : l.cv <= 95 ? '' : 'var-neg') : 'var-zero';
+        tb.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><strong>Loja ${l.loja}</strong><span style="color:#64748b;font-size:10px;margin-left:6px">${LOJAS[l.loja]||''}</span></td>
+            <td class="r">${l.venda_nfce > 0 ? BRL(l.venda_nfce) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.venda_nfe  > 0 ? BRL(l.venda_nfe)  : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.venda_total > 0 ? BRL(l.venda_total) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r" style="color:#93c5fd">${l.compra > 0 ? BRL(l.compra) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r ${cvCls}" style="font-weight:700">${l.cv !== null ? l.cv.toFixed(1) + '%' : '—'}</td>
+          </tr>`);
+      }
+      const totCvCls = t.cv !== null ? (t.cv <= 80 ? 'var-pos' : t.cv <= 95 ? '' : 'var-neg') : 'var-zero';
+      tb.insertAdjacentHTML('beforeend', `
+        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+          <td>Total Rede</td>
+          <td class="r">${BRL(t.venda_nfce)}</td>
+          <td class="r">${BRL(t.venda_nfe)}</td>
+          <td class="r">${BRL(t.venda_total)}</td>
+          <td class="r" style="color:#93c5fd">${BRL(t.compra)}</td>
+          <td class="r ${totCvCls}" style="font-weight:700">${t.cv !== null ? t.cv.toFixed(1) + '%' : '—'}</td>
+        </tr>`);
+    })
+    .catch(e => {
+      if (e?.message === '401') return;
+      tb.innerHTML = `<tr><td colspan="6" class="loading">Erro: ${e?.message || e}</td></tr>`;
+    });
+}
+
+const _carregar = { diario: carregar, mensal: carregarMensal, merc: carregarMerc, lojas: carregarLojas, margem: carregarMargem, cv: carregarCV };
+
+// Ao trocar loja: recarrega abas que usam loja (diario, mensal, merc)
+document.getElementById('sel-loja').addEventListener('change', () => {
+  _carregado[abaAtual] = false;
+  if (['diario','mensal','merc'].includes(abaAtual)) _carregar[abaAtual]();
+});
+// Ao trocar loja-margem
+document.getElementById('sel-loja-margem').addEventListener('change', () => {
+  if (abaAtual === 'margem') { _carregado.margem = false; carregarMargem(); }
+});
+// Ao trocar mês: recarrega abas que usam mês (diario, merc, lojas, margem)
+document.getElementById('sel-mes').addEventListener('change', () => {
+  _carregado[abaAtual] = false;
+  if (['diario','merc','lojas','margem','cv'].includes(abaAtual)) _carregar[abaAtual]();
+});
+
+initSelects();
+carregar();
+</script>
+</body>
+</html>

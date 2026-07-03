@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluxo Certo 360</title>
+  <meta name="description" content="Sistema de gestão para supermercados e varejo — checklists, inventário e relatórios no celular.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Inter',sans-serif;
+      background:#0d0d0d;
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:52px 20px 72px;
+    }
+    .wrap{
+      width:100%;
+      max-width:430px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+
+    /* ── AVATAR ── */
+    .avatar{
+      width:110px;height:110px;
+      border-radius:50%;
+      background:#FFC600;
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
+      border:3px solid #FFC600;
+      box-shadow:0 0 0 4px rgba(255,198,0,.15);
+      margin-bottom:16px;
+      flex-shrink:0;
+    }
+    .avatar img{width:100%;height:100%;object-fit:contain;padding:8px;mix-blend-mode:multiply}
+
+    /* ── IDENTIDADE ── */
+    .name{
+      font-family:'Syne',sans-serif;
+      font-size:22px;font-weight:800;
+      text-align:center;
+      margin-bottom:6px;
+    }
+    .handle{
+      font-size:13px;
+      color:rgba(255,255,255,.45);
+      margin-bottom:10px;
+    }
+    .bio{
+      font-size:13.5px;
+      color:rgba(255,255,255,.65);
+      text-align:center;
+      line-height:1.55;
+      max-width:320px;
+      margin-bottom:16px;
+    }
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      background:rgba(255,198,0,.1);
+      border:1px solid rgba(255,198,0,.25);
+      color:#FFC600;
+      font-size:11.5px;font-weight:600;
+      padding:5px 14px;border-radius:20px;
+      margin-bottom:28px;
+    }
+    .pulse{
+      width:7px;height:7px;border-radius:50%;
+      background:#FFC600;
+      animation:p 1.8s infinite;
+    }
+    @keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+    /* ── STATS ── */
+    .stats{
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin-bottom:24px;
+    }
+    .stat{
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:14px;
+      padding:14px 8px;
+      text-align:center;
+    }
+    .stat-num{
+      font-family:'Syne',sans-serif;
+      font-size:19px;font-weight:800;
+      color:#FFC600;
+    }
+    .stat-lbl{
+      font-size:10.5px;
+      color:rgba(255,255,255,.4);
+      margin-top:3px;
+    }
+
+    /* ── LINKS ── */
+    .links{
+      width:100%;
+      display:flex;flex-direction:column;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .btn{
+      display:flex;align-items:center;gap:14px;
+      width:100%;
+      padding:15px 18px;
+      border-radius:14px;
+      text-decoration:none;
+      font-size:14px;font-weight:600;
+      transition:transform .15s,filter .15s;
+      cursor:pointer;
+    }
+    .btn:active{transform:scale(.97);filter:brightness(.9)}
+    .btn-icon{font-size:19px;width:26px;text-align:center;flex-shrink:0}
+    .btn-arrow{margin-left:auto;font-size:13px;opacity:.45}
+
+    .btn-whats{background:#25D366;color:#fff}
+    .btn-yellow{background:#FFC600;color:#0d0d0d}
+    .btn-ghost{
+      background:rgba(255,255,255,.06);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.1);
+    }
+
+    /* ── DIVIDER ── */
+    .div{width:100%;height:1px;background:rgba(255,255,255,.07);margin:18px 0}
+
+    /* ── FOOTER ── */
+    .footer{
+      margin-top:32px;
+      font-size:11px;
+      color:rgba(255,255,255,.18);
+      text-align:center;
+      line-height:1.6;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="avatar">
+    <img src="../logo.png" alt="Fluxo Certo 360"
+         onerror="this.parentNode.innerHTML='<span style=\'font-size:36px\'>✅</span>'">
+  </div>
+
+  <div class="name">Fluxo Certo 360</div>
+  <div class="handle">@fluxocerto360oficial</div>
+  <p class="bio">Sistema de gestão para supermercados e varejo.<br>Checklists, inventário, monitor ao vivo e relatórios — no celular, offline.</p>
+  <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:18px">
+    <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.65);font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px">✅ Checklist</span>
+    <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.65);font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px">📦 Inventário</span>
+    <span style="background:rgba(255,198,0,.12);border:1px solid rgba(255,198,0,.25);color:#FFC600;font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px">📺 Monitor Ao Vivo</span>
+    <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.65);font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px">📊 Relatórios</span>
+  </div>
+  <div class="badge"><span class="pulse"></span> Sistema ativo · Acesse agora</div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num">100%</div>
+      <div class="stat-lbl">Offline</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">∞</div>
+      <div class="stat-lbl">Usuários</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">PWA</div>
+      <div class="stat-lbl">Sem instalar</div>
+    </div>
+  </div>
+
+  <div class="links">
+
+    <a class="btn btn-whats"
+       href="https://wa.me/5581991665457?text=Ol%C3%A1%2C%20quero%20uma%20demonstra%C3%A7%C3%A3o%20do%20Fluxo%20Certo%20360!"
+       target="_blank" rel="noopener">
+      <span class="btn-icon">💬</span>
+      Falar com vendas no WhatsApp
+      <span class="btn-arrow">→</span>
+    </a>
+
+    <a class="btn btn-yellow"
+       href="../landing/index.html"
+       target="_blank" rel="noopener">
+      <span class="btn-icon">🌐</span>
+      Conheça o sistema completo
+      <span class="btn-arrow">→</span>
+    </a>
+
+    <div class="div"></div>
+
+    <a class="btn btn-ghost"
+       href="https://wa.me/5581991665457?text=Ol%C3%A1%2C%20quero%20conhecer%20os%20planos%20do%20Fluxo%20Certo%20360!"
+       target="_blank" rel="noopener">
+      <span class="btn-icon">💼</span>
+      Ver planos e preços
+      <span class="btn-arrow">→</span>
+    </a>
+
+    <a class="btn btn-ghost"
+       href="https://wa.me/5581991665457?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20no%20Fluxo%20Certo%20360!"
+       target="_blank" rel="noopener">
+      <span class="btn-icon">🛠</span>
+      Suporte técnico
+      <span class="btn-arrow">→</span>
+    </a>
+
+  </div>
+
+  <div class="footer">
+    © 2026 Fluxo Certo 360<br>
+    Todos os direitos reservados
+  </div>
+
+</div>
+</body>
+</html>

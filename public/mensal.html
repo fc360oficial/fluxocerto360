@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cronograma Mensal — FC360</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08111F;--bg2:#0B1220;--card:#121B2E;--card2:#172033;
+  --brand:#FACC15;--green:#22C55E;--green-bg:rgba(34,197,94,.12);
+  --red:#EF4444;--red-bg:rgba(239,68,68,.12);
+  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
+  --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
+  --radius:16px;--radius-sm:10px;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
+body{display:flex;flex-direction:column;height:100vh}
+
+/* ── HEADER ── */
+.header{
+  background:linear-gradient(180deg,rgba(18,27,46,.98),rgba(18,27,46,.94));
+  backdrop-filter:blur(20px);border-bottom:1px solid var(--border-md);
+  padding:0 28px;height:64px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100;
+  box-shadow:0 4px 24px rgba(0,0,0,.4);flex-shrink:0;
+}
+.h-left{display:flex;align-items:center;gap:14px}
+.h-logo{height:44px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
+.h-title{font-size:15px;font-weight:800;color:var(--brand);letter-spacing:2px;text-transform:uppercase}
+.h-sub{font-size:11px;color:var(--text3);letter-spacing:1px;margin-top:2px}
+.h-back{display:flex;align-items:center;gap:7px;color:var(--text2);text-decoration:none;
+  font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--radius-sm);
+  border:1px solid var(--border-md);background:rgba(255,255,255,.04);transition:all .2s}
+.h-back:hover{color:var(--brand);border-color:rgba(250,204,21,.3)}
+
+/* Nome comprador — igual comprador.html */
+.h-compradora{display:flex;align-items:center;gap:14px}
+.h-avatar{
+  width:46px;height:46px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);flex-shrink:0;
+}
+.h-info h2{font-size:22px;font-weight:800;letter-spacing:.3px;color:var(--text)}
+.h-info p{font-size:11px;color:var(--text2);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:500}
+/* Relógio — igual comprador.html */
+.h-clock{display:none}
+.clock-time{font-size:52px;font-weight:800;color:#fff;letter-spacing:3px;font-variant-numeric:tabular-nums;line-height:1}
+.clock-sub{font-size:11px;color:var(--text2);margin-top:2px;text-align:right;font-weight:500}
+
+/* ── MÊS NAV ── */
+.mes-nav{display:flex;align-items:center;gap:12px}
+.mes-btn{background:rgba(255,255,255,.06);border:1px solid var(--border-md);
+  color:var(--text2);border-radius:8px;padding:6px 12px;cursor:pointer;
+  font-size:13px;font-weight:700;transition:all .2s}
+.mes-btn:hover{background:rgba(250,204,21,.1);border-color:rgba(250,204,21,.3);color:var(--brand)}
+.mes-label{font-size:14px;font-weight:800;color:var(--text);letter-spacing:1px;min-width:130px;text-align:center}
+
+/* ── MAIN ── */
+main{flex:1;padding:6px 16px;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── CARROSSEL ── */
+.scroll-wrap{flex:1;overflow:hidden;position:relative}
+#conteudo{will-change:transform}
+
+/* ── LAYOUT DOIS GRUPOS ── */
+.grupos-wrap{display:flex;gap:0}
+.grupo-col{flex:1;min-width:0;padding:0 12px}
+.grupo-col:first-child{padding-left:0}
+.grupo-col:last-child{padding-right:0}
+.grupo-divider{width:2px;background:rgba(255,255,255,.1);flex-shrink:0}
+.grupo-header{
+  font-size:15px;font-weight:900;color:var(--brand);letter-spacing:2px;
+  text-transform:uppercase;padding:6px 0 8px;border-bottom:2px solid rgba(250,204,21,.4);
+  margin-bottom:6px;
+}
+
+/* Título por dia */
+.dia-titulo{
+  padding:8px 0 3px;font-size:13px;font-weight:900;
+  color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;
+  border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:2px;margin-top:10px;
+}
+
+/* Tabelas */
+table{border-collapse:collapse;width:100%}
+
+/* Cabeçalho de semana */
+.semana-header th{
+  padding:4px 6px;font-size:12px;font-weight:700;color:var(--text3);
+  text-align:center;border-bottom:1px solid var(--border);line-height:1.4;
+}
+.semana-header th.col-nome{text-align:left;padding-left:0}
+
+/* Linhas de fornecedor */
+.forn-linha td{
+  padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:14px;vertical-align:middle;
+}
+.forn-linha:hover td{background:rgba(255,255,255,.04)}
+.forn-linha td.col-nome{
+  font-weight:600;color:var(--text);padding-left:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* Badges de código */
+.badge-lista{
+  display:inline-block;font-size:11px;font-weight:800;
+  background:#1e3a5f;color:#60a5fa;border-radius:3px;
+  padding:1px 5px;margin-right:5px;vertical-align:middle;
+}
+.badge-fornec{
+  display:inline-block;font-size:11px;font-weight:800;
+  background:#1a3a2a;color:#4ade80;border-radius:3px;
+  padding:1px 5px;margin-right:5px;vertical-align:middle;
+}
+
+/* Status cells */
+.cell{
+  text-align:center;border-radius:5px;padding:4px 10px;
+  font-size:16px;font-weight:800;white-space:nowrap;display:block;
+}
+.cell.ok  {background:var(--green-bg);color:var(--green)}
+.cell.pend{background:var(--red-bg);color:var(--red)}
+.cell.fut {color:rgba(255,255,255,.2);font-size:14px}
+
+/* Sub-data no cabeçalho */
+.data-sub{font-size:10px;font-weight:400;opacity:.7;display:block}
+
+/* Total row */
+.total-row td{
+  padding:3px 6px;font-size:11px;color:var(--text3);
+  border-top:1px solid var(--border);border-bottom:2px solid var(--border-md);
+}
+.total-row td.col-nome{padding-left:0;font-weight:700;color:var(--text2)}
+.total-cell{text-align:center;font-weight:700;font-size:13px}
+.total-cell.ok{color:var(--green)}
+.total-cell.mix{color:var(--brand)}
+.total-cell.pend{color:var(--red)}
+
+/* Loading */
+.loading{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+
+/* Resumo topo */
+.resumo-bar{
+  display:flex;align-items:center;gap:16px;margin-bottom:8px;
+  background:var(--card);border:1px solid var(--border-md);
+  border-radius:var(--radius-sm);padding:7px 14px;
+}
+.res-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.res-num{font-size:18px;font-weight:900}
+.res-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.res-sep{width:1px;height:26px;background:var(--border-md)}
+.res-item.ok .res-num{color:var(--green)}
+.res-item.pend .res-num{color:var(--red)}
+.res-item.total .res-num{color:var(--brand)}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="h-left">
+    <img class="h-logo" src="/logo.png" alt="Econômico">
+    <div>
+      <div class="h-title">Cronograma Mensal</div>
+      <div class="h-sub" id="h-sub">carregando…</div>
+    </div>
+  </div>
+  <div class="mes-nav">
+    <button class="mes-btn" onclick="mudarMes(-1)">‹</button>
+    <div class="mes-label" id="mes-label">—</div>
+    <button class="mes-btn" onclick="mudarMes(1)">›</button>
+  </div>
+
+  <div class="h-compradora">
+    <div class="h-avatar" id="h-avatar"></div>
+    <div class="h-info">
+      <h2 id="h-nome">—</h2>
+      <p><span id="h-cargo">Compradora</span> · <span id="h-sub">—</span></p>
+    </div>
+  </div>
+
+  <div class="h-clock">
+    <div class="clock-time" id="clock">00:00:00</div>
+    <div class="clock-sub" id="clock-sub">—</div>
+  </div>
+
+  <a class="h-back" href="/compras.html">← Compras</a>
+</header>
+
+<main>
+  <div class="resumo-bar" id="resumo" style="display:none"></div>
+  <div class="scroll-wrap" id="scroll-wrap">
+    <div id="conteudo"><div class="loading">Carregando…</div></div>
+  </div>
+</main>
+<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}</style>
+<button class="btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia (use F11 para manter entre telas)">⛶</button>
+
+<script>
+const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_LABEL = { SEG:'Segunda-Feira', TER:'Terça-Feira', QUA:'Quarta-Feira', QUI:'Quinta-Feira', SEX:'Sexta-Feira' };
+const DIA_IDX    = { SEG:1, TER:2, QUA:3, QUI:4, SEX:5 };
+
+// Cronograma com grupos 1e3 (semanas ímpares) e 2e4 (semanas pares)
+const SEG_FATIMA = [
+  {nReg:344,nome:'CAMIL ALIMENTOS S/A',cat:'Arroz'},
+  {nReg:310,nome:'COMERCIAL DE ALIMENTOS (PAI HELENO)',cat:'Feijão'},
+  {nReg:312,nome:'FEIJÃO TA GOSTOSO',cat:'Feijão'},
+  {nReg:314,nome:'FEIRA NOVA INDUSTRIA',cat:'Farinha'},
+  {nReg:311,nome:'FLAVIO Q D MORAIS (PERNAMBUCANO)',cat:'Feijão'},
+  {nReg:342,nome:'JOSAPAR JOAQUIM OLIVEIRA SA PART (TIO JOAO)',cat:'Arroz'},
+  {nReg:303,nome:'MONJOLO INDUSTRIA (DO SITIO)',cat:'Farinha'},
+  {nReg:380,nome:'NELSON WENDT CIA LTDA (EMOÇÕES)',cat:'Arroz'},
+  {nReg:309,nome:'OASIS ALIMENTOS (TURQUESA)',cat:'Feijão'},
+  {nReg:482,nome:'OMAR LINDEMBERG (KELLY E CORDEIRO)',cat:'Farinha'},
+  {nReg:538,nome:'RONIEL J SILVA FARINHA',cat:'Farinha'},
+  {nReg:461,nome:'PRODUTOS PEROLA (GRÃO DE MINAS)',cat:'Feijão'},
+  {nReg:313,nome:'SOMAR COMERCIO (KICALDO)',cat:'Feijão'},
+  {nReg:355,nome:'URBANO AGROINDUSTRIA LTDA',cat:'Arroz'},
+  {nReg:534,nome:'PANELACO ALIMENTOS LTDA',cat:'Arroz'},
+  {nReg:537,nome:'RAMPINELLI ALIMENTOS LTDA',cat:'Arroz'},
+];
+const TER_FATIMA = [
+  {nReg:347,nome:'MOINHO PETINHO IND E COMERCIO LTDA',cat:'Café'},
+  {nReg:415,nome:'SAO BRAZ S/A IND COM DE ALIMENTOS',cat:'Café'},
+  {nReg:332,nome:'TRES CORACOES ALIMENTOS SA',cat:'Café'},
+  {nReg:341,nome:'ASA INDUSTRIA E COMERCIO',cat:'Temperos'},
+  {nReg:417,nome:'YOKI C/ CUSTO',cat:'Mercearia'},
+];
+const QUI_FATIMA = [
+  {nReg:573,nome:'USINA PETRIBU',cat:'Açúcar'},
+  {nReg:574,nome:'USINA IPOJUCA',cat:'Açúcar'},
+  {nReg:572,nome:'AVILE/PUREZA',cat:'Açúcar'},
+];
+const CRON_FATIMA = {
+  '1e3':{
+    SEG:SEG_FATIMA,
+    TER:TER_FATIMA,
+    QUA:[
+      {nReg:419,nome:'INDUSTRIA REUNIDAS CORINGA LTDA',cat:'Flocão'},
+      {nReg:457,nome:'SABORMIL IND E COMERCIO LTDA',cat:'Flocão'},
+      {nReg:555,nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Leite/Mercearia'},
+      {nReg:543,nome:'LACTALIS DO BRASIL',cat:'Mercearia'},
+      {nReg:394,nome:'VALERIANO VALENTE DE OLIVEIRA',cat:'Mix/Flocão'},
+    ],
+    QUI:QUI_FATIMA,
+    SEX:[{nReg:277,nome:'COTAÇÃO DE ALIMENTOS',cat:'Cotação'}],
+  },
+  '2e4':{
+    SEG:SEG_FATIMA,
+    TER:TER_FATIMA,
+    QUA:[
+      {nReg:419,nome:'INDUSTRIA REUNIDAS CORINGA LTDA',cat:'Flocão'},
+      {nReg:457,nome:'SABORMIL IND E COMERCIO LTDA',cat:'Flocão'},
+      {nReg:555,nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Leite/Mercearia'},
+      {nReg:543,nome:'LACTALIS DO BRASIL',cat:'Mercearia'},
+    ],
+    QUI:QUI_FATIMA,
+    SEX:[{nReg:277,nome:'COTAÇÃO DE ALIMENTOS',cat:'Cotação'}],
+  },
+};
+
+// ── KELLY — Frios & Laticínios ──
+const CRON_KELLY = {
+  '1e3':{
+    SEG:[
+      {nReg:338,nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Laticínios'},
+      {nReg:346,nome:'BOM LEITE INDUSTRIAL LTDA',cat:'Laticínios'},
+      {nReg:366,nome:'C E S DISTRIBUIDORA VAREJISTA LTDA',cat:'Distribuição'},
+      {nReg:318,nome:'FRANCISCO CORDEIRO CAMPOS',cat:'Distribuição'},
+      {nReg:326,nome:'LATICINIO BELO VALE LTDA',cat:'Laticínios'},
+      {nReg:325,nome:'LATICINIO GUARARAPES LTDA',cat:'Laticínios'},
+      {nReg:320,nome:'NOBRE IND. LATICINIOS',cat:'Laticínios'},
+      {nReg:322,nome:'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',cat:'Distribuição'},
+    ],
+    TER:[
+      {nReg:502,nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+      {nReg:403,nome:'AURORA COOP CENTRAL OESTE CATARINENSE',cat:'Frios'},
+      {nReg:443,nome:'BARBOSA & MARQUES REGINA',cat:'Frios'},
+      {nReg:382,nome:'BRF S A',cat:'Frios'},
+      {nReg:336,nome:'CODICON DISTRIBUICAO DE ALIMENTOS',cat:'Distribuição'},
+      {nReg:358,nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+      {nReg:473,nome:'LEANDRO BATISTA DE SOUZA',cat:'Distribuição'},
+      {nReg:422,nome:'INTERBRASIL DISTRIBUICAO LTDA',cat:'Distribuição'},
+      {nReg:449,nome:'J A CALHEIROS DE MELO JR',cat:'Frios'},
+      {nReg:351,nome:'LACTALIS DO BRASIL',cat:'Laticínios'},
+      {nReg:428,nome:'MAURICEA ALIMENTOS DO NORDESTE',cat:'Laticínios'},
+      {nReg:334,nome:'NOTARO ALIMENTOS LTDA',cat:'Laticínios'},
+      {nReg:398,nome:'SEARA COMERCIO DE ALIMENTOS LT',cat:'Frios'},
+      {nReg:372,nome:'VALELAC IND. DE LATICINIOS',cat:'Laticínios'},
+    ],
+    QUA:[
+      {nReg:424,nome:'NUTRA PLUSS IND. COM. ALIMENTOS',cat:'Alimentos'},
+      {nReg:337,nome:'FRUTA INDUSTRIA & COMERCIO LTDA',cat:'Alimentos'},
+      {nReg:370,nome:'BUNGE ALIMENTOS S/A',cat:'Alimentos'},
+      {nReg:345,nome:'BRITO&SANTOS FRIOS IND. ALIM.',cat:'Frios'},
+      {nReg:431,nome:'JBS S.A.',cat:'Frios'},
+      {nReg:430,nome:'REDIJOHN DIST PROD HIG LIMP',cat:'Higiene'},
+    ],
+    QUI:[
+      {nReg:423,nome:'PROLAC COMERCIAL',cat:'Frios'},
+      {nReg:499,nome:'KARNE & KEIJO LOGISTICA INTEGRADA',cat:'Frios'},
+      {nReg:328,nome:'A.B. DE ALBUQUERQUE GUERRA',cat:'Frios'},
+    ],
+    SEX:[
+      {nReg:557,nome:'FRI-SABOR ALIMENTOS LTDA',cat:'Frios'},
+      {nReg:529,nome:'DISNOVA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+    ],
+  },
+  '2e4':{
+    SEG:[
+      {nReg:338,nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Laticínios'},
+      {nReg:346,nome:'BOM LEITE INDUSTRIAL LTDA',cat:'Laticínios'},
+      {nReg:366,nome:'C E S DISTRIBUIDORA VAREJISTA LTDA',cat:'Distribuição'},
+      {nReg:318,nome:'FRANCISCO CORDEIRO CAMPOS',cat:'Distribuição'},
+      {nReg:326,nome:'LATICINIO BELO VALE LTDA',cat:'Laticínios'},
+      {nReg:325,nome:'LATICINIO GUARARAPES LTDA',cat:'Laticínios'},
+      {nReg:320,nome:'NOBRE IND. LATICINIOS',cat:'Laticínios'},
+      {nReg:322,nome:'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',cat:'Distribuição'},
+    ],
+    TER:[
+      {nReg:382,nome:'BRF S A',cat:'Frios'},
+      {nReg:358,nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+      {nReg:359,nome:'EB DISTRIBUIDORA DE SORVETE LTDA',cat:'Frios'},
+      {nReg:480,nome:'GOLD STYLE IMP. EXP. ALIMENTOS',cat:'Frios'},
+      {nReg:422,nome:'INTERBRASIL DISTRIBUICAO LTDA',cat:'Distribuição'},
+      {nReg:351,nome:'LACTALIS DO BRASIL',cat:'Laticínios'},
+      {nReg:428,nome:'MAURICEA ALIMENTOS DO NORDESTE',cat:'Laticínios'},
+      {nReg:334,nome:'NOTARO ALIMENTOS LTDA',cat:'Laticínios'},
+      {nReg:398,nome:'SEARA COMERCIO DE ALIMENTOS LT',cat:'Frios'},
+      {nReg:327,nome:'UNILEVER BRASIL LTDA',cat:'Distribuição'},
+    ],
+    QUA:[
+      {nReg:424,nome:'NUTRA PLUSS IND. COM. ALIMENTOS',cat:'Alimentos'},
+      {nReg:337,nome:'FRUTA INDUSTRIA & COMERCIO LTDA',cat:'Alimentos'},
+      {nReg:345,nome:'BRITO&SANTOS FRIOS IND. ALIM.',cat:'Frios'},
+      {nReg:563,nome:'F.N.J. COM. ATACADISTA LEITE LATIC.',cat:'Laticínios'},
+      {nReg:356,nome:'FIPEL FRIGORIFICO IND. PERNAMBUCANA',cat:'Frios'},
+      {nReg:561,nome:'GRASIELLI DE VASCONCELOS PINTO LTDA',cat:'Distribuição'},
+      {nReg:442,nome:'NORONHA IND. E COMERCIO',cat:'Distribuição'},
+      {nReg:456,nome:'RECIFE COM. CONGELADOS LTDA',cat:'Frios'},
+      {nReg:316,nome:'GRIFOS COMERCIO DE ALIMENTOS LTDA',cat:'Distribuição'},
+    ],
+    QUI:[
+      {nReg:440,nome:'RAINHA PRODUTOS ALIMENTICIOS L',cat:'Frios'},
+    ],
+    SEX:[
+      {nReg:557,nome:'FRI-SABOR ALIMENTOS LTDA',cat:'Frios'},
+      {nReg:529,nome:'DISNOVA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+    ],
+  },
+};
+
+
+// ── STHEPHANNY — Perfumaria, Limpeza, Cosméticos ──
+const CRON_STHEPHANNY = {
+  '1e3':{
+    SEG:[
+      {nReg:405,nome:'DCL DISTRIBUIDORA CARDEAL (PERFUMARIA)',cat:'Perfumaria'},
+      {nReg:406,nome:'DCL DISTRIBUIDORA CARDEAL (VEJA E SBP)',cat:'Limpeza'},
+      {nReg:485,nome:'DCL CARDEAL DISTRIBUIDORA (PET)',cat:'Pet'},
+      {nReg:293,nome:'ONDUNORTE CIA DE PAPEIS E PAPELAO',cat:'Descartáveis'},
+    ],
+    TER:[
+      {nReg:379,nome:'D&D ANGEIRAS DISTRIBUIDORA (LIMPEZA)',cat:'Limpeza'},
+      {nReg:444,nome:'PARATY ATACADO E DISTRIBUIDORA LTDA',cat:'Limpeza'},
+      {nReg:445,nome:'PARATY ATACADO E DISTRIBUIDORA LTDA',cat:'Limpeza'},
+      {nReg:446,nome:'PARATY ATACADO E DISTRIBUIDORA LTDA',cat:'Limpeza'},
+    ],
+    QUA:[
+      {nReg:399,nome:'ALVO DISTRIBUIDORA DE COSMETIC',cat:'Cosméticos'},
+      {nReg:530,nome:'DILNOR DIST E LOGISTICA DO NORDESTE',cat:'Limpeza'},
+      {nReg:411,nome:'DILNOR DIST E LOGISTICA DO NORDESTE',cat:'Limpeza'},
+      {nReg:487,nome:'IND. REUNIDAS RAYMUNDO DA FONTE',cat:'Limpeza'},
+      {nReg:319,nome:'INTERLANDIA LTDA',cat:'Distribuição'},
+      {nReg:493,nome:'FOCUS DISTRIBUIDORA LTDA',cat:'Distribuição'},
+      {nReg:388,nome:'LABORTECNE IND. DE EMBAL LTDA',cat:'Embalagens'},
+      {nReg:361,nome:'MAIS COM. DIST. MAT LIMPEZA',cat:'Limpeza'},
+      {nReg:429,nome:'REDIJOHN DIST PROD HIG LIMP',cat:'Higiene'},
+      {nReg:416,nome:'UNIL E INDUSTRIA E COMERCIO',cat:'Limpeza'},
+    ],
+    QUI:[
+      {nReg:516,nome:'COMERCIAL VITA NORTE (NEUTROX,KOLENE)',cat:'Cosméticos'},
+      {nReg:519,nome:'DCL CARDEAL DISTRIBUIDORA (GALLO,PERFUMARIA)',cat:'Perfumaria'},
+      {nReg:540,nome:'E.B.A. DISTRIBUIDORA LTDA',cat:'Distribuição'},
+      {nReg:505,nome:'E.B.A. DISTRIBUIDORA LTDA',cat:'Distribuição'},
+      {nReg:373,nome:'GRIFOS COMERCIO DE ALIMENTOS',cat:'Distribuição'},
+    ],
+    SEX:[],
+  },
+  '2e4':{
+    SEG:[
+      {nReg:218,nome:'ATACAREJO ECONOMICO (COTAÇÃO PERFUMARIA)',cat:'Perfumaria'},
+      {nReg:519,nome:'DCL CARDEAL DISTRIBUIDORA (GALLO,PERFUMARIA)',cat:'Perfumaria'},
+    ],
+    TER:[
+      {nReg:496,nome:'IND. E COMERCIO DE VELAS SANTA LUZIA',cat:'Velas'},
+    ],
+    QUA:[
+      {nReg:408,nome:'DIA DIST E IMPORTACAO AFOGADOS',cat:'Limpeza'},
+      {nReg:500,nome:'MAX GIRO DISTRIB PROD HIGIENE',cat:'Higiene'},
+      {nReg:470,nome:'REMIX ATACADISTA E DISTRIBUIDOR',cat:'Distribuição'},
+      {nReg:458,nome:'SEDE DAS MIUDESAS ATACADAO',cat:'Utilidades'},
+    ],
+    QUI:[
+      {nReg:544,nome:'AL DISTRIBUIDORA COM. VAREJISTA',cat:'Utilidades'},
+      {nReg:531,nome:'ANA PAULA TORRES DA SILVA (CARVÃO)',cat:'Utilidades'},
+      {nReg:469,nome:'COMERCIAL VITA NORTE LTDA',cat:'Cosméticos'},
+      {nReg:279,nome:'CRISTIANO LEITE VELOSO',cat:'Distribuição'},
+      {nReg:418,nome:'DF DISTRIBUIDORA DE DESCARTAVEIS',cat:'Descartáveis'},
+      {nReg:365,nome:'KELLDRIN INDUSTRIAL LTDA',cat:'Limpeza'},
+      {nReg:501,nome:'PADELLE DIST',cat:'Utilidades'},
+    ],
+    SEX:[],
+  },
+};
+
+// ── CRISLANE — Hortifruti, Padaria, Ovos ──
+const CRON_CRISLANE = {
+  '1e3':{
+    SEG:[
+      {nReg:364,nome:'ATACAREJO ECONOMICO (PADARIA)',cat:'Padaria'},
+      {nReg:191,nome:'ATACAREJO ECONOMICO (CONSUMO)',cat:'Consumo'},
+      {nReg:477,nome:'EZEQUIAS COSTA DOS SANTOS EMBALAGENS',cat:'Embalagens'},
+      {nReg:488,nome:'JR DISTRIBUICAO LTDA',cat:'Distribuição'},
+      {nReg:335,nome:'OVOS SAO JOSE LTDA',cat:'Ovos'},
+      {nReg:308,nome:'R. ALBUQUERQUE DISTRIBUIDORA DE OVOS',cat:'Ovos'},
+      {nReg:554,nome:'RUBI DISTRIBUIDORA (PROTEINA)',cat:'Proteína'},
+      {nReg:323,nome:'SANTOS E MOURA HORTIFRUTIGRANJEIRO',cat:'Hortifruti'},
+    ],
+    TER:[
+      {nReg:331,nome:'BIMBO DO BRASIL LTDA',cat:'Panificação'},
+      {nReg:324,nome:'BOLO DE ROLO FABRICACAO PERNAMBUCANA',cat:'Panificação'},
+      {nReg:424,nome:'PERNAMBUCO COM DE POLPAS EIRELI',cat:'Polpas'},
+      {nReg:504,nome:'UNIRELLA ALIMENTOS LTDA',cat:'Alimentos'},
+    ],
+    QUA:[
+      {nReg:478,nome:'ROMERYS MARIA DA SILVA BRAGA',cat:'Alimentos'},
+      {nReg:436,nome:'S.M.S ALIMENTOS LTDA',cat:'Alimentos'},
+      {nReg:352,nome:'TUDO NOVO ALIMENTOS LTDA',cat:'Alimentos'},
+    ],
+    QUI:[
+      {nReg:559,nome:'COMERCIAL HORTI-FRIOS LTDA',cat:'Horti-Frios'},
+    ],
+    SEX:[
+      {nReg:437,nome:'T R A DISTRIBUIDORA E LOGISTICA',cat:'Distribuição'},
+    ],
+  },
+  '2e4':{
+    SEG:[
+      {nReg:328,nome:'A. B. DE ALBUQUERQUE GUERRA',cat:'Distribuição'},
+      {nReg:364,nome:'ATACAREJO ECONOMICO (PADARIA)',cat:'Padaria'},
+      {nReg:488,nome:'JR DISTRIBUICAO LTDA',cat:'Distribuição'},
+      {nReg:556,nome:'LACTALIS DO BRASIL',cat:'Laticínios'},
+      {nReg:335,nome:'OVOS SAO JOSE LTDA',cat:'Ovos'},
+      {nReg:308,nome:'R. ALBUQUERQUE DISTRIBUIDORA DE OVOS',cat:'Ovos'},
+      {nReg:323,nome:'SANTOS E MOURA HORTIFRUTIGRANJEIRO',cat:'Hortifruti'},
+    ],
+    TER:[
+      {nReg:331,nome:'BIMBO DO BRASIL LTDA',cat:'Panificação'},
+      {nReg:420,nome:'MOISES CARLOS DE ALMEIDA FABRICACAO',cat:'Panificação'},
+      {nReg:424,nome:'PERNAMBUCO COM DE POLPAS EIRELI',cat:'Polpas'},
+    ],
+    QUA:[
+      {nReg:381,nome:'IND E COM PROD. ALIMENTICIOS TERERE',cat:'Alimentos'},
+      {nReg:514,nome:'L.O SOBRINHO EIRELI ME',cat:'Alimentos'},
+      {nReg:352,nome:'TUDO NOVO ALIMENTOS LTDA',cat:'Alimentos'},
+    ],
+    QUI:[
+      {nReg:535,nome:'CIA SANTOS DISTRIBUIDORA E IMPORTADORA',cat:'Hortifruti'},
+      {nReg:495,nome:'W.A.MELO EIRELI ME',cat:'Hortifruti'},
+      {nReg:559,nome:'COMERCIAL HORTI-FRIOS LTDA',cat:'Horti-Frios'},
+    ],
+    SEX:[
+      {nReg:307,nome:'DISTRIBUIDORA SAO LUCAS DE BISCOITO',cat:'Biscoitos'},
+      {nReg:437,nome:'T R A DISTRIBUIDORA E LOGISTICA',cat:'Distribuição'},
+    ],
+  },
+};
+
+// ── PATRICIA — Bebidas, Vinhos, Distribuição ──
+const CRON_PATRICIA = {
+  '1e3':{
+    SEG:[
+      {nReg:295,nome:'AMBEV S.A CDD CABO',cat:'Bebidas'},
+      {nReg:296,nome:'COCA COLA - SOLAR',cat:'Bebidas'},
+      {nReg:391,nome:'NE COMERCIO ATACADISTA',cat:'Bebidas'},
+      {nReg:507,nome:'COMERCIAL VITA NORTE LTDA',cat:'Bebidas'},
+      {nReg:494,nome:'DIST E LOG PERNAMBICO IMP E EXP',cat:'Bebidas'},
+      {nReg:306,nome:'JP COMERCIALIZACAO DE BEBIDAS',cat:'Bebidas'},
+      {nReg:560,nome:'NORDESTE COM. IND. DE BEBIDAS',cat:'Bebidas'},
+      {nReg:396,nome:'TORRES E PEDROSA COM. DE AGUAS',cat:'Águas'},
+      {nReg:565,nome:'VINICOLA VENZ LTDA',cat:'Vinhos'},
+    ],
+    TER:[
+      {nReg:502,nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+      {nReg:401,nome:'AUJO DISTRIBUIDORA DE ALIMENTO',cat:'Distribuição'},
+    ],
+    QUA:[
+      {nReg:476,nome:'DJ INDUSTRIA E COMERCIO DE ALIMENTOS',cat:'Alimentos'},
+      {nReg:465,nome:'IND. E COMERCIO XAVANTE',cat:'Alimentos'},
+      {nReg:317,nome:'INGA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+      {nReg:395,nome:'JURERE IND. DE ALIMENTOS LTDA',cat:'Alimentos'},
+      {nReg:376,nome:'NESTLE BRASIL LTDA',cat:'Alimentos'},
+      {nReg:552,nome:'NESTLE BRASIL LTDA (GAROTO)',cat:'Alimentos'},
+      {nReg:493,nome:'FOCUS DISTRIBUIDORA LTDA',cat:'Distribuição'},
+    ],
+    QUI:[
+      {nReg:368,nome:'PEPSICO DO BRASIL LTDA',cat:'Bebidas'},
+      {nReg:550,nome:'PORTO A PORTO COMERCIO IMP. EXP.',cat:'Distribuição'},
+      {nReg:410,nome:'DILNOR DIST E LOGISTICA DO NORDESTE',cat:'Distribuição'},
+      {nReg:450,nome:'RUBI DISTRIBUIDORA DE ALIMENTOS',cat:'Distribuição'},
+    ],
+    SEX:[
+      {nReg:427,nome:'ATACAREJO ECONOMICO (VINHOS)',cat:'Vinhos'},
+    ],
+  },
+  '2e4':{
+    SEG:[
+      {nReg:295,nome:'AMBEV S.A CDD CABO',cat:'Bebidas'},
+      {nReg:296,nome:'COCA COLA - SOLAR',cat:'Bebidas'},
+      {nReg:397,nome:'IND. DE BEBIDAS IGARASSU',cat:'Bebidas'},
+      {nReg:497,nome:'PRUDENTE DISTRIBUIDORA DE BEBIDAS',cat:'Bebidas'},
+      {nReg:392,nome:'VITIVINICOLA QUINTA DE SAO BRAZ',cat:'Vinhos'},
+      {nReg:467,nome:'CERVEJARIA PETROPOLIS',cat:'Bebidas'},
+    ],
+    TER:[
+      {nReg:433,nome:'IANE INDUSTRIA DE ALIMENTOS NORDESTE',cat:'Alimentos'},
+      {nReg:454,nome:'JOSE CLAUDIO & BARROS LTDA',cat:'Alimentos'},
+      {nReg:441,nome:'RA COMERCIO DE BEBIDAS LTDA',cat:'Bebidas'},
+      {nReg:455,nome:'RAMOS INDUSTRIA DE ALIMENTOS LTDA',cat:'Alimentos'},
+    ],
+    QUA:[
+      {nReg:329,nome:'GRAND MARCA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+      {nReg:462,nome:'ALIMENTOS TIA SONIA LTDA',cat:'Alimentos'},
+      {nReg:400,nome:'AUJO DISTRIBUIDORA DE ALIMENTO',cat:'Distribuição'},
+      {nReg:407,nome:'DIA DIST E IMPORTACAO AFOGADOS',cat:'Distribuição'},
+      {nReg:521,nome:'GRAND MARCA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+      {nReg:551,nome:'GRIFOS COMERCIO DE ALIMENTOS',cat:'Distribuição'},
+      {nReg:447,nome:'NATGEO COMERCIO E REPRESENTACAO',cat:'Distribuição'},
+      {nReg:439,nome:'RICARDO BERNARDO DA SILVA',cat:'Distribuição'},
+      {nReg:434,nome:'TALENTOS IND COM ALIMENTOS',cat:'Alimentos'},
+      {nReg:459,nome:'TAMBAU IND. ALIMENTICIA LTDA',cat:'Alimentos'},
+    ],
+    QUI:[
+      {nReg:486,nome:'J.R.ATACADO LIMITADA',cat:'Atacado'},
+      {nReg:558,nome:'RECIFE DOCES E CARAMELOS LTDA',cat:'Doces'},
+    ],
+    SEX:[
+      {nReg:427,nome:'ATACAREJO ECONOMICO (VINHOS)',cat:'Vinhos'},
+    ],
+  },
+};
+
+const COMPRADORES = {
+  'FATIMA':     CRON_FATIMA,
+  'KELLY':      CRON_KELLY,
+  'STHEPHANNY': CRON_STHEPHANNY,
+  'CRISLANE':   CRON_CRISLANE,
+  'PATRICIA':   CRON_PATRICIA,
+};
+
+const COR_COMPRADORES = {
+  'FATIMA':     '#6366f1',
+  'KELLY':      '#f43f5e',
+  'STHEPHANNY': '#a855f7',
+  'CRISLANE':   '#14b8a6',
+  'PATRICIA':   '#f59e0b',
+};
+const CARGO_COMPRADORES = {
+  'FATIMA':     'Compradora de Alimentos',
+  'KELLY':      'Compradora de Frios & Laticínios',
+  'STHEPHANNY': 'Compradora de Perfumaria & Limpeza',
+  'CRISLANE':   'Compradora de Hortifruti & Padaria',
+  'PATRICIA':   'Compradora de Bebidas',
+};
+
+let mesSel = new Date().getMonth() + 1;
+let anoSel = new Date().getFullYear();
+let nomeSel = 'FATIMA';
+let fornecMap = {};
+let pedidosMes = {};
+
+function mudarMes(delta) {
+  mesSel += delta;
+  if (mesSel > 12) { mesSel = 1; anoSel++; }
+  if (mesSel < 1)  { mesSel = 12; anoSel--; }
+  carregar();
+}
+
+function isoDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtDia(iso) {
+  const [,, d] = iso.split('-'); return d + '/' + iso.split('-')[1];
+}
+
+function ocorrencias(mes, ano, weekday) {
+  const datas = [];
+  const d = new Date(ano, mes - 1, 1);
+  while (d.getMonth() === mes - 1) {
+    if (d.getDay() === weekday) datas.push(isoDate(new Date(d)));
+    d.setDate(d.getDate() + 1);
+  }
+  return datas;
+}
+
+// Mesma lógica do comprador.html histórico: pedidos-hoje?data=DATE por data específica
+async function carregarPedidos() {
+  const cron = COMPRADORES[nomeSel];
+  if (!cron) return;
+
+  // Coleta todas as datas agendadas no mês
+  const datesSet = new Set();
+  for (const grupo of ['1e3','2e4']) {
+    for (const dia of ['SEG','TER','QUA','QUI','SEX']) {
+      const itens = cron[grupo]?.[dia] || [];
+      if (!itens.length) continue;
+      ocorrencias(mesSel, anoSel, DIA_IDX[dia]).forEach(d => datesSet.add(d));
+    }
+  }
+
+  pedidosMes = {};
+  // Busca igual ao histórico da semana do comprador.html — uma chamada por data
+  await Promise.all([...datesSet].map(async dateISO => {
+    try {
+      const r = await fetch('/api/compras/pedidos-hoje?data=' + dateISO);
+      if (r.ok) {
+        const { concluidos } = await r.json();
+        if (concluidos?.length) pedidosMes[dateISO] = concluidos.map(c => parseInt(c));
+      }
+    } catch(_) {}
+  }));
+}
+
+async function carregar() {
+  document.getElementById('conteudo').innerHTML = '<div class="loading">Carregando…</div>';
+  document.getElementById('mes-label').textContent = MESES[mesSel] + ' ' + anoSel;
+
+  const cron = COMPRADORES[nomeSel];
+  if (!cron) return;
+
+  // Carrega fornecMap — coleta nRegs de todos os grupos
+  const todosNRegs = [];
+  for (const grupo of Object.values(cron))
+    for (const itens of Object.values(grupo))
+      for (const f of itens)
+        if (!todosNRegs.includes(f.nReg)) todosNRegs.push(f.nReg);
+  try {
+    const r = await fetch('/api/compras/fornec-por-lista?listas=' + todosNRegs.join(','));
+    if (r.ok) fornecMap = await r.json();
+  } catch(_) {}
+
+  await carregarPedidos();
+  renderTabela(cron);
+}
+
+// Atualiza só os pedidos do banco e re-renderiza — mesma regra do comprador.html
+async function atualizarStatus() {
+  const cron = COMPRADORES[nomeSel];
+  if (!cron) return;
+  await carregarPedidos();
+  renderTabela(cron);
+}
+
+// Auto-refresh a cada 60s (igual ao comprador.html)
+setInterval(atualizarStatus, 60000);
+
+// Determina grupo pela posição de ocorrência: 1ª/3ª = '1e3', 2ª/4ª = '2e4'
+function grupoOcorrencia(occIdx) {
+  return occIdx % 2 === 0 ? '1e3' : '2e4';
+}
+
+// Igual ao comprador.html histórico: verifica pedidosMes[data] por CodFornec
+// pedidosMes é carregado via pedidos-hoje?data=DATE por cada data do cronograma
+function pedidoFeito(codFornec, dateISO) {
+  if (!codFornec) return false;
+  const cod = parseInt(codFornec);
+  // Verifica data exata (mesma regra do histórico)
+  if ((pedidosMes[dateISO] || []).includes(cod)) return true;
+  // Fallback: qualquer dia da mesma semana (pedido aprovado em dia diferente do agendado)
+  const [y, m, day] = dateISO.split('-').map(Number);
+  const d = new Date(y, m - 1, day);
+  const dow = d.getDay();
+  const diffSeg = dow === 0 ? -6 : 1 - dow;
+  const seg = new Date(d); seg.setDate(d.getDate() + diffSeg);
+  const sex = new Date(seg); sex.setDate(seg.getDate() + 4);
+  const monISO = isoDate(seg), friISO = isoDate(sex);
+  for (const [dt, cods] of Object.entries(pedidosMes)) {
+    if (dt >= monISO && dt <= friISO && cods.includes(cod)) return true;
+  }
+  return false;
+}
+
+// Retorna as datas do mês para um dia da semana, filtradas pelo grupo (1e3 ou 2e4)
+function ocorrenciasPorGrupo(weekday, grupo) {
+  const todos = ocorrencias(mesSel, anoSel, weekday);
+  return todos.reduce((acc, d, i) => {
+    if (grupo === '1e3' ? i % 2 === 0 : i % 2 === 1) acc.push({ data: d, num: i + 1 });
+    return acc;
+  }, []);
+}
+
+function buildGrupoHTML(cron, grupo) {
+  const hoje = isoDate(new Date());
+  const diasOrdem = ['SEG','TER','QUA','QUI','SEX'];
+  let h = '';
+  let gOk = 0, gPend = 0, gFut = 0;
+
+  for (const dia of diasOrdem) {
+    const itens = cron[grupo]?.[dia] || [];
+    if (!itens.length) continue;
+
+    const weekday = DIA_IDX[dia];
+    const datasGrupo = ocorrenciasPorGrupo(weekday, grupo);
+    if (!datasGrupo.length) continue;
+
+    const N = datasGrupo.length;
+    const W = 48; // largura fixa de cada coluna de semana (px)
+
+    h += `<div class="dia-titulo">${DIAS_LABEL[dia]}</div>`;
+    h += `<table style="table-layout:fixed;width:100%">`;
+    h += `<colgroup><col>${datasGrupo.map(() => `<col style="width:${W}px">`).join('')}</colgroup>`;
+    h += `<tr class="semana-header"><th class="col-nome">Fornecedor</th>`;
+    datasGrupo.forEach(({data, num}) => {
+      h += `<th>${num}ª<span class="data-sub">${fmtDia(data)}</span></th>`;
+    });
+    h += '</tr>';
+
+    const tots = Array(N).fill(0).map(() => ({ok:0,pend:0,fut:0}));
+
+    for (const f of itens) {
+      const codFornec = fornecMap[String(f.nReg)]?.codFornec;
+      const badgeLista  = `<span class="badge-lista" title="Lista">${f.nReg}</span>`;
+      const badgeFornec = codFornec && String(codFornec) !== String(f.nReg)
+        ? `<span class="badge-fornec" title="Cód. Fornecedor">${codFornec}</span>` : '';
+      h += `<tr class="forn-linha"><td class="col-nome" title="${f.nome}">${badgeLista}${badgeFornec}${f.nome}</td>`;
+      datasGrupo.forEach(({data}, i) => {
+        const futura = data > hoje;
+        const ok = !futura && pedidoFeito(codFornec, data);
+        if (futura)    { tots[i].fut++;  gFut++;  h += `<td><div class="cell fut">—</div></td>`; }
+        else if (ok)   { tots[i].ok++;   gOk++;   h += `<td><div class="cell ok">✓</div></td>`; }
+        else           { tots[i].pend++; gPend++; h += `<td><div class="cell pend">✗</div></td>`; }
+      });
+      h += '</tr>';
+    }
+
+    // linha de total
+    h += `<tr class="total-row"><td class="col-nome">Total</td>`;
+    tots.forEach(t => {
+      const cls = t.pend===0&&t.fut===0?'ok':t.ok>0?'mix':'pend';
+      const txt = t.fut>0 ? `${t.ok}/${t.ok+t.pend+t.fut}` : `${t.ok}/${t.ok+t.pend}`;
+      h += `<td class="total-cell ${cls}">${txt}</td>`;
+    });
+    h += '</tr></table>';
+  }
+
+  return { html: h, ok: gOk, pend: gPend, fut: gFut };
+}
+
+function renderTabela(cron) {
+  const g1 = buildGrupoHTML(cron, '1e3');
+  const g2 = buildGrupoHTML(cron, '2e4');
+  const totalOk   = g1.ok   + g2.ok;
+  const totalPend = g1.pend + g2.pend;
+  const totalFut  = g1.fut  + g2.fut;
+
+  document.getElementById('conteudo').innerHTML = `
+    <div class="grupos-wrap">
+      <div class="grupo-col">
+        <div class="grupo-header">1ª e 3ª Semanas</div>
+        ${g1.html}
+      </div>
+      <div class="grupo-divider"></div>
+      <div class="grupo-col">
+        <div class="grupo-header">2ª e 4ª Semanas</div>
+        ${g2.html}
+      </div>
+    </div>
+  `;
+
+  // Resumo geral — fora do zoom, sempre visível em tamanho normal
+  const resumoEl = document.getElementById('resumo');
+  resumoEl.style.display = 'flex';
+  resumoEl.innerHTML = `
+    <div class="res-item total"><div class="res-num">${totalOk+totalPend+totalFut}</div><div class="res-lbl">Total</div></div>
+    <div class="res-sep"></div>
+    <div class="res-item ok"><div class="res-num">${totalOk}</div><div class="res-lbl">Concluídos</div></div>
+    <div class="res-sep"></div>
+    <div class="res-item pend"><div class="res-num">${totalPend}</div><div class="res-lbl">Pendentes</div></div>
+    <div class="res-sep"></div>
+    <div class="res-item fut"><div class="res-num" style="color:var(--text3)">${totalFut}</div><div class="res-lbl">Futuros</div></div>
+  `;
+
+  document.getElementById('h-nome').textContent = nomeSel;
+  document.getElementById('h-sub').textContent = `${MESES[mesSel]} ${anoSel}`;
+  document.getElementById('h-cargo').textContent = CARGO_COMPRADORES[nomeSel] || 'Compradora';
+  const av = document.getElementById('h-avatar');
+  const cor = COR_COMPRADORES[nomeSel] || '#6366f1';
+  av.style.background = cor + '22';
+  av.style.border = '2px solid ' + cor;
+  av.style.color = cor;
+  av.textContent = nomeSel[0];
+
+  iniciarCarrossel();
+}
+
+// ── CARROSSEL VERTICAL ────────────────────────────────
+let _carraf = null;
+let _scrollY = 0;
+const PX_POR_FRAME = 0.4; // ~24px/s em 60fps — ajustável
+
+function fitContent() {
+  const wrap = document.getElementById('scroll-wrap');
+  const el = document.getElementById('conteudo');
+  if (!wrap || !el) return false;
+  el.style.zoom = '';
+  const avail = wrap.clientHeight;
+  const content = el.scrollHeight;
+  if (content > avail && avail > 50) {
+    const ratio = avail / content;
+    if (ratio >= 0.55) {
+      el.style.zoom = ratio.toFixed(3);
+      return true;
+    }
+  }
+  return content <= avail;
+}
+
+function iniciarCarrossel() {
+  if (_carraf) { cancelAnimationFrame(_carraf); _carraf = null; }
+  _scrollY = 0;
+  const el = document.getElementById('conteudo');
+  if (!el) return;
+
+  if (fitContent()) return;
+
+  // Duplicar conteúdo para loop sem pulo
+  const original = el.innerHTML;
+  el.innerHTML = original + '<div style="height:40px"></div>' + original;
+  el.style.transform = 'translateY(0)';
+
+  const wrap = document.getElementById('scroll-wrap');
+
+  function step() {
+    _scrollY += PX_POR_FRAME;
+    const metade = el.scrollHeight / 2;
+    if (_scrollY >= metade) _scrollY = 0; // loop suave
+    el.style.transform = `translateY(-${_scrollY}px)`;
+    _carraf = requestAnimationFrame(step);
+  }
+  // Pausa 2s antes de começar a rolar
+  setTimeout(() => { _carraf = requestAnimationFrame(step); }, 2000);
+}
+
+// Init
+const params = new URLSearchParams(location.search);
+// Remove acentos para busca no COMPRADORES (chaves sem acento)
+function semAcento(s) { return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase(); }
+nomeSel = semAcento(params.get('nome') || 'FATIMA');
+if (params.get('mes')) mesSel = parseInt(params.get('mes'));
+if (params.get('ano')) anoSel = parseInt(params.get('ano'));
+
+// Rotação automática
+const ORDEM_AUTO = ['FATIMA','KELLY','STHEPHANNY','CRISLANE','PATRICIA'];
+const isAuto   = params.get('auto') === '1';
+const idxAtual = parseInt(params.get('idx') || '0');
+
+if (isAuto) {
+  let cdAuto = 60;
+  const barEl = document.createElement('div');
+  barEl.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(8,17,31,.92);' +
+    'border-top:1px solid rgba(255,255,255,.08);padding:8px 28px;display:flex;align-items:center;' +
+    'justify-content:flex-end;font-size:11px;color:#64748b;font-family:inherit;z-index:200';
+  barEl.innerHTML = 'Próxima tela em <span id="cd-mensal" style="color:#FACC15;font-weight:800;margin-left:6px">60s</span>';
+  document.body.appendChild(barEl);
+
+  const iv = setInterval(() => {
+    cdAuto--;
+    const el = document.getElementById('cd-mensal');
+    if (el) el.textContent = cdAuto + 's';
+    if (cdAuto <= 0) {
+      clearInterval(iv);
+      // Vai para análise de produtos do mesmo comprador
+      location.href = '/analise-comprador.html?nome=' + encodeURIComponent(ORDEM_AUTO[idxAtual]) + '&auto=1&idx=' + idxAtual;
+    }
+  }, 1000);
+}
+
+// Relógio — igual ao comprador.html
+function updateClock() {
+  const now = new Date();
+  const p = n => String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  document.getElementById('clock-sub').textContent =
+    `${dias[now.getDay()]}, ${p(now.getDate())} ${meses[now.getMonth()]} ${now.getFullYear()}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+carregar();
+</script>
+<script src="/tv-fit.js"></script>
+</body>
+</html>

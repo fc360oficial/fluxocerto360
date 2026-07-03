@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análise Lista de Compras</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #334155}
+.sidebar-logo h2{font-size:15px;color:#F9C200;font-weight:700;letter-spacing:0.5px}
+.sidebar-logo p{font-size:11px;color:#64748b;margin-top:2px}
+.sidebar-nav{padding:10px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#334155;color:#f1f5f9}
+.nav-item.active{background:#F9C20018;color:#F9C200;border-right:3px solid #F9C200}
+.nav-item .ic{font-size:15px;width:20px;text-align:center}
+
+/* LAYOUT */
+.main{margin-left:220px;padding:24px;transition:margin-right .3s}
+.main.drawer-open{margin-right:55%}
+
+/* HEADER */
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-hdr h1{font-size:21px;font-weight:700;color:#f8fafc}
+.page-hdr p{font-size:12px;color:#64748b;margin-top:2px}
+
+/* FILTROS */
+.filtros{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg select,.fg input{background:#0f172a;border:1px solid #334155;border-radius:7px;color:#e2e8f0;padding:7px 11px;font-size:13px;outline:none;min-width:120px}
+.fg select:focus,.fg input:focus{border-color:#F9C200}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end;white-space:nowrap}
+.btn-blue{background:#F9C200;color:#0f0f1a;font-weight:700}.btn-blue:hover{background:#e0ae00}
+.btn-slate{background:#334155;color:#cbd5e1}.btn-slate:hover{background:#475569}
+
+/* KPI CARDS */
+.kpi-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.kpi{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:2px;min-width:130px}
+.kpi .v{font-size:20px;font-weight:700}
+.kpi .l{font-size:10px;color:#64748b}
+
+/* INSIGHTS */
+.insights{background:#0f172a;border:1px solid #1e3a8a;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.insight-chip{background:#1e2d4a;border:1px solid #1e3a8a;border-radius:8px;padding:6px 12px;font-size:11px;color:#93c5fd;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;user-select:none}
+.insight-chip:hover{border-color:#60a5fa;background:#1e3a8a;transform:translateY(-1px)}
+.insight-chip.warn{background:#2a1f0a;border-color:#713f12;color:#fcd34d}
+.insight-chip.warn:hover{background:#3a2a0a;border-color:#fcd34d}
+.insight-chip.danger{background:#2a0f0f;border-color:#7f1d1d;color:#fca5a5}
+.insight-chip.danger:hover{background:#3a0f0f;border-color:#fca5a5}
+.insight-chip.active-filter{box-shadow:0 0 0 2px #F9C200;border-color:#F9C200 !important;color:#F9C200 !important}
+.chip-clear{background:#334155;border:1px solid #475569;border-radius:8px;padding:6px 12px;font-size:11px;color:#94a3b8;cursor:pointer;transition:all .15s}
+.chip-clear:hover{background:#475569;color:#f1f5f9}
+
+/* TABELA PRINCIPAL */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid #334155}
+table.main-t{width:100%;border-collapse:collapse;font-size:13px}
+table.main-t thead{background:#0f172a;position:sticky;top:0;z-index:10}
+table.main-t th{padding:10px 14px;text-align:left;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid #334155}
+table.main-t th.r{text-align:right}
+table.main-t td{padding:9px 14px;border-bottom:1px solid #1e293b;vertical-align:middle}
+table.main-t tbody tr{transition:background .1s}
+table.main-t tbody tr:hover{background:#ffffff08}
+table.main-t tbody tr.selected{background:#F9C20012;border-left:3px solid #F9C200}
+.td-r{text-align:right}
+.td-link{cursor:pointer;text-decoration:none;transition:color .15s}
+.td-link:hover{text-decoration:underline}
+.nome-fornec{cursor:pointer;font-weight:600;color:#e2e8f0}.nome-fornec:hover{color:#F9C200}
+.td-venda{cursor:pointer;color:#F9C200;font-weight:700}.td-venda:hover{color:#fde68a}
+.td-margem{font-weight:700;cursor:pointer}
+.td-avaria{cursor:pointer;font-weight:600}
+.rank{font-size:11px;width:24px;text-align:center;color:#64748b}
+
+/* MARGEM COLORS */
+.m-great{color:#4ade80}.m-ok{color:#a3e635}.m-warn{color:#fbbf24}.m-bad{color:#f87171}
+/* AVARIA COLORS */
+.av-ok{color:#64748b}.av-warn{color:#fbbf24}.av-bad{color:#f87171}
+
+/* BARRA MINI */
+.mini-bar{height:4px;border-radius:2px;background:#334155;margin-top:4px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:2px;background:#3b82f6}
+
+/* DRAWER */
+.drawer-overlay{position:fixed;inset:0;background:#00000066;z-index:198;display:none}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;top:0;right:0;width:55%;height:100vh;background:#1e293b;border-left:1px solid #334155;z-index:199;transform:translateX(100%);transition:transform .3s ease;display:flex;flex-direction:column;overflow:hidden}
+.drawer.open{transform:translateX(0)}
+
+.drawer-hdr{padding:16px 20px;border-bottom:1px solid #334155;display:flex;align-items:flex-start;gap:12px;background:#0f172a55;flex-shrink:0}
+.drawer-hdr-info{flex:1;min-width:0}
+.drawer-hdr-info h2{font-size:15px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawer-hdr-info p{font-size:11px;color:#64748b;margin-top:2px}
+.btn-close{background:transparent;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;flex-shrink:0}
+.btn-close:hover{background:#334155;color:#f1f5f9}
+
+.drawer-tabs{display:flex;border-bottom:1px solid #334155;background:#0f172a44;flex-shrink:0;overflow-x:auto}
+.dtab{padding:10px 16px;font-size:12px;font-weight:600;color:#64748b;background:transparent;border:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.dtab:hover{color:#cbd5e1}
+.dtab.active{color:#60a5fa;border-bottom-color:#3b82f6}
+
+.drawer-body{flex:1;overflow-y:auto;padding:0}
+
+/* DRAWER CONTENT */
+.d-section{padding:14px 18px;border-bottom:1px solid #1e293b}
+.d-kpis{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #334155;background:#0f172a22}
+.d-kpi{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;min-width:100px}
+.d-kpi .dv{font-size:16px;font-weight:700}.d-kpi .dl{font-size:10px;color:#64748b}
+
+/* DRAWER TABLE */
+.d-table-wrap{overflow-x:auto}
+table.d-t{width:100%;border-collapse:collapse;font-size:12px}
+table.d-t thead{background:#0f172a;position:sticky;top:0}
+table.d-t th{padding:8px 12px;text-align:left;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #334155}
+table.d-t th.r{text-align:right}
+table.d-t td{padding:7px 12px;border-bottom:1px solid #1e293b22;vertical-align:middle}
+table.d-t tbody tr:hover{background:#ffffff06}
+.d-t .cod{color:#475569;font-size:10px;font-family:monospace}
+.d-t .desc{font-weight:500;color:#e2e8f0}
+.d-t .r{text-align:right}
+.badge-rank{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:2px 6px;margin-left:4px}
+.br-gold{background:#713f12;color:#fde68a}
+.br-silver{background:#374151;color:#d1d5db}
+.br-green{background:#14532d;color:#86efac}
+
+/* LOJA COMPARATIVO */
+.loja-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #1e293b22;cursor:default}
+.loja-row:hover{background:#ffffff06}
+.loja-label{font-size:12px;font-weight:700;color:#64748b;min-width:52px}
+.loja-bar-wrap{flex:1;height:6px;background:#1e293b;border-radius:3px;overflow:hidden}
+.loja-bar-fill{height:100%;border-radius:3px;background:#3b82f6;transition:width .4s ease}
+.loja-val{font-size:12px;font-weight:700;color:#60a5fa;min-width:90px;text-align:right}
+.loja-msv{font-size:11px;min-width:54px;text-align:right}
+.loja-av{font-size:11px;min-width:70px;text-align:right}
+.badge-loja{font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;margin-left:4px}
+.bl-gold{background:#713f12;color:#fde68a}
+.bl-green{background:#14532d;color:#86efac}
+.bl-blue{background:#1e3a8a;color:#93c5fd}
+
+/* FILTRO RÁPIDO */
+.quick-filters{display:flex;gap:6px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid #334155;background:#0f172a33}
+.qf-btn{border:1px solid #334155;background:transparent;color:#94a3b8;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;transition:all .15s}
+.qf-btn:hover,.qf-btn.active{background:#1e3a8a;border-color:#3b82f6;color:#93c5fd}
+
+/* UTILS */
+.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #334155;border-top-color:#3b82f6;animation:spin .7s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:30px;text-align:center;color:#475569;font-size:13px}
+
+/* PRINT */
+.btn-print{background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .15s}
+.btn-print:hover{background:#334155;color:#f1f5f9}
+.print-header{display:none}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  /* Esconde tudo exceto o drawer */
+  body > *:not(#drawer){display:none!important}
+  .sidebar,.drawer-overlay,.btn-close,.btn-print,.drawer-tabs,.quick-filters{display:none!important}
+  /* Reset do body e drawer para impressão */
+  html,body{background:#fff!important;color:#000!important;height:auto!important;overflow:visible!important}
+  #drawer{
+    position:static!important;transform:none!important;
+    width:100%!important;height:auto!important;max-height:none!important;
+    border:none!important;background:#fff!important;
+    overflow:visible!important;display:block!important;
+  }
+  .drawer-hdr{
+    background:#fff!important;border-bottom:2px solid #F9C200!important;
+    padding:8px 0 12px!important;margin-bottom:14px;display:flex!important;
+  }
+  .drawer-hdr-info h2{color:#0f172a!important;font-size:17px!important}
+  .drawer-hdr-info p{color:#475569!important;font-size:11px!important}
+  .print-header{
+    display:flex!important;align-items:center;gap:14px;
+    margin-bottom:14px;padding-bottom:12px;border-bottom:3px solid #F9C200;
+  }
+  .print-header img{height:36px;width:auto;filter:brightness(0)}
+  .print-header-txt h1{font-size:17px;font-weight:800;color:#0f172a;letter-spacing:-.3px}
+  .print-header-txt p{font-size:11px;color:#475569;margin-top:2px}
+  .drawer-body{overflow:visible!important;height:auto!important;max-height:none!important}
+  .d-kpis{background:#f8fafc!important;border:1px solid #e2e8f0!important;border-radius:8px;margin-bottom:12px}
+  .d-kpi{background:#fff!important;border:1px solid #e2e8f0!important}
+  .d-kpi .dv{color:#0f172a!important}.d-kpi .dl{color:#64748b!important}
+  .d-section{border-bottom:1px solid #e2e8f0!important}
+  table.d-t{color:#0f172a!important;border-collapse:collapse}
+  table.d-t th{color:#475569!important;background:#f1f5f9!important;border-bottom:1px solid #cbd5e1!important;border:1px solid #e2e8f0!important}
+  table.d-t td{border:1px solid #e2e8f0!important;color:#0f172a!important}
+  .d-t .cod{color:#64748b!important}.d-t .desc{color:#0f172a!important}
+  .m-great{color:#16a34a!important}.m-ok{color:#65a30d!important}.m-warn{color:#d97706!important}.m-bad{color:#dc2626!important}
+  .loja-row{border-bottom:1px solid #e2e8f0!important}
+  .loja-label{color:#475569!important}.loja-val{color:#1d4ed8!important}
+  .loja-bar-wrap{background:#e2e8f0!important}.loja-bar-fill{background:#3b82f6!important}
+  .print-footer{display:block!important;margin-top:20px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:10px;color:#64748b;text-align:right}
+  .spinner,.empty{display:none!important}
+  @page{margin:14mm 12mm;size:A4 portrait}
+}
+.tag-sem-giro{background:#7f1d1d;color:#fca5a5;font-size:9px;font-weight:700;border-radius:3px;padding:1px 4px;margin-left:4px}
+.tag-est-baixo{background:#713f12;color:#fde68a;font-size:9px;font-weight:700;border-radius:3px;padding:1px 4px;margin-left:4px}
+.tag-neg{background:#500000;color:#f87171;font-size:9px;font-weight:700;border-radius:3px;padding:1px 4px;margin-left:4px}
+
+/* LISTA TAGS */
+.loja-badge{display:inline-block;background:#1e3a8a33;border:1px solid #1e3a8a66;border-radius:4px;padding:1px 5px;font-size:10px;color:#93c5fd;margin:1px;font-weight:700}
+.comp-tag{display:inline-block;background:#1e3a8a22;border:1px solid #1e3a8a55;border-radius:4px;padding:1px 6px;font-size:10px;color:#93c5fd;margin:1px}
+.nome-lista{cursor:pointer;font-weight:600;color:#e2e8f0}.nome-lista:hover{color:#F9C200;text-decoration:underline}
+.itens-badge{display:inline-block;background:#F9C20022;border:1px solid #F9C20055;border-radius:6px;padding:2px 8px;font-size:12px;color:#F9C200;font-weight:700}
+
+@media (max-width:768px){
+  /* SIDEBAR → top bar */
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #334155}
+  .sidebar-logo{padding:8px 12px;border-bottom:none;display:flex;align-items:center}
+  .sidebar-logo img{width:100px !important;height:auto !important}
+  .sidebar-logo h2,.sidebar-logo p{display:none}
+  .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;width:100%}
+  .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center}
+  .nav-item .ic{font-size:12px;width:auto}
+  .nav-item.active{border-right:none;border-bottom:2px solid #F9C200}
+
+  /* MAIN */
+  .main{margin-left:0;padding:10px}
+  .main.drawer-open{margin-right:0}
+  .page-hdr{margin-bottom:12px;gap:8px}
+  .page-hdr h1{font-size:16px}
+  .page-hdr>button{display:none}
+
+  /* FILTROS */
+  .filtros{gap:8px}
+  .fg select,.fg input{min-width:80px;font-size:16px}
+
+  /* KPIs — 2 por linha */
+  .kpi-row{gap:8px}
+  .kpi{min-width:calc(50% - 5px);flex:1;padding:10px 12px}
+  .kpi .v{font-size:15px}
+
+  /* INSIGHTS */
+  .insights{gap:5px}
+  .insight-chip{font-size:10px;padding:5px 8px}
+
+  /* TABLE — scroll horizontal, fonte menor */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.main-t{min-width:700px}
+  table.main-t th,table.main-t td{padding:6px 8px;font-size:10px;white-space:nowrap}
+
+  /* DRAWER */
+  .drawer{width:100%;top:auto;bottom:0;height:85vh;transform:translateY(100%)}
+  .drawer.open{transform:translateY(0)}
+}
+@media print{
+  .sidebar,.filtros,.drawer,.drawer-overlay,.insights{display:none!important}
+  .main{margin-left:0;margin-right:0;padding:10px}
+  body{background:#fff;color:#000}
+  table.main-t th,table.main-t td{color:#000;border-color:#ccc}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+  </div>
+  <nav class="sidebar-nav">
+    <a href="index.html" class="nav-item"><span class="ic">📊</span> Dashboard</a>
+    <a href="consulta.html" class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
+    <a href="itens.html" class="nav-item"><span class="ic">📂</span> Mercadológico</a>
+    <a href="fornecedores.html" class="nav-item active"><span class="ic">📋</span> Lista de Compra</a>
+    <a href="pendencias.html"  class="nav-item"><span class="ic">⚠️</span> Pendências</a>
+    <a href="comparativos.html" class="nav-item"><span class="ic">📈</span> Comparativos</a>
+    <a href="prevencao.html" class="nav-item"><span class="ic">🛡️</span> Prevenção</a>
+    <a href="ruptura.html" class="nav-item"><span class="ic">🤖</span> IA Rupturas</a>
+  </nav>
+  <div style="padding:12px 16px;border-top:1px solid #334155;margin-top:auto">
+    <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="sidebar-user">👤 ...</div>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#f87171;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #7f1d1d;background:#450a0a22;transition:background .15s" onmouseover="this.style.background='#450a0a'" onmouseout="this.style.background='#450a0a22'">🚪 Sair</a>
+  </div>
+</div>
+<script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('sidebar-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
+
+<div class="main" id="main">
+  <div class="page-hdr">
+    <div>
+      <h1>📋 Análise Lista de Compras</h1>
+      <p>Desempenho por fornecedor · Drill Down completo</p>
+    </div>
+    <button class="btn btn-slate" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+
+  <div class="filtros">
+    <div class="fg">
+      <label>Loja</label>
+      <select id="fil-loja">
+        <option value="1">Loja 1</option><option value="2">Loja 2</option>
+        <option value="3">Loja 3</option><option value="4">Loja 4</option>
+        <option value="5">Loja 5</option><option value="6">Loja 6</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Mês</label>
+      <select id="fil-mes">
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+        <option value="3">Março</option><option value="4">Abril</option>
+        <option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option>
+        <option value="9">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Ano</label>
+      <select id="fil-ano"><option value="2026">2026</option><option value="2025">2025</option></select>
+    </div>
+    <div class="fg">
+      <label>Fornecedor</label>
+      <input type="text" id="fil-busca" placeholder="buscar..." onkeydown="if(event.key==='Enter')carregar()">
+    </div>
+    <div class="fg">
+      <label>Comprador</label>
+      <select id="fil-comprador">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <button class="btn btn-blue" onclick="carregar()">🔍 Buscar</button>
+  </div>
+
+  <div class="kpi-row" id="kpi-row"></div>
+  <div class="insights" id="insights-box" style="display:none"></div>
+
+  <div class="table-wrap">
+    <table class="main-t" id="main-table">
+      <thead>
+        <tr>
+          <th style="width:30px">#</th>
+          <th>Lista / Fornecedor</th>
+          <th>Comprador</th>
+          <th class="r" title="Clique para detalhar">Venda R$</th>
+          <th class="r" title="Clique para detalhar">Margem S/V</th>
+          <th class="r" title="Clique para detalhar">Margem S/C</th>
+          <th class="r" title="Clique para detalhar">Avaria R$</th>
+          <th class="r">% Av/Venda</th>
+          <th class="r">Itens Lista</th>
+          <th class="r">C/ Venda</th>
+        </tr>
+      </thead>
+      <tbody id="main-tbody"><tr><td colspan="10" style="padding:40px;text-align:center"><div class="spinner"></div></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div class="drawer-overlay" id="overlay" onclick="fecharDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="print-header">
+    <img src="/logo.png" alt="Econômico">
+    <div class="print-header-txt">
+      <h1>Econômico Relatórios</h1>
+      <p>Análise de Fornecedores · <span id="print-filtro"></span></p>
+    </div>
+  </div>
+  <div class="drawer-hdr">
+    <div class="drawer-hdr-info">
+      <h2 id="d-title">Fornecedor</h2>
+      <p id="d-subtitle">Loja X · Mês/Ano</p>
+    </div>
+    <button class="btn-print" onclick="imprimirDrawer()" title="Imprimir esta aba">🖨️ Imprimir</button>
+    <button class="btn-close" onclick="fecharDrawer()">✕ Fechar</button>
+  </div>
+  <div class="drawer-tabs" id="d-tabs"></div>
+  <div class="drawer-body" id="d-body"><div class="spinner"></div></div>
+  <div class="print-footer" id="print-footer"></div>
+</div>
+
+<script>
+const mesesNomes = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const fmt  = v => 'R$ ' + (+v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN = v => (+v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+const pctFmt = v => v != null ? v.toFixed(1)+'%' : '—';
+
+let dados = [];
+let listas = [];
+let totalLojaReal = 0;
+let totalComFornecedor = 0;
+let totalLucroReal = 0;
+let margemLoja = 0;
+let margemFornec = 0;
+let avariaBreakdown = {};
+let fornecSelecionado = null;
+let listaSelecionada = null;
+let cacheProds = {}, cacheAvaria = {}, cacheLojas = {};
+let _filtroAtivo = null;
+
+document.getElementById('fil-mes').value = new Date().getMonth() + 1;
+
+function params() {
+  return {
+    loja:      document.getElementById('fil-loja').value,
+    mes:       document.getElementById('fil-mes').value,
+    ano:       document.getElementById('fil-ano').value,
+    busca:     document.getElementById('fil-busca').value.trim(),
+    comprador: document.getElementById('fil-comprador').value
+  };
+}
+
+async function carregar() {
+  fecharDrawer();
+  _filtroAtivo = null;
+  cacheProds = {}; cacheAvaria = {}; cacheLojas = {};
+  document.getElementById('main-tbody').innerHTML = '<tr><td colspan="10" style="padding:40px;text-align:center"><div class="spinner"></div></td></tr>';
+  document.getElementById('kpi-row').innerHTML = '';
+  document.getElementById('insights-box').style.display = 'none';
+
+  const p = params();
+
+  // KPIs: análise de fornecedores por loja/mês (sem filtro busca/comprador)
+  try {
+    const r = await fetch(`/api/fornecedores/resumo?loja=${p.loja}&mes=${p.mes}&ano=${p.ano}`);
+    const json = await r.json();
+    if (!json.error) {
+      totalLojaReal = json.total_loja || 0;
+      totalComFornecedor = json.total_com_fornecedor || 0;
+      totalLucroReal = json.total_lucro_real || 0;
+      margemLoja   = json.margem_loja   || 0;
+      margemFornec = json.margem_fornec || 0;
+      avariaBreakdown = json.avaria_breakdown || {};
+      dados = json.fornecedores || [];
+      renderKpis();
+      renderInsights();
+    }
+  } catch(e) { console.error('KPI error:', e); }
+
+  // Listas de compra (filtro por busca e comprador)
+  try {
+    const url = `/api/listas-compra?busca=${encodeURIComponent(p.busca)}&comprador=${encodeURIComponent(p.comprador)}`;
+    const r = await fetch(url);
+    const json = await r.json();
+    if (json.error) throw new Error(json.error);
+    listas = json.listas || [];
+    if (json.compradores && json.compradores.length) {
+      const sel = document.getElementById('fil-comprador');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Todos</option>' +
+        json.compradores.map(c => `<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+    }
+    renderKpis();    // atualiza contagem de listas
+    renderInsights(); // recalcula chips com contagem de listas
+    renderListas();
+  } catch(e) {
+    document.getElementById('main-tbody').innerHTML = `<tr><td colspan="10" class="empty">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+function renderKpis() {
+  const totalAvaria = dados.reduce((s,r)=>s+r.avaria,0);
+  const cobertura   = totalLojaReal > 0 ? (totalComFornecedor / totalLojaReal * 100).toFixed(1) : '—';
+  const gap         = totalLojaReal - totalComFornecedor;
+  const pctGap      = totalLojaReal > 0 ? (gap / totalLojaReal * 100).toFixed(1) : '0.0';
+  const { loja } = params();
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="kpi"><div class="v">${listas.length||dados.length}</div><div class="l">Listas de Compra</div></div>
+    <div class="kpi" title="Total real de todas as vendas da loja no mês">
+      <div class="v" style="color:#38bdf8">${fmt(totalLojaReal)}</div>
+      <div class="l">Faturamento Total Loja ${loja}</div>
+    </div>
+    <div class="kpi" title="Vendas de produtos com fornecedor cadastrado (sem duplicata por fornecedor)">
+      <div class="v" style="color:#60a5fa">${fmt(totalComFornecedor)}</div>
+      <div class="l">Faturamento c/ Fornecedor <span style="color:#f59e0b;font-size:11px">(${cobertura}%)</span></div>
+    </div>
+    <div class="kpi" onclick="verSemFornecedor()" title="Produtos vendidos sem fornecedor cadastrado — clique para ver" style="cursor:pointer;border-color:#7f1d1d">
+      <div class="v" style="color:#f87171">${fmt(gap)}</div>
+      <div class="l" style="color:#f87171">Sem Fornecedor <span style="font-size:11px">(${pctGap}%) ▶</span></div>
+    </div>
+    <div class="kpi" title="Margem S/V de todos os produtos da loja (alinhada com ERP)">
+      <div class="v" style="color:#4ade80">${pctFmt(margemLoja)}</div>
+      <div class="l">Margem S/V Loja</div>
+    </div>
+    <div class="kpi" onclick="verSemFornecedor()" title="Margem sem os produtos sem fornecedor cadastrado — clique para ver quais são" style="cursor:pointer;border-color:#166534">
+      <div class="v" style="color:#86efac">${pctFmt(margemFornec)}</div>
+      <div class="l" style="color:#86efac">Margem s/ Fornec. <span style="font-size:10px">▶</span></div>
+    </div>
+    <div class="kpi" title="Lucro bruto: venda menos custo dos produtos c/ fornecedor (sem duplicata)">
+      <div class="v" style="color:#a78bfa">${fmt(totalLucroReal)}</div>
+      <div class="l">Lucro Bruto c/ Fornec.</div>
+    </div>
+    <div class="kpi" style="min-width:170px" title="Total de avarias lançadas no período">
+      <div class="v" style="color:#fb923c">${fmt(avariaBreakdown.total ?? totalAvaria)}</div>
+      <div class="l">Total Avarias</div>
+      <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+        <span style="font-size:10px;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:2px 6px;color:#fbbf24">⏳ Ab. ${fmt(avariaBreakdown.em_aberto??0)}</span>
+        <span style="font-size:10px;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:2px 6px;color:#60a5fa">🔄 Trâm. ${fmt(avariaBreakdown.em_tramite??0)}</span>
+        <span style="font-size:10px;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:2px 6px;color:#4ade80">✅ Emit. ${fmt(avariaBreakdown.ja_emitido??0)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderInsights() {
+  const box = document.getElementById('insights-box');
+  if (!listas.length && !dados.length) { box.style.display='none'; return; }
+  const chips = [];
+  const { loja, mes } = params();
+  const totalVenda = dados.reduce((s,r)=>s+r.venda,0);
+  const baseRef    = totalLojaReal > 0 ? totalLojaReal : totalVenda;
+
+  // Top fornecedor → filtra as listas dele
+  const top = dados[0];
+  if (top && baseRef > 0) {
+    const pct      = (top.venda/baseRef*100).toFixed(1);
+    const idsTop   = listas.filter(l=>l.codFornec===top.id).map(l=>l.id);
+    chips.push(`<div class="insight-chip${_filtroAtivo==='top'?' active-filter':''}" onclick="filtrarListas('top',[${idsTop.join(',')}])" title="Ver listas deste fornecedor">
+      🏆 <b>${top.nome}</b> · ${pct}% do faturamento · ${fmt(top.venda)}
+    </div>`);
+  }
+
+  // Listas cujo fornecedor tem margem negativa
+  const idsMargemNeg = new Set(dados.filter(r=>r.msv<0&&r.venda>0).map(r=>r.id));
+  const listasMargemNeg = listas.filter(l=>idsMargemNeg.has(l.codFornec));
+  if (listasMargemNeg.length) chips.push(`<div class="insight-chip danger${_filtroAtivo==='margem_neg'?' active-filter':''}" onclick="filtrarListas('margem_neg',[${listasMargemNeg.map(l=>l.id).join(',')}])" title="Ver listas de fornecedores com margem negativa">
+    ⚠️ <b>${listasMargemNeg.length}</b> lista(s) · fornecedor(es) com margem negativa
+  </div>`);
+
+  // Listas cujo fornecedor tem avaria alta
+  const idsAltaAv = new Set(dados.filter(r=>r.pct_av>5&&r.avaria>0).map(r=>r.id));
+  const listasAltaAv = listas.filter(l=>idsAltaAv.has(l.codFornec));
+  if (listasAltaAv.length) chips.push(`<div class="insight-chip warn${_filtroAtivo==='alta_av'?' active-filter':''}" onclick="filtrarListas('alta_av',[${listasAltaAv.map(l=>l.id).join(',')}])" title="Ver listas com alta avaria">
+    🔴 <b>${listasAltaAv.length}</b> lista(s) · fornecedor(es) com avaria acima de 5%
+  </div>`);
+
+  // Listas sem faturamento no mês (fornecedor sem venda ou não encontrado)
+  const listasSemVenda = listas.filter(l => {
+    const s = dados.find(d=>d.id===l.codFornec);
+    return !s || s.venda===0;
+  });
+  if (listasSemVenda.length) chips.push(`<div class="insight-chip${_filtroAtivo==='sem_venda'?' active-filter':''}" onclick="filtrarListas('sem_venda',[${listasSemVenda.map(l=>l.id).join(',')}])" title="Ver listas sem faturamento">
+    📦 <b>${listasSemVenda.length}</b> lista(s) sem faturamento em ${mesesNomes[+mes]}
+  </div>`);
+
+  // Avaria total (informativo)
+  const totalAv = dados.reduce((s,r)=>s+r.avaria,0);
+  if (totalVenda>0) chips.push(`<div class="insight-chip warn" style="cursor:default">
+    📉 Avaria total: <b>${(totalAv/totalVenda*100).toFixed(2)}%</b> do faturamento da Loja ${loja}
+  </div>`);
+
+  if (_filtroAtivo) chips.push(`<div class="chip-clear" onclick="limparFiltro()">✕ Limpar filtro</div>`);
+
+  if (!chips.length) { box.style.display='none'; return; }
+  box.style.display='flex';
+  box.innerHTML = chips.join('');
+}
+
+// Filtra a tabela de listas por IDs de lista
+function filtrarListas(chave, ids) {
+  if (_filtroAtivo === chave) { limparFiltro(); return; }
+  _filtroAtivo = chave;
+  const filtradas = listas.filter(l => ids.includes(l.id));
+  renderListasComDados(filtradas);
+  renderInsights();
+}
+
+function limparFiltro() {
+  _filtroAtivo = null;
+  renderListas();
+  renderInsights();
+}
+
+function msvClass(v) { return v>=20?'m-great':v>=12?'m-ok':v>=0?'m-warn':'m-bad'; }
+function avClass(v)  { return v<=2?'av-ok':v<=5?'av-warn':'av-bad'; }
+
+function renderListas() { renderListasComDados(listas, null); }
+
+function renderListasComDados(lista, filtroMsg) {
+  if (!lista.length) {
+    document.getElementById('main-tbody').innerHTML=`<tr><td colspan="10" class="empty">${filtroMsg?'Nenhuma lista para estes fornecedores.':'Nenhuma lista encontrada.'}</td></tr>`;
+    return;
+  }
+  // Para a barra de referência, pega o maior venda entre os fornecedores das listas
+  const maxVenda = Math.max(...lista.map(r => {
+    const s = dados.find(d => d.id === r.codFornec);
+    return s?.venda || 0;
+  }), 1);
+
+  let html = '';
+  lista.forEach((r, i) => {
+    const s = dados.find(d => d.id === r.codFornec) || {}; // dados do fornecedor vinculado
+    const sel = listaSelecionada?.id === r.id ? 'selected' : '';
+    const compradorHtml = r.compradores
+      ? r.compradores.split(', ').map(c=>`<span class="comp-tag">${c}</span>`).join(' ')
+      : '<span style="color:#475569;font-size:11px">—</span>';
+    const venda  = s.venda  || 0;
+    const avaria = s.avaria || 0;
+    const pct    = (venda / maxVenda * 100).toFixed(1);
+    const sid    = s.id;
+    html += `<tr class="${sel}" id="row-${r.id}">
+      <td class="rank">${i+1}</td>
+      <td>
+        <div class="nome-lista" onclick="abrirLista(${r.id})" title="Ver itens da lista">${r.nome}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px">${r.fornecedor||''}</div>
+        <div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%"></div></div>
+      </td>
+      <td style="min-width:110px">${compradorHtml}</td>
+      <td class="td-r"><span class="td-venda" onclick="${sid?`abrirDrawer(${sid},'venda')`:'void(0)'}" title="Ver detalhes de venda">${venda>0?fmt(venda):'—'}</span></td>
+      <td class="td-r"><span class="td-margem ${msvClass(s.msv)}" onclick="${sid?`abrirDrawer(${sid},'margem')`:'void(0)'}" title="Ver rentabilidade">${venda>0?pctFmt(s.msv):'—'}</span></td>
+      <td class="td-r"><span class="td-margem ${msvClass(s.msc)}" onclick="${sid?`abrirDrawer(${sid},'margem')`:'void(0)'}" title="Ver rentabilidade">${venda>0?pctFmt(s.msc):'—'}</span></td>
+      <td class="td-r"><span class="td-avaria ${avClass(s.pct_av)}" onclick="${sid?`abrirDrawer(${sid},'avaria')`:'void(0)'}" title="Ver avarias">${avaria>0?fmt(avaria):'—'}</span></td>
+      <td class="td-r ${avClass(s.pct_av)}">${avaria>0?pctFmt(s.pct_av):'—'}</td>
+      <td class="td-r"><span class="itens-badge">${r.total_itens}</span></td>
+      <td class="td-r" style="color:#64748b">${fmtN(s.com_venda||0)}</td>
+    </tr>`;
+  });
+  document.getElementById('main-tbody').innerHTML = html;
+}
+
+// ─── DRAWER ─────────────────────────────────────
+const TABS = [
+  { id:'produtos', label:'📦 Produtos'    },
+  { id:'venda',    label:'💰 Venda'       },
+  { id:'margem',   label:'📊 Margem'      },
+  { id:'avaria',   label:'⚠️ Avaria'      },
+  { id:'lojas',    label:'🏪 Todas as Lojas'}
+];
+
+let tabAtiva = 'produtos';
+
+async function abrirDrawer(id, tab) {
+  const f = dados.find(r=>r.id===id);
+  if (!f) return;
+  fornecSelecionado = f;
+  tabAtiva = tab;
+
+  const { loja, mes, ano } = params();
+  document.getElementById('d-title').textContent = f.nome;
+  document.getElementById('d-subtitle').textContent = `Loja ${loja} · ${mesesNomes[+mes]} ${ano}`;
+
+  // Tabs
+  document.getElementById('d-tabs').innerHTML = TABS.map(t =>
+    `<button class="dtab ${t.id===tab?'active':''}" onclick="mudarTab('${t.id}')">${t.label}</button>`
+  ).join('');
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('main').classList.add('drawer-open');
+
+  await renderTab(tab);
+}
+
+async function mudarTab(tab) {
+  tabAtiva = tab;
+  document.querySelectorAll('.dtab').forEach(b=>b.classList.toggle('active', b.textContent.includes(TABS.find(t=>t.id===tab)?.label?.slice(2)||tab)));
+  document.getElementById('d-tabs').querySelectorAll('.dtab').forEach(b=>{
+    b.classList.remove('active');
+    if (b.onclick.toString().includes(`'${tab}'`)) b.classList.add('active');
+  });
+  await renderTab(tab);
+}
+
+async function renderTab(tab) {
+  const body = document.getElementById('d-body');
+  body.innerHTML = '<div class="spinner"></div>';
+  const { loja, mes, ano } = params();
+  const id = fornecSelecionado.id;
+
+  if      (tab==='produtos') await renderProds(id, loja, mes, ano, body);
+  else if (tab==='venda')    await renderVenda(id, loja, mes, ano, body);
+  else if (tab==='margem')   await renderMargemTab(id, loja, mes, ano, body);
+  else if (tab==='avaria')   await renderAvaria(id, loja, mes, ano, body);
+  else if (tab==='lojas')    await renderLojas(id, mes, ano, body);
+}
+
+async function getProdos(id, loja, mes, ano) {
+  const key = `${id}-${loja}-${mes}-${ano}`;
+  if (!cacheProds[key]) {
+    const r = await fetch(`/api/fornecedores/${id}/produtos?loja=${loja}&mes=${mes}&ano=${ano}`);
+    cacheProds[key] = await r.json();
+  }
+  return cacheProds[key];
+}
+async function getAvaria(id, loja, mes, ano) {
+  const key = `${id}-${loja}-${mes}-${ano}`;
+  if (!cacheAvaria[key]) {
+    const r = await fetch(`/api/fornecedores/${id}/avarias?loja=${loja}&mes=${mes}&ano=${ano}`);
+    cacheAvaria[key] = await r.json();
+  }
+  return cacheAvaria[key];
+}
+async function getLojas(id, mes, ano) {
+  const key = `${id}-${mes}-${ano}`;
+  if (!cacheLojas[key]) {
+    const r = await fetch(`/api/fornecedores/${id}/lojas?mes=${mes}&ano=${ano}`);
+    cacheLojas[key] = await r.json();
+  }
+  return cacheLojas[key];
+}
+
+// TAB PRODUTOS
+async function renderProds(id, loja, mes, ano, body) {
+  let prods;
+  try { prods = await getProdos(id, loja, mes, ano); } catch(e){ body.innerHTML=`<div class="empty">Erro: ${e.message}</div>`; return; }
+  if (!prods.length){ body.innerHTML='<div class="empty">Nenhum produto ativo neste fornecedor.</div>'; return; }
+
+  let filtro = 'todos';
+  function renderRows(f) {
+    let lista = prods;
+    if (f==='sem-giro')   lista = prods.filter(p=>!p.tem_venda);
+    if (f==='est-baixo')  lista = prods.filter(p=>p.estoque<5&&p.estoque>=0);
+    if (f==='est-alto')   lista = prods.filter(p=>p.estoque>200);
+    if (f==='marg-neg')   lista = prods.filter(p=>p.msv!==null&&p.msv<0);
+    const tbody = document.getElementById('dt-prods');
+    if (!tbody) return;
+    tbody.innerHTML = lista.map((p,i) => {
+      const tags = [];
+      if (!p.tem_venda) tags.push('<span class="tag-sem-giro">SEM GIRO</span>');
+      if (p.estoque < 5) tags.push('<span class="tag-est-baixo">EST.BAIXO</span>');
+      if (p.msv !== null && p.msv < 0) tags.push('<span class="tag-neg">MARG.NEG</span>');
+      const msvC = p.msv===null?'':'<span class="'+msvClass(p.msv)+'">'+pctFmt(p.msv)+'</span>';
+      return `<tr>
+        <td class="cod">${p.codigo}</td>
+        <td class="desc">${p.descricao}${tags.join('')}</td>
+        <td class="r" style="color:#94a3b8">${fmtN(p.estoque)}</td>
+        <td class="r">${p.tem_venda?fmt(p.venda):'—'}</td>
+        <td class="r">${msvC}</td>
+        <td class="r" style="color:#64748b;font-size:10px">${p.ultima_compra||'—'}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" class="empty">Nenhum produto neste filtro.</td></tr>';
+  }
+
+  const semGiro  = prods.filter(p=>!p.tem_venda).length;
+  const mNeg     = prods.filter(p=>p.msv!==null&&p.msv<0).length;
+  const estBaixo = prods.filter(p=>p.estoque<5).length;
+  const totalV   = prods.reduce((s,p)=>s+p.venda,0);
+
+  body.innerHTML = `
+    <div class="d-kpis">
+      <div class="d-kpi"><div class="dv">${prods.length}</div><div class="dl">Itens Ativos</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#60a5fa">${fmt(totalV)}</div><div class="dl">Faturamento</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#f87171">${semGiro}</div><div class="dl">Sem Giro</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#fbbf24">${estBaixo}</div><div class="dl">Est. Baixo</div></div>
+      ${mNeg?`<div class="d-kpi"><div class="dv" style="color:#f87171">${mNeg}</div><div class="dl">Marg. Negativa</div></div>`:''}
+    </div>
+    <div class="quick-filters">
+      <button class="qf-btn active" onclick="filtrarProds('todos',this)">Todos (${prods.length})</button>
+      <button class="qf-btn" onclick="filtrarProds('sem-giro',this)">Sem Giro (${semGiro})</button>
+      <button class="qf-btn" onclick="filtrarProds('est-baixo',this)">Est. Baixo (${estBaixo})</button>
+      <button class="qf-btn" onclick="filtrarProds('marg-neg',this)">Marg. Neg. (${mNeg})</button>
+    </div>
+    <div class="d-table-wrap">
+      <table class="d-t">
+        <thead><tr>
+          <th>Código</th><th>Produto</th>
+          <th class="r">Estoque</th><th class="r">Venda Mês</th>
+          <th class="r">MSV%</th><th class="r">Últ. Compra</th>
+        </tr></thead>
+        <tbody id="dt-prods"></tbody>
+      </table>
+    </div>`;
+  renderRows('todos');
+
+  window._filtrarProdsData = prods;
+  window.filtrarProds = function(f, btn) {
+    document.querySelectorAll('.quick-filters .qf-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderRows(f);
+  };
+}
+
+// TAB VENDA
+async function renderVenda(id, loja, mes, ano, body) {
+  let prods;
+  try { prods = await getProdos(id, loja, mes, ano); } catch(e){ body.innerHTML=`<div class="empty">Erro: ${e.message}</div>`; return; }
+  const comVenda = prods.filter(p=>p.tem_venda).sort((a,b)=>b.venda-a.venda);
+  if (!comVenda.length){ body.innerHTML='<div class="empty">Nenhuma venda registrada no período.</div>'; return; }
+
+  const totalV = comVenda.reduce((s,p)=>s+p.venda,0);
+  const maxV   = comVenda[0].venda;
+
+  body.innerHTML = `
+    <div class="d-kpis">
+      <div class="d-kpi"><div class="dv" style="color:#60a5fa">${fmt(totalV)}</div><div class="dl">Faturamento Total</div></div>
+      <div class="d-kpi"><div class="dv">${comVenda.length}</div><div class="dl">Produtos Vendidos</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#a78bfa">${comVenda[0]?.descricao?.substring(0,20)||'—'}</div><div class="dl">Top Produto</div></div>
+    </div>
+    <div class="d-table-wrap">
+      <table class="d-t">
+        <thead><tr>
+          <th>#</th><th>Produto</th>
+          <th class="r">Qtd Vendida</th>
+          <th class="r">Venda R$</th>
+          <th class="r">% do Total</th>
+        </tr></thead>
+        <tbody>
+          ${comVenda.map((p,i)=>{
+            const pct = (p.venda/totalV*100).toFixed(1);
+            return `<tr>
+              <td class="rank">${i<3?['🥇','🥈','🥉'][i]:i+1}</td>
+              <td class="desc">
+                ${p.descricao}
+                <div class="mini-bar"><div class="mini-bar-fill" style="width:${(p.venda/maxV*100).toFixed(1)}%;background:#3b82f6"></div></div>
+              </td>
+              <td class="r" style="color:#94a3b8">${fmtN(p.qtd_vendida)}</td>
+              <td class="r" style="color:#60a5fa;font-weight:700">${fmt(p.venda)}</td>
+              <td class="r" style="color:#64748b">${pct}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// TAB MARGEM
+async function renderMargemTab(id, loja, mes, ano, body) {
+  let prods;
+  try { prods = await getProdos(id, loja, mes, ano); } catch(e){ body.innerHTML=`<div class="empty">Erro: ${e.message}</div>`; return; }
+  const comVenda = prods.filter(p=>p.tem_venda).sort((a,b)=>b.venda-a.venda);
+  if (!comVenda.length){ body.innerHTML='<div class="empty">Nenhuma venda registrada no período.</div>'; return; }
+
+  const totalV = comVenda.reduce((s,p)=>s+p.venda,0);
+  const totalC = comVenda.reduce((s,p)=>s+p.custo_total,0);
+  const totalL = comVenda.reduce((s,p)=>s+p.lucro,0);
+  const msvG   = totalV>0 ? totalL/totalV*100 : 0;
+  const mscG   = totalC>0 ? totalL/totalC*100 : 0;
+
+  body.innerHTML = `
+    <div class="d-kpis">
+      <div class="d-kpi"><div class="dv ${msvClass(msvG)}">${pctFmt(msvG)}</div><div class="dl">Margem S/Venda</div></div>
+      <div class="d-kpi"><div class="dv ${msvClass(mscG)}">${pctFmt(mscG)}</div><div class="dl">Margem S/Custo</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#a78bfa">${fmt(totalL)}</div><div class="dl">Lucro Bruto</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#f59e0b">${fmt(totalC)}</div><div class="dl">Custo Total</div></div>
+    </div>
+    <div class="d-table-wrap">
+      <table class="d-t">
+        <thead><tr>
+          <th>Produto</th>
+          <th class="r">Venda</th>
+          <th class="r">Custo Total</th>
+          <th class="r">Lucro</th>
+          <th class="r">MSV%</th>
+          <th class="r">MSC%</th>
+        </tr></thead>
+        <tbody>
+          ${comVenda.map(p=>{
+            const msc  = p.custo_total>0 ? p.lucro/p.custo_total*100 : null;
+            const msvC = msvClass(p.msv);
+            const neg  = p.msv!==null&&p.msv<0;
+            return `<tr ${neg?'style="background:#2a0f0f22"':''}>
+              <td class="desc">${p.descricao}${neg?'<span class="tag-neg" style="margin-left:4px">NEG</span>':''}</td>
+              <td class="r" style="color:#60a5fa">${fmt(p.venda)}</td>
+              <td class="r" style="color:#f59e0b">${p.custo_total>0?fmt(p.custo_total):'—'}</td>
+              <td class="r" style="color:${p.lucro>=0?'#4ade80':'#f87171'}">${fmt(p.lucro)}</td>
+              <td class="r"><span class="${msvC}">${p.msv!==null?pctFmt(p.msv):'—'}</span></td>
+              <td class="r"><span class="${msvClass(msc)}">${msc!==null?pctFmt(msc):'—'}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// TAB AVARIA
+async function renderAvaria(id, loja, mes, ano, body) {
+  let av;
+  try { av = await getAvaria(id, loja, mes, ano); } catch(e){ body.innerHTML=`<div class="empty">Erro: ${e.message}</div>`; return; }
+  if (!av.produtos?.length){ body.innerHTML='<div class="empty">Nenhuma avaria registrada no período.</div>'; return; }
+
+  body.innerHTML = `
+    <div class="d-kpis">
+      <div class="d-kpi"><div class="dv" style="color:#fb923c">${fmt(av.total)}</div><div class="dl">Total Avaria</div></div>
+      <div class="d-kpi"><div class="dv">${av.qtd_prods}</div><div class="dl">Produtos Afetados</div></div>
+      <div class="d-kpi"><div class="dv ${avClass(av.pct_venda)}">${pctFmt(av.pct_venda)}</div><div class="dl">% sobre Venda</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#64748b;font-size:13px">${av.ultima||'—'}</div><div class="dl">Última Avaria</div></div>
+    </div>
+    <div class="d-table-wrap">
+      <table class="d-t">
+        <thead><tr>
+          <th>Produto</th>
+          <th class="r">Qtd</th>
+          <th class="r">Valor R$</th>
+        </tr></thead>
+        <tbody>
+          ${av.produtos.map(p=>`<tr>
+            <td class="desc">${p.descricao||p.codigo}</td>
+            <td class="r" style="color:#94a3b8">${fmtN(p.qtd)}</td>
+            <td class="r" style="color:#fb923c;font-weight:700">${fmt(p.total)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// TAB LOJAS
+async function renderLojas(id, mes, ano, body) {
+  let lojas;
+  try { lojas = await getLojas(id, mes, ano); } catch(e){ body.innerHTML=`<div class="empty">Erro: ${e.message}</div>`; return; }
+  const maxV = Math.max(...lojas.map(r=>r.venda), 1);
+
+  const totalV = lojas.reduce((s,r)=>s+r.venda,0);
+  const totalAv = lojas.reduce((s,r)=>s+r.avaria,0);
+  const totalL  = lojas.reduce((s,r)=>s+r.lucro,0);
+
+  let html = `
+    <div class="d-kpis">
+      <div class="d-kpi"><div class="dv" style="color:#60a5fa">${fmt(totalV)}</div><div class="dl">Venda Total (Rede)</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#a78bfa">${fmt(totalL)}</div><div class="dl">Lucro Bruto (Rede)</div></div>
+      <div class="d-kpi"><div class="dv" style="color:#fb923c">${fmt(totalAv)}</div><div class="dl">Avaria Total (Rede)</div></div>
+    </div>
+    <div class="d-section" style="padding:0">`;
+
+  lojas.forEach(r => {
+    const pct = (r.venda/maxV*100).toFixed(1);
+    const badges = [];
+    if (r.badge_venda)  badges.push('<span class="badge-loja bl-gold">🥇 Maior Venda</span>');
+    if (r.badge_msv)    badges.push('<span class="badge-loja bl-green">📈 Melhor Margem</span>');
+    if (r.badge_avaria) badges.push('<span class="badge-loja bl-blue">✅ Menor Avaria</span>');
+    html += `<div class="loja-row">
+      <div class="loja-label">Loja ${r.loja}</div>
+      <div class="loja-bar-wrap"><div class="loja-bar-fill" style="width:${pct}%"></div></div>
+      <div class="loja-val">${r.venda>0?fmt(r.venda):'—'}</div>
+      <div class="loja-msv ${msvClass(r.msv)}">${r.venda>0?pctFmt(r.msv):'—'}</div>
+      <div class="loja-av ${avClass(r.pct_av)}">${r.avaria>0?fmt(r.avaria):'—'}</div>
+      <div style="min-width:160px">${badges.join('')}</div>
+    </div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+// ─── ABRIR LISTA ────────────────────────────────
+async function abrirLista(id) {
+  const lista = listas.find(r => r.id === id);
+  if (!lista) return;
+  listaSelecionada = lista;
+
+  document.querySelectorAll('.main-t tbody tr').forEach(tr => tr.classList.remove('selected'));
+  const row = document.getElementById('row-' + id);
+  if (row) row.classList.add('selected');
+
+  const { loja } = params();
+  document.getElementById('d-title').textContent = lista.nome;
+  document.getElementById('d-subtitle').textContent = `${lista.fornecedor||''} · ${lista.total_itens} itens`;
+  document.getElementById('d-tabs').innerHTML = '';
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('main').classList.add('drawer-open');
+
+  const body = document.getElementById('d-body');
+  body.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const r = await fetch(`/api/listas-compra/${id}/itens?loja=${loja}`);
+    const itens = await r.json();
+    if (itens.error) throw new Error(itens.error);
+
+    if (!itens.length) {
+      body.innerHTML = '<div class="empty">Nenhum item ativo nesta lista para a loja selecionada.</div>';
+      return;
+    }
+
+    const kpiHtml = `
+      <div class="d-kpis">
+        <div class="d-kpi"><div class="dv">${itens.length}</div><div class="dl">Itens na Lista</div></div>
+        ${lista.compradores ? `<div class="d-kpi"><div class="dv" style="font-size:12px;color:#F9C200">${lista.compradores}</div><div class="dl">Comprador(es)</div></div>` : ''}
+        ${lista.obs ? `<div class="d-kpi"><div class="dv" style="font-size:11px;color:#94a3b8">${lista.obs}</div><div class="dl">Observação</div></div>` : ''}
+        ${lista.lojas.length ? `<div class="d-kpi"><div class="dv">${lista.lojas.map(n=>`<span class="loja-badge">L${n}</span>`).join('')}</div><div class="dl">Lojas</div></div>` : ''}
+      </div>`;
+
+    const rows = itens.map(it => `<tr>
+      <td class="cod">${it.codigo}</td>
+      <td class="desc">${it.descricao||'—'}</td>
+      <td class="r" style="color:#94a3b8">${it.unidade||''}</td>
+      <td class="r" style="color:#64748b">${it.embalagem||1}</td>
+      <td class="r" style="color:#f59e0b">${it.custo > 0 ? fmt(it.custo) : '—'}</td>
+      <td>${it.lojas.map(n=>`<span class="loja-badge">L${n}</span>`).join('')}</td>
+    </tr>`).join('');
+
+    body.innerHTML = kpiHtml + `
+      <div class="d-table-wrap">
+        <table class="d-t">
+          <thead><tr>
+            <th>Código</th><th>Produto</th>
+            <th class="r">Unid</th><th class="r">Emb</th>
+            <th class="r">Custo</th><th>Lojas</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    body.innerHTML = `<div class="empty">Erro: ${e.message}</div>`;
+  }
+}
+
+function fecharDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('main').classList.remove('drawer-open');
+  document.querySelectorAll('.main-t tbody tr').forEach(tr=>tr.classList.remove('selected'));
+  fornecSelecionado = null;
+  listaSelecionada = null;
+}
+
+function imprimirDrawer() {
+  const titulo = document.getElementById('d-title').textContent;
+  const subtitulo = document.getElementById('d-subtitle').textContent;
+  const abaAtiva = document.querySelector('.dtab.active');
+  const abaLabel = abaAtiva ? abaAtiva.textContent.trim() : '';
+  const agora = new Date().toLocaleString('pt-BR');
+
+  document.getElementById('print-filtro').textContent = `${subtitulo} · ${abaLabel}`;
+  document.getElementById('print-footer').textContent = `${titulo} · ${abaLabel} · Impresso em ${agora}`;
+  document.getElementById('print-footer').style.display = 'block';
+
+  window.print();
+
+  document.getElementById('print-footer').style.display = 'none';
+}
+
+async function verSemFornecedor() {
+  const p = params();
+  fornecSelecionado = null; listaSelecionada = null;
+  document.getElementById('d-title').textContent = 'Produtos sem fornecedor cadastrado';
+  document.getElementById('d-subtitle').textContent = `Loja ${p.loja} · ${mesesNomes[+p.mes]} ${p.ano}`;
+  document.getElementById('d-tabs').innerHTML = '';
+  document.getElementById('d-body').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('main').classList.add('drawer-open');
+
+  try {
+    const r = await fetch(`/api/sem-fornecedor?loja=${p.loja}&mes=${p.mes}&ano=${p.ano}`);
+    const rows = await r.json();
+    if (!rows.length) {
+      document.getElementById('d-body').innerHTML = '<div class="empty">Todos os produtos têm fornecedor cadastrado.</div>';
+      return;
+    }
+    const total = rows.reduce((s, r) => s + r.valor, 0);
+    let html = `
+      <div class="d-kpis">
+        <div class="d-kpi"><div class="dv" style="color:#f87171">${rows.length}</div><div class="dl">Produtos</div></div>
+        <div class="d-kpi"><div class="dv" style="color:#f87171">${fmt(total)}</div><div class="dl">Total sem fornecedor</div></div>
+      </div>
+      <div class="d-table-wrap"><table class="d-t">
+        <thead><tr>
+          <th>Código</th><th>Descrição</th><th>Unid</th><th class="r">Qtd</th><th class="r">Valor R$</th>
+        </tr></thead><tbody>`;
+    rows.forEach(row => {
+      html += `<tr>
+        <td class="cod">${row.codigo}</td>
+        <td class="desc">${row.descricao}</td>
+        <td style="color:#64748b;font-size:11px">${row.unid}</td>
+        <td class="r" style="color:#94a3b8">${row.qtd.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#f87171;font-weight:700">${fmt(row.valor)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('d-body').innerHTML = html;
+  } catch(e) {
+    document.getElementById('d-body').innerHTML = `<div class="empty">Erro: ${e.message}</div>`;
+  }
+}
+
+carregar();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '211';
+  var BUILD = '212';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -600,19 +600,30 @@ function saveResultados(list) {
 }
 
 function loadResultadosFromFirebase(callback) {
-  db.collection('resultados').get({source: 'server'}).then(function(snap){
-    var list = snap.docs.map(function(d){return d.data();});
-    list.sort(function(a,b){return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1;});
-    S.resultadosCache = list;
-    try {
-      var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
-      localStorage.setItem(RESKEY, JSON.stringify(semAssina));
-    } catch(e){}
-    if (callback) callback();
-  }).catch(function(err){
-    try { S.resultadosCache = JSON.parse(localStorage.getItem(RESKEY)||'[]'); } catch(e){ S.resultadosCache=[]; }
-    if (callback) callback();
-  });
+  var doFetch = function() {
+    db.collection('resultados').get({source: 'server'}).then(function(snap){
+      var list = snap.docs.map(function(d){return d.data();});
+      list.sort(function(a,b){return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1;});
+      S.resultadosCache = list;
+      try {
+        var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
+        localStorage.setItem(RESKEY, JSON.stringify(semAssina));
+      } catch(e){}
+      if (callback) callback();
+    }).catch(function(err){
+      try { S.resultadosCache = JSON.parse(localStorage.getItem(RESKEY)||'[]'); } catch(e){ S.resultadosCache=[]; }
+      if (callback) callback();
+    });
+  };
+  // Garante que Firebase Auth está pronto antes de buscar do Firestore
+  if (firebase.auth().currentUser) {
+    doFetch();
+  } else {
+    var unsub = firebase.auth().onAuthStateChanged(function(fbUser) {
+      unsub();
+      doFetch();
+    });
+  }
 }
 
 function limparResultadosFirebase() {

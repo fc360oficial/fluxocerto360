@@ -815,6 +815,21 @@
           <div class="mc"><div class="lbl">Operadores</div><div class="val" id="u-op">0</div></div>
           <div class="mc"><div class="lbl">Prevenção</div><div class="val" id="u-prev">0</div></div>
         </div>
+
+        <!-- MIGRAÇÃO FIREBASE AUTH -->
+        <div class="card" id="auth-migr-section" style="margin-top:20px;border:2px solid #e3b800">
+          <div class="card-hdr" style="background:#fffbe6">
+            <div class="card-title" style="color:#856404">🔐 Segurança — Migração para Firebase Authentication</div>
+          </div>
+          <div style="padding:16px">
+            <p style="margin:0 0 10px;font-size:13px;color:var(--t2)">Cria contas seguras no Firebase Auth para todos os usuários ativos. Após migrar, o login passa a usar Firebase Auth e as regras do Firestore serão atualizadas.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+              <button class="btn btn-p" onclick="migrarFirebaseAuth()">Criar Contas no Firebase Auth</button>
+              <button class="btn btn-s" onclick="ativarLoginFirebaseAuth()" id="btn-ativar-auth" style="display:none">Ativar Login Firebase Auth (Fase 2)</button>
+            </div>
+            <div id="auth-migr-result"></div>
+          </div>
+        </div>
       </div>
 
       <!-- PAINEL PLANO DE AÇÃO -->
@@ -1733,7 +1748,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="app.js?v=202" defer></script>
+<script src="app.js?v=203" defer></script>
 
 
 </body>

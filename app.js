@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '202';
+  var BUILD = '203';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -927,6 +927,33 @@ function doLogin() {
   err.style.color = '#856404';
   err.style.display = 'block';
 
+  // Modo Firebase Auth (ativado após migração)
+  if (localStorage.getItem('fc360_auth_mode') === 'firebase') {
+    firebase.auth().signInWithEmailAndPassword(email, pass)
+      .then(function(cred) {
+        return db.collection('usuarios').where('email', '==', cred.user.email).get();
+      })
+      .then(function(snap) {
+        if (snap.empty) throw { code: 'perfil/nao-encontrado' };
+        var found = snap.docs[0].data();
+        if (found.ativo === false) throw { code: 'auth/user-disabled' };
+        err.style.display = 'none';
+        finalizarLogin(found);
+      })
+      .catch(function(e) {
+        var msg = 'E-mail ou senha incorretos.';
+        if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
+        if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
+        if (e.code === 'auth/user-disabled') msg = 'Usuário inativo. Contate o administrador.';
+        if (e.code === 'perfil/nao-encontrado') msg = 'Usuário não encontrado no sistema.';
+        err.textContent = msg;
+        err.style.color = 'var(--r)';
+        err.style.display = 'block';
+      });
+    return;
+  }
+
+  // Modo legado: email + hash local
   loadUsersFromFirebase(function() {
     var users = getUsers();
     var found = users.find(function(u) {
@@ -4254,6 +4281,99 @@ function filtrarUsers(f,btn) {
   document.querySelectorAll('#u-filter-tabs .tab').forEach(function(t){t.classList.remove('on');});
   btn.classList.add('on');
   renderUsers();
+}
+
+// ── MIGRAÇÃO FIREBASE AUTH ────────────────────────────────────────────────────
+var _fbAuthConfig = {
+  apiKey: "AIzaSyAIOroUpio0sSBzTuhUqyJxz5bV7PX4KLw",
+  authDomain: "economico-gestao.firebaseapp.com",
+  projectId: "economico-gestao",
+  storageBucket: "economico-gestao.firebasestorage.app",
+  messagingSenderId: "650620659681",
+  appId: "1:650620659681:web:4ca84bdb330d028e9f14a0"
+};
+
+function _getSecondaryAuth() {
+  try { return firebase.app('migracao').auth(); }
+  catch(e) { return firebase.initializeApp(_fbAuthConfig, 'migracao').auth(); }
+}
+
+function migrarFirebaseAuth() {
+  var users = getUsers().filter(function(u){ return u.ativo !== false && u.email && u.email.indexOf('@') > 0; });
+  if (!users.length) { showToast('Nenhum usuário ativo encontrado.'); return; }
+  if (!confirm('Criar contas no Firebase Auth para ' + users.length + ' usuários ativos?\n\nSerão geradas senhas temporárias que você distribuirá para cada um.')) return;
+
+  var wrap = document.getElementById('auth-migr-result');
+  wrap.innerHTML = '<div style="padding:10px;color:#856404">Criando contas... aguarde.</div>';
+
+  var secondaryAuth = _getSecondaryAuth();
+  var results = [];
+  var idx = 0;
+
+  function next() {
+    if (idx >= users.length) {
+      _renderMigrResult(results);
+      secondaryAuth.signOut().catch(function(){});
+      return;
+    }
+    var u = users[idx++];
+    var tempPass = gerarSenhaAleatoria();
+
+    wrap.innerHTML = '<div style="padding:10px;color:#856404">Criando conta ' + idx + ' de ' + users.length + ': ' + u.nome + '...</div>';
+
+    secondaryAuth.createUserWithEmailAndPassword(u.email.trim().toLowerCase(), tempPass)
+      .then(function() {
+        secondaryAuth.signOut().catch(function(){});
+        results.push({ nome: u.nome, email: u.email, senha: tempPass, status: 'criado' });
+        next();
+      })
+      .catch(function(e) {
+        var status = e.code === 'auth/email-already-in-use' ? 'já existia' : ('erro: ' + e.code);
+        results.push({ nome: u.nome, email: u.email, senha: e.code === 'auth/email-already-in-use' ? '(manter senha atual)' : '-', status: status });
+        next();
+      });
+  }
+
+  next();
+}
+
+function _renderMigrResult(results) {
+  var ok = results.filter(function(r){ return r.status === 'criado'; }).length;
+  var ja = results.filter(function(r){ return r.status === 'já existia'; }).length;
+  var err = results.filter(function(r){ return r.status !== 'criado' && r.status !== 'já existia'; }).length;
+
+  var wrap = document.getElementById('auth-migr-result');
+  wrap.innerHTML = '<div style="margin-bottom:12px">'
+    + '<span style="color:var(--g);font-weight:700">' + ok + ' criados</span> · '
+    + '<span style="color:#856404">' + ja + ' já existiam</span>'
+    + (err ? ' · <span style="color:var(--r)">' + err + ' com erro</span>' : '')
+    + '</div>'
+    + '<div style="background:#fffbe6;border:1px solid #e3b800;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#856404">'
+    + '<strong>Próximos passos:</strong><br>'
+    + '1. Copie a tabela abaixo e distribua as senhas para cada usuário<br>'
+    + '2. Clique em "Ativar Login Firebase Auth" para migrar o login do app<br>'
+    + '3. Teste o login com um usuário antes de avisar a todos'
+    + '</div>'
+    + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + '<thead><tr style="background:#f5f5f5"><th style="padding:6px 10px;text-align:left">Nome</th><th style="padding:6px 10px;text-align:left">E-mail</th><th style="padding:6px 10px;text-align:left">Senha temporária</th><th style="padding:6px 10px;text-align:left">Status</th></tr></thead>'
+    + '<tbody>' + results.map(function(r){
+        var cor = r.status === 'criado' ? 'var(--g)' : r.status === 'já existia' ? '#856404' : 'var(--r)';
+        return '<tr style="border-bottom:1px solid #eee">'
+          + '<td style="padding:6px 10px">' + r.nome + '</td>'
+          + '<td style="padding:6px 10px">' + r.email + '</td>'
+          + '<td style="padding:6px 10px;font-family:monospace;font-weight:700;letter-spacing:1px">' + r.senha + '</td>'
+          + '<td style="padding:6px 10px;color:' + cor + ';font-weight:700">' + r.status + '</td>'
+          + '</tr>';
+      }).join('') + '</tbody></table></div>';
+
+  var btnAtivar = document.getElementById('btn-ativar-auth');
+  if (btnAtivar) btnAtivar.style.display = 'inline-block';
+}
+
+function ativarLoginFirebaseAuth() {
+  if (!confirm('Ativar o login via Firebase Auth agora?\n\nOs usuários precisarão usar as novas senhas. Confirmar?')) return;
+  localStorage.setItem('fc360_auth_mode', 'firebase');
+  showToast('✅ Modo Firebase Auth ativado! Reinicie o app para aplicar.', 5000);
 }
 
 var UPLABEL={admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção',coletor:'Coletor'};

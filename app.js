@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '212';
+  var BUILD = '213';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -11414,13 +11414,25 @@ window.addEventListener('beforeunload', function() {
 
 // Restaura sessao ao recarregar a pagina
 // (script e defer — DOM ja esta pronto aqui, sem precisar de DOMContentLoaded)
+// Aguarda Firebase Auth inicializar antes de chamar finalizarLogin, evitando
+// que leituras do Firestore rodem sem autenticacao (timing issue com IndexedDB).
 (function() {
   try {
     var saved = sessionStorage.getItem('eco_session');
     if (saved) {
       var user = JSON.parse(saved);
       if (user && user.id && user.perfil) {
-        finalizarLogin(user);
+        if (firebase.auth().currentUser) {
+          finalizarLogin(user);
+        } else {
+          var _unsub = firebase.auth().onAuthStateChanged(function(fbUser) {
+            _unsub();
+            if (fbUser) {
+              finalizarLogin(user);
+            }
+            // fbUser null = sessao Firebase expirou; tela de login ja aparece por padrao
+          });
+        }
       }
     }
   } catch(e) {}

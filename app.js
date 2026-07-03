@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '210';
+  var BUILD = '211';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -600,7 +600,7 @@ function saveResultados(list) {
 }
 
 function loadResultadosFromFirebase(callback) {
-  db.collection('resultados').get().then(function(snap){
+  db.collection('resultados').get({source: 'server'}).then(function(snap){
     var list = snap.docs.map(function(d){return d.data();});
     list.sort(function(a,b){return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1;});
     S.resultadosCache = list;

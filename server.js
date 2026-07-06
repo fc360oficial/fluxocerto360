@@ -51,7 +51,8 @@ app.use((req, res, next) => {
     '/api/compras/pedidos-mes',
     '/mensal.html',
     '/comparativo-tv.html', '/api/comparativo-tv',
-    '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado', '/api/pendencias/prevencao-bonif'];
+    '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado', '/api/pendencias/prevencao-bonif',
+    '/api/ruptura/debug-comprador'];
   if (publico.includes(req.path)) return next();
   const ext = req.path.split('.').pop().toLowerCase();
   if (['js','css','png','jpg','jpeg','gif','svg','ico','woff','woff2','ttf','eot','map'].includes(ext)) return next();

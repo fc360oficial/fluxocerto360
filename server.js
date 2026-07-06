@@ -2753,6 +2753,24 @@ app.get('/deploy', (req, res) => {
 });
 
 // ── IA RUPTURAS ─────────────────────────────────────────
+app.get('/api/ruptura/debug-comprador', async (req, res) => {
+  try {
+    const nome = req.query.nome || 'ANA KELLY';
+    const listaRows = await q(`SELECT DISTINCT nLista FROM central.c_cotacao_agenda_comprador WHERE nome = ?`, [nome]).catch(e => ({ err: e.message }));
+    const listIds = Array.isArray(listaRows) ? listaRows.map(r => r.nLista).filter(Boolean) : [];
+    let itensCount = 0;
+    let prodsCount = 0;
+    if (listIds.length) {
+      const ph = listIds.map(() => '?').join(',');
+      const itens = await q(`SELECT COUNT(*) as c FROM central.c_cotacao_lista_itens WHERE nCotacao IN (${ph})`, listIds).catch(() => [{ c: -1 }]);
+      itensCount = itens[0]?.c ?? 0;
+      const prods = await q(`SELECT COUNT(DISTINCT i.nInterno) as c FROM central.c_cotacao_lista_itens cli JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0 WHERE cli.nCotacao IN (${ph})`, listIds).catch(() => [{ c: -1 }]);
+      prodsCount = prods[0]?.c ?? 0;
+    }
+    res.json({ nome, listaRows, listIds, itensCount, prodsCount });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/ruptura/compradores', withCache(60), async (req, res) => {
   try {
     const rows = await q(`

@@ -2821,34 +2821,16 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
       }
       const phL = listIds.map(() => '?').join(',');
       prods = await q(`
-        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               COALESCE(e1.Qtd,0) est1, COALESCE(e2.Qtd,0) est2,
-               COALESCE(e3.Qtd,0) est3, COALESCE(e4.Qtd,0) est4,
-               COALESCE(e5.Qtd,0) est5, COALESCE(e6.Qtd,0) est6
+        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
-        LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
         WHERE cli.nCotacao IN (${phL})
       `, listIds).catch(e => { throw new Error('PRODS_QUERY:' + e.message); });
     } else {
       prods = await q(`
-        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               COALESCE(e1.Qtd,0) est1, COALESCE(e2.Qtd,0) est2,
-               COALESCE(e3.Qtd,0) est3, COALESCE(e4.Qtd,0) est4,
-               COALESCE(e5.Qtd,0) est5, COALESCE(e6.Qtd,0) est6
+        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
-        LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
-        LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
       `, []).catch(() => []);
     }
 
@@ -2858,8 +2840,30 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
       resumo_texto: 'Nenhum produto encontrado na lista de compras.'
     });
 
-    // Passo 2: vendas dos 30 dias para esses produtos, por loja
+    // Busca estoque por loja em paralelo (separado para evitar timeout)
     const barcodes = [...new Set(prods.map(p => p.CodigoBarra).filter(Boolean))];
+    if (barcodes.length) {
+      const phB = barcodes.map(() => '?').join(',');
+      const estoqueQs = [1,2,3,4,5,6].map(n =>
+        q(`SELECT CodigoBarra, Qtd FROM central.estoquen${n} WHERE CodigoBarra IN (${phB})`, barcodes).catch(() => [])
+      );
+      const estoqueArr = await Promise.all(estoqueQs);
+      const estoqueMap = {};
+      estoqueArr.forEach((rows, idx) => {
+        const lojaNum = idx + 1;
+        for (const r of rows) {
+          if (!estoqueMap[r.CodigoBarra]) estoqueMap[r.CodigoBarra] = {};
+          estoqueMap[r.CodigoBarra][lojaNum] = parseFloat(r.Qtd) || 0;
+        }
+      });
+      for (const p of prods) {
+        const em = estoqueMap[p.CodigoBarra] || {};
+        p.est1 = em[1] || 0; p.est2 = em[2] || 0; p.est3 = em[3] || 0;
+        p.est4 = em[4] || 0; p.est5 = em[5] || 0; p.est6 = em[6] || 0;
+      }
+    }
+
+    // Passo 2: vendas dos 30 dias para esses produtos, por loja
     const salesMap = {};
     const salesQs = LOJAS.flatMap(l => [
       q(`SELECT Codigo, ${l} as l, SUM(QtdNovo) as qt, SUM(ValorTotalNovo) as vl

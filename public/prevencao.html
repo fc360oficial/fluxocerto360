@@ -388,7 +388,7 @@ function renderConsolidado(d) {
     html += '<div class="bar-row">';
     html += '<div class="bar-label">' + bl.nome + '</div>';
     html += '<div class="bar-track">';
-    html += '<div class="bar-fill" id="bar-fill-' + bl.loja + '" style="width:' + bw + '%;background:' + bc + ';opacity:0.8"></div>';
+    html += '<div class="bar-fill" id="bar-fill-' + bl.loja + '" style="width:' + bw + '%;box-shadow:inset 0 0 0 999px ' + bc + '"></div>';
     html += '<div class="bar-meta-line bar-meta-dyn" style="left:' + metaPos + '%"></div>';
     html += '</div>';
     html += '<div class="bar-pct-lbl ' + (bl.pctMes > 1 ? 'neg' : 'pos') + '" id="bar-pct-' + bl.loja + '">' + fmtN(bl.pctMes) + '%</div>';
@@ -399,7 +399,7 @@ function renderConsolidado(d) {
   html += '<div class="bar-row" style="margin-top:10px;border-top:1px solid #334155;padding-top:10px">';
   html += '<div class="bar-label" style="color:#f8fafc">REDE TOTAL</div>';
   html += '<div class="bar-track">';
-  html += '<div class="bar-fill" id="bar-fill-rede" style="width:' + redeW + '%;background:' + redeC + '"></div>';
+  html += '<div class="bar-fill" id="bar-fill-rede" style="width:' + redeW + '%;box-shadow:inset 0 0 0 999px ' + redeC + '"></div>';
   html += '<div class="bar-meta-line bar-meta-dyn" style="left:' + metaPos + '%"></div>';
   html += '</div>';
   html += '<div class="bar-pct-lbl ' + (redePct > 1 ? 'neg' : 'pos') + '" id="bar-pct-rede">' + fmtN(redePct) + '%</div>';
@@ -651,7 +651,7 @@ function renderConsolidado(d) {
       var bw2 = +(p / maxP * 100).toFixed(1);
       var bc2 = p > 1 ? '#f87171' : '#4ade80';
       var fEl = document.getElementById('bar-fill-' + lj2);
-      if (fEl) { fEl.style.width = bw2 + '%'; fEl.style.background = bc2; }
+      if (fEl) { fEl.style.width = bw2 + '%'; fEl.style.boxShadow = 'inset 0 0 0 999px ' + bc2; }
       var lEl = document.getElementById('bar-pct-' + lj2);
       if (lEl) { lEl.textContent = fmtN(p) + '%'; lEl.className = 'bar-pct-lbl ' + (p > 1 ? 'neg' : 'pos'); }
     }
@@ -667,7 +667,7 @@ function renderConsolidado(d) {
     var redeW2 = +(redePct2 / maxP * 100).toFixed(1);
     var redeC2 = redePct2 > 1 ? '#f87171' : '#4ade80';
     var rf = document.getElementById('bar-fill-rede');
-    if (rf) { rf.style.width = redeW2 + '%'; rf.style.background = redeC2; }
+    if (rf) { rf.style.width = redeW2 + '%'; rf.style.boxShadow = 'inset 0 0 0 999px ' + redeC2; }
     var rl = document.getElementById('bar-pct-rede');
     if (rl) { rl.textContent = fmtN(redePct2) + '%'; rl.className = 'bar-pct-lbl ' + (redePct2 > 1 ? 'neg' : 'pos'); }
     // Meta lines

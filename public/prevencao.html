@@ -174,15 +174,13 @@ table.t td.r input{font-family:'Segoe UI',sans-serif}
   table.t th{background:#e5e5e5;color:#000;border-bottom:1px solid #999;font-size:9px;padding:4px 8px}
   table.t td{border-bottom:1px solid #ddd;padding:4px 8px;font-size:10px;color:#000}
   .neg{color:#c00!important}.pos{color:#060!important}.warn{color:#a60!important}.info{color:#069!important}
-  /* Gráfico de barras — forçar cores no papel */
-  .bar-chart{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .bar-label{color:#000!important;font-size:10px}
-  .bar-track{background:#e5e7eb!important;border:1px solid #ccc;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .bar-fill{-webkit-print-color-adjust:exact;print-color-adjust:exact;opacity:1!important}
-  .bar-pct-lbl{font-size:10px}
-  .bar-meta-line{background:#999!important;border-left-color:#999!important}
-  .bar-meta-label{color:#555!important}
-  /* Seções de destaques */
+  /* Barras: border-bottom sempre imprime independente de configurações */
+  .bar-label{color:#000!important;font-size:10px;width:140px}
+  .bar-track{background:none!important;border-bottom:1px solid #ddd;height:20px!important;overflow:hidden!important;border-radius:0!important}
+  .bar-fill{height:0!important;border-bottom-width:20px!important;border-bottom-style:solid!important;border-radius:0!important;box-shadow:none!important;min-width:0!important}
+  .bar-pct-lbl{font-size:10px;color:#000!important}
+  .bar-meta-line,.bar-meta-label{display:none!important}
+  .bar-row{margin-bottom:6px}
   .rede-kpi{border:1px solid #ccc!important;background:#f9f9f9!important}
   .rk-label{color:#333!important}.rk-val{color:#000!important}.rk-sub{color:#555!important}
 }

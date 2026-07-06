@@ -2836,7 +2836,7 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
         LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
         LEFT JOIN central.fornecedor f ON f.CodFornec = i.CodFornec
         WHERE cli.nCotacao IN (${phL})
-      `, listIds).catch(() => []);
+      `, listIds).catch(e => { throw new Error('PRODS_QUERY:' + e.message); });
     } else {
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao, i.CodFornec,

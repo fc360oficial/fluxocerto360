@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '213';
+  var BUILD = '214';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -5613,6 +5613,7 @@ function renderRelRanking(_skipFetch) {
 
   var res = resultados.filter(function(r){
     if (!r.dataHora) return false;
+    if (r.resetado) return false;
     var p=r.dataHora.split(' ')[0].split('/');
     if (p.length<3) return true;
     var d=new Date(p[2]+'-'+p[1]+'-'+p[0]);
@@ -5835,7 +5836,8 @@ function renderRelRankExtrato() {
 
     rows.push({d:d, dow:diaSemana, clEnviados:clEnviados, clEsp:clEsp.length, clPerdidos:clPerdidos,
                pts:pontosObtidos, maxDia:maxDia, pontosPerdidos:pontosPerdidos,
-               status:status, bgRow:bgRow, detalhe:detalhe});
+               status:status, bgRow:bgRow, detalhe:detalhe,
+               resultIds:resDia.map(function(ri){return ri.id;}).filter(Boolean)});
   }
 
   var aprov = totalMaximo ? Math.round(totalPontos/totalMaximo*100) : 0;
@@ -5894,7 +5896,9 @@ function renderRelRankExtrato() {
       +'<td style="padding:8px 10px;text-align:center">'+perdStr+'</td>'
       +'<td style="padding:8px 10px;text-align:right">'+ptsStr+'</td>'
       +'<td style="padding:8px 10px;text-align:right">'+perdPtsStr+'</td>'
-      +'<td style="padding:8px 10px;text-align:center;font-size:15px">'+r.status+'</td>'
+      +'<td style="padding:8px 10px;text-align:center;font-size:15px">'+r.status
+      +(S.role==='admin'&&r.resultIds&&r.resultIds.length?' <button onclick="excluirResultadoDia(\''+r.resultIds.join(',')+'\')" style="font-size:10px;padding:1px 5px;border:1px solid var(--r);color:var(--r);background:transparent;border-radius:4px;cursor:pointer;vertical-align:middle;margin-left:3px" title="Excluir do ranking">×</button>':'')
+      +'</td>'
       +'</tr>';
   });
 
@@ -5908,6 +5912,24 @@ function renderRelRankExtrato() {
 
   html += '</tbody></table></div>';
   tabelaEl.innerHTML = html;
+}
+
+function excluirResultadoDia(idsStr) {
+  var ids = idsStr ? idsStr.split(',').filter(Boolean) : [];
+  if (!ids.length) return;
+  if (!confirm('Excluir ' + ids.length + ' envio(s) deste dia do ranking?')) return;
+  ids.forEach(function(id) {
+    db.collection('resultados').doc(id).update({ resetado: true }).catch(function(){});
+  });
+  S.resultadosCache = S.resultadosCache.map(function(r) {
+    if (ids.indexOf(r.id) >= 0) return Object.assign({}, r, { resetado: true });
+    return r;
+  });
+  try {
+    var semAssina = S.resultadosCache.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
+    localStorage.setItem(RESKEY, JSON.stringify(semAssina));
+  } catch(e){}
+  renderRelRanking();
 }
 
 // Clona elemento substituindo <canvas> por <img> com o conteúdo desenhado

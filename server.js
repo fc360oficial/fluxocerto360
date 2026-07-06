@@ -2780,37 +2780,35 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
     const LOJAS = lojaFiltro ? [lojaFiltro] : LOJAS_ALL;
     const LOJAS_NOMES = { 1: 'CAHU', 2: 'MURIBECA', 3: 'PONTE', 4: 'ATACAREJO', 5: 'PORTA LARGA', 6: 'JARDIM JORDÃO' };
     const MIN_COB = 10;  // mínimo ideal de cobertura em dias
-    const MAX_COB = 45;  // máximo ideal (acima = excesso de estoque)
+    const MAX_COB = 50;  // máximo ideal (acima = excesso de estoque)
     const LEAD = 3;      // lead time para alerta sem pedido
 
-    // Fornecedores do comprador selecionado (se filtrar por comprador)
-    let fornecFiltro = null;
-    if (compradorFiltro) {
-      const fRows = await q(`
-        SELECT DISTINCT codFornec FROM central.c_cotacao_agenda_comprador
-        WHERE nome = ? AND codFornec IS NOT NULL AND codFornec != 0
-        UNION
-        SELECT DISTINCT cl.CodFornec FROM central.c_cotacao_agenda_comprador cap
-        JOIN central.c_cotacao_lista cl ON cl.nReg = cap.nLista
-        WHERE cap.nome = ? AND cl.CodFornec IS NOT NULL AND cl.CodFornec != 0
-      `, [compradorFiltro, compradorFiltro]).catch(() => []);
-      fornecFiltro = fRows.map(r => r.codFornec || r.CodFornec).filter(Boolean);
-      if (!fornecFiltro.length) fornecFiltro = [-1]; // nenhum fornecedor → retorna vazio
-    }
-
     // Passo 1: produtos + estoque
-    // Com comprador: busca todos os itens ativos desse fornecedor (não depende da lista ativa)
-    // Sem comprador: usa a lista de compras para limitar o escopo
+    // Com comprador: busca itens das listas do comprador via c_cotacao_agenda_comprador → c_cotacao_lista_itens
+    // Sem comprador: busca todos os itens de todas as listas ativas
     let prods;
-    if (fornecFiltro) {
-      const ph = fornecFiltro.map(()=>'?').join(',');
+    if (compradorFiltro) {
+      // Pega os nLista do comprador
+      const listaRows = await q(`
+        SELECT DISTINCT nLista FROM central.c_cotacao_agenda_comprador WHERE nome = ?
+      `, [compradorFiltro]).catch(() => []);
+      const listIds = listaRows.map(r => r.nLista).filter(Boolean);
+      if (!listIds.length) {
+        return res.json({
+          resumo: { total_rupturas: 0, em_risco: 0, sem_pedido: 0, excesso: 0, alertas: 0, perdaDia: 0, perdaSemana: 0 },
+          rupturas: [], em_risco: [], sem_pedido: [], excesso: [], alertas: [], plano: [], lojas: [], previsao: {},
+          resumo_texto: `Nenhuma lista encontrada para o comprador ${compradorFiltro}.`
+        });
+      }
+      const phL = listIds.map(() => '?').join(',');
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao, i.CodFornec,
                COALESCE(e1.Estoque,0) est1, COALESCE(e2.Estoque,0) est2,
                COALESCE(e3.Estoque,0) est3, COALESCE(e4.Estoque,0) est4,
                COALESCE(e5.Estoque,0) est5, COALESCE(e6.Estoque,0) est6,
                f.NomeCompleto as fornecedor
-        FROM central.itens i
+        FROM central.c_cotacao_lista_itens cli
+        JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
         LEFT JOIN central.estoquen1 e1 ON e1.nInterno = i.nInterno
         LEFT JOIN central.estoquen2 e2 ON e2.nInterno = i.nInterno
         LEFT JOIN central.estoquen3 e3 ON e3.nInterno = i.nInterno
@@ -2818,8 +2816,8 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
         LEFT JOIN central.estoquen5 e5 ON e5.nInterno = i.nInterno
         LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
         LEFT JOIN central.fornecedor f ON f.CodFornec = i.CodFornec
-        WHERE i.CodDesativado = 0 AND i.CodFornec IN (${ph})
-      `, fornecFiltro).catch(() => []);
+        WHERE cli.nCotacao IN (${phL})
+      `, listIds).catch(() => []);
     } else {
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao, i.CodFornec,

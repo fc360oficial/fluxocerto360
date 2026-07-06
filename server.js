@@ -2786,8 +2786,15 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
     // Fornecedores do comprador selecionado (se filtrar por comprador)
     let fornecFiltro = null;
     if (compradorFiltro) {
-      const fRows = await q(`SELECT DISTINCT codFornec FROM central.c_cotacao_agenda_comprador WHERE nome = ?`, [compradorFiltro]).catch(() => []);
-      fornecFiltro = fRows.map(r => r.codFornec);
+      const fRows = await q(`
+        SELECT DISTINCT codFornec FROM central.c_cotacao_agenda_comprador
+        WHERE nome = ? AND codFornec IS NOT NULL AND codFornec != 0
+        UNION
+        SELECT DISTINCT cl.CodFornec FROM central.c_cotacao_agenda_comprador cap
+        JOIN central.c_cotacao_lista cl ON cl.nReg = cap.nLista
+        WHERE cap.nome = ? AND cl.CodFornec IS NOT NULL AND cl.CodFornec != 0
+      `, [compradorFiltro, compradorFiltro]).catch(() => []);
+      fornecFiltro = fRows.map(r => r.codFornec || r.CodFornec).filter(Boolean);
       if (!fornecFiltro.length) fornecFiltro = [-1]; // nenhum fornecedor → retorna vazio
     }
 

@@ -2822,33 +2822,33 @@ app.get('/api/ruptura', withCache(10), async (req, res) => {
       const phL = listIds.map(() => '?').join(',');
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               COALESCE(e1.Estoque,0) est1, COALESCE(e2.Estoque,0) est2,
-               COALESCE(e3.Estoque,0) est3, COALESCE(e4.Estoque,0) est4,
-               COALESCE(e5.Estoque,0) est5, COALESCE(e6.Estoque,0) est6
+               COALESCE(e1.Qtd,0) est1, COALESCE(e2.Qtd,0) est2,
+               COALESCE(e3.Qtd,0) est3, COALESCE(e4.Qtd,0) est4,
+               COALESCE(e5.Qtd,0) est5, COALESCE(e6.Qtd,0) est6
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
-        LEFT JOIN central.estoquen1 e1 ON e1.nInterno = i.nInterno
-        LEFT JOIN central.estoquen2 e2 ON e2.nInterno = i.nInterno
-        LEFT JOIN central.estoquen3 e3 ON e3.nInterno = i.nInterno
-        LEFT JOIN central.estoquen4 e4 ON e4.nInterno = i.nInterno
-        LEFT JOIN central.estoquen5 e5 ON e5.nInterno = i.nInterno
-        LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
+        LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
         WHERE cli.nCotacao IN (${phL})
       `, listIds).catch(e => { throw new Error('PRODS_QUERY:' + e.message); });
     } else {
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               COALESCE(e1.Estoque,0) est1, COALESCE(e2.Estoque,0) est2,
-               COALESCE(e3.Estoque,0) est3, COALESCE(e4.Estoque,0) est4,
-               COALESCE(e5.Estoque,0) est5, COALESCE(e6.Estoque,0) est6
+               COALESCE(e1.Qtd,0) est1, COALESCE(e2.Qtd,0) est2,
+               COALESCE(e3.Qtd,0) est3, COALESCE(e4.Qtd,0) est4,
+               COALESCE(e5.Qtd,0) est5, COALESCE(e6.Qtd,0) est6
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
-        LEFT JOIN central.estoquen1 e1 ON e1.nInterno = i.nInterno
-        LEFT JOIN central.estoquen2 e2 ON e2.nInterno = i.nInterno
-        LEFT JOIN central.estoquen3 e3 ON e3.nInterno = i.nInterno
-        LEFT JOIN central.estoquen4 e4 ON e4.nInterno = i.nInterno
-        LEFT JOIN central.estoquen5 e5 ON e5.nInterno = i.nInterno
-        LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
+        LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
       `, []).catch(() => []);
     }
 

@@ -2957,10 +2957,12 @@ q(`CREATE TABLE IF NOT EXISTS central.prevencao_bonif (
   nLoja INT NOT NULL, mes VARCHAR(7) NOT NULL, valor DECIMAL(12,2) NOT NULL DEFAULT 0,
   PRIMARY KEY (nLoja, mes)) ENGINE=InnoDB`).catch(() => {});
 
-app.listen(3003, '0.0.0.0', () => {
+// Keepalive: garante que o processo não saia mesmo sem conexões ativas
+setInterval(() => {}, 30000);
+
+const server = app.listen(3003, '0.0.0.0', () => {
   console.log('✓ Dashboard rodando em http://localhost:3003');
   console.log('✓ Rede local: http://192.168.2.252:3003');
-  // Pre-aquece cache do ruptura no startup para não travar o primeiro usuário
   setTimeout(() => {
     const http = require('http');
     http.get('http://127.0.0.1:3003/api/ruptura', res => {
@@ -2968,6 +2970,14 @@ app.listen(3003, '0.0.0.0', () => {
       console.log('✓ Cache ruptura pré-aquecido');
     }).on('error', () => {});
   }, 3000);
+});
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') {
+    console.error('[PORTA] 3003 em uso, aguardando 5s...');
+    setTimeout(() => server.listen(3003, '0.0.0.0'), 5000);
+  } else {
+    console.error('[SERVER ERROR]', err.message);
+  }
 });
 
 process.on('uncaughtException', err => {

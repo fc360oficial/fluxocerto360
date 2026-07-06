@@ -398,6 +398,33 @@ function renderTudo(d) {
     </div>`).join('') + '</div>';
   const lojasSec = secao('lojas','🏪','RANKING DE LOJAS',null,null,lojasHtml);
 
+  /* Ranking por Fornecedor */
+  const rankFornecHtml = `<div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:#1e293b;color:#94a3b8">
+      <th style="padding:8px 12px;text-align:left">#</th>
+      <th style="padding:8px 12px;text-align:left">Fornecedor</th>
+      <th style="padding:8px 12px;text-align:center;color:var(--red)">Rupturas</th>
+      <th style="padding:8px 12px;text-align:center;color:var(--orange)">Urgência≤3d</th>
+      <th style="padding:8px 12px;text-align:center;color:#f59e0b">Em Risco</th>
+      <th style="padding:8px 12px;text-align:center;color:#8b5cf6">Excesso</th>
+      <th style="padding:8px 12px;text-align:left;color:#94a3b8">Lojas</th>
+    </tr></thead>
+    <tbody>
+    ${(d.ranking_fornec||[]).map((f,i) => `
+      <tr style="border-bottom:1px solid #1e293b;${i%2===0?'background:#0f172a':''}">
+        <td style="padding:7px 12px;color:#64748b">${i+1}</td>
+        <td style="padding:7px 12px;font-weight:600;color:#e2e8f0">${f.fornecedor||'N/I'}</td>
+        <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.rupturas>0?'var(--red)':'#475569'}">${f.rupturas||0}</td>
+        <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.urgencia>0?'var(--orange)':'#475569'}">${f.urgencia||0}</td>
+        <td style="padding:7px 12px;text-align:center;color:${f.em_risco>0?'#f59e0b':'#475569'}">${f.em_risco||0}</td>
+        <td style="padding:7px 12px;text-align:center;color:${f.excesso>0?'#8b5cf6':'#475569'}">${f.excesso||0}</td>
+        <td style="padding:7px 12px;color:#64748b;font-size:11px">${f.lojas||''}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+  const rankFornecSec = secao('rankfornec','📦','RANKING POR FORNECEDOR', d.ranking_fornec, null, rankFornecHtml);
+
   /* Financeiro */
   const finHtml = `
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:16px 18px">
@@ -408,10 +435,10 @@ function renderTudo(d) {
 
   document.getElementById('conteudo').innerHTML =
     kpis + resumoSec + planoSec + previsaoSec + rupturasSec + riscoSec +
-    semPedidoSec + excessoSec + alertasSec + lojasSec + finSec;
+    semPedidoSec + excessoSec + alertasSec + lojasSec + rankFornecSec + finSec;
 
   // Collapse sections by default except first 4
-  ['rupturas','risco','smpedido','excesso','alertas','lojas','financeiro']
+  ['rupturas','risco','smpedido','excesso','alertas','lojas','rankfornec','financeiro']
     .slice(4).forEach(id => {
       const el = document.getElementById('sec-'+id);
       if (el) el.classList.add('collapsed');

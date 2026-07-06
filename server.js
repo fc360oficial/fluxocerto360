@@ -2821,16 +2821,20 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
       }
       const phL = listIds.map(() => '?').join(',');
       prods = await q(`
-        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao
+        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
+               cli.nCotacao as listaId, l.NomeFornec as fornecedor
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
+        LEFT JOIN central.c_cotacao_lista l ON l.nReg = cli.nCotacao
         WHERE cli.nCotacao IN (${phL})
       `, listIds).catch(e => { throw new Error('PRODS_QUERY:' + e.message); });
     } else {
       prods = await q(`
-        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao
+        SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
+               cli.nCotacao as listaId, l.NomeFornec as fornecedor
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
+        LEFT JOIN central.c_cotacao_lista l ON l.nReg = cli.nCotacao
       `, []).catch(() => []);
     }
 
@@ -2904,6 +2908,7 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
         const item = {
           loja, lj: LOJAS_NOMES[loja], nInterno: prod.nInterno, ean,
           produto: prod.Descricao, fornecedor: prod.fornecedor || 'N/I',
+          listaId: prod.listaId,
           estoque: +estoque.toFixed(2), vmd: +vmd.toFixed(3),
           vmd_valor: +vmd_valor.toFixed(2), cobertura: +cobertura.toFixed(1)
         };
@@ -2933,6 +2938,25 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
     excesso.sort((a, b) => b.cobertura - a.cobertura);
 
     const perdaDia = rupturas.reduce((s, r) => s + r.vmd_valor, 0);
+
+    // Ranking por fornecedor/lista
+    const fornecMap = {};
+    const addFornec = (arr, tipo) => {
+      for (const r of arr) {
+        const key = r.listaId || 0;
+        if (!fornecMap[key]) fornecMap[key] = { listaId: key, fornecedor: r.fornecedor || 'N/I', rupturas: 0, em_risco: 0, urgencia: 0, excesso: 0, perda: 0, lojas: new Set() };
+        fornecMap[key][tipo]++;
+        fornecMap[key].lojas.add(r.lj);
+        if (tipo === 'rupturas') fornecMap[key].perda += r.vmd_valor || 0;
+      }
+    };
+    addFornec(rupturas, 'rupturas');
+    addFornec(emRisco, 'em_risco');
+    addFornec(semPedido, 'urgencia');
+    addFornec(excesso, 'excesso');
+    const rankingFornec = Object.values(fornecMap)
+      .map(f => ({ ...f, lojas: [...f.lojas].join(', '), score: f.rupturas * 10 + f.urgencia * 5 + f.em_risco * 2 + f.excesso }))
+      .sort((a, b) => b.score - a.score);
     const lojasMap = {};
     for (const loja of LOJAS) lojasMap[loja] = { loja, nome: LOJAS_NOMES[loja], rupturas: 0, em_risco: 0, excesso: 0, perda: 0 };
     for (const r of rupturas)  { lojasMap[r.loja].rupturas++;  lojasMap[r.loja].perda += r.vmd_valor; }
@@ -2966,6 +2990,7 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
       alertas: alertas.slice(0, 100),
       plano,
       lojas: Object.values(lojasMap).sort((a, b) => b.perda - a.perda),
+      ranking_fornec: rankingFornec.slice(0, 50),
       previsao: {
         hoje: rupturas.length,
         amanha: emRisco.filter(x => x.risco === 'CRITICO').length,

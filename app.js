@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '214';
+  var BUILD = '215';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -1515,6 +1515,21 @@ function buildCLTabs() {
 }
 
 function buildCLBlock(cl) {
+  // Bloqueia envio em dias não configurados (ex: domingo quando CL é seg-sab)
+  var diasObrig = cl.diasObrigatorios || [];
+  if (diasObrig.length) {
+    var diaSemanaHoje = new Date().getDay(); // 0=Dom ... 6=Sab
+    if (diasObrig.indexOf(diaSemanaHoje) < 0) {
+      var NOMES_DIA = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+      var diasNomes = diasObrig.map(function(d){ return NOMES_DIA[d]; }).join(', ');
+      return '<div style="text-align:center;padding:48px 24px;color:var(--t3)">'
+        +'<div style="font-size:44px;margin-bottom:14px">📅</div>'
+        +'<div style="font-size:15px;font-weight:700;color:var(--t2);margin-bottom:8px">Checklist não disponível hoje</div>'
+        +'<div style="font-size:13px;color:var(--t3)">Este checklist é enviado apenas nos dias:<br><strong style="color:var(--t2)">'+diasNomes+'</strong></div>'
+        +'</div>';
+    }
+  }
+
   var itensAtivos = cl.itens.filter(function(i){ return !_planoAbertoDoItem(cl.label, i.t); });
   var done = itensAtivos.filter(function(i){ return S.checkState[cl.id+'_'+i.t]; }).length;
   var total = itensAtivos.length;

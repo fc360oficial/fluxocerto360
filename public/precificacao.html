@@ -410,12 +410,11 @@ function aplicarRefresh() {
     colBodies.push(bodyEl);
   }
 
-  const inicio = (_carSessao === 0) ? 0 : idxAntes;
   if (window.parent !== window && _carSessao === 0) {
     currentIdx = 0;
     document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === 0));
   } else {
-    setTimeout(() => iniciarCarrossel(inicio, 0), 200);
+    setTimeout(() => iniciarCarrossel(0, 0), 200); // sempre começa pela loja 1
   }
 
   try {

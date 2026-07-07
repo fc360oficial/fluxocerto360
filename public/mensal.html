@@ -885,8 +885,13 @@ if (isAuto) {
     if (el) el.textContent = cdAuto + 's';
     if (cdAuto <= 0) {
       clearInterval(iv);
-      // Vai para análise de produtos do mesmo comprador
-      location.href = '/analise-comprador.html?nome=' + encodeURIComponent(ORDEM_AUTO[idxAtual]) + '&auto=1&idx=' + idxAtual;
+      const next = idxAtual + 1;
+      if (next < ORDEM_AUTO.length) {
+        location.href = '/mensal.html?nome=' + encodeURIComponent(ORDEM_AUTO[next]) + '&auto=1&idx=' + next;
+      } else {
+        try { window.parent.postMessage({ type: 'mensalCycleComplete' }, '*'); } catch(_) {}
+        if (window.parent === window) { location.href = '/compras.html'; }
+      }
     }
   }, 1000);
 }

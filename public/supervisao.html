@@ -25,6 +25,8 @@ iframe.visivel{opacity:1;pointer-events:auto}
 }
 .dot:hover{background:rgba(255,255,255,.55);transform:scale(1.3)}
 .dot.ativo{background:rgba(250,204,21,.9)}
+/* dots desativados ficam mais apagados */
+.dot.off{background:rgba(255,255,255,.10);opacity:.5}
 .sep{width:1px;height:14px;background:rgba(255,255,255,.15);flex-shrink:0}
 .btn-fs{
   background:none;border:none;cursor:pointer;padding:0 2px;
@@ -38,53 +40,79 @@ iframe.visivel{opacity:1;pointer-events:auto}
 </head>
 <body>
 
+<!-- iframes — todos mantidos para acesso manual pelos dots -->
 <iframe id="fr-diretoria" title="Diretoria"></iframe>
 <iframe id="fr-comptvs"  title="Comparativo TV"></iframe>
 <iframe id="fr-precif"   title="Precificação"></iframe>
 <iframe id="fr-compras"  title="Compras Geral"></iframe>
 <iframe id="fr-ruptura"  title="Rupturas Compras"></iframe>
-<iframe id="fr-ciclo"    title="Comprador · Mensal · Produtos"></iframe>
+<iframe id="fr-mensal"   title="Mensal Compradores"></iframe>
+<iframe id="fr-ciclo"    title="Comprador · Análise"></iframe>
 
 <div class="controles">
-  <div class="dot ativo" id="dot-d" title="Diretoria"></div>
-  <div class="dot"       id="dot-ct" title="Comparativo"></div>
-  <div class="dot"       id="dot-p" title="Precificação"></div>
-  <div class="dot"       id="dot-c" title="Compras"></div>
-  <div class="dot"       id="dot-r" title="Rupturas"></div>
+  <!-- rotação ativa -->
+  <div class="dot ativo" id="dot-c"  title="Compras"></div>
+  <div class="dot"       id="dot-r"  title="Rupturas"></div>
+  <div class="dot"       id="dot-m"  title="Mensal"></div>
+  <div class="sep"></div>
+  <!-- desativados da rotação — acessíveis manualmente -->
+  <div class="dot off"   id="dot-d"  title="Diretoria (manual)"></div>
+  <div class="dot off"   id="dot-ct" title="Comparativo (manual)"></div>
+  <div class="dot off"   id="dot-p"  title="Precificação (manual)"></div>
+  <div class="dot off"   id="dot-k"  title="Análise Comprador (manual)"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
-
 </div>
 
 <script>
-// Rotação: Diretoria → Precificação → Compras (geral) →
-//          [Fátima diário→mensal→produtos → Fernanda → ... → Renata] → Diretoria
 const BASE = 'http://192.168.2.252:3003';
 const TV = window.innerWidth >= 1900 ? '?tv=1' : '';
 
-let atual = 'diretoria';
+let atual = 'compras';
 
 const frD  = document.getElementById('fr-diretoria');
 const frCT = document.getElementById('fr-comptvs');
 const frP  = document.getElementById('fr-precif');
 const frC  = document.getElementById('fr-compras');
 const frR  = document.getElementById('fr-ruptura');
+const frM  = document.getElementById('fr-mensal');
 const frK  = document.getElementById('fr-ciclo');
+
+const dotC  = document.getElementById('dot-c');
+const dotR  = document.getElementById('dot-r');
+const dotM  = document.getElementById('dot-m');
 const dotD  = document.getElementById('dot-d');
 const dotCT = document.getElementById('dot-ct');
 const dotP  = document.getElementById('dot-p');
-const dotC  = document.getElementById('dot-c');
-const dotR  = document.getElementById('dot-r');
+const dotK  = document.getElementById('dot-k');
 const btnFs = document.getElementById('btn-fs');
+
+const todosFrames = [frD,frCT,frP,frC,frR,frM,frK];
+const todosDots   = [dotC,dotR,dotM,dotD,dotCT,dotP,dotK];
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
-  [frD,frCT,frP,frC,frR,frK].forEach(f => f.classList.remove('visivel'));
-  [dotD,dotCT,dotP,dotC,dotR].forEach(d => d.classList.remove('ativo'));
+  todosFrames.forEach(f => f.classList.remove('visivel'));
+  todosDots.forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');
 }
 
+// ── Rotação ativa ──
+function mostrarCompras() {
+  frC.src = BASE + '/compras.html' + TV;
+  mostrar(frC, dotC, 'compras');
+}
+function mostrarRuptura() {
+  frR.src = BASE + '/ruptura-painel.html' + TV;
+  mostrar(frR, dotR, 'ruptura');
+}
+function mostrarMensal() {
+  frM.src = BASE + '/mensal.html?nome=FATIMA&auto=1&idx=0' + (TV ? '&tv=1' : '');
+  mostrar(frM, dotM, 'mensal');
+}
+
+// ── Acesso manual (fora da rotação automática) ──
 function mostrarDiretoria() {
   frD.src = BASE + '/diretoria.html' + TV;
   mostrar(frD, dotD, 'diretoria');
@@ -94,34 +122,24 @@ function mostrarComparativoTV() {
   mostrar(frCT, dotCT, 'comptvs');
 }
 function mostrarPrecif() {
+  if (!frP.src || frP.src === 'about:blank') frP.src = BASE + '/precificacao.html' + TV;
   mostrar(frP, dotP, 'precif');
   try { frP.contentWindow.postMessage({ type: 'activate' }, '*'); } catch(_) {}
 }
-function mostrarCompras() {
-  frC.src = BASE + '/compras.html' + TV;
-  mostrar(frC, dotC, 'compras');
-}
-function mostrarRuptura() {
-  frR.src = BASE + '/ruptura-painel.html' + TV;
-  mostrar(frR, dotR, 'ruptura');
-}
 function mostrarCiclo() {
   frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0' + (TV ? '&tv=1' : '');
-  mostrar(frK, dotC, 'ciclo');
+  mostrar(frK, dotK, 'ciclo');
 }
 
-// Rotação automática via postMessage
+// ── Rotação automática: Compras → Rupturas → Mensal → Compras ──
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
-  if (e.data.type === 'diretoriaCycleComplete'    && atual === 'diretoria') mostrarComparativoTV();
-  if (e.data.type === 'comparativoTvCycleComplete'&& atual === 'comptvs')   mostrarPrecif();
-  if (e.data.type === 'carouselCycleComplete'     && atual === 'precif')    mostrarCompras();
-  if (e.data.type === 'comprasCycleComplete'      && atual === 'compras')   mostrarRuptura();
-  if (e.data.type === 'rupturaCycleComplete'      && atual === 'ruptura')   mostrarCiclo();
-  if (e.data.type === 'analiseCycleComplete'      && atual === 'ciclo')     mostrarDiretoria();
+  if (e.data.type === 'comprasCycleComplete' && atual === 'compras') mostrarRuptura();
+  if (e.data.type === 'rupturaCycleComplete' && atual === 'ruptura') mostrarMensal();
+  if (e.data.type === 'mensalCycleComplete'  && atual === 'mensal')  mostrarCompras();
 });
 
-// Tela cheia
+// ── Tela cheia ──
 function toggleFullscreen() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
   else document.exitFullscreen().catch(()=>{});
@@ -133,18 +151,17 @@ document.addEventListener('fullscreenchange', () => {
 });
 btnFs.addEventListener('click', toggleFullscreen);
 
-// Clique nos dots
+// ── Dots ──
+dotC.addEventListener('click', mostrarCompras);
+dotR.addEventListener('click', mostrarRuptura);
+dotM.addEventListener('click', mostrarMensal);
 dotD.addEventListener('click', mostrarDiretoria);
 dotCT.addEventListener('click', mostrarComparativoTV);
 dotP.addEventListener('click', mostrarPrecif);
-dotC.addEventListener('click', mostrarCompras);
-dotR.addEventListener('click', mostrarRuptura);
-// Pré-carrega precificação
+dotK.addEventListener('click', mostrarCiclo);
 
-
-// Pré-carrega precificação e inicia na diretoria
-frP.src = BASE + '/precificacao.html' + TV;
-mostrarDiretoria();
+// ── Início: Compras ──
+mostrarCompras();
 </script>
 </body>
 </html>

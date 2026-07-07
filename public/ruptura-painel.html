@@ -223,7 +223,7 @@ function advancePage() {
   const next = (_page + 1) % _pages.length;
   if (next === 0) {
     try { window.parent.postMessage({ type: 'rupturaCycleComplete' }, '*'); } catch(_) {}
-    if (window.parent === window) { location.href = '/comprador.html?nome=FATIMA&auto=1&idx=0'; return; }
+    if (window.parent === window) { location.href = '/mensal.html?nome=FATIMA&auto=1&idx=0'; return; }
   }
   _page = next;
   renderPage(_page);

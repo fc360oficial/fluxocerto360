@@ -822,6 +822,7 @@ async function renderMargemTab(id, loja, mes, ano, body) {
 
   body.innerHTML = `
     <div class="d-kpis">
+      <div class="d-kpi"><div class="dv" style="color:#60a5fa">${fmt(totalV)}</div><div class="dl">Venda Total</div></div>
       <div class="d-kpi"><div class="dv ${msvClass(msvG)}">${pctFmt(msvG)}</div><div class="dl">Margem S/Venda</div></div>
       <div class="d-kpi"><div class="dv ${msvClass(mscG)}">${pctFmt(mscG)}</div><div class="dl">Margem S/Custo</div></div>
       <div class="d-kpi"><div class="dv" style="color:#a78bfa">${fmt(totalL)}</div><div class="dl">Lucro Bruto</div></div>

@@ -248,7 +248,7 @@ function proximaCol(idx, sessao) {
     try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
     const _np = new URLSearchParams(window.location.search).get('next');
     if (_np && window.parent === window) { window.location.href = '/' + _np + '.html'; return; }
-    if (window.parent !== window) { pararCarrossel(); return; }
+    pararCarrossel(); return; // ciclo completo — para, não volta pra loja 1
   }
   if (refreshPending) { refreshPending = false; aplicarRefresh(); return; }
   _carTimeout = setTimeout(() => iniciarCarrossel(proximo, 0, sessao), 1800);
@@ -297,9 +297,10 @@ function iniciarCarrossel(idx, startAt, sessao) {
   }, 50);
 }
 
-// Watchdog: se parado >30s, retoma (ignora estado dos timers — podem estar pendurados)
+// Watchdog: se parado >30s no meio do ciclo (não na última loja), retoma
 setInterval(() => {
-  if (colBodies.length && Date.now() - _ultimoAvanço > 30000) {
+  const ultimaLoja = colBodies.length - 1;
+  if (colBodies.length && Date.now() - _ultimoAvanço > 30000 && currentIdx !== ultimaLoja) {
     pararCarrossel();
     iniciarCarrossel((currentIdx + 1) % colBodies.length, 0);
   }

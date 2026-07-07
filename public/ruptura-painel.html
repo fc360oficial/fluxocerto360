@@ -59,8 +59,9 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 /* CAROUSEL FOOTER */
 .car-footer{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 12px;background:#0c1426;border-top:1px solid #1e3a5f;flex-shrink:0}
 .car-dots{display:flex;gap:8px;align-items:center}
-.car-dot{width:10px;height:10px;border-radius:50%;background:#334155;border:none;cursor:default;transition:all .35s;padding:0;flex-shrink:0}
-.car-dot.active{background:var(--brand);width:32px;border-radius:5px}
+.car-dot{width:10px;height:10px;border-radius:50%;background:#334155;border:none;cursor:default;padding:0;flex-shrink:0;transition:background .3s}
+.car-dot.active{background:var(--brand);width:10px;border-radius:50%;animation:dot-grow 60s linear forwards}
+@keyframes dot-grow{from{width:10px;border-radius:50%}to{width:34px;border-radius:5px}}
 
 /* LOADING */
 .loading{display:flex;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--text3);font-size:14px}

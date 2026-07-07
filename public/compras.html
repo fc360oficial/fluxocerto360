@@ -1093,7 +1093,7 @@ function updateCountdown() {
   if (countdown<=0) {
     try { window.parent.postMessage({ type: 'comprasCycleComplete' }, '*'); } catch(_) {}
     if (window.parent === window) {
-      location.href='/comprador.html?nome='+encodeURIComponent(ORDEM[0])+'&auto=1&idx=0';
+      location.href='/ruptura-painel.html';
     }
   }
 }

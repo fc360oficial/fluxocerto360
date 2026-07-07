@@ -101,7 +101,7 @@ const LOJA_ABREV = {
 };
 const PER_PAGE  = 3;
 const DURATION  = 60000; // ms por página
-let _grupos = [], _pages = [], _page = 0, _t0 = 0, _raf = null;
+let _grupos = [], _pages = [], _page = 0, _timer = null;
 
 function abrevLojas(s) {
   return (s||'').split(', ').map(l => LOJA_ABREV[l.trim()] || l.trim()).filter(Boolean).join(' · ');
@@ -169,29 +169,25 @@ function renderPage(p) {
     `<button class="car-dot${i===p?' active':''}"></button>`).join('');
 }
 
-function tick(now) {
-  const elapsed = now - _t0;
-  if (elapsed >= DURATION) {
-    const next = (_page + 1) % _pages.length;
-    if (next === 0) {
-      try { window.parent.postMessage({ type: 'rupturaCycleComplete' }, '*'); } catch(_) {}
-      if (window.parent === window) { location.href = '/compras.html'; return; }
-    }
-    _page = next;
-    _t0 = now;
-    renderPage(_page);
+function advancePage() {
+  const next = (_page + 1) % _pages.length;
+  if (next === 0) {
+    try { window.parent.postMessage({ type: 'rupturaCycleComplete' }, '*'); } catch(_) {}
+    if (window.parent === window) { location.href = '/compras.html'; return; }
   }
-  _raf = requestAnimationFrame(tick);
+  _page = next;
+  renderPage(_page);
+  _timer = setTimeout(advancePage, DURATION);
 }
 
 function startCarousel() {
   _pages = [];
   for (let i = 0; i < _grupos.length; i += PER_PAGE) _pages.push(_grupos.slice(i, i+PER_PAGE));
   if (!_pages.length) return;
-  _page = 0; _t0 = performance.now();
+  _page = 0;
   renderPage(0);
-  if (_raf) cancelAnimationFrame(_raf);
-  _raf = requestAnimationFrame(tick);
+  if (_timer) clearTimeout(_timer);
+  _timer = setTimeout(advancePage, DURATION);
 }
 
 async function carregar() {

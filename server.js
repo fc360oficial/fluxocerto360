@@ -2783,18 +2783,10 @@ app.get('/api/ruptura/compradores', withCache(60), async (req, res) => {
 });
 
 app.get('/api/ruptura/comprador-listas', withCache(60), async (req, res) => {
-  try {
-    const rows = await q(`
-      SELECT nome, nLista FROM central.c_cotacao_agenda_comprador
-      WHERE nome IS NOT NULL AND nome != '' ORDER BY nome, nLista
-    `).catch(() => []);
-    const map = {};
-    for (const r of rows) {
-      if (!map[r.nome]) map[r.nome] = [];
-      map[r.nome].push(r.nLista);
-    }
-    res.json(map);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  // Usa a mesma fonte do módulo de compras (NREGS_COMPRADOR) — FATIMA inclusa, RODRIGO excluído
+  const result = {};
+  for (const [nome, nRegs] of Object.entries(NREGS_COMPRADOR)) result[nome] = nRegs;
+  res.json(result);
 });
 
 app.get('/api/ruptura', withCache(30), async (req, res) => {

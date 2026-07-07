@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '215';
+  var BUILD = '216';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -6321,7 +6321,25 @@ function savePlanos(list) {
 }
 function loadPlanosFromFirebase(cb) {
   db.collection('planos').get().then(function(snap){
-    var list = snap.docs.map(function(d){ return d.data(); });
+    var remotos = snap.docs.map(function(d){ return d.data(); });
+    // Merge: status local mais avançado vence (resolvido > andamento > aberto)
+    var STATUS_ORD = {resolvido: 2, andamento: 1, aberto: 0};
+    var locais = {};
+    try {
+      var ll = JSON.parse(localStorage.getItem(PLANO_KEY)||'[]');
+      ll.forEach(function(p){ if (p.id) locais[p.id] = p; });
+    } catch(e) {}
+    var list = remotos.map(function(r) {
+      var loc = locais[r.id];
+      if (!loc) return r;
+      var locOrd = STATUS_ORD[loc.status] || 0;
+      var remOrd = STATUS_ORD[r.status] || 0;
+      if (locOrd > remOrd) {
+        db.collection('planos').doc(loc.id).set(loc).catch(function(){});
+        return loc;
+      }
+      return r;
+    });
     _planosCache = list;
     try { localStorage.setItem(PLANO_KEY, JSON.stringify(list)); } catch(e) {}
     if (cb) cb();

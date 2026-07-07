@@ -434,8 +434,8 @@ function renderTudo(d) {
   const finSec = secao('financeiro','💰','DINHEIRO PERDIDO (RUPTURA)',null,null,finHtml);
 
   document.getElementById('conteudo').innerHTML =
-    kpis + resumoSec + planoSec + previsaoSec + rupturasSec + riscoSec +
-    semPedidoSec + excessoSec + alertasSec + lojasSec + rankFornecSec + finSec;
+    kpis + resumoSec + rankFornecSec + planoSec + previsaoSec + rupturasSec + riscoSec +
+    semPedidoSec + excessoSec + alertasSec + lojasSec + finSec;
 
   // Collapse sections by default except first 4
   ['rupturas','risco','smpedido','excesso','alertas','lojas','rankfornec','financeiro']

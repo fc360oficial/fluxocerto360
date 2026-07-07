@@ -57,10 +57,10 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .score-bar-fill{height:100%;border-radius:1px;background:var(--c-color);opacity:.5}
 
 /* CAROUSEL FOOTER */
-.car-footer{display:flex;align-items:center;gap:10px;padding:7px 12px;background:#0c1426;border-top:1px solid #1e3a5f;flex-shrink:0}
-.car-dots{display:flex;gap:6px}
-.car-dot{width:8px;height:8px;border-radius:50%;background:#334155;border:none;cursor:default;transition:all .3s;padding:0}
-.car-dot.active{background:var(--brand);width:26px;border-radius:4px}
+.car-footer{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 12px;background:#0c1426;border-top:1px solid #1e3a5f;flex-shrink:0}
+.car-dots{display:flex;gap:8px;align-items:center}
+.car-dot{width:10px;height:10px;border-radius:50%;background:#334155;border:none;cursor:default;transition:all .35s;padding:0;flex-shrink:0}
+.car-dot.active{background:var(--brand);width:32px;border-radius:5px}
 
 /* LOADING */
 .loading{display:flex;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--text3);font-size:14px}
@@ -171,7 +171,11 @@ function renderPage(p) {
 function tick(now) {
   const elapsed = now - _t0;
   if (elapsed >= DURATION) {
-    _page = (_page + 1) % _pages.length;
+    const next = (_page + 1) % _pages.length;
+    if (next === 0) {
+      try { window.parent.postMessage({ type: 'rupturaCycleComplete' }, '*'); } catch(_) {}
+    }
+    _page = next;
     _t0 = now;
     renderPage(_page);
   }

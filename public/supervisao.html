@@ -42,6 +42,7 @@ iframe.visivel{opacity:1;pointer-events:auto}
 <iframe id="fr-comptvs"  title="Comparativo TV"></iframe>
 <iframe id="fr-precif"   title="Precificação"></iframe>
 <iframe id="fr-compras"  title="Compras Geral"></iframe>
+<iframe id="fr-ruptura"  title="Rupturas Compras"></iframe>
 <iframe id="fr-ciclo"    title="Comprador · Mensal · Produtos"></iframe>
 
 <div class="controles">
@@ -49,6 +50,7 @@ iframe.visivel{opacity:1;pointer-events:auto}
   <div class="dot"       id="dot-ct" title="Comparativo"></div>
   <div class="dot"       id="dot-p" title="Precificação"></div>
   <div class="dot"       id="dot-c" title="Compras"></div>
+  <div class="dot"       id="dot-r" title="Rupturas"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 
@@ -66,17 +68,19 @@ const frD  = document.getElementById('fr-diretoria');
 const frCT = document.getElementById('fr-comptvs');
 const frP  = document.getElementById('fr-precif');
 const frC  = document.getElementById('fr-compras');
+const frR  = document.getElementById('fr-ruptura');
 const frK  = document.getElementById('fr-ciclo');
 const dotD  = document.getElementById('dot-d');
 const dotCT = document.getElementById('dot-ct');
 const dotP  = document.getElementById('dot-p');
 const dotC  = document.getElementById('dot-c');
+const dotR  = document.getElementById('dot-r');
 const btnFs = document.getElementById('btn-fs');
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
-  [frD,frCT,frP,frC,frK].forEach(f => f.classList.remove('visivel'));
-  [dotD,dotCT,dotP,dotC].forEach(d => d.classList.remove('ativo'));
+  [frD,frCT,frP,frC,frR,frK].forEach(f => f.classList.remove('visivel'));
+  [dotD,dotCT,dotP,dotC,dotR].forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');
 }
@@ -97,6 +101,10 @@ function mostrarCompras() {
   frC.src = BASE + '/compras.html' + TV;
   mostrar(frC, dotC, 'compras');
 }
+function mostrarRuptura() {
+  frR.src = BASE + '/ruptura-painel.html' + TV;
+  mostrar(frR, dotR, 'ruptura');
+}
 function mostrarCiclo() {
   frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0' + (TV ? '&tv=1' : '');
   mostrar(frK, dotC, 'ciclo');
@@ -108,7 +116,8 @@ window.addEventListener('message', (e) => {
   if (e.data.type === 'diretoriaCycleComplete'    && atual === 'diretoria') mostrarComparativoTV();
   if (e.data.type === 'comparativoTvCycleComplete'&& atual === 'comptvs')   mostrarPrecif();
   if (e.data.type === 'carouselCycleComplete'     && atual === 'precif')    mostrarCompras();
-  if (e.data.type === 'comprasCycleComplete'      && atual === 'compras')   mostrarCiclo();
+  if (e.data.type === 'comprasCycleComplete'      && atual === 'compras')   mostrarRuptura();
+  if (e.data.type === 'rupturaCycleComplete'      && atual === 'ruptura')   mostrarCiclo();
   if (e.data.type === 'analiseCycleComplete'      && atual === 'ciclo')     mostrarDiretoria();
 });
 
@@ -129,6 +138,7 @@ dotD.addEventListener('click', mostrarDiretoria);
 dotCT.addEventListener('click', mostrarComparativoTV);
 dotP.addEventListener('click', mostrarPrecif);
 dotC.addEventListener('click', mostrarCompras);
+dotR.addEventListener('click', mostrarRuptura);
 // Pré-carrega precificação
 
 

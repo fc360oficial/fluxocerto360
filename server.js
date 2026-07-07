@@ -2822,7 +2822,8 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
       const phL = listIds.map(() => '?').join(',');
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               cli.nCotacao as listaId, COALESCE(NULLIF(TRIM(l.NomeFornec),''), NULLIF(TRIM(l.Nome),''), 'N/I') as fornecedor
+               cli.nCotacao as listaId, l.CodFornec as codFornec,
+               COALESCE(NULLIF(TRIM(l.NomeFornec),''), NULLIF(TRIM(l.Nome),''), 'N/I') as fornecedor
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
         LEFT JOIN central.c_cotacao_lista l ON l.nReg = cli.nCotacao
@@ -2831,7 +2832,8 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
     } else {
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               cli.nCotacao as listaId, COALESCE(NULLIF(TRIM(l.NomeFornec),''), NULLIF(TRIM(l.Nome),''), 'N/I') as fornecedor
+               cli.nCotacao as listaId, l.CodFornec as codFornec,
+               COALESCE(NULLIF(TRIM(l.NomeFornec),''), NULLIF(TRIM(l.Nome),''), 'N/I') as fornecedor
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
         LEFT JOIN central.c_cotacao_lista l ON l.nReg = cli.nCotacao
@@ -2908,7 +2910,7 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
         const item = {
           loja, lj: LOJAS_NOMES[loja], nInterno: prod.nInterno, ean,
           produto: prod.Descricao, fornecedor: prod.fornecedor || 'N/I',
-          listaId: prod.listaId,
+          listaId: prod.listaId, codFornec: prod.codFornec || 0,
           estoque: +estoque.toFixed(2), vmd: +vmd.toFixed(3),
           vmd_valor: +vmd_valor.toFixed(2), cobertura: +cobertura.toFixed(1)
         };
@@ -2944,7 +2946,7 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
     const addFornec = (arr, tipo) => {
       for (const r of arr) {
         const key = r.listaId || 0;
-        if (!fornecMap[key]) fornecMap[key] = { listaId: key, fornecedor: r.fornecedor || 'N/I', rupturas: 0, em_risco: 0, urgencia: 0, excesso: 0, perda: 0, lojas: new Set() };
+        if (!fornecMap[key]) fornecMap[key] = { listaId: key, fornecedor: r.fornecedor || 'N/I', codFornec: r.codFornec || 0, rupturas: 0, em_risco: 0, urgencia: 0, excesso: 0, perda: 0, lojas: new Set() };
         fornecMap[key][tipo]++;
         fornecMap[key].lojas.add(r.lj);
         if (tipo === 'rupturas') fornecMap[key].perda += r.vmd_valor || 0;

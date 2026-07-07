@@ -156,7 +156,7 @@ table.t td.bold{font-weight:700}
 .modal-body{padding:12px 0;max-height:60vh;overflow-y:auto}
 .modal-empty{padding:24px;text-align:center;color:#64748b;font-size:13px}
 .modal-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.modal-tbl th{padding:8px 14px;background:#0f172a;color:#64748b;text-align:left;font-weight:600;position:sticky;top:0}
+.modal-tbl th{padding:8px 14px;background:#0f172a;color:#64748b;text-align:left;font-weight:600;position:sticky;top:0;z-index:1}
 .modal-tbl td{padding:7px 14px;border-bottom:1px solid #1e293b}
 .modal-tbl tr:hover td{background:#0f172a}
 </style>
@@ -450,7 +450,10 @@ function renderTudo(d) {
     ${(d.ranking_fornec||[]).map((f,i) => `
       <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #1e293b;${i%2===0?'background:#0f172a':''};cursor:pointer" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='${i%2===0?'#0f172a':''}'">
         <td style="padding:7px 12px;color:#64748b">${i+1}</td>
-        <td style="padding:7px 12px;font-weight:600;color:#e2e8f0">${f.fornecedor||'N/I'}</td>
+        <td style="padding:7px 12px">
+          <div style="font-weight:600;color:#e2e8f0">${f.fornecedor||'N/I'}</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px">Lista #${f.listaId||'?'}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
+        </td>
         <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.rupturas>0?'var(--red)':'#475569'}">${f.rupturas||0}</td>
         <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.urgencia>0?'var(--orange)':'#475569'}">${f.urgencia||0}</td>
         <td style="padding:7px 12px;text-align:center;color:${f.em_risco>0?'#f59e0b':'#475569'}">${f.em_risco||0}</td>
@@ -542,10 +545,10 @@ function abrirFornecedor(listaId, nome) {
   const exc    = filtrar(d.excesso);
 
   const abas = [
-    { id:'rup',  label:`🔴 Rupturas (${rups.length})`,   dados: rups,  cols:['Loja','Produto','Estoque','VMD R$','Perda/dia'] },
-    { id:'urg',  label:`🟠 Urgência ≤3d (${urg.length})`, dados: urg,   cols:['Loja','Produto','Estoque','Cobertura','VMD R$'] },
-    { id:'ris',  label:`🟡 Em Risco (${risco.length})`,   dados: risco, cols:['Loja','Produto','Estoque','Cobertura','VMD R$'] },
-    { id:'exc',  label:`🟣 Excesso (${exc.length})`,      dados: exc,   cols:['Loja','Produto','Estoque','Cobertura','VMD R$'] },
+    { id:'rup',  label:`🔴 Rupturas (${rups.length})`,   dados: rups,  cols:['Loja','Produto','Estoque','VMD un','VMD R$','Perda/dia'] },
+    { id:'urg',  label:`🟠 Urgência ≤3d (${urg.length})`, dados: urg,   cols:['Loja','Produto','Estoque','Cobertura','VMD un','VMD R$'] },
+    { id:'ris',  label:`🟡 Em Risco (${risco.length})`,   dados: risco, cols:['Loja','Produto','Estoque','Cobertura','VMD un','VMD R$'] },
+    { id:'exc',  label:`🟣 Excesso (${exc.length})`,      dados: exc,   cols:['Loja','Produto','Estoque','Cobertura','VMD un','VMD R$'] },
   ];
 
   document.getElementById('modal-tabs').innerHTML = abas.map((a,i) =>
@@ -569,8 +572,8 @@ function renderModalAba(id) {
   const body = document.getElementById('modal-body');
   if (!aba || !aba.dados.length) { body.innerHTML = '<div class="modal-empty">Nenhum item nesta categoria.</div>'; return; }
   const linhas = aba.dados.map(r => {
-    if (id === 'rup') return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r">${fmtR(r.vmd_valor)}</td><td class="r" style="color:var(--red)">${fmtR(r.vmd_valor)}</td></tr>`;
-    return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:${r.cobertura<=3?'var(--red)':r.cobertura<=7?'var(--orange)':'#f59e0b'}">${fmtD(r.cobertura)}</td><td class="r">${fmtR(r.vmd_valor)}</td></tr>`;
+    if (id === 'rup') return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:#94a3b8">${(r.vmd||0).toFixed(1)} un</td><td class="r">${fmtR(r.vmd_valor)}</td><td class="r" style="color:var(--red)">${fmtR(r.vmd_valor)}</td></tr>`;
+    return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:${r.cobertura<=3?'var(--red)':r.cobertura<=7?'var(--orange)':'#f59e0b'}">${fmtD(r.cobertura)}</td><td class="r" style="color:#94a3b8">${(r.vmd||0).toFixed(1)} un</td><td class="r">${fmtR(r.vmd_valor)}</td></tr>`;
   }).join('');
   body.innerHTML = `<table class="modal-tbl"><thead><tr>${aba.cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas}</tbody></table>`;
 }
@@ -584,7 +587,10 @@ function filtrarFornec(busca) {
   tbody.innerHTML = filtrado.map((f,i) => `
     <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #1e293b;${i%2===0?'background:#0f172a':''};cursor:pointer" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='${i%2===0?'#0f172a':''}'">
       <td style="padding:7px 12px;color:#64748b">${i+1}</td>
-      <td style="padding:7px 12px;font-weight:600;color:#e2e8f0">${f.fornecedor||'N/I'}</td>
+      <td style="padding:7px 12px">
+        <div style="font-weight:600;color:#e2e8f0">${f.fornecedor||'N/I'}</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px">Lista #${f.listaId||'?'}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
+      </td>
       <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.rupturas>0?'var(--red)':'#475569'}">${f.rupturas||0}</td>
       <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.urgencia>0?'var(--orange)':'#475569'}">${f.urgencia||0}</td>
       <td style="padding:7px 12px;text-align:center;color:${f.em_risco>0?'#f59e0b':'#475569'}">${f.em_risco||0}</td>

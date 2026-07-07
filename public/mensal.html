@@ -17,6 +17,14 @@
 }
 html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
 body{display:flex;flex-direction:column;height:100vh}
+.brand-bar{height:36px;flex-shrink:0;background:#FACC15;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:200}
+.brand-bar .b-name{font-size:11px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#0a0e18;display:flex;align-items:center;gap:10px}
+.brand-bar .b-dot{width:16px;height:16px;border-radius:50%;background:#0a0e18;flex-shrink:0}
+.brand-bar .b-right{display:flex;align-items:center;gap:14px}
+.brand-bar .b-slide{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(10,14,24,.55)}
+.brand-bar .b-live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(10,14,24,.5)}
+.brand-bar .b-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:bpulse 2s infinite}
+@keyframes bpulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* ── HEADER ── */
 .header{
@@ -159,6 +167,14 @@ table{border-collapse:collapse;width:100%}
 </style>
 </head>
 <body>
+
+<div class="brand-bar">
+  <div class="b-name"><div class="b-dot"></div>Econômico Relatórios</div>
+  <div class="b-right">
+    <span class="b-slide" id="brand-comprador">Cronograma Mensal</span>
+    <span class="b-live"><span class="b-live-dot"></span>Ao vivo</span>
+  </div>
+</div>
 
 <header class="header">
   <div class="h-left">
@@ -797,6 +813,8 @@ function renderTabela(cron) {
   `;
 
   document.getElementById('h-nome').textContent = nomeSel;
+  const bc = document.getElementById('brand-comprador');
+  if (bc) bc.textContent = 'Mensal · ' + nomeSel.charAt(0) + nomeSel.slice(1).toLowerCase();
   document.getElementById('h-sub').textContent = `${MESES[mesSel]} ${anoSel}`;
   document.getElementById('h-cargo').textContent = CARGO_COMPRADORES[nomeSel] || 'Compradora';
   const av = document.getElementById('h-avatar');

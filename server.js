@@ -2960,8 +2960,8 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
       }
     };
     addFornec(rupturas, 'rupturas');
-    addFornec(emRisco, 'em_risco');
-    addFornec(semPedido, 'urgencia');
+    addFornec(emRisco.filter(x => ['CRITICO','ALTO'].includes(x.risco)), 'urgencia');
+    addFornec(emRisco.filter(x => ['MEDIO','BAIXO'].includes(x.risco)), 'em_risco');
     addFornec(excesso, 'excesso');
     const rankingFornec = Object.values(fornecMap)
       .map(f => ({ ...f, lojas: [...f.lojas].join(', '), score: f.rupturas * 10 + f.urgencia * 5 + f.em_risco * 2 + f.excesso }))
@@ -2990,7 +2990,7 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
       gerado_em: new Date().toISOString(),
       loja_filtro: lojaFiltro,
       min_cob: MIN_COB, max_cob: MAX_COB,
-      resumo: { total_rupturas: rupturas.length, em_risco: emRisco.length, sem_pedido: semPedido.length, excesso: excesso.length, alertas: alertas.length, perdaDia, perdaSemana: perdaDia * 7 },
+      resumo: { total_rupturas: rupturas.length, urgencia: nCritico, em_risco: emRisco.length - nCritico, sem_pedido: semPedido.length, excesso: excesso.length, alertas: alertas.length, perdaDia, perdaSemana: perdaDia * 7 },
       resumo_texto: txt,
       rupturas: rupturas.slice(0, 300),
       em_risco: emRisco.slice(0, 300),

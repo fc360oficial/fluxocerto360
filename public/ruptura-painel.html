@@ -61,9 +61,6 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .car-dots{display:flex;gap:6px}
 .car-dot{width:8px;height:8px;border-radius:50%;background:#334155;border:none;cursor:default;transition:all .3s;padding:0}
 .car-dot.active{background:var(--brand);width:26px;border-radius:4px}
-.car-pbar-wrap{flex:1;height:3px;background:#1e293b;border-radius:2px;overflow:hidden}
-.car-pbar-fill{height:100%;background:var(--brand);width:0%;transition:width .08s linear}
-.car-lbl{font-size:10px;color:var(--text3);min-width:50px;text-align:right}
 
 /* LOADING */
 .loading{display:flex;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--text3);font-size:14px}
@@ -92,8 +89,6 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 <!-- CAROUSEL FOOTER -->
 <div class="car-footer">
   <div class="car-dots" id="car-dots"></div>
-  <div class="car-pbar-wrap"><div class="car-pbar-fill" id="car-fill"></div></div>
-  <div class="car-lbl" id="car-lbl">—</div>
 </div>
 
 <script>
@@ -104,7 +99,7 @@ const LOJA_ABREV = {
   'CAHU':'CAHU','MURIBECA':'MUR','PONTE':'PONTE','ATACAREJO':'ATAC','PORTA LARGA':'PL','JARDIM JORDÃO':'JJ'
 };
 const PER_PAGE  = 3;
-const DURATION  = 20000; // ms por página
+const DURATION  = 60000; // ms por página
 let _grupos = [], _pages = [], _page = 0, _t0 = 0, _raf = null;
 
 function abrevLojas(s) {
@@ -175,10 +170,6 @@ function renderPage(p) {
 
 function tick(now) {
   const elapsed = now - _t0;
-  const pct = Math.min(100, (elapsed / DURATION) * 100);
-  document.getElementById('car-fill').style.width = pct + '%';
-  const rem = Math.max(0, Math.ceil((DURATION - elapsed) / 1000));
-  document.getElementById('car-lbl').textContent = rem + 's';
   if (elapsed >= DURATION) {
     _page = (_page + 1) % _pages.length;
     _t0 = now;
@@ -208,7 +199,7 @@ async function carregar() {
     const resumo  = dRup.resumo || {};
 
     document.getElementById('kpi-r').textContent = resumo.total_rupturas ?? '—';
-    document.getElementById('kpi-u').textContent = resumo.sem_pedido ?? '—';
+    document.getElementById('kpi-u').textContent = resumo.urgencia ?? '—';
     document.getElementById('kpi-e').textContent = resumo.em_risco ?? '—';
     document.getElementById('kpi-x').textContent = resumo.excesso ?? '—';
     document.getElementById('kpi-f').textContent = ranking.length;

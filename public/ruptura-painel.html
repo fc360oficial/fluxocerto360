@@ -38,13 +38,12 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .pill-r{background:#ef444422;color:var(--red)}.pill-u{background:#f9731622;color:var(--orange)}
 .pill-e{background:#eab30822;color:var(--yellow)}.pill-x{background:#a78bfa22;color:var(--purple)}
 
-/* TABLE */
-.comp-body{overflow-y:auto;flex:1}
+/* TABLE — overflow hidden: sem scrollbar */
+.comp-body{overflow:hidden;flex:1}
 .comp-tbl{width:100%;border-collapse:collapse}
-.comp-tbl thead th{padding:6px 12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:#070d1a;text-align:left;position:sticky;top:0;z-index:1;border-bottom:1px solid var(--border);white-space:nowrap}
+.comp-tbl thead th{padding:6px 12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:#070d1a;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
 .comp-tbl thead th.r{text-align:right}
-.comp-tbl tbody tr{border-bottom:1px solid #0f172a80;transition:background .1s}
-.comp-tbl tbody tr:hover{background:#1e293b50}
+.comp-tbl tbody tr{border-bottom:1px solid #0f172a80}
 .comp-tbl td{padding:8px 12px;vertical-align:top}
 .comp-tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
 .forn-name{font-weight:700;color:var(--text);font-size:12px;line-height:1.3}
@@ -56,12 +55,18 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .score-bar-wrap{height:2px;background:#1e293b;border-radius:1px;margin-top:3px}
 .score-bar-fill{height:100%;border-radius:1px;background:var(--c-color);opacity:.5}
 
-/* CAROUSEL FOOTER */
+/* COLUMN CAROUSEL DOTS (dentro de cada card) */
+.col-footer{display:flex;justify-content:center;align-items:center;gap:5px;padding:7px 0;background:var(--card);border-top:1px solid var(--border);flex-shrink:0;min-height:21px}
+.col-dot{width:5px;height:5px;border-radius:50%;background:#334155;flex-shrink:0;transition:background .3s}
+.col-dot.active{background:var(--c-color);animation:col-dot-grow 10s linear forwards}
+@keyframes col-dot-grow{from{width:5px;border-radius:50%}to{width:18px;border-radius:3px}}
+
+/* PAGE CAROUSEL FOOTER (entre comprador-grupos) */
 .car-footer{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 12px;background:#0c1426;border-top:1px solid #1e3a5f;flex-shrink:0}
 .car-dots{display:flex;gap:8px;align-items:center}
 .car-dot{width:10px;height:10px;border-radius:50%;background:#334155;border:none;cursor:default;padding:0;flex-shrink:0;transition:background .3s}
-.car-dot.active{background:var(--brand);width:10px;border-radius:50%;animation:dot-grow 60s linear forwards}
-@keyframes dot-grow{from{width:10px;border-radius:50%}to{width:34px;border-radius:5px}}
+.car-dot.active{background:var(--brand);animation:car-dot-grow 60s linear forwards}
+@keyframes car-dot-grow{from{width:10px;border-radius:50%}to{width:34px;border-radius:5px}}
 
 /* LOADING */
 .loading{display:flex;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--text3);font-size:14px}
@@ -82,12 +87,12 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   <div class="kpi-stamp"><div class="dot-live"></div><span id="kpi-hora">carregando...</span></div>
 </div>
 
-<!-- CARDS (preenchido pelo JS) -->
+<!-- CARDS -->
 <div class="cards-area" id="cards-area">
   <div class="loading"><div class="spin"></div><span>Carregando dados...</span></div>
 </div>
 
-<!-- CAROUSEL FOOTER -->
+<!-- PAGE CAROUSEL FOOTER -->
 <div class="car-footer">
   <div class="car-dots" id="car-dots"></div>
 </div>
@@ -99,41 +104,44 @@ const COMP_COLORS = {
 const LOJA_ABREV = {
   'CAHU':'CAHU','MURIBECA':'MUR','PONTE':'PONTE','ATACAREJO':'ATAC','PORTA LARGA':'PL','JARDIM JORDÃO':'JJ'
 };
-const PER_PAGE  = 3;
-const DURATION  = 60000; // ms por página
+
+const PER_PAGE     = 3;     // compradores por página do painel
+const DURATION     = 60000; // ms para avançar comprador-página
+const PER_CARD     = 6;     // fornecedores por página dentro de cada coluna
+const COL_DURATION = 10000; // ms para avançar página de coluna
+
 let _grupos = [], _pages = [], _page = 0, _timer = null;
+let _colPages = {}, _colTimers = {};
 
 function abrevLojas(s) {
   return (s||'').split(', ').map(l => LOJA_ABREV[l.trim()] || l.trim()).filter(Boolean).join(' · ');
 }
 
-function makeCard(g) {
-  const maxScore = g.fornecs[0]
-    ? (g.fornecs[0].rupturas||0)*10+(g.fornecs[0].urgencia||0)*5+(g.fornecs[0].em_risco||0)*2+(g.fornecs[0].excesso||0)
-    : 1;
-  const totalR=g.fornecs.reduce((s,f)=>s+(f.rupturas||0),0);
-  const totalU=g.fornecs.reduce((s,f)=>s+(f.urgencia||0),0);
-  const totalE=g.fornecs.reduce((s,f)=>s+(f.em_risco||0),0);
-  const totalX=g.fornecs.reduce((s,f)=>s+(f.excesso||0),0);
+function makeRow(f, idx, maxScore) {
+  const score = (f.rupturas||0)*10+(f.urgencia||0)*5+(f.em_risco||0)*2+(f.excesso||0);
+  const pct   = maxScore > 0 ? Math.round(score / maxScore * 100) : 0;
+  const lojas = abrevLojas(f.lojas||'');
+  return `<tr>
+    <td style="width:24px"><span class="rank-num">${idx+1}</span></td>
+    <td>
+      <div class="forn-name">${f.fornecedor||'N/I'}</div>
+      <div class="forn-meta">Lista #${f.listaId}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
+      ${lojas?`<div class="forn-lojas">${lojas}</div>`:''}
+      <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+    </td>
+    <td class="r"><span class="${(f.rupturas||0)>0?'num-r':'num-0'}">${f.rupturas||0}</span></td>
+    <td class="r"><span class="${(f.urgencia||0)>0?'num-u':'num-0'}">${f.urgencia||0}</span></td>
+    <td class="r"><span class="${(f.em_risco||0)>0?'num-e':'num-0'}">${f.em_risco||0}</span></td>
+    <td class="r"><span class="${(f.excesso||0)>0?'num-x':'num-0'}">${f.excesso||0}</span></td>
+  </tr>`;
+}
 
-  const rows = g.fornecs.map((f,i) => {
-    const score = (f.rupturas||0)*10+(f.urgencia||0)*5+(f.em_risco||0)*2+(f.excesso||0);
-    const pct   = maxScore>0 ? Math.round(score/maxScore*100) : 0;
-    const lojas = abrevLojas(f.lojas||'');
-    return `<tr>
-      <td style="width:24px"><span class="rank-num">${i+1}</span></td>
-      <td>
-        <div class="forn-name">${f.fornecedor||'N/I'}</div>
-        <div class="forn-meta">Lista #${f.listaId}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
-        ${lojas?`<div class="forn-lojas">${lojas}</div>`:''}
-        <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%"></div></div>
-      </td>
-      <td class="r"><span class="${(f.rupturas||0)>0?'num-r':'num-0'}">${f.rupturas||0}</span></td>
-      <td class="r"><span class="${(f.urgencia||0)>0?'num-u':'num-0'}">${f.urgencia||0}</span></td>
-      <td class="r"><span class="${(f.em_risco||0)>0?'num-e':'num-0'}">${f.em_risco||0}</span></td>
-      <td class="r"><span class="${(f.excesso||0)>0?'num-x':'num-0'}">${f.excesso||0}</span></td>
-    </tr>`;
-  }).join('');
+function makeCard(g) {
+  const totalR = g.fornecs.reduce((s,f)=>s+(f.rupturas||0),0);
+  const totalU = g.fornecs.reduce((s,f)=>s+(f.urgencia||0),0);
+  const totalE = g.fornecs.reduce((s,f)=>s+(f.em_risco||0),0);
+  const totalX = g.fornecs.reduce((s,f)=>s+(f.excesso||0),0);
+  const totalPgs = Math.ceil(g.fornecs.length / PER_CARD);
 
   return `<div class="comp-card" style="--c-color:${g.color}">
     <div class="comp-hdr">
@@ -155,16 +163,58 @@ function makeCard(g) {
           <th class="r" style="color:var(--yellow)">Em Risco</th>
           <th class="r" style="color:var(--purple)">Excesso</th>
         </tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody id="tbody-${g.nome}"></tbody>
       </table>
     </div>
+    <div class="col-footer" id="coldots-${g.nome}" style="${totalPgs<=1?'visibility:hidden':''}"></div>
   </div>`;
 }
 
+function renderColPage(g, pg) {
+  const maxScore = g.fornecs[0]
+    ? (g.fornecs[0].rupturas||0)*10+(g.fornecs[0].urgencia||0)*5+(g.fornecs[0].em_risco||0)*2+(g.fornecs[0].excesso||0)
+    : 1;
+  const start  = pg * PER_CARD;
+  const fSlice = g.fornecs.slice(start, start + PER_CARD);
+  const tbody  = document.getElementById('tbody-' + g.nome);
+  if (tbody) tbody.innerHTML = fSlice.map((f, i) => makeRow(f, start + i, maxScore)).join('');
+
+  const totalPgs = Math.ceil(g.fornecs.length / PER_CARD);
+  const dotsEl   = document.getElementById('coldots-' + g.nome);
+  if (dotsEl && totalPgs > 1) {
+    dotsEl.innerHTML = Array.from({length: totalPgs}, (_, i) =>
+      `<div class="col-dot${i===pg?' active':''}"></div>`).join('');
+  }
+}
+
+function startColCarousel(g) {
+  const nome     = g.nome;
+  const totalPgs = Math.ceil(g.fornecs.length / PER_CARD);
+  if (totalPgs <= 1) return;
+  function advance() {
+    _colPages[nome] = (_colPages[nome] + 1) % totalPgs;
+    renderColPage(g, _colPages[nome]);
+    _colTimers[nome] = setTimeout(advance, COL_DURATION);
+  }
+  _colTimers[nome] = setTimeout(advance, COL_DURATION);
+}
+
 function renderPage(p) {
+  // Limpa timers de colunas anteriores
+  Object.values(_colTimers).forEach(t => clearTimeout(t));
+  _colTimers = {}; _colPages = {};
+
   const slice = _pages[p] || [];
   document.getElementById('cards-area').innerHTML = slice.map(g => makeCard(g)).join('');
-  // dots
+
+  // Inicia carousel de cada coluna
+  slice.forEach(g => {
+    _colPages[g.nome] = 0;
+    renderColPage(g, 0);
+    startColCarousel(g);
+  });
+
+  // Dots do carousel de páginas (nível superior)
   document.getElementById('car-dots').innerHTML = _pages.map((_,i) =>
     `<button class="car-dot${i===p?' active':''}"></button>`).join('');
 }
@@ -182,7 +232,7 @@ function advancePage() {
 
 function startCarousel() {
   _pages = [];
-  for (let i = 0; i < _grupos.length; i += PER_PAGE) _pages.push(_grupos.slice(i, i+PER_PAGE));
+  for (let i = 0; i < _grupos.length; i += PER_PAGE) _pages.push(_grupos.slice(i, i + PER_PAGE));
   if (!_pages.length) return;
   _page = 0;
   renderPage(0);
@@ -207,7 +257,6 @@ async function carregar() {
     document.getElementById('kpi-f').textContent = ranking.length;
     document.getElementById('kpi-hora').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
 
-    // Ordem definida: mesma da tela de compras
     const ORDEM = ['FATIMA','KELLY','STHEPHANNY','CRISLANE','PATRICIA'];
     _grupos = ORDEM.filter(n => dMap[n]).map(nome => {
       const listaSet = new Set(dMap[nome]);

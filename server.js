@@ -2783,29 +2783,9 @@ app.get('/api/ruptura/compradores', withCache(60), async (req, res) => {
 });
 
 app.get('/api/ruptura/comprador-listas', withCache(60), async (req, res) => {
-  try {
-    // Busca listas do banco — exclui RODRIGO CAHU que não é comprador
-    const rows = await q(`
-      SELECT nome, nLista FROM central.c_cotacao_agenda_comprador
-      WHERE nome NOT IN ('RODRIGO CAHU') AND nome IS NOT NULL AND nome != ''
-      ORDER BY nome, nLista
-    `);
-    const result = {};
-    for (const row of rows) {
-      if (!result[row.nome]) result[row.nome] = [];
-      result[row.nome].push(row.nLista);
-    }
-    // FATIMA não está em c_cotacao_agenda_comprador — usar lista hardcoded
-    if (!result['FATIMA'] || !result['FATIMA'].length) {
-      result['FATIMA'] = NREGS_COMPRADOR['FATIMA'] || [];
-    }
-    res.json(result);
-  } catch(e) {
-    // fallback hardcoded se banco falhar
-    const result = {};
-    for (const [nome, nRegs] of Object.entries(NREGS_COMPRADOR)) result[nome] = nRegs;
-    res.json(result);
-  }
+  const result = {};
+  for (const [nome, nRegs] of Object.entries(NREGS_COMPRADOR)) result[nome] = nRegs;
+  res.json(result);
 });
 
 app.get('/api/ruptura', withCache(30), async (req, res) => {

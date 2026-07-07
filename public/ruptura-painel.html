@@ -7,169 +7,206 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#070d1a;--card:#0f172a;--elev:#1e293b;--border:#1e293b;--border2:#334155;
+  --bg:#070d1a;--card:#0f172a;--border:#1e293b;--border2:#334155;
   --brand:#F9C200;--red:#ef4444;--orange:#f97316;--yellow:#eab308;--purple:#a78bfa;--green:#22c55e;
   --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
 }
-html,body{height:100%;font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
-.layout{display:flex;height:100vh;overflow:hidden}
-
-/* SIDEBAR */
-.sidebar{width:200px;background:#0c1426;border-right:1px solid #1e3a5f;display:flex;flex-direction:column;flex-shrink:0}
-.sidebar-logo{padding:16px 12px 12px;border-bottom:1px solid #1e3a5f;text-align:center}
-.sidebar-logo img{height:56px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
-.sidebar-nav{padding:6px 0;flex:1;overflow-y:auto}
-.nav-item{display:flex;align-items:center;gap:8px;padding:9px 16px;color:var(--text2);text-decoration:none;font-size:12px;font-weight:500;transition:all .15s}
-.nav-item:hover{background:#1e293b;color:#f1f5f9}
-.nav-item.active{background:#F9C20015;color:var(--brand);border-right:3px solid var(--brand)}
-.nav-item .ic{font-size:14px;width:18px;text-align:center}
-.sidebar-footer{padding:10px 12px;border-top:1px solid #1e3a5f;font-size:11px;color:var(--text3)}
-
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;display:flex;flex-direction:column}
 
 /* KPI BAR */
 .kpi-bar{display:flex;align-items:stretch;background:#0c1426;border-bottom:1px solid #1e3a5f;flex-shrink:0;height:52px}
-.kpi-bar-title{padding:0 18px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);white-space:nowrap;border-right:1px solid #1e3a5f;display:flex;align-items:center;gap:8px}
-.kpi-item{display:flex;align-items:center;gap:10px;padding:0 20px;border-right:1px solid #1e3a5f;white-space:nowrap}
-.kpi-item .val{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.kpi-title{padding:0 20px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);white-space:nowrap;border-right:1px solid #1e3a5f;display:flex;align-items:center;gap:8px}
+.kpi-item{display:flex;align-items:center;gap:10px;padding:0 24px;border-right:1px solid #1e3a5f;white-space:nowrap}
+.kpi-item .val{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
 .kpi-item .lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
-.kpi-item.red .val{color:var(--red)}
-.kpi-item.orange .val{color:var(--orange)}
-.kpi-item.yellow .val{color:var(--yellow)}
-.kpi-item.purple .val{color:var(--purple)}
-.kpi-item.green .val{color:var(--green)}
-.kpi-stamp{margin-left:auto;padding:0 16px;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3)}
-.dot-live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+.kpi-item.red .val{color:var(--red)}.kpi-item.orange .val{color:var(--orange)}
+.kpi-item.yellow .val{color:var(--yellow)}.kpi-item.purple .val{color:var(--purple)}.kpi-item.green .val{color:var(--green)}
+.kpi-stamp{margin-left:auto;padding:0 18px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)}
+.dot-live{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* COLUMNS AREA */
-.cols-wrap{flex:1;overflow:hidden;display:flex;gap:8px;padding:10px 10px;min-height:0}
+/* CARDS AREA */
+.cards-area{flex:1;display:flex;gap:10px;padding:10px;overflow:hidden;min-height:0}
 
 /* COMPRADOR CARD */
-.comp-card{
-  flex:1;min-width:0;display:flex;flex-direction:column;
-  background:var(--card);border-radius:10px;
-  border:1px solid var(--border2);border-top:3px solid var(--c-color);overflow:hidden
-}
-.comp-hdr{padding:10px 12px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
-.comp-name{font-size:15px;font-weight:900;color:var(--c-color);line-height:1;letter-spacing:.01em}
-.comp-sub{font-size:9px;color:var(--text3);margin-top:3px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-.comp-pills{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
-.pill-r{background:#ef444420;color:var(--red)}
-.pill-u{background:#f9731620;color:var(--orange)}
-.pill-e{background:#eab30820;color:var(--yellow)}
-.pill-x{background:#a78bfa20;color:var(--purple)}
+.comp-card{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--card);border-radius:10px;border:1px solid var(--border2);border-top:3px solid var(--c-color);overflow:hidden}
+.comp-hdr{padding:12px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.comp-name{font-size:18px;font-weight:900;color:var(--c-color);line-height:1}
+.comp-sub{font-size:10px;color:var(--text3);margin-top:3px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.comp-pills{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:4px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.pill-r{background:#ef444422;color:var(--red)}.pill-u{background:#f9731622;color:var(--orange)}
+.pill-e{background:#eab30822;color:var(--yellow)}.pill-x{background:#a78bfa22;color:var(--purple)}
 
 /* TABLE */
 .comp-body{overflow-y:auto;flex:1}
-.comp-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.comp-tbl thead th{
-  padding:5px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--text3);background:#070d1a;text-align:left;position:sticky;top:0;z-index:1;
-  border-bottom:1px solid var(--border)
-}
+.comp-tbl{width:100%;border-collapse:collapse}
+.comp-tbl thead th{padding:6px 12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);background:#070d1a;text-align:left;position:sticky;top:0;z-index:1;border-bottom:1px solid var(--border);white-space:nowrap}
 .comp-tbl thead th.r{text-align:right}
 .comp-tbl tbody tr{border-bottom:1px solid #0f172a80;transition:background .1s}
 .comp-tbl tbody tr:hover{background:#1e293b50}
-.comp-tbl td{padding:6px 8px;vertical-align:top}
+.comp-tbl td{padding:8px 12px;vertical-align:top}
 .comp-tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
-.forn-name{font-weight:700;color:var(--text);font-size:11px;line-height:1.3;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.forn-name{font-weight:700;color:var(--text);font-size:12px;line-height:1.3}
 .forn-meta{font-size:9px;color:var(--text3);margin-top:1px;font-weight:600}
-.forn-lojas{font-size:9px;color:var(--text3);line-height:1.5}
-.num-r{color:var(--red);font-weight:800}
-.num-u{color:var(--orange);font-weight:700}
-.num-e{color:var(--yellow)}
-.num-x{color:var(--purple)}
-.num-0{color:var(--text3)}
-.rank-num{color:var(--text3);font-size:10px;font-weight:700;white-space:nowrap}
+.forn-lojas{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.5}
+.num-r{color:var(--red);font-weight:800}.num-u{color:var(--orange);font-weight:700}
+.num-e{color:var(--yellow)}.num-x{color:var(--purple)}.num-0{color:var(--text3)}
+.rank-num{color:var(--text3);font-size:11px;font-weight:700;white-space:nowrap}
 .score-bar-wrap{height:2px;background:#1e293b;border-radius:1px;margin-top:3px}
 .score-bar-fill{height:100%;border-radius:1px;background:var(--c-color);opacity:.5}
 
-/* LOADING / ERROR */
-.centered{display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:12px;color:var(--text3)}
+/* CAROUSEL FOOTER */
+.car-footer{display:flex;align-items:center;gap:10px;padding:7px 12px;background:#0c1426;border-top:1px solid #1e3a5f;flex-shrink:0}
+.car-dots{display:flex;gap:6px}
+.car-dot{width:8px;height:8px;border-radius:50%;background:#334155;border:none;cursor:default;transition:all .3s;padding:0}
+.car-dot.active{background:var(--brand);width:26px;border-radius:4px}
+.car-pbar-wrap{flex:1;height:3px;background:#1e293b;border-radius:2px;overflow:hidden}
+.car-pbar-fill{height:100%;background:var(--brand);width:0%;transition:width .08s linear}
+.car-lbl{font-size:10px;color:var(--text3);min-width:50px;text-align:right}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--text3);font-size:14px}
 .spin{width:22px;height:22px;border:2px solid #334155;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="layout">
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-logo"><img src="/logo.png" alt="Econômico"></div>
-  <nav class="sidebar-nav">
-    <a href="index.html"          class="nav-item"><span class="ic">📊</span> Dashboard</a>
-    <a href="consulta.html"       class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
-    <a href="itens.html"          class="nav-item"><span class="ic">📂</span> Mercadológico</a>
-    <a href="fornecedores.html"   class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
-    <a href="pendencias.html"     class="nav-item"><span class="ic">⚠️</span> Pendências</a>
-    <a href="comparativos.html"   class="nav-item"><span class="ic">📈</span> Comparativos</a>
-    <a href="prevencao.html"      class="nav-item"><span class="ic">🛡️</span> Prevenção</a>
-    <a href="ruptura.html"        class="nav-item"><span class="ic">📉</span> Rupturas</a>
-    <a href="ruptura-painel.html" class="nav-item active"><span class="ic">📺</span> Painel Rupturas</a>
-  </nav>
-  <div class="sidebar-footer"><div id="sidebar-user">👤 ...</div></div>
-</aside>
+<!-- KPI BAR -->
+<div class="kpi-bar">
+  <div class="kpi-title">📉 Rupturas por Comprador</div>
+  <div class="kpi-item red"><div class="val" id="kpi-r">—</div><div class="lbl">Rupturas</div></div>
+  <div class="kpi-item orange"><div class="val" id="kpi-u">—</div><div class="lbl">Urgência ≤3d</div></div>
+  <div class="kpi-item yellow"><div class="val" id="kpi-e">—</div><div class="lbl">Em Risco</div></div>
+  <div class="kpi-item purple"><div class="val" id="kpi-x">—</div><div class="lbl">Excesso</div></div>
+  <div class="kpi-item green"><div class="val" id="kpi-f">—</div><div class="lbl">Fornecedores</div></div>
+  <div class="kpi-stamp"><div class="dot-live"></div><span id="kpi-hora">carregando...</span></div>
+</div>
 
-<!-- MAIN -->
-<main class="main">
+<!-- CARDS (preenchido pelo JS) -->
+<div class="cards-area" id="cards-area">
+  <div class="loading"><div class="spin"></div><span>Carregando dados...</span></div>
+</div>
 
-  <!-- KPI BAR -->
-  <div class="kpi-bar" id="kpi-bar">
-    <div class="kpi-bar-title">📉 Rupturas por Comprador</div>
-    <div class="kpi-item red"><div class="val" id="kpi-r">—</div><div class="lbl">Rupturas</div></div>
-    <div class="kpi-item orange"><div class="val" id="kpi-u">—</div><div class="lbl">Urgência ≤3d</div></div>
-    <div class="kpi-item yellow"><div class="val" id="kpi-e">—</div><div class="lbl">Em Risco</div></div>
-    <div class="kpi-item purple"><div class="val" id="kpi-x">—</div><div class="lbl">Excesso</div></div>
-    <div class="kpi-item green"><div class="val" id="kpi-f">—</div><div class="lbl">Fornecedores</div></div>
-    <div class="kpi-stamp"><div class="dot-live"></div><span id="kpi-hora">carregando...</span></div>
-  </div>
-
-  <!-- COLUMNS -->
-  <div class="cols-wrap" id="cols-wrap">
-    <div class="centered"><div class="spin"></div><span>Carregando dados...</span></div>
-  </div>
-
-</main>
+<!-- CAROUSEL FOOTER -->
+<div class="car-footer">
+  <div class="car-dots" id="car-dots"></div>
+  <div class="car-pbar-wrap"><div class="car-pbar-fill" id="car-fill"></div></div>
+  <div class="car-lbl" id="car-lbl">—</div>
 </div>
 
 <script>
 const COMP_COLORS = {
-  'KELLY':      '#10b981',
-  'FÁTIMA':     '#3b82f6',
-  'FATIMA':     '#3b82f6',
-  'PATRICIA':   '#f59e0b',
-  'STHEPHANNY': '#8b5cf6',
-  'CRISLANE':   '#f43f5e',
+  FATIMA:'#3b82f6', KELLY:'#10b981', STHEPHANNY:'#8b5cf6', CRISLANE:'#f43f5e', PATRICIA:'#f59e0b'
 };
-const FALLBACK_COLORS = ['#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6','#a78bfa'];
-let _fallbackIdx = 0;
-
 const LOJA_ABREV = {
-  'CAHU':'CAHU','MURIBECA':'MUR','PONTE':'PONTE',
-  'ATACAREJO':'ATAC','PORTA LARGA':'PL','JARDIM JORDÃO':'JJ'
+  'CAHU':'CAHU','MURIBECA':'MUR','PONTE':'PONTE','ATACAREJO':'ATAC','PORTA LARGA':'PL','JARDIM JORDÃO':'JJ'
 };
-function abrevLojas(str) {
-  return (str||'').split(', ').map(l => LOJA_ABREV[l.trim()] || l.trim()).join(' · ');
+const PER_PAGE  = 3;
+const DURATION  = 20000; // ms por página
+let _grupos = [], _pages = [], _page = 0, _t0 = 0, _raf = null;
+
+function abrevLojas(s) {
+  return (s||'').split(', ').map(l => LOJA_ABREV[l.trim()] || l.trim()).filter(Boolean).join(' · ');
 }
-function getColor(nome) {
-  return COMP_COLORS[nome.toUpperCase()] || FALLBACK_COLORS[_fallbackIdx++ % FALLBACK_COLORS.length];
+
+function makeCard(g) {
+  const maxScore = g.fornecs[0]
+    ? (g.fornecs[0].rupturas||0)*10+(g.fornecs[0].urgencia||0)*5+(g.fornecs[0].em_risco||0)*2+(g.fornecs[0].excesso||0)
+    : 1;
+  const totalR=g.fornecs.reduce((s,f)=>s+(f.rupturas||0),0);
+  const totalU=g.fornecs.reduce((s,f)=>s+(f.urgencia||0),0);
+  const totalE=g.fornecs.reduce((s,f)=>s+(f.em_risco||0),0);
+  const totalX=g.fornecs.reduce((s,f)=>s+(f.excesso||0),0);
+
+  const rows = g.fornecs.map((f,i) => {
+    const score = (f.rupturas||0)*10+(f.urgencia||0)*5+(f.em_risco||0)*2+(f.excesso||0);
+    const pct   = maxScore>0 ? Math.round(score/maxScore*100) : 0;
+    const lojas = abrevLojas(f.lojas||'');
+    return `<tr>
+      <td style="width:24px"><span class="rank-num">${i+1}</span></td>
+      <td>
+        <div class="forn-name">${f.fornecedor||'N/I'}</div>
+        <div class="forn-meta">Lista #${f.listaId}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
+        ${lojas?`<div class="forn-lojas">${lojas}</div>`:''}
+        <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+      </td>
+      <td class="r"><span class="${(f.rupturas||0)>0?'num-r':'num-0'}">${f.rupturas||0}</span></td>
+      <td class="r"><span class="${(f.urgencia||0)>0?'num-u':'num-0'}">${f.urgencia||0}</span></td>
+      <td class="r"><span class="${(f.em_risco||0)>0?'num-e':'num-0'}">${f.em_risco||0}</span></td>
+      <td class="r"><span class="${(f.excesso||0)>0?'num-x':'num-0'}">${f.excesso||0}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="comp-card" style="--c-color:${g.color}">
+    <div class="comp-hdr">
+      <div class="comp-name">${g.nome}</div>
+      <div class="comp-sub">${g.fornecs.length} fornecedor${g.fornecs.length!==1?'es':''}</div>
+      <div class="comp-pills">
+        <span class="pill pill-r">🔴 ${totalR}</span>
+        <span class="pill pill-u">🟠 ${totalU}</span>
+        <span class="pill pill-e">🟡 ${totalE}</span>
+        <span class="pill pill-x">🟣 ${totalX}</span>
+      </div>
+    </div>
+    <div class="comp-body">
+      <table class="comp-tbl">
+        <thead><tr>
+          <th></th><th>Fornecedor</th>
+          <th class="r" style="color:var(--red)">R</th>
+          <th class="r" style="color:var(--orange)">U</th>
+          <th class="r" style="color:var(--yellow)">E</th>
+          <th class="r" style="color:var(--purple)">X</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderPage(p) {
+  const slice = _pages[p] || [];
+  document.getElementById('cards-area').innerHTML = slice.map(g => makeCard(g)).join('');
+  // dots
+  document.getElementById('car-dots').innerHTML = _pages.map((_,i) =>
+    `<button class="car-dot${i===p?' active':''}"></button>`).join('');
+}
+
+function tick(now) {
+  const elapsed = now - _t0;
+  const pct = Math.min(100, (elapsed / DURATION) * 100);
+  document.getElementById('car-fill').style.width = pct + '%';
+  const rem = Math.max(0, Math.ceil((DURATION - elapsed) / 1000));
+  document.getElementById('car-lbl').textContent = rem + 's';
+  if (elapsed >= DURATION) {
+    _page = (_page + 1) % _pages.length;
+    _t0 = now;
+    renderPage(_page);
+  }
+  _raf = requestAnimationFrame(tick);
+}
+
+function startCarousel() {
+  _pages = [];
+  for (let i = 0; i < _grupos.length; i += PER_PAGE) _pages.push(_grupos.slice(i, i+PER_PAGE));
+  if (!_pages.length) return;
+  _page = 0; _t0 = performance.now();
+  renderPage(0);
+  if (_raf) cancelAnimationFrame(_raf);
+  _raf = requestAnimationFrame(tick);
 }
 
 async function carregar() {
   try {
     const [dRup, dMap] = await Promise.all([
-      fetch('/api/ruptura').then(r => r.json()),
-      fetch('/api/ruptura/comprador-listas').then(r => r.json()),
+      fetch('/api/ruptura').then(r=>r.json()),
+      fetch('/api/ruptura/comprador-listas').then(r=>r.json()),
     ]);
 
     const ranking = dRup.ranking_fornec || [];
     const resumo  = dRup.resumo || {};
 
-    // KPIs
     document.getElementById('kpi-r').textContent = resumo.total_rupturas ?? '—';
     document.getElementById('kpi-u').textContent = resumo.sem_pedido ?? '—';
     document.getElementById('kpi-e').textContent = resumo.em_risco ?? '—';
@@ -177,91 +214,28 @@ async function carregar() {
     document.getElementById('kpi-f').textContent = ranking.length;
     document.getElementById('kpi-hora').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
 
-    // Sidebar user
-    try {
-      const me = await fetch('/api/me').then(r=>r.json()).catch(()=>({}));
-      document.getElementById('sidebar-user').textContent = '👤 ' + (me.nome || me.usuario || '');
-    } catch(_) {}
-
-    // Agrupar ranking por comprador
-    const compradores = Object.keys(dMap).sort();
-    _fallbackIdx = 0;
-    const grupos = compradores.map(nome => {
+    // Ordem definida: mesma da tela de compras
+    const ORDEM = ['FATIMA','KELLY','STHEPHANNY','CRISLANE','PATRICIA'];
+    _grupos = ORDEM.filter(n => dMap[n]).map(nome => {
       const listaSet = new Set(dMap[nome]);
-      const fornecs = ranking.filter(f => listaSet.has(f.listaId));
-      const totalR = fornecs.reduce((s,f)=>s+(f.rupturas||0),0);
-      const totalU = fornecs.reduce((s,f)=>s+(f.urgencia||0),0);
-      const totalE = fornecs.reduce((s,f)=>s+(f.em_risco||0),0);
-      const totalX = fornecs.reduce((s,f)=>s+(f.excesso||0),0);
-      return { nome, fornecs, totalR, totalU, totalE, totalX, color: getColor(nome) };
+      const fornecs  = ranking.filter(f => listaSet.has(f.listaId));
+      return { nome, fornecs, color: COMP_COLORS[nome] || '#64748b' };
     }).filter(g => g.fornecs.length > 0);
 
-    if (!grupos.length) {
-      document.getElementById('cols-wrap').innerHTML =
-        '<div class="centered"><span>Nenhum dado encontrado. Verifique se há dados em Rupturas.</span></div>';
+    if (!_grupos.length) {
+      document.getElementById('cards-area').innerHTML =
+        '<div class="loading"><span>Nenhum dado. Carregue primeiro em Rupturas.</span></div>';
       return;
     }
 
-    const wrap = document.getElementById('cols-wrap');
-    wrap.innerHTML = grupos.map(g => {
-      const maxScore = g.fornecs[0]
-        ? (g.fornecs[0].rupturas||0)*10+(g.fornecs[0].urgencia||0)*5+(g.fornecs[0].em_risco||0)*2+(g.fornecs[0].excesso||0)
-        : 1;
-
-      const rows = g.fornecs.map((f, i) => {
-        const score = (f.rupturas||0)*10+(f.urgencia||0)*5+(f.em_risco||0)*2+(f.excesso||0);
-        const pct   = maxScore > 0 ? Math.round(score/maxScore*100) : 0;
-        const lojas = abrevLojas(f.lojas || '');
-        return `<tr>
-          <td class="rank-num">${i+1}</td>
-          <td style="max-width:0;width:40%">
-            <div class="forn-name" title="${f.fornecedor||'N/I'}">${f.fornecedor||'N/I'}</div>
-            <div class="forn-meta">Lista #${f.listaId}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
-            <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%"></div></div>
-          </td>
-          <td class="r"><span class="${(f.rupturas||0)>0?'num-r':'num-0'}">${f.rupturas||0}</span></td>
-          <td class="r"><span class="${(f.urgencia||0)>0?'num-u':'num-0'}">${f.urgencia||0}</span></td>
-          <td class="r"><span class="${(f.em_risco||0)>0?'num-e':'num-0'}">${f.em_risco||0}</span></td>
-          <td class="r"><span class="${(f.excesso||0)>0?'num-x':'num-0'}">${f.excesso||0}</span></td>
-          <td class="forn-lojas">${lojas}</td>
-        </tr>`;
-      }).join('');
-
-      return `<div class="comp-card" style="--c-color:${g.color}">
-        <div class="comp-hdr">
-          <div class="comp-name">${g.nome}</div>
-          <div class="comp-sub">${g.fornecs.length} fornecedor${g.fornecs.length!==1?'es':''}</div>
-          <div class="comp-pills">
-            <span class="pill pill-r">🔴 ${g.totalR}</span>
-            <span class="pill pill-u">🟠 ${g.totalU}</span>
-            <span class="pill pill-e">🟡 ${g.totalE}</span>
-            <span class="pill pill-x">🟣 ${g.totalX}</span>
-          </div>
-        </div>
-        <div class="comp-body">
-          <table class="comp-tbl">
-            <thead><tr>
-              <th></th><th>Fornecedor</th>
-              <th class="r" style="color:var(--red)">R</th>
-              <th class="r" style="color:var(--orange)">U</th>
-              <th class="r" style="color:var(--yellow)">E</th>
-              <th class="r" style="color:var(--purple)">X</th>
-              <th>Lojas</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>`;
-    }).join('');
-
+    startCarousel();
   } catch(e) {
-    document.getElementById('cols-wrap').innerHTML =
-      `<div class="centered"><span style="color:#ef4444">Erro: ${e.message}</span></div>`;
+    document.getElementById('cards-area').innerHTML =
+      `<div class="loading"><span style="color:var(--red)">Erro: ${e.message}</span></div>`;
   }
 }
 
 carregar();
-// Auto-refresh a cada 30 minutos (mesma janela do cache)
 setInterval(carregar, 30 * 60 * 1000);
 </script>
 </body>

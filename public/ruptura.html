@@ -423,7 +423,7 @@ function renderTudo(d) {
       </tr>`).join('')}
     </tbody>
   </table></div>`;
-  const rankFornecSec = secao('rankfornec','📦','RANKING POR FORNECEDOR', d.ranking_fornec, null, rankFornecHtml);
+  const rankFornecSec = secao('rankfornec','📦','RANKING POR FORNECEDOR', (d.ranking_fornec||[]).length, null, rankFornecHtml);
 
   /* Financeiro */
   const finHtml = `

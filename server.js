@@ -2822,7 +2822,7 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
       const phL = listIds.map(() => '?').join(',');
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               cli.nCotacao as listaId, l.NomeFornec as fornecedor
+               cli.nCotacao as listaId, COALESCE(NULLIF(TRIM(l.NomeFornec),''), NULLIF(TRIM(l.Nome),''), 'N/I') as fornecedor
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
         LEFT JOIN central.c_cotacao_lista l ON l.nReg = cli.nCotacao
@@ -2831,7 +2831,7 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
     } else {
       prods = await q(`
         SELECT DISTINCT i.nInterno, i.CodigoBarra, i.Descricao,
-               cli.nCotacao as listaId, l.NomeFornec as fornecedor
+               cli.nCotacao as listaId, COALESCE(NULLIF(TRIM(l.NomeFornec),''), NULLIF(TRIM(l.Nome),''), 'N/I') as fornecedor
         FROM central.c_cotacao_lista_itens cli
         JOIN central.itens i ON i.CodigoBarra = cli.Codigobarra AND i.CodDesativado = 0
         LEFT JOIN central.c_cotacao_lista l ON l.nReg = cli.nCotacao

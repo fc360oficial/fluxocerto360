@@ -306,10 +306,10 @@ setInterval(() => {
   }
 }, 5000);
 
-// Reativa quando o pai (supervisão) manda activate
+// Reativa quando o pai (supervisão) manda activate — sempre pela loja 1
 window.addEventListener('message', e => {
   if (e.data && e.data.type === 'activate' && colBodies.length) {
-    iniciarCarrossel(currentIdx, 0);
+    iniciarCarrossel(0, 0);
   }
 });
 

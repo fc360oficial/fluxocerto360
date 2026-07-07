@@ -1435,7 +1435,11 @@ app.get('/api/fornecedores/:id/produtos', async (req, res) => {
 
     if (!prods.length) return res.json([]);
 
-    const codigos = [...new Set(prods.map(p => p.CodigoBarra))];
+    // deduplica por CodigoBarra (fornecedoritens pode ter múltiplos nRegs por produto)
+    const seenCod = new Set();
+    const prodsUniq = prods.filter(p => seenCod.has(p.CodigoBarra) ? false : seenCod.add(p.CodigoBarra));
+
+    const codigos = [...seenCod];
     const ph = codigos.map(() => '?').join(',');
     let vendasMap = {};
     try {
@@ -1448,7 +1452,7 @@ app.get('/api/fornecedores/:id/produtos', async (req, res) => {
       for (const r of rows) vendasMap[r.Codigo] = { qtd: parseFloat(r.qtd), valor: parseFloat(r.valor) };
     } catch (e) {}
 
-    res.json(prods.map(p => {
+    res.json(prodsUniq.map(p => {
       const v   = vendasMap[p.CodigoBarra] || { qtd: 0, valor: 0 };
       const cst = parsePreco(p.Custo);
       const cstTot = v.qtd * cst;

@@ -364,6 +364,7 @@ function proximoSlide() {
         return;
       }
       try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}
+      if (window.parent === window) { location.href = '/compras.html'; return; }
       return;
     } else {
       try { window.parent.postMessage({ type: 'analiseCycleComplete' }, '*'); } catch(_) {}

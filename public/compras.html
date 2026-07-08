@@ -29,6 +29,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .brand-bar .b-slide{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(10,14,24,.5)}
 .brand-bar .b-live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(10,14,24,.45)}
 .brand-bar .b-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:bpulse 2s infinite}
+.brand-bar .b-left{position:absolute;left:14px;top:50%;transform:translateY(-50%)}
+.brand-bar .b-btn-fs{background:rgba(10,14,24,.18);border:1px solid rgba(10,14,24,.25);border-radius:6px;color:#0a0e18;font-size:15px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.brand-bar .b-btn-fs:hover{background:rgba(10,14,24,.35)}
 @keyframes bpulse{0%,100%{opacity:1}50%{opacity:.3}}
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
@@ -350,6 +353,9 @@ main{
 <body>
 
 <div class="brand-bar">
+  <div class="b-left">
+    <button class="b-btn-fs" id="btn-fs" title="Tela cheia">⛶</button>
+  </div>
   <div class="b-name">ECONÔMICO</div>
   <div class="b-right">
     <span class="b-slide">Central de Compras</span>
@@ -1161,10 +1167,6 @@ setInterval(updateCountdown, 1000);
 setInterval(atualizarStatusReal, 2*60*1000);
 </script>
 <style>
-.btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
-  border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
-  transition:all .3s;z-index:999;backdrop-filter:blur(4px);opacity:.35}
-.btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
 .btn-slides{position:fixed;bottom:14px;right:58px;width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);color:#94A3B8;font-size:20px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:.35;display:flex;align-items:center;justify-content:center;letter-spacing:-1px;font-weight:900;padding-bottom:2px}
 .btn-slides:hover{opacity:1;color:#F9C200;border-color:#F9C200}
 .slide-nav-menu{position:fixed;bottom:56px;right:58px;background:rgba(6,12,26,.97);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:6px;z-index:1000;display:none;flex-direction:column;gap:2px;backdrop-filter:blur(12px);min-width:210px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
@@ -1175,7 +1177,6 @@ setInterval(atualizarStatusReal, 2*60*1000);
 </style>
 <div class="slide-nav-menu" id="slide-nav-menu"></div>
 <button class="btn-slides" id="btn-slides" title="Navegar slides">⋯</button>
-<button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 <script>
 (function(){var b=document.getElementById('btn-fs');function tgl(){if(window.parent!==window){window.parent.postMessage({type:'requestFullscreen'},'*');return;}if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});}document.addEventListener('fullscreenchange',function(){b.textContent=document.fullscreenElement?'✕':'⛶';});b.addEventListener('click',tgl);})();
 (function(){

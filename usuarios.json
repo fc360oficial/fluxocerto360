@@ -1,6 +1,0 @@
-[
-  {"id":1,"nome":"Tiago Freire","usuario":"tiago.freire","senha_hash":"$2b$10$6.LaA51gwHjaNt32tJRuNuDZy.7E1ordbtVg1mfdk3T67w2aE1Mpa","perfil":"admin","comprador_nome":null},
-  {"id":2,"nome":"Rodrigo Cahu","usuario":"rodrigo.cahu","senha_hash":"$2b$10$6.LaA51gwHjaNt32tJRuNuDZy.7E1ordbtVg1mfdk3T67w2aE1Mpa","perfil":"gerente","comprador_nome":null},
-  {"id":3,"nome":"Donato","usuario":"donato","senha_hash":"$2b$10$qeczHhSgmxtClTaL.P2WKepW/Az9vBD2IjQeM533gOaOv7.Qd53Wu","perfil":"gerente","comprador_nome":null},
-  {"id":4,"nome":"Flavio","usuario":"flavio","senha_hash":"$2b$10$5wfBU469ZjmSGFFKJWPRY.rVfyFG8j92cDdBYsqDWNMlov5uQ2M1u","perfil":"gerente","comprador_nome":null}
-]

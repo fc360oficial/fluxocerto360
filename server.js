@@ -2855,13 +2855,13 @@ app.get('/api/margem-tv/comprador', withCache(5), async (req, res) => {
     const vendaParams = [];
     for (let i = 0; i < 6; i++) vendaParams.push(dIni, dFim, ...codigos);
 
-    // 5. Avarias todas as lojas
+    // 5. Avarias filtradas pelos produtos deste comprador (não pelo fornecedor global)
     const [vendasRows, avariaRows] = await Promise.all([
       q(vendasSQL, vendaParams).catch(() => []),
       q(`SELECT CodFornec, SUM(Total) as total
          FROM central.avariaconsumo
-         WHERE DataLan BETWEEN ? AND ? AND CodFornec IN (${phF}) AND CodFornec > 0
-         GROUP BY CodFornec`, [dIni, dFim, ...codFornecs]).catch(() => [])
+         WHERE DataLan BETWEEN ? AND ? AND CodigoBarras IN (${phC}) AND CodFornec > 0
+         GROUP BY CodFornec`, [dIni, dFim, ...codigos]).catch(() => [])
     ]);
 
     // Monta maps

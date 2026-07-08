@@ -25,7 +25,6 @@ iframe.visivel{opacity:1;pointer-events:auto}
 }
 .dot:hover{background:rgba(255,255,255,.55);transform:scale(1.3)}
 .dot.ativo{background:rgba(250,204,21,.9)}
-/* dots desativados ficam mais apagados */
 .dot.off{background:rgba(255,255,255,.10);opacity:.5}
 .sep{width:1px;height:14px;background:rgba(255,255,255,.15);flex-shrink:0}
 .btn-fs{
@@ -40,26 +39,25 @@ iframe.visivel{opacity:1;pointer-events:auto}
 </head>
 <body>
 
-<!-- iframes — todos mantidos para acesso manual pelos dots -->
 <iframe id="fr-diretoria" title="Diretoria"></iframe>
-<iframe id="fr-comptvs"  title="Comparativo TV"></iframe>
 <iframe id="fr-precif"   title="Precificação"></iframe>
 <iframe id="fr-compras"  title="Compras Geral"></iframe>
 <iframe id="fr-ruptura"  title="Rupturas Compras"></iframe>
 <iframe id="fr-margem"   title="Margem Compradores"></iframe>
 <iframe id="fr-mensal"   title="Mensal Compradores"></iframe>
+<iframe id="fr-comptvs"  title="Comparativo TV"></iframe>
 
 <div class="controles">
-  <!-- rotação ativa -->
-  <div class="dot ativo" id="dot-c"  title="Compras"></div>
+  <!-- rotação ativa: Diretoria → Precificação → Compras → Rupturas → Margem → Mensal -->
+  <div class="dot ativo" id="dot-d"  title="Diretoria"></div>
+  <div class="dot"       id="dot-p"  title="Precificação"></div>
+  <div class="dot"       id="dot-c"  title="Compras"></div>
   <div class="dot"       id="dot-r"  title="Rupturas"></div>
   <div class="dot"       id="dot-mg" title="Margem"></div>
   <div class="dot"       id="dot-m"  title="Mensal"></div>
   <div class="sep"></div>
-  <!-- desativados da rotação — acessíveis manualmente -->
-  <div class="dot off"   id="dot-d"  title="Diretoria (manual)"></div>
-  <div class="dot off"   id="dot-ct" title="Comparativo (manual)"></div>
-  <div class="dot off"   id="dot-p"  title="Precificação (manual)"></div>
+  <!-- manual -->
+  <div class="dot off"   id="dot-ct" title="Comparativo TV (manual)"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 </div>
@@ -68,26 +66,27 @@ iframe.visivel{opacity:1;pointer-events:auto}
 const BASE = 'http://192.168.2.252:3003';
 const TV = window.innerWidth >= 1900 ? '?tv=1' : '';
 
-let atual = 'compras';
+let atual = 'diretoria';
 
 const frD  = document.getElementById('fr-diretoria');
-const frCT = document.getElementById('fr-comptvs');
 const frP  = document.getElementById('fr-precif');
 const frC  = document.getElementById('fr-compras');
 const frR  = document.getElementById('fr-ruptura');
 const frMG = document.getElementById('fr-margem');
 const frM  = document.getElementById('fr-mensal');
+const frCT = document.getElementById('fr-comptvs');
+
+const dotD  = document.getElementById('dot-d');
+const dotP  = document.getElementById('dot-p');
 const dotC  = document.getElementById('dot-c');
 const dotR  = document.getElementById('dot-r');
 const dotMG = document.getElementById('dot-mg');
 const dotM  = document.getElementById('dot-m');
-const dotD  = document.getElementById('dot-d');
 const dotCT = document.getElementById('dot-ct');
-const dotP  = document.getElementById('dot-p');
 const btnFs = document.getElementById('btn-fs');
 
-const todosFrames = [frD,frCT,frP,frC,frR,frMG,frM];
-const todosDots   = [dotC,dotR,dotMG,dotM,dotD,dotCT,dotP];
+const todosFrames = [frD,frP,frC,frR,frMG,frM,frCT];
+const todosDots   = [dotD,dotP,dotC,dotR,dotMG,dotM,dotCT];
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
@@ -97,7 +96,15 @@ function mostrar(iframe, dot, nome) {
   dot.classList.add('ativo');
 }
 
-// ── Rotação ativa ──
+// ── Rotação automática ──
+function mostrarDiretoria() {
+  frD.src = BASE + '/diretoria.html' + TV;
+  mostrar(frD, dotD, 'diretoria');
+}
+function mostrarPrecif() {
+  frP.src = BASE + '/precificacao.html' + (TV ? TV : '');
+  mostrar(frP, dotP, 'precif');
+}
 function mostrarCompras() {
   frC.src = BASE + '/compras.html' + TV;
   mostrar(frC, dotC, 'compras');
@@ -115,28 +122,21 @@ function mostrarMensal() {
   mostrar(frM, dotM, 'mensal');
 }
 
-// ── Acesso manual (fora da rotação automática) ──
-function mostrarDiretoria() {
-  frD.src = BASE + '/diretoria.html' + TV;
-  mostrar(frD, dotD, 'diretoria');
-}
+// ── Manual ──
 function mostrarComparativoTV() {
   frCT.src = BASE + '/comparativo-tv.html' + TV;
   mostrar(frCT, dotCT, 'comptvs');
 }
-function mostrarPrecif() {
-  if (!frP.src || frP.src === 'about:blank') frP.src = BASE + '/precificacao.html' + TV;
-  mostrar(frP, dotP, 'precif');
-  try { frP.contentWindow.postMessage({ type: 'activate' }, '*'); } catch(_) {}
-}
 
-// ── Rotação automática: Compras → Rupturas → Margem → Mensal → Compras ──
+// ── Rotação: Diretoria → Precificação → Compras → Rupturas → Margem → Mensal → Diretoria ──
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
-  if (e.data.type === 'comprasCycleComplete'  && atual === 'compras') mostrarRuptura();
-  if (e.data.type === 'rupturaCycleComplete'  && atual === 'ruptura') mostrarMargem();
-  if (e.data.type === 'margemCycleComplete'   && atual === 'margem')  mostrarMensal();
-  if (e.data.type === 'mensalCycleComplete'   && atual === 'mensal')  mostrarCompras();
+  if (e.data.type === 'diretoriaCycleComplete'  && atual === 'diretoria') mostrarPrecif();
+  if (e.data.type === 'carouselCycleComplete'   && atual === 'precif')    mostrarCompras();
+  if (e.data.type === 'comprasCycleComplete'    && atual === 'compras')   mostrarRuptura();
+  if (e.data.type === 'rupturaCycleComplete'    && atual === 'ruptura')   mostrarMargem();
+  if (e.data.type === 'margemCycleComplete'     && atual === 'margem')    mostrarMensal();
+  if (e.data.type === 'mensalCycleComplete'     && atual === 'mensal')    mostrarDiretoria();
 });
 
 // ── Tela cheia ──
@@ -152,16 +152,16 @@ document.addEventListener('fullscreenchange', () => {
 btnFs.addEventListener('click', toggleFullscreen);
 
 // ── Dots ──
-dotC.addEventListener('click', mostrarCompras);
-dotR.addEventListener('click', mostrarRuptura);
+dotD.addEventListener('click',  mostrarDiretoria);
+dotP.addEventListener('click',  mostrarPrecif);
+dotC.addEventListener('click',  mostrarCompras);
+dotR.addEventListener('click',  mostrarRuptura);
 dotMG.addEventListener('click', mostrarMargem);
-dotM.addEventListener('click', mostrarMensal);
-dotD.addEventListener('click', mostrarDiretoria);
+dotM.addEventListener('click',  mostrarMensal);
 dotCT.addEventListener('click', mostrarComparativoTV);
-dotP.addEventListener('click', mostrarPrecif);
 
-// ── Início: Compras ──
-mostrarCompras();
+// ── Início: Diretoria ──
+mostrarDiretoria();
 </script>
 </body>
 </html>

@@ -2813,10 +2813,10 @@ app.get('/api/debug/avaria-comprador', async (req, res) => {
     const codigos = itemRows.map(r => r.CodigoBarra).filter(Boolean);
     if (!codigos.length) return res.json({ erro: 'sem produtos', nRegs });
 
-    // filtra pelo CodFornec se informado
+    // filtra pelo CodFornec se informado — SEM filtro de data (avaria é acumulada)
     let phC = codigos.map(()=>'?').join(',');
-    let where = `DataLan BETWEEN ? AND ? AND CodigoBarras IN (${phC}) AND CodFornec > 0 AND Status IN (0,2)`;
-    let params = [dIni, dFim, ...codigos];
+    let where = `CodigoBarras IN (${phC}) AND CodFornec > 0 AND Status IN (0,2)`;
+    let params = [...codigos];
     if (cf) { where += ' AND CodFornec=?'; params.push(cf); }
 
     const rows = await q(
@@ -2908,14 +2908,15 @@ app.get('/api/margem-tv/comprador', withCache(5), async (req, res) => {
     const vendaParams = [];
     for (let i = 0; i < 6; i++) vendaParams.push(dIni, dFim, ...codigos);
 
-    // 5. Avarias filtradas pelos produtos deste comprador (não pelo fornecedor global)
+    // 5. Avarias filtradas pelos produtos deste comprador — SEM filtro de data
+    //    porque avaria em aberto/tramite é acumulada (pode ser de meses anteriores)
     const [vendasRows, avariaRows] = await Promise.all([
       q(vendasSQL, vendaParams).catch(() => []),
       q(`SELECT CodFornec, SUM(Total) as total
          FROM central.avariaconsumo
-         WHERE DataLan BETWEEN ? AND ? AND CodigoBarras IN (${phC}) AND CodFornec > 0
+         WHERE CodigoBarras IN (${phC}) AND CodFornec > 0
            AND Status IN (0,2)
-         GROUP BY CodFornec`, [dIni, dFim, ...codigos]).catch(() => [])
+         GROUP BY CodFornec`, [...codigos]).catch(() => [])
     ]);
 
     // Monta maps

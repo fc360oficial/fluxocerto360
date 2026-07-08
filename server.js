@@ -2786,6 +2786,137 @@ app.get('/api/ruptura/compradores', withCache(60), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Margem TV — todas as lojas somadas por comprador
+app.get('/api/margem-tv/comprador', withCache(5), async (req, res) => {
+  try {
+    const hoje = new Date();
+    const mesSel = req.query.mes ? parseInt(req.query.mes) : hoje.getMonth() + 1;
+    const anoSel = req.query.ano ? parseInt(req.query.ano) : hoje.getFullYear();
+    const comp   = (req.query.comprador || '').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+    const nRegs  = NREGS_COMPRADOR[comp];
+    if (!nRegs || !nRegs.length) return res.status(400).json({ error: 'Comprador inválido' });
+
+    const mm   = mesDB(mesSel);
+    const dIni = `${anoSel}-${String(mesSel).padStart(2,'0')}-01`;
+    const dFim = dFimMes(anoSel, mesSel);
+    const phN  = nRegs.map(() => '?').join(',');
+
+    // 1. CodFornec de cada lista do comprador
+    const listaRows = await q(
+      `SELECT nReg, codFornec FROM central.c_cotacao_lista WHERE nReg IN (${phN})`, nRegs
+    ).catch(() => []);
+    const nRegFornecMap = {};
+    for (const r of listaRows) nRegFornecMap[r.nReg] = r.codFornec;
+    const codFornecs = [...new Set(Object.values(nRegFornecMap))].filter(Boolean);
+    if (!codFornecs.length) return res.json({ comprador: comp, totais:{}, fornecedores:[] });
+
+    // 2. Nome dos fornecedores
+    const phF = codFornecs.map(() => '?').join(',');
+    const fornecRows = await q(
+      `SELECT CodFornec, Nome, NomeCompleto FROM central.fornecedor WHERE CodFornec IN (${phF})`, codFornecs
+    ).catch(() => []);
+    const fornecNome = {};
+    for (const f of fornecRows) fornecNome[f.CodFornec] = (f.Nome || f.NomeCompleto || '').trim();
+
+    // 3. Produtos das listas (dedupado)
+    const prodRows = await q(
+      `SELECT DISTINCT i.Codigobarra as cod, i.nCotacao as nReg
+       FROM central.c_cotacao_lista_itens i
+       INNER JOIN central.itens it ON it.CodigoBarra = i.Codigobarra AND it.CodDesativado = 0
+       WHERE i.nCotacao IN (${phN})`, nRegs
+    ).catch(() => []);
+
+    // cod → codFornec
+    const codToFornec = {};
+    for (const p of prodRows) {
+      const cf = nRegFornecMap[p.nReg];
+      if (cf) codToFornec[p.cod] = cf;
+    }
+    const codigos = Object.keys(codToFornec);
+    if (!codigos.length) return res.json({ comprador: comp, totais:{}, fornecedores:[] });
+    const phC = codigos.map(() => '?').join(',');
+
+    // 4. Vendas UNION ALL 6 lojas (usa Custo da zcupomitens = custo real de venda)
+    const unionParts = [1,2,3,4,5,6].map(() =>
+      `SELECT Codigo, SUM(QtdNovo) as qtd, SUM(ValorTotalNovo) as valor, SUM(Custo) as custo
+       FROM \`ln?${mm}\`.zcupomitens
+       WHERE Data BETWEEN ? AND ? AND IndCancel='N' AND Codigo IN (${phC})
+       GROUP BY Codigo`
+    );
+    // substitui ln? pelos números
+    const vendasSQL = `SELECT Codigo, SUM(qtd) as qtd, SUM(valor) as valor, SUM(custo) as custo
+      FROM (${[1,2,3,4,5,6].map(ln =>
+        `SELECT Codigo, SUM(QtdNovo) as qtd, SUM(ValorTotalNovo) as valor, SUM(Custo) as custo
+         FROM \`ln${ln}${mm}\`.zcupomitens
+         WHERE Data BETWEEN ? AND ? AND IndCancel='N' AND Codigo IN (${phC})
+         GROUP BY Codigo`
+      ).join(' UNION ALL ')}) t GROUP BY Codigo`;
+
+    const vendaParams = [];
+    for (let i = 0; i < 6; i++) vendaParams.push(dIni, dFim, ...codigos);
+
+    // 5. Avarias todas as lojas
+    const [vendasRows, avariaRows] = await Promise.all([
+      q(vendasSQL, vendaParams).catch(() => []),
+      q(`SELECT CodFornec, SUM(Total) as total
+         FROM central.avariaconsumo
+         WHERE DataLan BETWEEN ? AND ? AND CodFornec IN (${phF}) AND CodFornec > 0
+         GROUP BY CodFornec`, [dIni, dFim, ...codFornecs]).catch(() => [])
+    ]);
+
+    // Monta maps
+    const vendasMap = {};
+    for (const r of vendasRows) vendasMap[r.Codigo] = { valor: parseFloat(r.valor), custo: parseFloat(r.custo || 0) };
+    const avariaMap = {};
+    for (const r of avariaRows) avariaMap[r.CodFornec] = parseFloat(r.total || 0);
+
+    // Agrega por fornecedor
+    const fMap = {};
+    for (const cod of codigos) {
+      const cf = codToFornec[cod];
+      const v  = vendasMap[cod] || { valor:0, custo:0 };
+      if (!fMap[cf]) fMap[cf] = { venda:0, custo:0, lucro:0 };
+      fMap[cf].venda += v.valor;
+      fMap[cf].custo += v.custo;
+      fMap[cf].lucro += v.valor - v.custo;
+    }
+
+    const result = codFornecs
+      .filter(cf => fMap[cf] && fMap[cf].venda > 0)
+      .map(cf => {
+        const m  = fMap[cf];
+        const av = avariaMap[cf] || 0;
+        return {
+          id:     cf,
+          nome:   fornecNome[cf] || `Fornec ${cf}`,
+          venda:  +m.venda.toFixed(2),
+          custo:  +m.custo.toFixed(2),
+          lucro:  +m.lucro.toFixed(2),
+          msv:    m.venda > 0 ? +(m.lucro/m.venda*100).toFixed(2) : 0,
+          msc:    m.custo > 0 ? +(m.lucro/m.custo*100).toFixed(2) : 0,
+          avaria: +av.toFixed(2),
+          pct_av: m.venda > 0 ? +(av/m.venda*100).toFixed(2) : 0
+        };
+      })
+      .sort((a,b) => b.venda - a.venda);
+
+    const tv = result.reduce((s,r)=>s+r.venda,0);
+    const tl = result.reduce((s,r)=>s+r.lucro,0);
+    const tc = result.reduce((s,r)=>s+r.custo,0);
+    const ta = result.reduce((s,r)=>s+r.avaria,0);
+    res.json({
+      comprador: comp, mes: mesSel, ano: anoSel,
+      totais: {
+        venda:  +tv.toFixed(2), lucro: +tl.toFixed(2), custo: +tc.toFixed(2),
+        msv:    tv > 0 ? +(tl/tv*100).toFixed(2) : 0,
+        msc:    tc > 0 ? +(tl/tc*100).toFixed(2) : 0,
+        avaria: +ta.toFixed(2)
+      },
+      fornecedores: result
+    });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/ruptura/comprador-listas', withCache(60), async (req, res) => {
   const result = {};
   for (const [nome, nRegs] of Object.entries(NREGS_COMPRADOR)) result[nome] = nRegs;

@@ -74,12 +74,11 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* BRAND BAR */
-.brand-bar{height:36px;flex-shrink:0;background:#FACC15;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:200}
-.brand-bar .b-name{font-size:11px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:#0a0e18;display:flex;align-items:center;gap:10px}
-.brand-bar .b-dot{width:16px;height:16px;border-radius:50%;background:#0a0e18;flex-shrink:0}
-.brand-bar .b-right{display:flex;align-items:center;gap:14px}
-.brand-bar .b-slide{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(10,14,24,.55)}
-.brand-bar .b-live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(10,14,24,.5)}
+.brand-bar{height:36px;flex-shrink:0;background:#FACC15;display:flex;align-items:center;justify-content:center;position:relative;z-index:200}
+.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
+.brand-bar .b-right{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:12px}
+.brand-bar .b-slide{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(10,14,24,.5)}
+.brand-bar .b-live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(10,14,24,.45)}
 .brand-bar .b-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:bpulse 2s infinite}
 @keyframes bpulse{0%,100%{opacity:1}50%{opacity:.3}}
 
@@ -93,7 +92,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 <body>
 
 <div class="brand-bar">
-  <div class="b-name"><div class="b-dot"></div>Econômico Relatórios</div>
+  <div class="b-name">ECONÔMICO</div>
   <div class="b-right">
     <span class="b-slide">Rupturas por Comprador</span>
     <span class="b-live"><span class="b-live-dot"></span>Ao vivo</span>

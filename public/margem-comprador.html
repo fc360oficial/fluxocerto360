@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Venda · Margem · Avaria — Econômico Relatórios</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070d1a;--card:#0f172a;--border:#1e293b;--border2:#334155;
+  --brand:#FACC15;--green:#22c55e;--red:#ef4444;--orange:#f97316;--blue:#60a5fa;--purple:#a78bfa;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;display:flex;flex-direction:column}
+
+/* BRAND BAR */
+.brand-bar{height:36px;flex-shrink:0;background:#FACC15;display:flex;align-items:center;justify-content:center;position:relative;z-index:200}
+.b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
+.b-right{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:10px}
+.b-slide{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(10,14,24,.5)}
+.b-todas{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#0a0e18;color:#FACC15;padding:2px 8px;border-radius:4px}
+.b-live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(10,14,24,.45)}
+.b-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:bpulse 2s infinite}
+@keyframes bpulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* HEADER */
+.hdr{height:62px;flex-shrink:0;background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 20px;gap:14px}
+.hdr-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0}
+.hdr-nome{font-size:20px;font-weight:900;line-height:1;letter-spacing:.02em}
+.hdr-sub{font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:.08em;text-transform:uppercase}
+.hdr-kpis{margin-left:auto;display:flex;gap:8px}
+.hk{background:rgba(15,23,42,.9);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:6px 14px;text-align:center;min-width:96px}
+.hk-v{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.hk-l{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.hk-dots{display:flex;gap:6px;align-items:center;padding:0 16px}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#334155;flex-shrink:0;transition:all .3s}
+.nav-dot.active{background:var(--brand)}
+@keyframes dot-grow{from{width:8px;border-radius:50%}to{width:24px;border-radius:4px}}
+
+/* TABLE */
+.tbl-wrap{flex:1;overflow:hidden;padding:8px 14px 0;min-height:0}
+.tbl{width:100%;border-collapse:collapse}
+.tbl thead th{padding:7px 10px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);background:#060d1c;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap}
+.tbl thead th.r{text-align:right}
+.tbl tbody tr{border-bottom:1px solid rgba(30,41,59,.4)}
+.tbl tbody tr:nth-child(even){background:rgba(255,255,255,.012)}
+.tbl td{padding:8px 10px;vertical-align:middle;font-size:12px}
+.tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
+.forn-nome{font-weight:700;color:var(--text);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.forn-cod{font-size:9px;color:var(--text3);margin-top:1px}
+.rank{font-size:10px;color:var(--text3);font-weight:700;white-space:nowrap}
+.msv-great{color:#22c55e;font-weight:700}.msv-ok{color:#86efac;font-weight:700}
+.msv-warn{color:#FACC15;font-weight:700}.msv-bad{color:#ef4444;font-weight:700}
+.av-val{color:#f97316;font-weight:700}.av-zero{color:var(--text3)}
+
+/* LOADING */
+.loading{flex:1;display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text3);font-size:14px}
+.spin{width:22px;height:22px;border:2px solid #334155;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* FOOTER */
+.footer{height:40px;flex-shrink:0;background:#060d1c;border-top:1px solid rgba(250,204,21,.10);display:flex;align-items:center;padding:0 20px;gap:16px}
+.ft-next{font-size:12px;color:var(--text2);flex:1}
+.ft-next span{color:#FACC15;font-weight:800}
+.ft-close{display:flex;align-items:center;gap:5px;color:var(--text3);text-decoration:none;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0}
+.ft-close:hover{border-color:#ef4444;color:#ef4444}
+.btn-fs{position:fixed;bottom:58px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#94A3B8;font-size:16px;width:34px;height:34px;cursor:pointer;z-index:999;display:flex;align-items:center;justify-content:center;opacity:.4;transition:all .3s}
+.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}
+</style>
+</head>
+<body>
+
+<!-- BRAND BAR -->
+<div class="brand-bar">
+  <div class="b-name">ECONÔMICO</div>
+  <div class="b-right">
+    <span class="b-todas">⬡ Todas as Lojas</span>
+    <span class="b-slide" id="b-slide-nome">Venda · Margem · Avaria</span>
+    <span class="b-live"><span class="b-live-dot"></span>Ao vivo</span>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-avatar" id="avatar">—</div>
+  <div>
+    <div class="hdr-nome" id="hdr-nome">Carregando…</div>
+    <div class="hdr-sub" id="hdr-sub">Venda · Margem · Avaria · Todas as Lojas</div>
+  </div>
+  <div class="hdr-kpis">
+    <div class="hk"><div class="hk-v" style="color:#60a5fa" id="kpi-venda">—</div><div class="hk-l">Venda Total</div></div>
+    <div class="hk"><div class="hk-v" id="kpi-msv">—</div><div class="hk-l">Margem S/V</div></div>
+    <div class="hk"><div class="hk-v" id="kpi-msc">—</div><div class="hk-l">Margem S/C</div></div>
+    <div class="hk"><div class="hk-v" style="color:#f97316" id="kpi-av">—</div><div class="hk-l">Total Avarias</div></div>
+  </div>
+  <div class="hk-dots" id="nav-dots"></div>
+</div>
+
+<!-- CONTEÚDO -->
+<div id="conteudo" class="loading"><div class="spin"></div><span>Carregando dados…</span></div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="ft-next" id="ft-next">Rotação automática</div>
+  <a href="/" class="ft-close">✕ Fechar</a>
+</div>
+
+<button class="btn-fs" id="btn-fs" title="Tela cheia">⛶</button>
+
+<script>
+const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const ORDEM = ['FATIMA','KELLY','STHEPHANNY','CRISLANE','PATRICIA'];
+const CARGO = { FATIMA:'Mercearia Seca', KELLY:'Frios & Laticínios', STHEPHANNY:'Perecíveis', CRISLANE:'Hortifruti & Padaria', PATRICIA:'Bazar & Limpeza' };
+const CORES = { FATIMA:'#3b82f6', KELLY:'#10b981', STHEPHANNY:'#8b5cf6', CRISLANE:'#f43f5e', PATRICIA:'#f59e0b' };
+
+const params  = new URLSearchParams(location.search);
+let idxAtual  = parseInt(params.get('idx') || '0');
+let nomeAtual = params.get('nome') || ORDEM[0];
+let autoMode  = params.get('auto') === '1';
+const hoje    = new Date();
+let mesSel    = params.get('mes') ? parseInt(params.get('mes')) : hoje.getMonth() + 1;
+let anoSel    = params.get('ano') ? parseInt(params.get('ano')) : hoje.getFullYear();
+
+const DURACAO = 60; // segundos por comprador
+
+function semAcento(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase(); }
+function fmt(v){ return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function fmtK(v){ return v>=1000 ? 'R$ '+(v/1000).toFixed(1).replace('.',',')+'k' : fmt(v); }
+function pct(v){ return (v||0).toFixed(1)+'%'; }
+function msvClass(v){ return v>=20?'msv-great':v>=12?'msv-ok':v>=0?'msv-warn':'msv-bad'; }
+
+// Dots de navegação
+function renderDots(idx){
+  const c = document.getElementById('nav-dots');
+  c.innerHTML = ORDEM.map((n,i) =>
+    `<div class="nav-dot${i===idx?' active':''}" style="${i===idx?'background:'+CORES[n]+';animation:dot-grow '+DURACAO+'s linear forwards':''}" title="${n}"></div>`
+  ).join('');
+}
+
+// Renderiza tabela
+function renderTabela(fornecedores){
+  const el = document.getElementById('conteudo');
+  if (!fornecedores.length){
+    el.className='loading'; el.innerHTML='<span>Sem dados de venda no período.</span>'; return;
+  }
+  el.className='tbl-wrap';
+  el.innerHTML = `
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:30px">#</th>
+        <th>Fornecedor</th>
+        <th class="r">Venda R$</th>
+        <th class="r">Margem S/V</th>
+        <th class="r">Margem S/C</th>
+        <th class="r">Avaria R$</th>
+        <th class="r">Av %</th>
+      </tr></thead>
+      <tbody>${fornecedores.map((r,i) => `
+        <tr>
+          <td class="rank r">${i+1}</td>
+          <td><div class="forn-nome">${r.nome}</div><div class="forn-cod">Cód ${r.id}</div></td>
+          <td class="r" style="color:#60a5fa;font-weight:700">${fmt(r.venda)}</td>
+          <td class="r"><span class="${msvClass(r.msv)}">${pct(r.msv)}</span></td>
+          <td class="r"><span class="${msvClass(r.msc)}">${pct(r.msc)}</span></td>
+          <td class="r"><span class="${r.avaria>0?'av-val':'av-zero'}">${r.avaria>0?fmt(r.avaria):'—'}</span></td>
+          <td class="r" style="color:${r.avaria>0?'#f97316':'#475569'};font-size:10px">${r.avaria>0?pct(r.pct_av):'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function carregar(nome){
+  nomeAtual = semAcento(nome);
+  idxAtual  = ORDEM.indexOf(nomeAtual);
+  const cor = CORES[nomeAtual] || '#6366f1';
+
+  // Atualiza UI
+  document.getElementById('avatar').textContent  = nomeAtual[0];
+  document.getElementById('avatar').style.background = cor+'22';
+  document.getElementById('avatar').style.color       = cor;
+  document.getElementById('hdr-nome').textContent = nomeAtual;
+  document.getElementById('hdr-sub').textContent  = (CARGO[nomeAtual]||'') + ' · ' + MESES[mesSel] + ' ' + anoSel + ' · Todas as Lojas';
+  document.getElementById('b-slide-nome').textContent = 'Margem · ' + nomeAtual.charAt(0) + nomeAtual.slice(1).toLowerCase();
+  document.getElementById('conteudo').className='loading';
+  document.getElementById('conteudo').innerHTML='<div class="spin"></div><span>Carregando…</span>';
+  renderDots(idxAtual);
+
+  try {
+    const r = await fetch(`/api/margem-tv/comprador?comprador=${encodeURIComponent(nomeAtual)}&mes=${mesSel}&ano=${anoSel}`);
+    if (!r.ok) throw new Error('Erro '+r.status);
+    const d = await r.json();
+    const t = d.totais || {};
+
+    // KPIs header
+    document.getElementById('kpi-venda').textContent = fmtK(t.venda||0);
+    const msvEl = document.getElementById('kpi-msv');
+    msvEl.textContent = pct(t.msv||0); msvEl.className='hk-v '+msvClass(t.msv||0);
+    const mscEl = document.getElementById('kpi-msc');
+    mscEl.textContent = pct(t.msc||0); mscEl.className='hk-v '+msvClass(t.msc||0);
+    document.getElementById('kpi-av').textContent = fmtK(t.avaria||0);
+
+
+    renderTabela(d.fornecedores || []);
+  } catch(e){
+    document.getElementById('conteudo').className='loading';
+    document.getElementById('conteudo').innerHTML=`<span style="color:#ef4444">Erro: ${e.message}</span>`;
+  }
+}
+
+// Auto-rotação
+let _cd = DURACAO, _iv = null;
+function iniciarContagem(){
+  clearInterval(_iv);
+  _cd = DURACAO;
+  _iv = setInterval(() => {
+    _cd--;
+    const prox = ORDEM[(idxAtual+1) % ORDEM.length];
+    document.getElementById('ft-next').innerHTML = 'Próximo: <span>' + prox + '</span> em <span>' + _cd + 's</span>';
+    if (_cd <= 0){
+      clearInterval(_iv);
+      const next = idxAtual + 1;
+      if (next < ORDEM.length){
+        location.href = `/margem-comprador.html?nome=${ORDEM[next]}&auto=1&idx=${next}&mes=${mesSel}&ano=${anoSel}`;
+      } else {
+        try { window.parent.postMessage({ type: 'margemCycleComplete' }, '*'); } catch(_){}
+        if (window.parent === window) location.href = '/compras.html';
+      }
+    }
+  }, 1000);
+}
+
+// Tela cheia
+(function(){
+  const b = document.getElementById('btn-fs');
+  b.addEventListener('click', () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen().catch(()=>{});
+  });
+  document.addEventListener('fullscreenchange', () => { b.textContent = document.fullscreenElement?'✕':'⛶'; });
+})();
+
+// Inicia
+carregar(nomeAtual);
+if (autoMode) iniciarContagem();
+</script>
+</body>
+</html>

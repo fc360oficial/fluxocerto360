@@ -17,9 +17,12 @@
 }
 html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
 body{display:flex;flex-direction:column;height:100vh}
-.brand-bar{height:36px;flex-shrink:0;background:#FACC15;display:flex;align-items:center;justify-content:center;position:relative;z-index:200}
-.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
-.brand-bar .b-right{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:12px}
+.brand-bar{height:40px;flex-shrink:0;background:#FACC15;display:flex;align-items:center;z-index:200;padding:0 16px;gap:0}
+.brand-bar .b-left{display:flex;align-items:center;gap:8px;flex:1}
+.brand-bar .b-logo{height:26px;filter:brightness(0)}
+.brand-bar .b-title{font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#0a0e18;line-height:1}
+.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18;flex:1;text-align:center}
+.brand-bar .b-right{display:flex;align-items:center;gap:12px;flex:1;justify-content:flex-end}
 .brand-bar .b-slide{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(10,14,24,.5)}
 .brand-bar .b-live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(10,14,24,.45)}
 .brand-bar .b-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:bpulse 2s infinite}
@@ -168,21 +171,19 @@ table{border-collapse:collapse;width:100%}
 <body>
 
 <div class="brand-bar">
+  <div class="b-left">
+    <img class="b-logo" src="/logo.png" alt="Econômico">
+    <span class="b-title">Cronograma Mensal</span>
+  </div>
   <div class="b-name">ECONÔMICO</div>
   <div class="b-right">
-    <span class="b-slide" id="brand-comprador">Cronograma Mensal</span>
+    <span class="b-slide" id="brand-comprador">Mensal</span>
     <span class="b-live"><span class="b-live-dot"></span>Ao vivo</span>
   </div>
 </div>
 
 <header class="header">
-  <div class="h-left">
-    <img class="h-logo" src="/logo.png" alt="Econômico">
-    <div>
-      <div class="h-title">Cronograma Mensal</div>
-      <div class="h-sub" id="h-sub">carregando…</div>
-    </div>
-  </div>
+  <div class="h-left"></div>
   <div class="mes-label" id="mes-label" style="font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.05em"></div>
 
   <div class="h-compradora">

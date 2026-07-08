@@ -85,8 +85,15 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 /* FECHAR + TELA CHEIA */
 .h-close{display:flex;align-items:center;gap:5px;color:#64748b;text-decoration:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0;margin-left:8px}
 .h-close:hover{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.12)}
-.btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#94A3B8;font-size:16px;width:34px;height:34px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:.4;display:flex;align-items:center;justify-content:center}
+.btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#94A3B8;font-size:16px;width:34px;height:34px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:.35;display:flex;align-items:center;justify-content:center}
 .btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+.btn-slides{position:fixed;bottom:14px;right:58px;width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);color:#94A3B8;font-size:20px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:.35;display:flex;align-items:center;justify-content:center;letter-spacing:-1px;font-weight:900;padding-bottom:2px}
+.btn-slides:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+.slide-nav-menu{position:fixed;bottom:56px;right:58px;background:rgba(6,12,26,.97);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:6px;z-index:1000;display:none;flex-direction:column;gap:2px;backdrop-filter:blur(12px);min-width:210px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.slide-nav-menu.open{display:flex}
+.slide-nav-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:background .15s;font-size:13px;font-weight:600;color:#cbd5e1;border:none;background:none;width:100%;text-align:left}
+.slide-nav-opt:hover{background:rgba(249,194,0,.12);color:#F9C200}
+.slide-nav-opt.active{color:#fff;background:rgba(255,255,255,.08)}
 </style>
 </head>
 <body>
@@ -110,6 +117,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   <div class="kpi-stamp"><div class="dot-live"></div><span id="kpi-hora">carregando...</span></div>
   <a href="/" class="h-close">✕ Fechar</a>
 </div>
+<div class="slide-nav-menu" id="slide-nav-menu"></div>
+<button class="btn-slides" id="btn-slides" title="Navegar slides">⋯</button>
 <button class="btn-fs-fixed" id="btn-fs" title="Tela cheia">⛶</button>
 
 <!-- CARDS -->
@@ -315,6 +324,19 @@ setInterval(carregar, 30 * 60 * 1000);
     b.textContent = document.fullscreenElement ? '✕' : '⛶';
   });
   b.addEventListener('click', tgl);
+})();
+(function(){
+  const btn=document.getElementById('btn-slides'),menu=document.getElementById('slide-nav-menu');
+  const slides=[
+    {ic:'🛒',nome:'Central de Compras',url:'/compras.html',id:'compras'},
+    {ic:'📉',nome:'Rupturas',url:'/ruptura-painel.html',id:'ruptura'},
+    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
+    {ic:'📊',nome:'Venda / Margem / Avaria',url:'/margem-comprador.html',id:'margem'},
+  ];
+  menu.innerHTML=slides.map(s=>`<button class="slide-nav-opt${s.id==='ruptura'?' active':''}" onclick="location.href='${s.url}'"><span style="font-size:14px;width:18px;text-align:center">${s.ic}</span>${s.nome}</button>`).join('');
+  btn.addEventListener('click',e=>{e.stopPropagation();menu.classList.toggle('open');});
+  document.addEventListener('click',()=>menu.classList.remove('open'));
+  menu.addEventListener('click',e=>e.stopPropagation());
 })();
 </script>
 </body>

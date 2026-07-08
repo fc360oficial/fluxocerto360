@@ -64,8 +64,15 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .ft-next span{color:#FACC15;font-weight:800}
 .ft-close{display:flex;align-items:center;gap:5px;color:var(--text3);text-decoration:none;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0}
 .ft-close:hover{border-color:#ef4444;color:#ef4444}
-.btn-fs{position:fixed;bottom:58px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#94A3B8;font-size:16px;width:34px;height:34px;cursor:pointer;z-index:999;display:flex;align-items:center;justify-content:center;opacity:.4;transition:all .3s}
+.btn-fs{position:fixed;bottom:58px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#94A3B8;font-size:16px;width:34px;height:34px;cursor:pointer;z-index:999;display:flex;align-items:center;justify-content:center;opacity:.35;transition:all .3s}
 .btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}
+.btn-slides{position:fixed;bottom:58px;right:58px;width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);color:#94A3B8;font-size:20px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:.35;display:flex;align-items:center;justify-content:center;letter-spacing:-1px;font-weight:900;padding-bottom:2px}
+.btn-slides:hover{opacity:1;color:#FACC15;border-color:#FACC15}
+.slide-nav-menu{position:fixed;bottom:100px;right:58px;background:rgba(6,12,26,.97);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:6px;z-index:1000;display:none;flex-direction:column;gap:2px;backdrop-filter:blur(12px);min-width:210px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.slide-nav-menu.open{display:flex}
+.slide-nav-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:background .15s;font-size:13px;font-weight:600;color:#cbd5e1;border:none;background:none;width:100%;text-align:left}
+.slide-nav-opt:hover{background:rgba(250,204,21,.12);color:#FACC15}
+.slide-nav-opt.active{color:#fff;background:rgba(255,255,255,.08)}
 </style>
 </head>
 <body>
@@ -105,6 +112,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   <a href="/" class="ft-close">✕ Fechar</a>
 </div>
 
+<div class="slide-nav-menu" id="slide-nav-menu"></div>
+<button class="btn-slides" id="btn-slides" title="Navegar slides">⋯</button>
 <button class="btn-fs" id="btn-fs" title="Tela cheia">⛶</button>
 
 <script>
@@ -237,6 +246,21 @@ function iniciarContagem(){
     else document.exitFullscreen().catch(()=>{});
   });
   document.addEventListener('fullscreenchange', () => { b.textContent = document.fullscreenElement?'✕':'⛶'; });
+})();
+
+// Menu de navegação entre slides
+(function(){
+  const btn=document.getElementById('btn-slides'),menu=document.getElementById('slide-nav-menu');
+  const slides=[
+    {ic:'🛒',nome:'Central de Compras',url:'/compras.html',id:'compras'},
+    {ic:'📉',nome:'Rupturas',url:'/ruptura-painel.html',id:'ruptura'},
+    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
+    {ic:'📊',nome:'Venda / Margem / Avaria',url:'/margem-comprador.html',id:'margem'},
+  ];
+  menu.innerHTML=slides.map(s=>`<button class="slide-nav-opt${s.id==='margem'?' active':''}" onclick="location.href='${s.url}'"><span style="font-size:14px;width:18px;text-align:center">${s.ic}</span>${s.nome}</button>`).join('');
+  btn.addEventListener('click',e=>{e.stopPropagation();menu.classList.toggle('open');});
+  document.addEventListener('click',()=>menu.classList.remove('open'));
+  menu.addEventListener('click',e=>e.stopPropagation());
 })();
 
 // Inicia

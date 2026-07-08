@@ -418,6 +418,22 @@ td.ck{text-align:center;width:18px}
 
 <script>
 document.getElementById('dt').textContent = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+// Adiciona coluna # com numero sequencial em cada tabela
+document.querySelectorAll('.grupo table').forEach(function(table){
+  var th = document.createElement('th');
+  th.textContent = '#';
+  th.style.cssText = 'width:16px;text-align:right;padding-right:5px;';
+  var headerRow = table.querySelector('thead tr');
+  headerRow.insertBefore(th, headerRow.firstChild);
+
+  table.querySelectorAll('tbody tr').forEach(function(tr, i){
+    var td = document.createElement('td');
+    td.textContent = i + 1;
+    td.style.cssText = 'font-size:7.5px;color:#9ca3af;text-align:right;padding-right:5px;font-weight:700;width:16px;white-space:nowrap;';
+    tr.insertBefore(td, tr.firstChild);
+  });
+});
 </script>
 </body>
 </html>

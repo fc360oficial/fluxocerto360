@@ -2787,58 +2787,6 @@ app.get('/api/ruptura/compradores', withCache(60), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DEBUG temporário — registros de avaria para um comprador/fornecedor específico
-app.get('/api/debug/avaria-comprador', async (req, res) => {
-  try {
-    const nome = (req.query.nome || 'FATIMA').toUpperCase();
-    const cf   = req.query.cf ? parseInt(req.query.cf) : null;
-    const mes  = parseInt(req.query.mes || (new Date().getMonth()+1));
-    const ano  = parseInt(req.query.ano  || new Date().getFullYear());
-    const dIni = `${ano}-${String(mes).padStart(2,'0')}-01`;
-    const dFim = dFimMes(ano, mes);
-
-    // pega nRegs do comprador
-    const nRegRows = await q(
-      `SELECT nReg FROM central.c_cotacao_lista WHERE UPPER(TRIM(comprador))=? AND ativo=1`,
-      [nome]
-    );
-    const nRegs = nRegRows.map(r => r.nReg);
-    if (!nRegs.length) return res.json({ erro: 'comprador não encontrado', nome });
-
-    // pega produtos
-    const phN = nRegs.map(()=>'?').join(',');
-    const itemRows = await q(
-      `SELECT DISTINCT CodigoBarra FROM central.c_cotacao_lista_itens WHERE nReg IN (${phN})`,
-      nRegs
-    );
-    const codigos = itemRows.map(r => r.CodigoBarra).filter(Boolean);
-    if (!codigos.length) return res.json({ erro: 'sem produtos', nRegs });
-
-    // filtra pelo CodFornec se informado — SEM filtro de data (avaria é acumulada)
-    let phC = codigos.map(()=>'?').join(',');
-    let where = `CodigoBarras IN (${phC}) AND CodFornec > 0 AND Status IN (0,2)`;
-    let params = [...codigos];
-    if (cf) { where += ' AND CodFornec=?'; params.push(cf); }
-
-    const rows = await q(
-      `SELECT nLoja, CodFornec, CodigoBarras, Descricao, Status, DataLan, Total
-       FROM central.avariaconsumo
-       WHERE ${where}
-       ORDER BY CodFornec, nLoja, DataLan`,
-      params
-    );
-
-    const resumo = {};
-    for (const r of rows) {
-      const k = r.CodFornec;
-      if (!resumo[k]) resumo[k] = { CodFornec: k, total: 0, registros: 0 };
-      resumo[k].total += parseFloat(r.Total || 0);
-      resumo[k].registros++;
-    }
-
-    res.json({ nome, cf, mes, ano, dIni, dFim, nRegs, totalProdutos: codigos.length, resumo, detalhe: rows });
-  } catch(e) { res.status(500).json({ error: e.message }); }
-});
 
 // Margem TV — todas as lojas somadas por comprador
 app.get('/api/margem-tv/comprador', withCache(5), async (req, res) => {

@@ -58,7 +58,7 @@ body{display:flex;flex-direction:column;height:100vh}
 .clock-sub{font-size:11px;color:var(--text2);margin-top:2px;text-align:right;font-weight:500}
 
 /* ── MÊS NAV ── */
-.mes-nav{display:flex;align-items:center;gap:12px}
+.mes-nav{display:none}
 .mes-btn{background:rgba(255,255,255,.06);border:1px solid var(--border-md);
   color:var(--text2);border-radius:8px;padding:6px 12px;cursor:pointer;
   font-size:13px;font-weight:700;transition:all .2s}
@@ -183,11 +183,7 @@ table{border-collapse:collapse;width:100%}
       <div class="h-sub" id="h-sub">carregando…</div>
     </div>
   </div>
-  <div class="mes-nav">
-    <button class="mes-btn" onclick="mudarMes(-1)">‹</button>
-    <div class="mes-label" id="mes-label">—</div>
-    <button class="mes-btn" onclick="mudarMes(1)">›</button>
-  </div>
+  <div class="mes-label" id="mes-label" style="font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.05em"></div>
 
   <div class="h-compradora">
     <div class="h-avatar" id="h-avatar"></div>

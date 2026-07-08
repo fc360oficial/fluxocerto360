@@ -223,10 +223,12 @@ const MESES_EX = ['janeiro','fevereiro','março','abril','maio','junho','julho',
 const MESES_N  = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 function atualizarRelogio() {
   const n = new Date();
-  document.getElementById('clock').textContent =
-    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
-  document.getElementById('clock-date').textContent = `${n.getDate()} de ${MESES_EX[n.getMonth()]} de ${n.getFullYear()}`;
-  document.getElementById('clock-sem').textContent  = SEMANAS[n.getDay()];
+  const cl = document.getElementById('clock');
+  const cd = document.getElementById('clock-date');
+  const cs = document.getElementById('clock-sem');
+  if (cl) cl.textContent = String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
+  if (cd) cd.textContent = `${n.getDate()} de ${MESES_EX[n.getMonth()]} de ${n.getFullYear()}`;
+  if (cs) cs.textContent = SEMANAS[n.getDay()];
 }
 setInterval(atualizarRelogio, 1000);
 atualizarRelogio();

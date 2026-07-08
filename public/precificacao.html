@@ -229,8 +229,10 @@ const LOJAS = {1:'Loja 1',2:'Loja 2',3:'Loja 3',4:'Loja 4',5:'Loja 5',6:'Loja 6'
 
 function tick() {
   const n = new Date();
-  document.getElementById('clock').textContent = n.toLocaleTimeString('pt-BR');
-  document.getElementById('clock-date').textContent = n.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const cl = document.getElementById('clock');
+  const cd = document.getElementById('clock-date');
+  if (cl) cl.textContent = n.toLocaleTimeString('pt-BR');
+  if (cd) cd.textContent = n.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 }
 setInterval(tick, 1000); tick();
 

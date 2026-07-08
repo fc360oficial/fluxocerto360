@@ -201,8 +201,21 @@ table{border-collapse:collapse;width:100%}
     <div id="conteudo"><div class="loading">Carregando…</div></div>
   </div>
 </main>
-<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}</style>
-<button class="btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia (use F11 para manter entre telas)">⛶</button>
+<style>
+.btn-corner{position:fixed;bottom:14px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0;display:flex;align-items:center;justify-content:center}
+.btn-corner:hover{opacity:1!important;color:#FACC15;border-color:#FACC15}
+.btn-fs{right:16px}.btn-menu{right:58px;font-size:22px;letter-spacing:-1px;font-weight:900;padding-bottom:2px}
+.btn-corner:hover,.btn-corner:focus{opacity:1}
+.slide-menu{position:fixed;bottom:58px;right:58px;background:rgba(8,17,31,.97);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:6px;z-index:1000;display:none;flex-direction:column;gap:2px;backdrop-filter:blur(12px);min-width:200px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.slide-menu.open{display:flex}
+.slide-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:background .15s;font-size:13px;font-weight:600;color:#cbd5e1;border:none;background:none;width:100%;text-align:left}
+.slide-opt:hover{background:rgba(250,204,21,.12);color:#FACC15}
+.slide-opt .so-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.slide-opt.active{color:#fff;background:rgba(255,255,255,.08)}
+</style>
+<div class="slide-menu" id="slide-menu"></div>
+<button class="btn-corner btn-menu" id="btn-menu" title="Mudar comprador">⋯</button>
+<button class="btn-corner btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia">⛶</button>
 
 <script>
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -901,18 +914,46 @@ if (isAuto) {
   }, 1000);
 }
 
-// Relógio — igual ao comprador.html
-function updateClock() {
-  const now = new Date();
-  const p = n => String(n).padStart(2,'0');
-  document.getElementById('clock').textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
-  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  document.getElementById('clock-sub').textContent =
-    `${dias[now.getDay()]}, ${p(now.getDate())} ${meses[now.getMonth()]} ${now.getFullYear()}`;
-}
-updateClock();
-setInterval(updateClock, 1000);
+// ── MENU DE COMPRADORES ──
+(function(){
+  const btn  = document.getElementById('btn-menu');
+  const menu = document.getElementById('slide-menu');
+  const ordem = ['FATIMA','KELLY','STHEPHANNY','CRISLANE','PATRICIA'];
+  const cargos = {
+    FATIMA:'Alimentos',KELLY:'Frios & Laticínios',
+    STHEPHANNY:'Perfumaria & Limpeza',CRISLANE:'Hortifruti & Padaria',PATRICIA:'Bebidas'
+  };
+  const cores = {
+    FATIMA:'#6366f1',KELLY:'#f43f5e',STHEPHANNY:'#a855f7',CRISLANE:'#14b8a6',PATRICIA:'#f59e0b'
+  };
+
+  function buildMenu() {
+    menu.innerHTML = ordem.map(n => {
+      const ativo = n === nomeSel ? 'active' : '';
+      return `<button class="slide-opt ${ativo}" onclick="irPara('${n}')">
+        <span class="so-dot" style="background:${cores[n]}"></span>
+        <span>${n.charAt(0)+n.slice(1).toLowerCase()}</span>
+        <span style="font-size:10px;color:#64748b;margin-left:auto">${cargos[n]}</span>
+      </button>`;
+    }).join('');
+  }
+
+  window.irPara = function(nome) {
+    menu.classList.remove('open');
+    location.href = '/mensal.html?nome=' + encodeURIComponent(nome);
+  };
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    buildMenu();
+    menu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => menu.classList.remove('open'));
+  menu.addEventListener('click', e => e.stopPropagation());
+
+  // torna botões visíveis com opacity baixa
+  [btn, document.querySelector('.btn-fs')].forEach(b => { if(b) b.style.opacity = '0.35'; });
+})();
 
 carregar();
 </script>

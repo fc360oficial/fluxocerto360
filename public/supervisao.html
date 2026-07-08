@@ -48,16 +48,14 @@ iframe.visivel{opacity:1;pointer-events:auto}
 <iframe id="fr-comptvs"  title="Comparativo TV"></iframe>
 
 <div class="controles">
-  <!-- rotação ativa: Diretoria → Precificação → Compras → Rupturas → Margem → Mensal -->
+  <!-- rotação ativa: Diretoria → Comparativo TV → Precificação → Compras → Rupturas → Margem → Mensal -->
   <div class="dot ativo" id="dot-d"  title="Diretoria"></div>
+  <div class="dot"       id="dot-ct" title="Comparativo TV"></div>
   <div class="dot"       id="dot-p"  title="Precificação"></div>
   <div class="dot"       id="dot-c"  title="Compras"></div>
   <div class="dot"       id="dot-r"  title="Rupturas"></div>
   <div class="dot"       id="dot-mg" title="Margem"></div>
   <div class="dot"       id="dot-m"  title="Mensal"></div>
-  <div class="sep"></div>
-  <!-- manual -->
-  <div class="dot off"   id="dot-ct" title="Comparativo TV (manual)"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 </div>
@@ -85,8 +83,8 @@ const dotM  = document.getElementById('dot-m');
 const dotCT = document.getElementById('dot-ct');
 const btnFs = document.getElementById('btn-fs');
 
-const todosFrames = [frD,frP,frC,frR,frMG,frM,frCT];
-const todosDots   = [dotD,dotP,dotC,dotR,dotMG,dotM,dotCT];
+const todosFrames = [frD,frCT,frP,frC,frR,frMG,frM];
+const todosDots   = [dotD,dotCT,dotP,dotC,dotR,dotMG,dotM];
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
@@ -122,21 +120,21 @@ function mostrarMensal() {
   mostrar(frM, dotM, 'mensal');
 }
 
-// ── Manual ──
 function mostrarComparativoTV() {
   frCT.src = BASE + '/comparativo-tv.html' + TV;
   mostrar(frCT, dotCT, 'comptvs');
 }
 
-// ── Rotação: Diretoria → Precificação → Compras → Rupturas → Margem → Mensal → Diretoria ──
+// ── Rotação: Diretoria → Comparativo TV → Precificação → Compras → Rupturas → Margem → Mensal → Diretoria ──
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
-  if (e.data.type === 'diretoriaCycleComplete'  && atual === 'diretoria') mostrarPrecif();
-  if (e.data.type === 'carouselCycleComplete'   && atual === 'precif')    mostrarCompras();
-  if (e.data.type === 'comprasCycleComplete'    && atual === 'compras')   mostrarRuptura();
-  if (e.data.type === 'rupturaCycleComplete'    && atual === 'ruptura')   mostrarMargem();
-  if (e.data.type === 'margemCycleComplete'     && atual === 'margem')    mostrarMensal();
-  if (e.data.type === 'mensalCycleComplete'     && atual === 'mensal')    mostrarDiretoria();
+  if (e.data.type === 'diretoriaCycleComplete'      && atual === 'diretoria') mostrarComparativoTV();
+  if (e.data.type === 'comparativoTvCycleComplete'  && atual === 'comptvs')   mostrarPrecif();
+  if (e.data.type === 'carouselCycleComplete'       && atual === 'precif')    mostrarCompras();
+  if (e.data.type === 'comprasCycleComplete'        && atual === 'compras')   mostrarRuptura();
+  if (e.data.type === 'rupturaCycleComplete'        && atual === 'ruptura')   mostrarMargem();
+  if (e.data.type === 'margemCycleComplete'         && atual === 'margem')    mostrarMensal();
+  if (e.data.type === 'mensalCycleComplete'         && atual === 'mensal')    mostrarDiretoria();
 });
 
 // ── Tela cheia ──

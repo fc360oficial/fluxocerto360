@@ -2786,6 +2786,27 @@ app.get('/api/ruptura/compradores', withCache(60), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// DEBUG temporário — avaria de um fornecedor específico por loja e status
+app.get('/api/debug/avaria-fornec', async (req, res) => {
+  try {
+    const cf = parseInt(req.query.cf || '1421');
+    const mes = parseInt(req.query.mes || (new Date().getMonth()+1));
+    const ano = parseInt(req.query.ano || new Date().getFullYear());
+    const dIni = `${ano}-${String(mes).padStart(2,'0')}-01`;
+    const dFim = dFimMes(ano, mes);
+    const rows = await q(
+      `SELECT nLoja, Status, COUNT(*) as qtd, SUM(Total) as total,
+              GROUP_CONCAT(DISTINCT CodigoBarras ORDER BY CodigoBarras SEPARATOR ',' LIMIT 5) as codigos
+       FROM central.avariaconsumo
+       WHERE CodFornec=? AND DataLan BETWEEN ? AND ?
+       GROUP BY nLoja, Status
+       ORDER BY nLoja, Status`,
+      [cf, dIni, dFim]
+    );
+    res.json({ cf, mes, ano, dIni, dFim, rows });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // Margem TV — todas as lojas somadas por comprador
 app.get('/api/margem-tv/comprador', withCache(5), async (req, res) => {
   try {

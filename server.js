@@ -27,7 +27,17 @@ function withCache(ttlMin) {
 }
 
 // Carrega usuários do arquivo
-const usuarios = JSON.parse(fs.readFileSync(path.join(__dirname, 'usuarios.json'), 'utf8'));
+const usuariosPath = path.join(__dirname, 'usuarios.json');
+let usuarios;
+try {
+  usuarios = JSON.parse(fs.readFileSync(usuariosPath, 'utf8'));
+} catch(e) {
+  // Arquivo não existe (primeiro start ou deletado pelo git) — cria com admin padrão
+  usuarios = [{ id:1, nome:'Tiago Freire', usuario:'tiago.freire',
+    senha_hash:'$2b$10$6.LaA51gwHjaNt32tJRuNuDZy.7E1ordbtVg1mfdk3T67w2aE1Mpa',
+    perfil:'admin', comprador_nome:null }];
+  fs.writeFileSync(usuariosPath, JSON.stringify(usuarios, null, 2));
+}
 
 // Sessão (8 horas)
 app.use(session({
@@ -107,7 +117,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 function salvarUsuarios() {
-  fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(usuarios, null, 2));
+  fs.writeFileSync(usuariosPath, JSON.stringify(usuarios, null, 2));
 }
 
 app.get('/api/admin/usuarios', requireAdmin, (req, res) => {

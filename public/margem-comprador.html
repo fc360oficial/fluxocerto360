@@ -37,8 +37,10 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .nav-dot.active{background:var(--brand)}
 @keyframes dot-grow{from{width:8px;border-radius:50%}to{width:24px;border-radius:4px}}
 
+/* SCROLL WRAP */
+#scroll-wrap{flex:1;overflow:hidden;position:relative;min-height:0}
 /* TABLE */
-.tbl-wrap{flex:1;overflow:hidden;padding:8px 14px 0;min-height:0}
+.tbl-wrap{padding:8px 14px 0}
 .tbl{width:100%;border-collapse:collapse}
 .tbl thead th{padding:7px 10px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);background:#060d1c;border-bottom:1px solid var(--border2);text-align:left;white-space:nowrap}
 .tbl thead th.r{text-align:right}
@@ -54,7 +56,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .av-val{color:#f97316;font-weight:700}.av-zero{color:var(--text3)}
 
 /* LOADING */
-.loading{flex:1;display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text3);font-size:14px}
+.loading{height:100%;display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text3);font-size:14px}
 .spin{width:22px;height:22px;border:2px solid #334155;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -104,7 +106,9 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 </div>
 
 <!-- CONTEÚDO -->
-<div id="conteudo" class="loading"><div class="spin"></div><span>Carregando dados…</span></div>
+<div id="scroll-wrap">
+  <div id="conteudo" class="loading"><div class="spin"></div><span>Carregando dados…</span></div>
+</div>
 
 <!-- FOOTER -->
 <div class="footer">
@@ -210,10 +214,33 @@ async function carregar(nome){
 
 
     renderTabela(d.fornecedores || []);
+    iniciarScroll();
   } catch(e){
     document.getElementById('conteudo').className='loading';
     document.getElementById('conteudo').innerHTML=`<span style="color:#ef4444">Erro: ${e.message}</span>`;
   }
+}
+
+// Carrossel de scroll
+let _raf = null, _scrollY = 0;
+function iniciarScroll(){
+  if (_raf){ cancelAnimationFrame(_raf); _raf = null; }
+  _scrollY = 0;
+  const wrap = document.getElementById('scroll-wrap');
+  const el   = document.getElementById('conteudo');
+  if (!wrap || !el) return;
+  el.style.transform = 'translateY(0)';
+  if (el.scrollHeight <= wrap.clientHeight + 4) return; // cabe na tela, sem scroll
+  const orig = el.innerHTML;
+  el.innerHTML = orig + '<div style="height:24px"></div>' + orig;
+  const PX = 0.35; // px por frame ~21px/s
+  function step(){
+    _scrollY += PX;
+    if (_scrollY >= el.scrollHeight / 2) _scrollY = 0;
+    el.style.transform = `translateY(-${_scrollY}px)`;
+    _raf = requestAnimationFrame(step);
+  }
+  setTimeout(() => { _raf = requestAnimationFrame(step); }, 1800);
 }
 
 // Auto-rotação

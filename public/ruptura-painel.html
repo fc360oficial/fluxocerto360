@@ -114,7 +114,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   <div class="kpi-item yellow"><div class="val" id="kpi-e">—</div><div class="lbl">Em Risco</div></div>
   <div class="kpi-item purple"><div class="val" id="kpi-x">—</div><div class="lbl">Excesso</div></div>
   <div class="kpi-item green"><div class="val" id="kpi-f">—</div><div class="lbl">Fornecedores</div></div>
-  <div class="kpi-stamp"><div class="dot-live"></div><span id="kpi-hora">carregando...</span></div>
+  <div class="kpi-stamp"><div class="dot-live"></div><span id="kpi-hora">carregando...</span><span id="cd-rup" style="margin-left:14px;color:#FACC15;font-weight:800;font-size:12px;font-variant-numeric:tabular-nums"></span></div>
   <a href="/" class="h-close">✕ Fechar</a>
 </div>
 <div class="slide-nav-menu" id="slide-nav-menu"></div>
@@ -253,6 +253,19 @@ function renderPage(p) {
     `<button class="car-dot${i===p?' active':''}"></button>`).join('');
 }
 
+let _cdIv = null;
+function startCountdown() {
+  if (_cdIv) clearInterval(_cdIv);
+  let cd = DURATION / 1000;
+  const el = document.getElementById('cd-rup');
+  if (el) el.textContent = cd + 's';
+  _cdIv = setInterval(() => {
+    cd--;
+    if (el) el.textContent = cd + 's';
+    if (cd <= 0) clearInterval(_cdIv);
+  }, 1000);
+}
+
 function advancePage() {
   const next = (_page + 1) % _pages.length;
   if (next === 0) {
@@ -261,6 +274,7 @@ function advancePage() {
   }
   _page = next;
   renderPage(_page);
+  startCountdown();
   _timer = setTimeout(advancePage, DURATION);
 }
 
@@ -270,6 +284,7 @@ function startCarousel() {
   if (!_pages.length) return;
   _page = 0;
   renderPage(0);
+  startCountdown();
   if (_timer) clearTimeout(_timer);
   _timer = setTimeout(advancePage, DURATION);
 }

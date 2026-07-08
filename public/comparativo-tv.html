@@ -6,13 +6,28 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f0;font-family:'Segoe UI',sans-serif}
-body{display:flex;flex-direction:column;padding:10px 18px}
+body{display:flex;flex-direction:column;padding:0}
 
-/* HEADER */
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;
-  background:linear-gradient(135deg,#0f1e3a,#0a1628);border-bottom:2px solid #F9C200;height:40px}
+/* BARRA AMARELA */
+.brand-bar{
+  height:36px;flex-shrink:0;background:#FACC15;
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
+.brand-bar .b-right{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
+.h-close{
+  display:flex;align-items:center;gap:5px;color:#0a0e18;text-decoration:none;
+  font-size:11px;font-weight:700;padding:5px 12px;
+  border-radius:6px;border:1px solid rgba(0,0,0,.2);
+  background:rgba(0,0,0,.08);transition:all .2s;
+}
+.h-close:hover{background:rgba(239,68,68,.15);border-color:#EF4444;color:#EF4444}
+
+/* HEADER AZUL */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+  background:linear-gradient(135deg,#0f1e3a,#0a1628);border-bottom:1px solid rgba(255,255,255,.1);height:52px;flex-shrink:0}
 .hdr-left{display:flex;align-items:center;gap:10px}
-.hdr-left img{height:26px;width:auto;filter:brightness(0) invert(1) sepia(1) saturate(4) hue-rotate(-8deg)}
+.hdr-left img{height:32px;width:auto;filter:brightness(0) invert(1) sepia(1) saturate(4) hue-rotate(-8deg)}
 .hdr-title{font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:.5px}
 .hdr-loja{font-size:14px;font-weight:800;color:#F9C200;letter-spacing:1px}
 .hdr-right{display:flex;align-items:center;gap:10px}
@@ -20,19 +35,13 @@ body{display:flex;flex-direction:column;padding:10px 18px}
 .ldot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .3s}
 .ldot.ativo{background:#F9C200;transform:scale(1.35)}
 .mes-badge{font-size:10px;color:#64748b;font-weight:600;background:#1e293b;padding:3px 8px;border-radius:20px}
-.h-close{
-  display:flex;align-items:center;gap:6px;color:#94a3b8;text-decoration:none;
-  font-size:12px;font-weight:600;padding:5px 12px;border-radius:8px;
-  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);transition:all .2s;margin-left:8px;
-}
-.h-close:hover{border-color:rgba(239,68,68,.3);color:#ef4444;background:rgba(239,68,68,.06)}
 
 /* PROGRESS BAR */
 .prog-wrap{height:3px;background:#1e293b}
 .prog-bar{height:100%;background:linear-gradient(90deg,#3b82f6,#F9C200);width:0%}
 
 /* LAYOUT */
-.main{display:flex;flex-direction:column;flex:1;min-height:0;padding:4px 0;gap:6px}
+.main{display:flex;flex-direction:column;flex:1;min-height:0;padding:6px 14px 10px;gap:6px}
 
 /* KPI ROW — horizontal no topo */
 .kpi-row{display:flex;gap:4px;flex-shrink:0}
@@ -95,6 +104,11 @@ body{display:flex;flex-direction:column;padding:10px 18px}
 </head>
 <body>
 
+<div class="brand-bar">
+  <span class="b-name">Econômico</span>
+  <div class="b-right"><a href="/" class="h-close">✕ Fechar</a></div>
+</div>
+
 <div class="hdr">
   <div class="hdr-left">
     <img src="/logo.png" alt="Econômico">
@@ -113,7 +127,6 @@ body{display:flex;flex-direction:column;padding:10px 18px}
       <div class="ldot" id="ld5"></div>
       <div class="ldot" id="ld6"></div>
     </div>
-    <a href="/" class="h-close">✕ Fechar</a>
   </div>
 </div>
 <div class="prog-wrap"><div class="prog-bar" id="prog"></div></div>

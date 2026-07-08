@@ -48,7 +48,6 @@ iframe.visivel{opacity:1;pointer-events:auto}
 <iframe id="fr-ruptura"  title="Rupturas Compras"></iframe>
 <iframe id="fr-margem"   title="Margem Compradores"></iframe>
 <iframe id="fr-mensal"   title="Mensal Compradores"></iframe>
-<iframe id="fr-ciclo"    title="Comprador · Análise"></iframe>
 
 <div class="controles">
   <!-- rotação ativa -->
@@ -61,7 +60,6 @@ iframe.visivel{opacity:1;pointer-events:auto}
   <div class="dot off"   id="dot-d"  title="Diretoria (manual)"></div>
   <div class="dot off"   id="dot-ct" title="Comparativo (manual)"></div>
   <div class="dot off"   id="dot-p"  title="Precificação (manual)"></div>
-  <div class="dot off"   id="dot-k"  title="Análise Comprador (manual)"></div>
   <div class="sep"></div>
   <button class="btn-fs" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 </div>
@@ -79,8 +77,6 @@ const frC  = document.getElementById('fr-compras');
 const frR  = document.getElementById('fr-ruptura');
 const frMG = document.getElementById('fr-margem');
 const frM  = document.getElementById('fr-mensal');
-const frK  = document.getElementById('fr-ciclo');
-
 const dotC  = document.getElementById('dot-c');
 const dotR  = document.getElementById('dot-r');
 const dotMG = document.getElementById('dot-mg');
@@ -88,11 +84,10 @@ const dotM  = document.getElementById('dot-m');
 const dotD  = document.getElementById('dot-d');
 const dotCT = document.getElementById('dot-ct');
 const dotP  = document.getElementById('dot-p');
-const dotK  = document.getElementById('dot-k');
 const btnFs = document.getElementById('btn-fs');
 
-const todosFrames = [frD,frCT,frP,frC,frR,frMG,frM,frK];
-const todosDots   = [dotC,dotR,dotMG,dotM,dotD,dotCT,dotP,dotK];
+const todosFrames = [frD,frCT,frP,frC,frR,frMG,frM];
+const todosDots   = [dotC,dotR,dotMG,dotM,dotD,dotCT,dotP];
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
@@ -134,10 +129,6 @@ function mostrarPrecif() {
   mostrar(frP, dotP, 'precif');
   try { frP.contentWindow.postMessage({ type: 'activate' }, '*'); } catch(_) {}
 }
-function mostrarCiclo() {
-  frK.src = BASE + '/comprador.html?nome=FATIMA&auto=1&idx=0' + (TV ? '&tv=1' : '');
-  mostrar(frK, dotK, 'ciclo');
-}
 
 // ── Rotação automática: Compras → Rupturas → Margem → Mensal → Compras ──
 window.addEventListener('message', (e) => {
@@ -168,7 +159,6 @@ dotM.addEventListener('click', mostrarMensal);
 dotD.addEventListener('click', mostrarDiretoria);
 dotCT.addEventListener('click', mostrarComparativoTV);
 dotP.addEventListener('click', mostrarPrecif);
-dotK.addEventListener('click', mostrarCiclo);
 
 // ── Início: Compras ──
 mostrarCompras();

@@ -243,17 +243,21 @@ function iniciarScroll(){
   setTimeout(() => { _raf = requestAnimationFrame(step); }, 1800);
 }
 
-// Auto-rotação
+// Contagem — sempre visível; navegação só em autoMode
 let _cd = DURACAO, _iv = null;
 function iniciarContagem(){
   clearInterval(_iv);
   _cd = DURACAO;
+  const prox = ORDEM[(idxAtual+1) % ORDEM.length];
+  document.getElementById('ft-next').innerHTML =
+    'Próximo: <span>' + prox.charAt(0)+prox.slice(1).toLowerCase() + '</span> em <span id="cd-val">' + _cd + 's</span>';
   _iv = setInterval(() => {
     _cd--;
-    const prox = ORDEM[(idxAtual+1) % ORDEM.length];
-    document.getElementById('ft-next').innerHTML = 'Próximo: <span>' + prox + '</span> em <span>' + _cd + 's</span>';
+    const el = document.getElementById('cd-val');
+    if (el) el.textContent = _cd + 's';
     if (_cd <= 0){
       clearInterval(_iv);
+      if (!autoMode) return;
       const next = idxAtual + 1;
       if (next < ORDEM.length){
         location.href = `/margem-comprador.html?nome=${ORDEM[next]}&auto=1&idx=${next}&mes=${mesSel}&ano=${anoSel}`;
@@ -292,7 +296,7 @@ function iniciarContagem(){
 
 // Inicia
 carregar(nomeAtual);
-if (autoMode) iniciarContagem();
+iniciarContagem();
 </script>
 </body>
 </html>

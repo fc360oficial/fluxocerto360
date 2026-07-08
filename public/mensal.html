@@ -215,7 +215,7 @@ table{border-collapse:collapse;width:100%}
 </style>
 <div class="slide-menu" id="slide-menu"></div>
 <button class="btn-corner btn-menu" id="btn-menu" title="Mudar comprador">⋯</button>
-<button class="btn-corner btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia">⛶</button>
+<button class="btn-corner btn-fs" id="btn-fs" onclick="if(window.parent!==window){window.parent.postMessage({type:'requestFullscreen'},'*');}else if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia">⛶</button>
 
 <script>
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',

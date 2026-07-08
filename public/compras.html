@@ -1177,7 +1177,7 @@ setInterval(atualizarStatusReal, 2*60*1000);
 <button class="btn-slides" id="btn-slides" title="Navegar slides">⋯</button>
 <button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 <script>
-(function(){var b=document.getElementById('btn-fs');function tgl(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});}document.addEventListener('fullscreenchange',function(){b.textContent=document.fullscreenElement?'✕':'⛶';});b.addEventListener('click',tgl);})();
+(function(){var b=document.getElementById('btn-fs');function tgl(){if(window.parent!==window){window.parent.postMessage({type:'requestFullscreen'},'*');return;}if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});}document.addEventListener('fullscreenchange',function(){b.textContent=document.fullscreenElement?'✕':'⛶';});b.addEventListener('click',tgl);})();
 (function(){
   const btn=document.getElementById('btn-slides'),menu=document.getElementById('slide-nav-menu');
   const slides=[

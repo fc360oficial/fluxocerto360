@@ -332,6 +332,7 @@ setInterval(carregar, 30 * 60 * 1000);
 (function(){
   var b = document.getElementById('btn-fs');
   function tgl() {
+    if (window.parent !== window) { window.parent.postMessage({ type: 'requestFullscreen' }, '*'); return; }
     if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
     else document.exitFullscreen().catch(()=>{});
   }

@@ -399,6 +399,7 @@ function proximaLoja() {
 // Fullscreen
 const btnFs = document.getElementById('btn-fs');
 function toggleFs() {
+  if (window.parent !== window) { window.parent.postMessage({ type: 'requestFullscreen' }, '*'); return; }
   if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
   else document.exitFullscreen().catch(()=>{});
 }

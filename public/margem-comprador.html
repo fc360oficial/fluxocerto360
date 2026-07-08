@@ -276,6 +276,7 @@ function iniciarContagem(){
 (function(){
   const b = document.getElementById('btn-fs');
   b.addEventListener('click', () => {
+    if (window.parent !== window) { window.parent.postMessage({ type: 'requestFullscreen' }, '*'); return; }
     if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
     else document.exitFullscreen().catch(()=>{});
   });

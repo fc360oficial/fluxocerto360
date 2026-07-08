@@ -57,7 +57,15 @@ app.use((req, res, next) => {
   if (publico.includes(req.path)) return next();
   const ext = req.path.split('.').pop().toLowerCase();
   if (['js','css','png','jpg','jpeg','gif','svg','ico','woff','woff2','ttf','eot','map'].includes(ext)) return next();
-  if (req.session && req.session.user) return next();
+  if (req.session && req.session.user) {
+    // Rotas exclusivas de admin
+    if ((req.path === '/admin-usuarios.html' || req.path.startsWith('/api/admin/')) &&
+        req.session.user.perfil !== 'admin') {
+      if (req.path.startsWith('/api/')) return res.status(403).json({ error: 'Sem permissão' });
+      return res.redirect('/hub.html');
+    }
+    return next();
+  }
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Não autenticado' });
   return res.redirect('/login.html');
 });
@@ -77,8 +85,11 @@ app.post('/api/login', async (req, res) => {
   if (!user) return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
   const ok = await bcrypt.compare(String(senha), user.senha_hash);
   if (!ok) return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
-  req.session.user = { id: user.id, nome: user.nome, usuario: user.usuario };
-  res.json({ ok: true, nome: user.nome });
+  const perfil = user.perfil || 'gerente';
+  req.session.user = { id: user.id, nome: user.nome, usuario: user.usuario, perfil, comprador_nome: user.comprador_nome || null };
+  let redirect = '/hub.html';
+  if (perfil === 'comprador' && user.comprador_nome) redirect = '/comprador.html?nome=' + encodeURIComponent(user.comprador_nome);
+  res.json({ ok: true, nome: user.nome, redirect });
 });
 
 app.get('/api/logout', (req, res) => {
@@ -88,6 +99,57 @@ app.get('/api/logout', (req, res) => {
 app.get('/api/me', (req, res) => {
   if (!req.session?.user) return res.status(401).json({ error: 'Não autenticado' });
   res.json(req.session.user);
+});
+
+// ── ADMIN: CRUD de usuários ──────────────────────────────────
+function requireAdmin(req, res, next) {
+  if (req.session?.user?.perfil !== 'admin') return res.status(403).json({ error: 'Sem permissão' });
+  next();
+}
+function salvarUsuarios() {
+  fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(usuarios, null, 2));
+}
+
+app.get('/api/admin/usuarios', requireAdmin, (req, res) => {
+  res.json(usuarios.map(u => ({ id: u.id, nome: u.nome, usuario: u.usuario, perfil: u.perfil || 'gerente', comprador_nome: u.comprador_nome || null })));
+});
+
+app.post('/api/admin/usuarios', requireAdmin, async (req, res) => {
+  const { nome, usuario, senha, perfil, comprador_nome } = req.body || {};
+  if (!nome || !usuario || !senha || !perfil) return res.status(400).json({ error: 'Campos obrigatórios: nome, usuario, senha, perfil' });
+  if (usuarios.find(u => u.usuario === usuario.toLowerCase().trim())) return res.status(400).json({ error: 'Usuário já existe' });
+  const hash = await bcrypt.hash(String(senha), 10);
+  const novoId = Math.max(...usuarios.map(u => u.id), 0) + 1;
+  usuarios.push({ id: novoId, nome: nome.trim(), usuario: usuario.toLowerCase().trim(), senha_hash: hash, perfil, comprador_nome: comprador_nome || null });
+  salvarUsuarios();
+  res.json({ ok: true, id: novoId });
+});
+
+app.put('/api/admin/usuarios/:id', requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const idx = usuarios.findIndex(u => u.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Usuário não encontrado' });
+  const { nome, usuario, senha, perfil, comprador_nome } = req.body || {};
+  if (nome) usuarios[idx].nome = nome.trim();
+  if (usuario) {
+    if (usuarios.find(u => u.usuario === usuario.toLowerCase().trim() && u.id !== id)) return res.status(400).json({ error: 'Usuário já existe' });
+    usuarios[idx].usuario = usuario.toLowerCase().trim();
+  }
+  if (senha) usuarios[idx].senha_hash = await bcrypt.hash(String(senha), 10);
+  if (perfil) usuarios[idx].perfil = perfil;
+  usuarios[idx].comprador_nome = comprador_nome || null;
+  salvarUsuarios();
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/usuarios/:id', requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id);
+  if (id === req.session.user.id) return res.status(400).json({ error: 'Não pode excluir o próprio usuário' });
+  const idx = usuarios.findIndex(u => u.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Usuário não encontrado' });
+  usuarios.splice(idx, 1);
+  salvarUsuarios();
+  res.json({ ok: true });
 });
 
 const dbConfig = {

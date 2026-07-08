@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerenciamento de Usuários — Econômico</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070d1a;--card:#0f172a;--border:#1e293b;--border2:#334155;
+  --brand:#FACC15;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text)}
+
+/* BRAND BAR */
+.brand-bar{height:36px;background:#FACC15;display:flex;align-items:center;justify-content:center;position:relative}
+.b-name{font-size:15px;font-weight:900;letter-spacing:.35em;color:#0a0e18}
+.b-left{position:absolute;left:14px;top:50%;transform:translateY(-50%)}
+.b-back{background:rgba(10,14,24,.18);border:1px solid rgba(10,14,24,.25);border-radius:6px;color:#0a0e18;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:5px;transition:background .2s}
+.b-back:hover{background:rgba(10,14,24,.35)}
+
+/* HEADER */
+.hdr{height:52px;background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 24px;gap:14px}
+.hdr-icon{width:36px;height:36px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:18px}
+.hdr-titulo{font-size:17px;font-weight:900}
+.hdr-sub{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.btn-novo{margin-left:auto;background:#FACC15;color:#0a0e18;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.04em;transition:background .15s}
+.btn-novo:hover{background:#eab308}
+
+/* CONTENT */
+.content{padding:24px;max-width:900px;margin:0 auto}
+
+/* TABLE */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.tbl{width:100%;border-collapse:collapse}
+.tbl thead th{padding:10px 14px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);background:#060d1c;border-bottom:1px solid var(--border2);text-align:left}
+.tbl tbody tr{border-bottom:1px solid rgba(30,41,59,.5)}
+.tbl tbody tr:last-child{border-bottom:none}
+.tbl tbody tr:hover{background:rgba(255,255,255,.02)}
+.tbl td{padding:12px 14px;font-size:13px;vertical-align:middle}
+.u-nome{font-weight:700;color:var(--text)}
+.u-login{font-size:10px;color:var(--text3);margin-top:2px;font-family:monospace}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.badge-admin{background:rgba(250,204,21,.15);color:#FACC15;border:1px solid rgba(250,204,21,.3)}
+.badge-gerente{background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.25)}
+.badge-comprador{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25)}
+
+.comp-tag{font-size:10px;color:#a78bfa;font-weight:600;margin-top:2px}
+
+/* AÇÕES */
+.acoes{display:flex;gap:6px}
+.btn-acao{background:none;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;color:var(--text2)}
+.btn-edit:hover{border-color:#60a5fa;color:#60a5fa}
+.btn-del:hover{border-color:#ef4444;color:#ef4444}
+.btn-pwd:hover{border-color:#FACC15;color:#FACC15}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-icon{font-size:36px;margin-bottom:12px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:#0f172a;border:1px solid #334155;border-radius:16px;padding:28px;width:100%;max-width:440px;box-shadow:0 24px 64px #00000066}
+.modal-titulo{font-size:16px;font-weight:900;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.field input,.field select{width:100%;background:#070d1a;border:1px solid #334155;border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;transition:border-color .15s;font-family:inherit}
+.field input:focus,.field select:focus{border-color:#FACC15}
+.field select option{background:#0f172a}
+.field-hint{font-size:10px;color:var(--text3);margin-top:4px}
+.modal-btns{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+.btn-cancelar{background:none;border:1px solid var(--border2);color:var(--text2);border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-cancelar:hover{border-color:#ef4444;color:#ef4444}
+.btn-salvar{background:#FACC15;color:#0a0e18;border:none;border-radius:8px;padding:9px 22px;font-size:12px;font-weight:800;cursor:pointer;transition:background .15s}
+.btn-salvar:hover{background:#eab308}
+.btn-salvar:disabled{opacity:.5;cursor:not-allowed}
+.msg-erro{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;border-radius:8px;padding:8px 12px;font-size:11px;margin-top:12px;display:none}
+.msg-ok{background:#052e16;border:1px solid #166534;color:#86efac;border-radius:8px;padding:8px 12px;font-size:11px;margin-top:12px;display:none}
+
+/* STATS */
+.stats{display:flex;gap:12px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;flex:1;text-align:center}
+.stat-v{font-size:22px;font-weight:900;line-height:1}
+.stat-l{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+</style>
+</head>
+<body>
+
+<div class="brand-bar">
+  <div class="b-left"><a href="/hub.html" class="b-back">← Voltar</a></div>
+  <div class="b-name">ECONÔMICO</div>
+</div>
+
+<div class="hdr">
+  <div class="hdr-icon">👥</div>
+  <div>
+    <div class="hdr-titulo">Gerenciamento de Usuários</div>
+    <div class="hdr-sub">Admin · Controle de acesso</div>
+  </div>
+  <button class="btn-novo" onclick="abrirModal()">+ Novo Usuário</button>
+</div>
+
+<div class="content">
+  <div class="stats" id="stats"></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th>#</th><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Comprador</th><th>Ações</th>
+      </tr></thead>
+      <tbody id="tbody">
+        <tr><td colspan="6" class="empty"><div class="empty-icon">⏳</div>Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="fecharModalFora(event)">
+  <div class="modal">
+    <div class="modal-titulo" id="modal-titulo">👤 Novo Usuário</div>
+    <input type="hidden" id="edit-id">
+    <div class="field">
+      <label>Nome completo</label>
+      <input type="text" id="f-nome" placeholder="Ex: Fatima Santos">
+    </div>
+    <div class="field">
+      <label>Usuário (login)</label>
+      <input type="text" id="f-usuario" placeholder="Ex: fatima.santos" autocomplete="off">
+    </div>
+    <div class="field">
+      <label id="f-senha-label">Senha</label>
+      <input type="password" id="f-senha" placeholder="••••••••" autocomplete="new-password">
+      <div class="field-hint" id="f-senha-hint"></div>
+    </div>
+    <div class="field">
+      <label>Perfil</label>
+      <select id="f-perfil" onchange="toggleCompradorField()">
+        <option value="gerente">Gerente</option>
+        <option value="comprador">Comprador</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="field" id="field-comprador" style="display:none">
+      <label>Comprador vinculado</label>
+      <select id="f-comprador">
+        <option value="">-- selecione --</option>
+        <option value="FATIMA">FATIMA</option>
+        <option value="KELLY">KELLY</option>
+        <option value="STHEPHANNY">STHEPHANNY</option>
+        <option value="CRISLANE">CRISLANE</option>
+        <option value="PATRICIA">PATRICIA</option>
+      </select>
+    </div>
+    <div class="msg-erro" id="modal-erro"></div>
+    <div class="msg-ok" id="modal-ok"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" id="btn-salvar" onclick="salvar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let usuarios = [];
+let modoEdicao = false;
+
+async function carregar() {
+  const r = await fetch('/api/admin/usuarios');
+  if (!r.ok) { window.location.href = '/hub.html'; return; }
+  usuarios = await r.json();
+  renderStats();
+  renderTabela();
+}
+
+function renderStats() {
+  const total = usuarios.length;
+  const admins = usuarios.filter(u => u.perfil === 'admin').length;
+  const gerentes = usuarios.filter(u => u.perfil === 'gerente').length;
+  const compradores = usuarios.filter(u => u.perfil === 'comprador').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-v">${total}</div><div class="stat-l">Total</div></div>
+    <div class="stat"><div class="stat-v" style="color:#FACC15">${admins}</div><div class="stat-l">Admin</div></div>
+    <div class="stat"><div class="stat-v" style="color:#60a5fa">${gerentes}</div><div class="stat-l">Gerente</div></div>
+    <div class="stat"><div class="stat-v" style="color:#a78bfa">${compradores}</div><div class="stat-l">Comprador</div></div>
+  `;
+}
+
+function badgePerfil(p) {
+  if (p === 'admin')     return '<span class="badge badge-admin">Admin</span>';
+  if (p === 'comprador') return '<span class="badge badge-comprador">Comprador</span>';
+  return '<span class="badge badge-gerente">Gerente</span>';
+}
+
+function renderTabela() {
+  const tb = document.getElementById('tbody');
+  if (!usuarios.length) {
+    tb.innerHTML = '<tr><td colspan="6" class="empty"><div class="empty-icon">👤</div>Nenhum usuário cadastrado</td></tr>';
+    return;
+  }
+  tb.innerHTML = usuarios.map((u, i) => `
+    <tr>
+      <td style="color:var(--text3);font-size:11px;font-weight:700">${i+1}</td>
+      <td><div class="u-nome">${u.nome}</div></td>
+      <td><div class="u-login">${u.usuario}</div></td>
+      <td>${badgePerfil(u.perfil)}</td>
+      <td>${u.comprador_nome ? `<div class="comp-tag">▸ ${u.comprador_nome}</div>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+      <td>
+        <div class="acoes">
+          <button class="btn-acao btn-edit" onclick="editarUsuario(${u.id})">✏ Editar</button>
+          <button class="btn-acao btn-pwd" onclick="trocarSenha(${u.id})">🔑 Senha</button>
+          <button class="btn-acao btn-del" onclick="excluir(${u.id}, '${u.nome}')">✕</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleCompradorField() {
+  const p = document.getElementById('f-perfil').value;
+  document.getElementById('field-comprador').style.display = p === 'comprador' ? '' : 'none';
+}
+
+function abrirModal(titulo = '👤 Novo Usuário') {
+  modoEdicao = false;
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('edit-id').value = '';
+  document.getElementById('f-nome').value = '';
+  document.getElementById('f-usuario').value = '';
+  document.getElementById('f-senha').value = '';
+  document.getElementById('f-perfil').value = 'gerente';
+  document.getElementById('f-comprador').value = '';
+  document.getElementById('f-senha-label').textContent = 'Senha';
+  document.getElementById('f-senha-hint').textContent = '';
+  document.getElementById('f-senha').placeholder = '••••••••';
+  document.getElementById('f-usuario').readOnly = false;
+  document.getElementById('modal-erro').style.display = 'none';
+  document.getElementById('modal-ok').style.display = 'none';
+  toggleCompradorField();
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-nome').focus(), 50);
+}
+
+function editarUsuario(id) {
+  const u = usuarios.find(u => u.id === id);
+  if (!u) return;
+  modoEdicao = true;
+  document.getElementById('modal-titulo').textContent = '✏ Editar Usuário';
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-nome').value = u.nome;
+  document.getElementById('f-usuario').value = u.usuario;
+  document.getElementById('f-senha').value = '';
+  document.getElementById('f-perfil').value = u.perfil;
+  document.getElementById('f-comprador').value = u.comprador_nome || '';
+  document.getElementById('f-senha-label').textContent = 'Nova Senha (deixe em branco para não alterar)';
+  document.getElementById('f-senha-hint').textContent = 'Opcional — só preencha se quiser trocar a senha';
+  document.getElementById('f-senha').placeholder = 'deixe em branco para manter';
+  document.getElementById('modal-erro').style.display = 'none';
+  document.getElementById('modal-ok').style.display = 'none';
+  toggleCompradorField();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function trocarSenha(id) {
+  const u = usuarios.find(u => u.id === id);
+  if (!u) return;
+  modoEdicao = true;
+  document.getElementById('modal-titulo').textContent = '🔑 Trocar Senha — ' + u.nome;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-nome').value = u.nome;
+  document.getElementById('f-usuario').value = u.usuario;
+  document.getElementById('f-senha').value = '';
+  document.getElementById('f-perfil').value = u.perfil;
+  document.getElementById('f-comprador').value = u.comprador_nome || '';
+  document.getElementById('f-senha-label').textContent = 'Nova Senha';
+  document.getElementById('f-senha-hint').textContent = '';
+  document.getElementById('f-senha').placeholder = 'Digite a nova senha';
+  document.getElementById('modal-erro').style.display = 'none';
+  document.getElementById('modal-ok').style.display = 'none';
+  toggleCompradorField();
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-senha').focus(), 50);
+}
+
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function fecharModalFora(e) {
+  if (e.target === document.getElementById('modal-overlay')) fecharModal();
+}
+
+async function salvar() {
+  const btn = document.getElementById('btn-salvar');
+  const erroEl = document.getElementById('modal-erro');
+  const okEl = document.getElementById('modal-ok');
+  erroEl.style.display = 'none';
+  okEl.style.display = 'none';
+
+  const nome = document.getElementById('f-nome').value.trim();
+  const usuario = document.getElementById('f-usuario').value.trim();
+  const senha = document.getElementById('f-senha').value;
+  const perfil = document.getElementById('f-perfil').value;
+  const comprador_nome = perfil === 'comprador' ? document.getElementById('f-comprador').value : null;
+  const editId = document.getElementById('edit-id').value;
+
+  if (!nome) { mostrarErroModal('Informe o nome.'); return; }
+  if (!usuario) { mostrarErroModal('Informe o usuário.'); return; }
+  if (!modoEdicao && !senha) { mostrarErroModal('Informe a senha.'); return; }
+  if (perfil === 'comprador' && !comprador_nome) { mostrarErroModal('Selecione o comprador vinculado.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    const body = { nome, usuario, perfil, comprador_nome };
+    if (senha) body.senha = senha;
+
+    const url = modoEdicao ? `/api/admin/usuarios/${editId}` : '/api/admin/usuarios';
+    const method = modoEdicao ? 'PUT' : 'POST';
+
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const json = await r.json();
+    if (r.ok) {
+      okEl.textContent = modoEdicao ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!';
+      okEl.style.display = 'block';
+      await carregar();
+      setTimeout(fecharModal, 1200);
+    } else {
+      mostrarErroModal(json.error || 'Erro ao salvar.');
+    }
+  } catch(e) {
+    mostrarErroModal('Erro de conexão.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salvar';
+  }
+}
+
+async function excluir(id, nome) {
+  if (!confirm(`Excluir usuário "${nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  const r = await fetch(`/api/admin/usuarios/${id}`, { method: 'DELETE' });
+  const json = await r.json();
+  if (r.ok) await carregar();
+  else alert(json.error || 'Erro ao excluir.');
+}
+
+function mostrarErroModal(msg) {
+  const el = document.getElementById('modal-erro');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
+
+carregar();
+</script>
+</body>
+</html>

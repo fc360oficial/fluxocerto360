@@ -12,20 +12,15 @@
 }
 html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text)}
 
-/* BRAND BAR */
-.brand-bar{height:36px;background:#FACC15;display:flex;align-items:center;justify-content:center;position:relative}
-.b-name{font-size:15px;font-weight:900;letter-spacing:.35em;color:#0a0e18}
-.b-left{position:absolute;left:14px;top:50%;transform:translateY(-50%)}
-.b-back{background:rgba(10,14,24,.18);border:1px solid rgba(10,14,24,.25);border-radius:6px;color:#0a0e18;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:5px;transition:background .2s}
-.b-back:hover{background:rgba(10,14,24,.35)}
-
 /* HEADER */
-.hdr{height:52px;background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 24px;gap:14px}
+.hdr{height:64px;background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 24px;gap:14px}
 .hdr-icon{width:36px;height:36px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:18px}
 .hdr-titulo{font-size:17px;font-weight:900}
 .hdr-sub{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
 .btn-novo{margin-left:auto;background:#FACC15;color:#0a0e18;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.04em;transition:background .15s}
 .btn-novo:hover{background:#eab308}
+.btn-voltar{background:none;border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:5px;transition:all .15s;flex-shrink:0}
+.btn-voltar:hover{border-color:#60a5fa;color:#60a5fa}
 
 /* CONTENT */
 .content{padding:24px;max-width:900px;margin:0 auto}
@@ -89,12 +84,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 </head>
 <body>
 
-<div class="brand-bar">
-  <div class="b-left"><a href="/hub.html" class="b-back">← Voltar</a></div>
-  <div class="b-name">ECONÔMICO</div>
-</div>
-
 <div class="hdr">
+  <a href="/hub.html" class="btn-voltar">← Voltar</a>
   <div class="hdr-icon">👥</div>
   <div>
     <div class="hdr-titulo">Gerenciamento de Usuários</div>

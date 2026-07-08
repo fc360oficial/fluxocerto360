@@ -94,35 +94,40 @@ function mostrar(iframe, dot, nome) {
   dot.classList.add('ativo');
 }
 
+// força reload mesmo que a src seja igual
+function carregarIframe(iframe, url) {
+  iframe.src = 'about:blank';
+  setTimeout(() => { iframe.src = url; }, 30);
+}
+
 // ── Rotação automática ──
 function mostrarDiretoria() {
-  frD.src = BASE + '/diretoria.html' + TV;
+  carregarIframe(frD, BASE + '/diretoria.html' + TV);
   mostrar(frD, dotD, 'diretoria');
 }
+function mostrarComparativoTV() {
+  carregarIframe(frCT, BASE + '/comparativo-tv.html' + TV);
+  mostrar(frCT, dotCT, 'comptvs');
+}
 function mostrarPrecif() {
-  frP.src = BASE + '/precificacao.html' + (TV ? TV : '');
+  carregarIframe(frP, BASE + '/precificacao.html' + (TV ? TV : ''));
   mostrar(frP, dotP, 'precif');
 }
 function mostrarCompras() {
-  frC.src = BASE + '/compras.html' + TV;
+  carregarIframe(frC, BASE + '/compras.html' + TV);
   mostrar(frC, dotC, 'compras');
 }
 function mostrarRuptura() {
-  frR.src = BASE + '/ruptura-painel.html' + TV;
+  carregarIframe(frR, BASE + '/ruptura-painel.html' + TV);
   mostrar(frR, dotR, 'ruptura');
 }
 function mostrarMargem() {
-  frMG.src = BASE + '/margem-comprador.html?auto=1&idx=0' + (TV ? '&tv=1' : '');
+  carregarIframe(frMG, BASE + '/margem-comprador.html?auto=1&idx=0' + (TV ? '&tv=1' : ''));
   mostrar(frMG, dotMG, 'margem');
 }
 function mostrarMensal() {
-  frM.src = BASE + '/mensal.html?nome=FATIMA&auto=1&idx=0' + (TV ? '&tv=1' : '');
+  carregarIframe(frM, BASE + '/mensal.html?nome=FATIMA&auto=1&idx=0' + (TV ? '&tv=1' : ''));
   mostrar(frM, dotM, 'mensal');
-}
-
-function mostrarComparativoTV() {
-  frCT.src = BASE + '/comparativo-tv.html' + TV;
-  mostrar(frCT, dotCT, 'comptvs');
 }
 
 // ── Rotação: Diretoria → Comparativo TV → Precificação → Compras → Rupturas → Margem → Mensal → Diretoria ──

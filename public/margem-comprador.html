@@ -232,7 +232,7 @@ function iniciarContagem(){
         location.href = `/margem-comprador.html?nome=${ORDEM[next]}&auto=1&idx=${next}&mes=${mesSel}&ano=${anoSel}`;
       } else {
         try { window.parent.postMessage({ type: 'margemCycleComplete' }, '*'); } catch(_){}
-        if (window.parent === window) location.href = '/compras.html';
+        if (window.parent === window) location.href = '/mensal.html?nome=FATIMA&auto=1&idx=0';
       }
     }
   }, 1000);
@@ -254,8 +254,8 @@ function iniciarContagem(){
   const slides=[
     {ic:'🛒',nome:'Central de Compras',url:'/compras.html',id:'compras'},
     {ic:'📉',nome:'Rupturas',url:'/ruptura-painel.html',id:'ruptura'},
-    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
     {ic:'📊',nome:'Venda / Margem / Avaria',url:'/margem-comprador.html',id:'margem'},
+    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
   ];
   menu.innerHTML=slides.map(s=>`<button class="slide-nav-opt${s.id==='margem'?' active':''}" onclick="location.href='${s.url}'"><span style="font-size:14px;width:18px;text-align:center">${s.ic}</span>${s.nome}</button>`).join('');
   btn.addEventListener('click',e=>{e.stopPropagation();menu.classList.toggle('open');});

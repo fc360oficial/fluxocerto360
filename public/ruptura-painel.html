@@ -257,7 +257,7 @@ function advancePage() {
   const next = (_page + 1) % _pages.length;
   if (next === 0) {
     try { window.parent.postMessage({ type: 'rupturaCycleComplete' }, '*'); } catch(_) {}
-    if (window.parent === window) { location.href = '/mensal.html?nome=FATIMA&auto=1&idx=0'; return; }
+    if (window.parent === window) { location.href = '/margem-comprador.html?auto=1&idx=0'; return; }
   }
   _page = next;
   renderPage(_page);
@@ -330,8 +330,8 @@ setInterval(carregar, 30 * 60 * 1000);
   const slides=[
     {ic:'🛒',nome:'Central de Compras',url:'/compras.html',id:'compras'},
     {ic:'📉',nome:'Rupturas',url:'/ruptura-painel.html',id:'ruptura'},
-    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
     {ic:'📊',nome:'Venda / Margem / Avaria',url:'/margem-comprador.html',id:'margem'},
+    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
   ];
   menu.innerHTML=slides.map(s=>`<button class="slide-nav-opt${s.id==='ruptura'?' active':''}" onclick="location.href='${s.url}'"><span style="font-size:14px;width:18px;text-align:center">${s.ic}</span>${s.nome}</button>`).join('');
   btn.addEventListener('click',e=>{e.stopPropagation();menu.classList.toggle('open');});

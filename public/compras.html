@@ -1183,8 +1183,8 @@ setInterval(atualizarStatusReal, 2*60*1000);
   const slides=[
     {ic:'🛒',nome:'Central de Compras',url:'/compras.html',id:'compras'},
     {ic:'📉',nome:'Rupturas',url:'/ruptura-painel.html',id:'ruptura'},
-    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
     {ic:'📊',nome:'Venda / Margem / Avaria',url:'/margem-comprador.html',id:'margem'},
+    {ic:'📅',nome:'Cronograma Mensal',url:'/mensal.html?nome=FATIMA',id:'mensal'},
   ];
   menu.innerHTML=slides.map(s=>`<button class="slide-nav-opt${s.id==='compras'?' active':''}" onclick="location.href='${s.url}'"><span style="font-size:14px;width:18px;text-align:center">${s.ic}</span>${s.nome}</button>`).join('');
   btn.addEventListener('click',e=>{e.stopPropagation();menu.classList.toggle('open');});

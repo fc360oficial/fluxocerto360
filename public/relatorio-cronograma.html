@@ -427,12 +427,25 @@ document.querySelectorAll('.grupo table').forEach(function(table){
   var headerRow = table.querySelector('thead tr');
   headerRow.insertBefore(th, headerRow.firstChild);
 
-  table.querySelectorAll('tbody tr').forEach(function(tr, i){
+  var rows = table.querySelectorAll('tbody tr');
+  var total = rows.length;
+  rows.forEach(function(tr, i){
     var td = document.createElement('td');
     td.textContent = i + 1;
     td.style.cssText = 'font-size:7.5px;color:#9ca3af;text-align:right;padding-right:5px;font-weight:700;width:16px;white-space:nowrap;';
     tr.insertBefore(td, tr.firstChild);
   });
+
+  // Linha de total
+  var tfoot = document.createElement('tfoot');
+  var tftr  = document.createElement('tr');
+  var tftd  = document.createElement('td');
+  tftd.setAttribute('colspan', '5');
+  tftd.textContent = 'Total: ' + total + ' fornecedores';
+  tftd.style.cssText = 'font-size:8px;font-weight:800;color:#374151;padding:5px 5px 3px;text-align:right;border-top:1px solid #e5e7eb;';
+  tftr.appendChild(tftd);
+  tfoot.appendChild(tftr);
+  table.appendChild(tfoot);
 });
 </script>
 </body>

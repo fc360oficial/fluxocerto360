@@ -30,20 +30,29 @@ body::before{
     radial-gradient(ellipse 35% 55% at 50% 105%,rgba(34,197,94,.03) 0%,transparent 50%);
 }
 
-/* ── HEADER ── */
+/* ── BARRA AMARELA ── */
+.brand-bar{
+  height:36px;flex-shrink:0;background:#FACC15;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:200;
+}
+.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
+.brand-bar .b-right{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
+
+/* ── HEADER AZUL ── */
 header{
-  position:relative;z-index:100;height:80px;flex-shrink:0;
+  position:relative;z-index:100;height:52px;flex-shrink:0;
   background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
   backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border-md);
-  box-shadow:0 4px 40px rgba(0,0,0,.55),0 1px 0 rgba(250,204,21,.08);
-  padding:0 32px;display:flex;align-items:center;gap:24px;
+  box-shadow:0 4px 40px rgba(0,0,0,.55);
+  padding:0 20px;display:flex;align-items:center;gap:16px;
 }
-.h-logo{height:56px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);flex-shrink:0}
+.h-logo{height:32px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);flex-shrink:0}
 .h-brand{flex-shrink:0}
-.h-brand h1{font-size:12px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
+.h-brand h1{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
 .h-brand p{font-size:8px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
-.h-sep{width:1px;height:44px;background:var(--border-md);flex-shrink:0}
+.h-sep{width:1px;height:32px;background:var(--border-md);flex-shrink:0}
 .h-clock{display:none}
 .clock-time{font-size:58px;font-weight:900;color:#fff;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;
   text-shadow:0 0 40px rgba(255,255,255,.15)}
@@ -55,12 +64,12 @@ header{
 .h-title h2{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2.5px;text-transform:uppercase;line-height:1}
 .h-title p{font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
 .h-close{
-  display:flex;align-items:center;gap:6px;
-  font-size:12px;font-weight:700;color:var(--text3);text-decoration:none;
-  padding:7px 14px;border-radius:8px;border:1px solid var(--border-md);
-  background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0;margin-left:8px;
+  display:flex;align-items:center;gap:5px;color:#0a0e18;text-decoration:none;
+  font-size:11px;font-weight:700;padding:5px 12px;
+  border-radius:6px;border:1px solid rgba(0,0,0,.2);
+  background:rgba(0,0,0,.08);transition:all .2s;flex-shrink:0;
 }
-.h-close:hover{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.10)}
+.h-close:hover{background:rgba(239,68,68,.15);border-color:#EF4444;color:#EF4444}
 
 /* ── TIMER BAR ── */
 .timer-bar-wrap{height:3px;background:rgba(250,204,21,.12);flex-shrink:0;position:relative;z-index:1}
@@ -132,9 +141,9 @@ header{
 
 /* ── TV MODE (iframe/supervisão) ── */
 body.tv{padding:10px 18px 0}
-body.tv header{height:60px;padding:0 20px;gap:16px}
-body.tv .h-logo{height:42px}
-body.tv .h-close{font-size:10px;padding:5px 10px}
+body.tv .brand-bar{height:36px}
+body.tv header{height:52px;padding:0 12px;gap:12px}
+body.tv .h-close{font-size:10px;padding:4px 10px}
 body.tv .kpi-row{gap:8px;padding:8px 10px;height:clamp(180px,26vh,280px)}
 body.tv .kcard{padding:10px 12px}
 body.tv .kc-fat{font-size:clamp(12px,1.4vw,18px);line-height:1.1}
@@ -153,22 +162,20 @@ if(new URLSearchParams(location.search).has('tv'))
 <body>
 <script>if(document.documentElement.classList.contains('tv-root'))document.body.classList.add('tv');</script>
 
+<div class="brand-bar">
+  <span class="b-name">Econômico</span>
+  <div class="b-right">
+    <a href="/api/logout" class="h-close" target="_top">✕ Fechar</a>
+  </div>
+</div>
+
 <header>
   <img class="h-logo" src="/logo.png" alt="Econômico">
-  <div class="h-brand"><h1>Econômico</h1><p>Relatórios</p></div>
-  <div class="h-clock">
-    <div class="clock-time" id="clock">00:00:00</div>
-    <div class="clock-sub">
-      <span class="clock-date" id="clock-date"></span>
-      <span class="clock-semana" id="clock-sem"></span>
-    </div>
-  </div>
-  <div class="h-fill"></div>
+  <div class="h-sep"></div>
   <div class="h-title">
     <h2>Diretoria</h2>
     <p>KPIs do mês · todas as lojas</p>
   </div>
-  <a href="/api/logout" class="h-close" target="_top">✕ Fechar</a>
 </header>
 
 <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>

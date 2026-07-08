@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cronograma Mensal de Compras — Econômico</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;font-size:11px}
+
+/* TELA */
+@media screen {
+  body{background:#e5e7eb;padding:20px}
+  .pagina{background:#fff;width:210mm;margin:0 auto 24px;padding:16mm 14mm;
+    box-shadow:0 4px 24px rgba(0,0,0,.15);border-radius:4px}
+  .btn-imprimir{
+    display:block;width:210mm;margin:0 auto 16px;padding:10px;
+    background:#FACC15;border:none;font-weight:800;font-size:14px;
+    cursor:pointer;border-radius:6px;letter-spacing:.05em;color:#1a1a1a;
+  }
+  .btn-imprimir:hover{background:#eab308}
+}
+
+/* IMPRESSÃO */
+@media print {
+  body{background:#fff;padding:0}
+  .btn-imprimir{display:none}
+  .pagina{width:100%;padding:10mm 12mm;page-break-after:always;break-after:page}
+  .pagina:last-child{page-break-after:auto}
+}
+
+/* CABEÇALHO DA PÁGINA */
+.pg-header{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:3px solid #FACC15;padding-bottom:8px;margin-bottom:14px}
+.pg-logo-area{display:flex;align-items:center;gap:10px}
+.pg-logo{font-size:18px;font-weight:900;letter-spacing:.1em;color:#1a1a1a}
+.pg-logo span{color:#FACC15}
+.pg-sub{font-size:8px;color:#6b7280;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.pg-meta{text-align:right;font-size:9px;color:#6b7280}
+.pg-meta strong{display:block;font-size:11px;color:#1a1a1a}
+
+/* COMPRADOR */
+.comprador-header{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-radius:6px;margin-bottom:12px;
+  color:#fff;
+}
+.comprador-nome{font-size:16px;font-weight:900;letter-spacing:.05em}
+.comprador-cargo{font-size:9px;opacity:.85;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+
+/* GRUPOS DE SEMANA */
+.grupos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* GRUPO */
+.grupo{border:1px solid #e5e7eb;border-radius:6px;overflow:hidden}
+.grupo-header{
+  padding:5px 10px;font-size:9px;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;color:#fff;
+}
+
+/* TABELA */
+table{width:100%;border-collapse:collapse}
+thead th{
+  background:#f9fafb;font-size:8px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:#6b7280;
+  padding:4px 6px;border-bottom:1px solid #e5e7eb;
+  text-align:left;
+}
+thead th.tc{text-align:center;width:20px}
+tbody tr{border-bottom:1px solid #f3f4f6}
+tbody tr:last-child{border-bottom:none}
+tbody tr.dia-header{background:#f9fafb}
+td{padding:3px 6px;vertical-align:middle}
+td.dia{font-weight:800;font-size:9px;text-transform:uppercase;
+  letter-spacing:.08em;white-space:nowrap;color:#374151;width:28px}
+td.fornec{font-size:9.5px;color:#111827;line-height:1.3}
+td.cat{font-size:8px;color:#9ca3af;white-space:nowrap}
+td.check{text-align:center;width:20px}
+.check-box{width:12px;height:12px;border:1.5px solid #d1d5db;border-radius:2px;display:inline-block}
+
+/* rodapé */
+.pg-footer{margin-top:14px;border-top:1px solid #e5e7eb;padding-top:6px;
+  display:flex;justify-content:space-between;font-size:8px;color:#9ca3af}
+.obs-line{
+  margin-top:8px;border-bottom:1px solid #e5e7eb;
+  height:18px;font-size:8px;color:#9ca3af;
+  display:flex;align-items:flex-end;padding-bottom:2px;
+}
+</style>
+</head>
+<body>
+
+<button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+
+<script>
+const DIAS_LABEL = {SEG:'Seg',TER:'Ter',QUA:'Qua',QUI:'Qui',SEX:'Sex'};
+const DIAS = ['SEG','TER','QUA','QUI','SEX'];
+
+const COMPRADORES = [
+  {
+    nome:'FATIMA', cargo:'Mercearia Seca', cor:'#6366f1',
+    cron:{
+      '1e3':{
+        SEG:[
+          {nome:'CAMIL ALIMENTOS S/A',cat:'Arroz'},
+          {nome:'COMERCIAL DE ALIMENTOS (PAI HELENO)',cat:'Feijão'},
+          {nome:'FEIJÃO TA GOSTOSO',cat:'Feijão'},
+          {nome:'FEIRA NOVA INDUSTRIA',cat:'Farinha'},
+          {nome:'FLAVIO Q D MORAIS (PERNAMBUCANO)',cat:'Feijão'},
+          {nome:'JOSAPAR JOAQUIM OLIVEIRA SA PART (TIO JOAO)',cat:'Arroz'},
+          {nome:'MONJOLO INDUSTRIA (DO SITIO)',cat:'Farinha'},
+          {nome:'NELSON WENDT CIA LTDA (EMOÇÕES)',cat:'Arroz'},
+          {nome:'OASIS ALIMENTOS (TURQUESA)',cat:'Feijão'},
+          {nome:'OMAR LINDEMBERG (KELLY E CORDEIRO)',cat:'Farinha'},
+          {nome:'RONIEL J SILVA FARINHA',cat:'Farinha'},
+          {nome:'PRODUTOS PEROLA (GRÃO DE MINAS)',cat:'Feijão'},
+          {nome:'SOMAR COMERCIO (KICALDO)',cat:'Feijão'},
+          {nome:'URBANO AGROINDUSTRIA LTDA',cat:'Arroz'},
+          {nome:'PANELACO ALIMENTOS LTDA',cat:'Arroz'},
+          {nome:'RAMPINELLI ALIMENTOS LTDA',cat:'Arroz'},
+        ],
+        TER:[
+          {nome:'MOINHO PETINHO IND E COMERCIO LTDA',cat:'Café'},
+          {nome:'SAO BRAZ S/A IND COM DE ALIMENTOS',cat:'Café'},
+          {nome:'TRES CORACOES ALIMENTOS SA',cat:'Café'},
+          {nome:'ASA INDUSTRIA E COMERCIO',cat:'Temperos'},
+          {nome:'YOKI C/ CUSTO',cat:'Mercearia'},
+        ],
+        QUA:[
+          {nome:'INDUSTRIA REUNIDAS CORINGA LTDA',cat:'Flocão'},
+          {nome:'SABORMIL IND E COMERCIO LTDA',cat:'Flocão'},
+          {nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Leite/Mercearia'},
+          {nome:'LACTALIS DO BRASIL',cat:'Mercearia'},
+          {nome:'VALERIANO VALENTE DE OLIVEIRA',cat:'Mix/Flocão'},
+        ],
+        QUI:[
+          {nome:'USINA PETRIBU',cat:'Açúcar'},
+          {nome:'USINA IPOJUCA',cat:'Açúcar'},
+          {nome:'AVILE/PUREZA',cat:'Açúcar'},
+        ],
+        SEX:[{nome:'COTAÇÃO DE ALIMENTOS',cat:'Cotação'}],
+      },
+      '2e4':{
+        SEG:[
+          {nome:'CAMIL ALIMENTOS S/A',cat:'Arroz'},
+          {nome:'COMERCIAL DE ALIMENTOS (PAI HELENO)',cat:'Feijão'},
+          {nome:'FEIJÃO TA GOSTOSO',cat:'Feijão'},
+          {nome:'FEIRA NOVA INDUSTRIA',cat:'Farinha'},
+          {nome:'FLAVIO Q D MORAIS (PERNAMBUCANO)',cat:'Feijão'},
+          {nome:'JOSAPAR JOAQUIM OLIVEIRA SA PART (TIO JOAO)',cat:'Arroz'},
+          {nome:'MONJOLO INDUSTRIA (DO SITIO)',cat:'Farinha'},
+          {nome:'NELSON WENDT CIA LTDA (EMOÇÕES)',cat:'Arroz'},
+          {nome:'OASIS ALIMENTOS (TURQUESA)',cat:'Feijão'},
+          {nome:'OMAR LINDEMBERG (KELLY E CORDEIRO)',cat:'Farinha'},
+          {nome:'RONIEL J SILVA FARINHA',cat:'Farinha'},
+          {nome:'PRODUTOS PEROLA (GRÃO DE MINAS)',cat:'Feijão'},
+          {nome:'SOMAR COMERCIO (KICALDO)',cat:'Feijão'},
+          {nome:'URBANO AGROINDUSTRIA LTDA',cat:'Arroz'},
+          {nome:'PANELACO ALIMENTOS LTDA',cat:'Arroz'},
+          {nome:'RAMPINELLI ALIMENTOS LTDA',cat:'Arroz'},
+        ],
+        TER:[
+          {nome:'MOINHO PETINHO IND E COMERCIO LTDA',cat:'Café'},
+          {nome:'SAO BRAZ S/A IND COM DE ALIMENTOS',cat:'Café'},
+          {nome:'TRES CORACOES ALIMENTOS SA',cat:'Café'},
+          {nome:'ASA INDUSTRIA E COMERCIO',cat:'Temperos'},
+          {nome:'YOKI C/ CUSTO',cat:'Mercearia'},
+        ],
+        QUA:[
+          {nome:'INDUSTRIA REUNIDAS CORINGA LTDA',cat:'Flocão'},
+          {nome:'SABORMIL IND E COMERCIO LTDA',cat:'Flocão'},
+          {nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Leite/Mercearia'},
+          {nome:'LACTALIS DO BRASIL',cat:'Mercearia'},
+        ],
+        QUI:[
+          {nome:'USINA PETRIBU',cat:'Açúcar'},
+          {nome:'USINA IPOJUCA',cat:'Açúcar'},
+          {nome:'AVILE/PUREZA',cat:'Açúcar'},
+        ],
+        SEX:[{nome:'COTAÇÃO DE ALIMENTOS',cat:'Cotação'}],
+      },
+    }
+  },
+  {
+    nome:'KELLY', cargo:'Frios & Laticínios', cor:'#f43f5e',
+    cron:{
+      '1e3':{
+        SEG:[
+          {nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Laticínios'},
+          {nome:'BOM LEITE INDUSTRIAL LTDA',cat:'Laticínios'},
+          {nome:'C E S DISTRIBUIDORA VAREJISTA LTDA',cat:'Distribuição'},
+          {nome:'FRANCISCO CORDEIRO CAMPOS',cat:'Distribuição'},
+          {nome:'LATICINIO BELO VALE LTDA',cat:'Laticínios'},
+          {nome:'LATICINIO GUARARAPES LTDA',cat:'Laticínios'},
+          {nome:'NOBRE IND. LATICINIOS',cat:'Laticínios'},
+          {nome:'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',cat:'Distribuição'},
+        ],
+        TER:[
+          {nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+          {nome:'AURORA COOP CENTRAL OESTE CATARINENSE',cat:'Frios'},
+          {nome:'BARBOSA & MARQUES REGINA',cat:'Frios'},
+          {nome:'BRF S A',cat:'Frios'},
+          {nome:'CODICON DISTRIBUICAO DE ALIMENTOS',cat:'Distribuição'},
+          {nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+          {nome:'LEANDRO BATISTA DE SOUZA',cat:'Distribuição'},
+          {nome:'INTERBRASIL DISTRIBUICAO LTDA',cat:'Distribuição'},
+          {nome:'J A CALHEIROS DE MELO JR',cat:'Frios'},
+          {nome:'LACTALIS DO BRASIL',cat:'Laticínios'},
+          {nome:'MAURICEA ALIMENTOS DO NORDESTE',cat:'Laticínios'},
+          {nome:'NOTARO ALIMENTOS LTDA',cat:'Laticínios'},
+          {nome:'SEARA COMERCIO DE ALIMENTOS LT',cat:'Frios'},
+          {nome:'VALELAC IND. DE LATICINIOS',cat:'Laticínios'},
+        ],
+        QUA:[
+          {nome:'NUTRA PLUSS IND. COM. ALIMENTOS',cat:'Alimentos'},
+          {nome:'FRUTA INDUSTRIA & COMERCIO LTDA',cat:'Alimentos'},
+          {nome:'BUNGE ALIMENTOS S/A',cat:'Alimentos'},
+          {nome:'BRITO&SANTOS FRIOS IND. ALIM.',cat:'Frios'},
+          {nome:'JBS S.A.',cat:'Frios'},
+          {nome:'REDIJOHN DIST PROD HIG LIMP',cat:'Higiene'},
+        ],
+        QUI:[
+          {nome:'PROLAC COMERCIAL',cat:'Frios'},
+          {nome:'KARNE & KEIJO LOGISTICA INTEGRADA',cat:'Frios'},
+          {nome:'A.B. DE ALBUQUERQUE GUERRA',cat:'Frios'},
+        ],
+        SEX:[
+          {nome:'FRI-SABOR ALIMENTOS LTDA',cat:'Frios'},
+          {nome:'DISNOVA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+        ],
+      },
+      '2e4':{
+        SEG:[
+          {nome:'ALVOAR LACTEOS NORDESTE SA',cat:'Laticínios'},
+          {nome:'BOM LEITE INDUSTRIAL LTDA',cat:'Laticínios'},
+          {nome:'C E S DISTRIBUIDORA VAREJISTA LTDA',cat:'Distribuição'},
+          {nome:'FRANCISCO CORDEIRO CAMPOS',cat:'Distribuição'},
+          {nome:'LATICINIO BELO VALE LTDA',cat:'Laticínios'},
+          {nome:'LATICINIO GUARARAPES LTDA',cat:'Laticínios'},
+          {nome:'NOBRE IND. LATICINIOS',cat:'Laticínios'},
+          {nome:'RUBI DISTRIBUIDORA DE ALIMENTOS LTDA',cat:'Distribuição'},
+        ],
+        TER:[
+          {nome:'BRF S A',cat:'Frios'},
+          {nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+          {nome:'EB DISTRIBUIDORA DE SORVETE LTDA',cat:'Frios'},
+          {nome:'GOLD STYLE IMP. EXP. ALIMENTOS',cat:'Frios'},
+          {nome:'INTERBRASIL DISTRIBUICAO LTDA',cat:'Distribuição'},
+          {nome:'LACTALIS DO BRASIL',cat:'Laticínios'},
+          {nome:'MAURICEA ALIMENTOS DO NORDESTE',cat:'Laticínios'},
+          {nome:'NOTARO ALIMENTOS LTDA',cat:'Laticínios'},
+          {nome:'SEARA COMERCIO DE ALIMENTOS LT',cat:'Frios'},
+          {nome:'UNILEVER BRASIL LTDA',cat:'Distribuição'},
+        ],
+        QUA:[
+          {nome:'NUTRA PLUSS IND. COM. ALIMENTOS',cat:'Alimentos'},
+          {nome:'FRUTA INDUSTRIA & COMERCIO LTDA',cat:'Alimentos'},
+          {nome:'BRITO&SANTOS FRIOS IND. ALIM.',cat:'Frios'},
+          {nome:'F.N.J. COM. ATACADISTA LEITE LATIC.',cat:'Laticínios'},
+          {nome:'FIPEL FRIGORIFICO IND. PERNAMBUCANA',cat:'Frios'},
+          {nome:'GRASIELLI DE VASCONCELOS PINTO LTDA',cat:'Distribuição'},
+          {nome:'NORONHA IND. E COMERCIO',cat:'Distribuição'},
+          {nome:'RECIFE COM. CONGELADOS LTDA',cat:'Frios'},
+          {nome:'GRIFOS COMERCIO DE ALIMENTOS LTDA',cat:'Distribuição'},
+        ],
+        QUI:[
+          {nome:'RAINHA PRODUTOS ALIMENTICIOS L',cat:'Frios'},
+        ],
+        SEX:[
+          {nome:'FRI-SABOR ALIMENTOS LTDA',cat:'Frios'},
+          {nome:'DISNOVA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+        ],
+      },
+    }
+  },
+  {
+    nome:'STHEPHANNY', cargo:'Perfumaria, Limpeza & Cosméticos', cor:'#a855f7',
+    cron:{
+      '1e3':{
+        SEG:[
+          {nome:'DCL DISTRIBUIDORA CARDEAL (PERFUMARIA)',cat:'Perfumaria'},
+          {nome:'DCL DISTRIBUIDORA CARDEAL (VEJA E SBP)',cat:'Limpeza'},
+          {nome:'DCL CARDEAL DISTRIBUIDORA (PET)',cat:'Pet'},
+          {nome:'ONDUNORTE CIA DE PAPEIS E PAPELAO',cat:'Descartáveis'},
+        ],
+        TER:[
+          {nome:'D&D ANGEIRAS DISTRIBUIDORA (LIMPEZA)',cat:'Limpeza'},
+          {nome:'PARATY ATACADO E DISTRIBUIDORA LTDA',cat:'Limpeza'},
+          {nome:'PARATY ATACADO E DISTRIBUIDORA LTDA',cat:'Limpeza'},
+          {nome:'PARATY ATACADO E DISTRIBUIDORA LTDA',cat:'Limpeza'},
+        ],
+        QUA:[
+          {nome:'ALVO DISTRIBUIDORA DE COSMETIC',cat:'Cosméticos'},
+          {nome:'DILNOR DIST E LOGISTICA DO NORDESTE',cat:'Limpeza'},
+          {nome:'DILNOR DIST E LOGISTICA DO NORDESTE',cat:'Limpeza'},
+          {nome:'IND. REUNIDAS RAYMUNDO DA FONTE',cat:'Limpeza'},
+          {nome:'INTERLANDIA LTDA',cat:'Distribuição'},
+          {nome:'FOCUS DISTRIBUIDORA LTDA',cat:'Distribuição'},
+          {nome:'LABORTECNE IND. DE EMBAL LTDA',cat:'Embalagens'},
+          {nome:'MAIS COM. DIST. MAT LIMPEZA',cat:'Limpeza'},
+          {nome:'REDIJOHN DIST PROD HIG LIMP',cat:'Higiene'},
+          {nome:'UNIL E INDUSTRIA E COMERCIO',cat:'Limpeza'},
+        ],
+        QUI:[
+          {nome:'COMERCIAL VITA NORTE (NEUTROX,KOLENE)',cat:'Cosméticos'},
+          {nome:'DCL CARDEAL DISTRIBUIDORA (GALLO,PERFUMARIA)',cat:'Perfumaria'},
+          {nome:'E.B.A. DISTRIBUIDORA LTDA',cat:'Distribuição'},
+          {nome:'E.B.A. DISTRIBUIDORA LTDA',cat:'Distribuição'},
+          {nome:'GRIFOS COMERCIO DE ALIMENTOS',cat:'Distribuição'},
+        ],
+        SEX:[],
+      },
+      '2e4':{
+        SEG:[
+          {nome:'ATACAREJO ECONOMICO (COTAÇÃO PERFUMARIA)',cat:'Perfumaria'},
+          {nome:'DCL CARDEAL DISTRIBUIDORA (GALLO,PERFUMARIA)',cat:'Perfumaria'},
+        ],
+        TER:[
+          {nome:'IND. E COMERCIO DE VELAS SANTA LUZIA',cat:'Velas'},
+        ],
+        QUA:[
+          {nome:'DIA DIST E IMPORTACAO AFOGADOS',cat:'Limpeza'},
+          {nome:'MAX GIRO DISTRIB PROD HIGIENE',cat:'Higiene'},
+          {nome:'REMIX ATACADISTA E DISTRIBUIDOR',cat:'Distribuição'},
+          {nome:'SEDE DAS MIUDESAS ATACADAO',cat:'Utilidades'},
+        ],
+        QUI:[
+          {nome:'AL DISTRIBUIDORA COM. VAREJISTA',cat:'Utilidades'},
+          {nome:'ANA PAULA TORRES DA SILVA (CARVÃO)',cat:'Utilidades'},
+          {nome:'COMERCIAL VITA NORTE LTDA',cat:'Cosméticos'},
+          {nome:'CRISTIANO LEITE VELOSO',cat:'Distribuição'},
+          {nome:'DF DISTRIBUIDORA DE DESCARTAVEIS',cat:'Descartáveis'},
+          {nome:'KELLDRIN INDUSTRIAL LTDA',cat:'Limpeza'},
+          {nome:'PADELLE DIST',cat:'Utilidades'},
+        ],
+        SEX:[],
+      },
+    }
+  },
+  {
+    nome:'CRISLANE', cargo:'Hortifruti, Padaria & Ovos', cor:'#14b8a6',
+    cron:{
+      '1e3':{
+        SEG:[
+          {nome:'ATACAREJO ECONOMICO (PADARIA)',cat:'Padaria'},
+          {nome:'ATACAREJO ECONOMICO (CONSUMO)',cat:'Consumo'},
+          {nome:'EZEQUIAS COSTA DOS SANTOS EMBALAGENS',cat:'Embalagens'},
+          {nome:'JR DISTRIBUICAO LTDA',cat:'Distribuição'},
+          {nome:'OVOS SAO JOSE LTDA',cat:'Ovos'},
+          {nome:'R. ALBUQUERQUE DISTRIBUIDORA DE OVOS',cat:'Ovos'},
+          {nome:'RUBI DISTRIBUIDORA (PROTEINA)',cat:'Proteína'},
+          {nome:'SANTOS E MOURA HORTIFRUTIGRANJEIRO',cat:'Hortifruti'},
+        ],
+        TER:[
+          {nome:'BIMBO DO BRASIL LTDA',cat:'Panificação'},
+          {nome:'BOLO DE ROLO FABRICACAO PERNAMBUCANA',cat:'Panificação'},
+          {nome:'PERNAMBUCO COM DE POLPAS EIRELI',cat:'Polpas'},
+          {nome:'UNIRELLA ALIMENTOS LTDA',cat:'Alimentos'},
+        ],
+        QUA:[
+          {nome:'ROMERYS MARIA DA SILVA BRAGA',cat:'Alimentos'},
+          {nome:'S.M.S ALIMENTOS LTDA',cat:'Alimentos'},
+          {nome:'TUDO NOVO ALIMENTOS LTDA',cat:'Alimentos'},
+        ],
+        QUI:[
+          {nome:'COMERCIAL HORTI-FRIOS LTDA',cat:'Horti-Frios'},
+        ],
+        SEX:[
+          {nome:'T R A DISTRIBUIDORA E LOGISTICA',cat:'Distribuição'},
+        ],
+      },
+      '2e4':{
+        SEG:[
+          {nome:'A. B. DE ALBUQUERQUE GUERRA',cat:'Distribuição'},
+          {nome:'ATACAREJO ECONOMICO (PADARIA)',cat:'Padaria'},
+          {nome:'JR DISTRIBUICAO LTDA',cat:'Distribuição'},
+          {nome:'LACTALIS DO BRASIL',cat:'Laticínios'},
+          {nome:'OVOS SAO JOSE LTDA',cat:'Ovos'},
+          {nome:'R. ALBUQUERQUE DISTRIBUIDORA DE OVOS',cat:'Ovos'},
+          {nome:'SANTOS E MOURA HORTIFRUTIGRANJEIRO',cat:'Hortifruti'},
+        ],
+        TER:[
+          {nome:'BIMBO DO BRASIL LTDA',cat:'Panificação'},
+          {nome:'MOISES CARLOS DE ALMEIDA FABRICACAO',cat:'Panificação'},
+          {nome:'PERNAMBUCO COM DE POLPAS EIRELI',cat:'Polpas'},
+        ],
+        QUA:[
+          {nome:'IND E COM PROD. ALIMENTICIOS TERERE',cat:'Alimentos'},
+          {nome:'L.O SOBRINHO EIRELI ME',cat:'Alimentos'},
+          {nome:'TUDO NOVO ALIMENTOS LTDA',cat:'Alimentos'},
+        ],
+        QUI:[
+          {nome:'CIA SANTOS DISTRIBUIDORA E IMPORTADORA',cat:'Hortifruti'},
+          {nome:'W.A.MELO EIRELI ME',cat:'Hortifruti'},
+          {nome:'COMERCIAL HORTI-FRIOS LTDA',cat:'Horti-Frios'},
+        ],
+        SEX:[
+          {nome:'DISTRIBUIDORA SAO LUCAS DE BISCOITO',cat:'Biscoitos'},
+          {nome:'T R A DISTRIBUIDORA E LOGISTICA',cat:'Distribuição'},
+        ],
+      },
+    }
+  },
+  {
+    nome:'PATRICIA', cargo:'Bebidas, Vinhos & Distribuição', cor:'#f97316',
+    cron:{
+      '1e3':{
+        SEG:[
+          {nome:'AMBEV S.A CDD CABO',cat:'Bebidas'},
+          {nome:'COCA COLA - SOLAR',cat:'Bebidas'},
+          {nome:'NE COMERCIO ATACADISTA',cat:'Bebidas'},
+          {nome:'COMERCIAL VITA NORTE LTDA',cat:'Bebidas'},
+          {nome:'DIST E LOG PERNAMBICO IMP E EXP',cat:'Bebidas'},
+          {nome:'JP COMERCIALIZACAO DE BEBIDAS',cat:'Bebidas'},
+          {nome:'NORDESTE COM. IND. DE BEBIDAS',cat:'Bebidas'},
+          {nome:'TORRES E PEDROSA COM. DE AGUAS',cat:'Águas'},
+          {nome:'VINICOLA VENZ LTDA',cat:'Vinhos'},
+        ],
+        TER:[
+          {nome:'D&D ANGEIRAS DISTRIBUIDORA',cat:'Distribuição'},
+          {nome:'AUJO DISTRIBUIDORA DE ALIMENTO',cat:'Distribuição'},
+        ],
+        QUA:[
+          {nome:'DJ INDUSTRIA E COMERCIO DE ALIMENTOS',cat:'Alimentos'},
+          {nome:'IND. E COMERCIO XAVANTE',cat:'Alimentos'},
+          {nome:'INGA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+          {nome:'JURERE IND. DE ALIMENTOS LTDA',cat:'Alimentos'},
+          {nome:'NESTLE BRASIL LTDA',cat:'Alimentos'},
+          {nome:'NESTLE BRASIL LTDA (GAROTO)',cat:'Alimentos'},
+          {nome:'FOCUS DISTRIBUIDORA LTDA',cat:'Distribuição'},
+        ],
+        QUI:[
+          {nome:'PEPSICO DO BRASIL LTDA',cat:'Bebidas'},
+          {nome:'PORTO A PORTO COMERCIO IMP. EXP.',cat:'Distribuição'},
+          {nome:'DILNOR DIST E LOGISTICA DO NORDESTE',cat:'Distribuição'},
+          {nome:'RUBI DISTRIBUIDORA DE ALIMENTOS',cat:'Distribuição'},
+        ],
+        SEX:[
+          {nome:'ATACAREJO ECONOMICO (VINHOS)',cat:'Vinhos'},
+        ],
+      },
+      '2e4':{
+        SEG:[
+          {nome:'AMBEV S.A CDD CABO',cat:'Bebidas'},
+          {nome:'COCA COLA - SOLAR',cat:'Bebidas'},
+          {nome:'IND. DE BEBIDAS IGARASSU',cat:'Bebidas'},
+          {nome:'PRUDENTE DISTRIBUIDORA DE BEBIDAS',cat:'Bebidas'},
+          {nome:'VITIVINICOLA QUINTA DE SAO BRAZ',cat:'Vinhos'},
+          {nome:'CERVEJARIA PETROPOLIS',cat:'Bebidas'},
+        ],
+        TER:[
+          {nome:'IANE INDUSTRIA DE ALIMENTOS NORDESTE',cat:'Alimentos'},
+          {nome:'JOSE CLAUDIO & BARROS LTDA',cat:'Alimentos'},
+          {nome:'RA COMERCIO DE BEBIDAS LTDA',cat:'Bebidas'},
+          {nome:'RAMOS INDUSTRIA DE ALIMENTOS LTDA',cat:'Alimentos'},
+        ],
+        QUA:[
+          {nome:'GRAND MARCA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+          {nome:'ALIMENTOS TIA SONIA LTDA',cat:'Alimentos'},
+          {nome:'AUJO DISTRIBUIDORA DE ALIMENTO',cat:'Distribuição'},
+          {nome:'DIA DIST E IMPORTACAO AFOGADOS',cat:'Distribuição'},
+          {nome:'GRAND MARCA DISTRIBUIDORA LTDA',cat:'Distribuição'},
+          {nome:'GRIFOS COMERCIO DE ALIMENTOS',cat:'Distribuição'},
+          {nome:'NATGEO COMERCIO E REPRESENTACAO',cat:'Distribuição'},
+          {nome:'RICARDO BERNARDO DA SILVA',cat:'Distribuição'},
+          {nome:'TALENTOS IND COM ALIMENTOS',cat:'Alimentos'},
+          {nome:'TAMBAU IND. ALIMENTICIA LTDA',cat:'Alimentos'},
+        ],
+        QUI:[
+          {nome:'J.R.ATACADO LIMITADA',cat:'Atacado'},
+          {nome:'RECIFE DOCES E CARAMELOS LTDA',cat:'Doces'},
+        ],
+        SEX:[
+          {nome:'ATACAREJO ECONOMICO (VINHOS)',cat:'Vinhos'},
+        ],
+      },
+    }
+  },
+];
+
+const DIAS = ['SEG','TER','QUA','QUI','SEX'];
+const DIAS_L = {SEG:'Segunda',TER:'Terça',QUA:'Quarta',QUI:'Quinta',SEX:'Sexta'};
+const GRUPOS_L = {'1e3':'SEMANAS 1 e 3','2e4':'SEMANAS 2 e 4'};
+
+const hoje = new Date();
+const dataStr = hoje.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+function buildTabela(grupo) {
+  const linhas = [];
+  for (const dia of DIAS) {
+    const fornecs = grupo[dia] || [];
+    if (!fornecs.length) continue;
+    fornecs.forEach((f, i) => {
+      linhas.push(`<tr>
+        <td class="dia">${i===0 ? DIAS_L[dia] : ''}</td>
+        <td class="fornec">${f.nome}</td>
+        <td class="cat">${f.cat}</td>
+        <td class="check"><span class="check-box"></span></td>
+      </tr>`);
+    });
+  }
+  return linhas.join('');
+}
+
+let html = '';
+for (const c of COMPRADORES) {
+  html += `
+  <div class="pagina">
+    <div class="pg-header">
+      <div class="pg-logo-area">
+        <div>
+          <div class="pg-logo">ECO<span>N</span>ÔMICO</div>
+          <div class="pg-sub">Cronograma de Compras</div>
+        </div>
+      </div>
+      <div class="pg-meta">
+        <strong>${c.nome} — ${c.cargo}</strong>
+        Emitido em ${dataStr}
+      </div>
+    </div>
+
+    <div class="comprador-header" style="background:${c.cor}">
+      <div>
+        <div class="comprador-nome">${c.nome}</div>
+        <div class="comprador-cargo">${c.cargo}</div>
+      </div>
+    </div>
+
+    <div class="grupos">`;
+
+  for (const [gKey, gLabel] of Object.entries(GRUPOS_L)) {
+    const grupo = c.cron[gKey];
+    html += `
+      <div class="grupo">
+        <div class="grupo-header" style="background:${c.cor}">${gLabel}</div>
+        <table>
+          <thead><tr>
+            <th style="width:60px">Dia</th>
+            <th>Fornecedor</th>
+            <th style="width:70px">Categoria</th>
+            <th class="tc">✓</th>
+          </tr></thead>
+          <tbody>${buildTabela(grupo)}</tbody>
+        </table>
+      </div>`;
+  }
+
+  html += `
+    </div>
+
+    <div style="margin-top:10px">
+      <div class="obs-line">Observações: _______________________________________________________________________________________________________________</div>
+      <div class="obs-line">___________________________________________________________________________________________________________________________________________</div>
+    </div>
+
+    <div class="pg-footer">
+      <span>Econômico Supermercados — Uso interno</span>
+      <span>Assinatura: ____________________________</span>
+    </div>
+  </div>`;
+}
+
+document.body.insertAdjacentHTML('beforeend', html);
+</script>
+</body>
+</html>

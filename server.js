@@ -2861,6 +2861,7 @@ app.get('/api/margem-tv/comprador', withCache(5), async (req, res) => {
       q(`SELECT CodFornec, SUM(Total) as total
          FROM central.avariaconsumo
          WHERE DataLan BETWEEN ? AND ? AND CodigoBarras IN (${phC}) AND CodFornec > 0
+           AND Status IN (0,2)
          GROUP BY CodFornec`, [dIni, dFim, ...codigos]).catch(() => [])
     ]);
 

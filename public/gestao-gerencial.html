@@ -108,6 +108,7 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
   font-size:9px;font-weight:700;color:var(--text3);text-align:center;line-height:19px;margin-right:5px}
 .td-bar{display:inline-flex;align-items:center;gap:5px}
 .td-bar-inner{height:4px;border-radius:3px;background:var(--blue);opacity:.45;display:inline-block;flex-shrink:0}
+.bl{border-left:1px solid rgba(255,255,255,.08)}
 
 /* ─── LOADING ─── */
 .loading{padding:40px;text-align:center;color:var(--text3);display:flex;flex-direction:column;align-items:center;gap:10px;font-size:12px}
@@ -190,10 +191,22 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
       <div class="sh"><h2>Ticket Médio por Mês</h2><span id="lbl-ticket"></span></div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr>
-            <th style="text-align:left">Mês</th>
-            <th>Cupons</th><th>Ticket Atual</th><th>Ticket Ant.</th><th>Dif %</th>
-          </tr></thead>
+          <thead>
+            <tr id="thead-ticket-anos">
+              <th style="text-align:left"></th>
+              <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Cupons</th>
+              <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Venda</th>
+              <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Ticket Médio</th>
+              <th></th>
+            </tr>
+            <tr id="thead-ticket-cols">
+              <th style="text-align:left">Mês</th>
+              <th class="bl">Atual</th><th>Ant.</th>
+              <th class="bl">Atual</th><th>Ant.</th>
+              <th class="bl">Atual</th><th>Ant.</th>
+              <th>Dif %</th>
+            </tr>
+          </thead>
           <tbody id="tbody-ticket"></tbody>
         </table>
       </div>
@@ -313,6 +326,21 @@ function renderGrupos(d){
 }
 
 function renderTicket(d){
+  // Atualiza cabeçalho de anos
+  const a=d.meta_info.ano, aa=d.meta_info.ano_ant;
+  document.getElementById('thead-ticket-anos').querySelectorAll('th[colspan]').forEach((th,i)=>{
+    const labels=[`Cupons`,`Venda`,`Ticket`];
+    th.innerHTML=`<span style="font-size:8px;color:var(--text3)">${labels[i]}</span>`;
+  });
+  const cols=document.getElementById('thead-ticket-cols').querySelectorAll('th');
+  // cols: Mês | Atual(cupons) | Ant(cupons) | Atual(venda) | Ant(venda) | Atual(ticket) | Ant(ticket) | Dif%
+  if(cols[1])cols[1].textContent=a;
+  if(cols[2])cols[2].textContent=aa;
+  if(cols[3])cols[3].textContent=a;
+  if(cols[4])cols[4].textContent=aa;
+  if(cols[5])cols[5].textContent=a;
+  if(cols[6])cols[6].textContent=aa;
+
   const tb=document.getElementById('tbody-ticket');tb.innerHTML='';
   d.ticket_meses.forEach(t=>{
     const dc=t.dif_pct!==null&&t.dif_pct>=0?'tp':'tn';
@@ -320,8 +348,12 @@ function renderTicket(d){
     const atual=t.mes===d.meta_info.mes;
     tb.innerHTML+=`<tr${atual?' style="background:rgba(250,204,21,.04)"':''}>
       <td>${MA[t.mes]}${atual?' <span style="font-size:9px;color:var(--brand)">●</span>':''}</td>
-      <td>${t.cupons.toLocaleString('pt-BR')}</td>
-      <td>${R(t.ticket)}</td><td>${R(t.ticket_ant)}</td>
+      <td class="bl">${t.cupons.toLocaleString('pt-BR')}</td>
+      <td>${(t.cupons_ant||0).toLocaleString('pt-BR')}</td>
+      <td class="bl">${R(t.venda||0)}</td>
+      <td>${R(t.venda_ant||0)}</td>
+      <td class="bl">${R(t.ticket)}</td>
+      <td>${R(t.ticket_ant)}</td>
       <td class="${dc}">${pt}</td>
     </tr>`;
   });

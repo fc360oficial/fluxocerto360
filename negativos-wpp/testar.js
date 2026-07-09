@@ -50,11 +50,12 @@ async function gerarExcel(rows) {
     const itens = rows.filter(r => parseFloat(r[chave])<0);
     const ws    = wb.addWorksheet(`Loja ${ln} - ${NOMES_LOJA[ln]||'LOJA '+ln}`);
     ws.columns = [
-      {header:'Código',   key:'Codigo',   width:14},
-      {header:'Descrição',key:'Descricao',width:44},
-      {header:'Grupo',    key:'Grupo',    width:22},
-      {header:'SubGrupo', key:'SubGrupo', width:22},
-      {header:'Estoque',  key:chave,      width:12},
+      {header:'Código',       key:'Codigo',   width:14},
+      {header:'Descrição',    key:'Descricao',width:44},
+      {header:'Grupo',        key:'Grupo',    width:22},
+      {header:'SubGrupo',     key:'SubGrupo', width:22},
+      {header:'Estoque/Loja', key:'contagem', width:14},
+      {header:'Sistema',      key:chave,      width:12},
     ];
     const hdr = ws.getRow(1);
     hdr.eachCell(c => {
@@ -64,14 +65,14 @@ async function gerarExcel(rows) {
     });
     hdr.height=20;
     itens.forEach((r,i) => {
-      const row = ws.addRow({Codigo:r.Codigo,Descricao:r.Descricao,Grupo:r.Grupo,SubGrupo:r.SubGrupo,[chave]:r[chave]});
+      const row = ws.addRow({Codigo:r.Codigo,Descricao:r.Descricao,Grupo:r.Grupo,SubGrupo:r.SubGrupo,contagem:'',[chave]:r[chave]});
       const bg  = i%2===0?'FFFFFFFF':'FFF1F5F9';
       row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:bg}};c.alignment={vertical:'middle'};});
       const cel=row.getCell(chave);
       if(parseFloat(cel.value)<0) cel.font={color:{argb:'FFDC2626'},bold:true};
       row.height=16;
     });
-    ws.autoFilter={from:'A1',to:'E1'};
+    ws.autoFilter={from:'A1',to:'F1'};
     ws.views=[{state:'frozen',ySplit:1}];
     const tot=ws.addRow({Codigo:'',Descricao:`Total: ${itens.length} produto(s)`,Grupo:'',SubGrupo:'',[chave]:''});
     tot.font={bold:true,italic:true,color:{argb:'FF64748B'}};

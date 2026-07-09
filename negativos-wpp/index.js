@@ -75,11 +75,12 @@ async function gerarExcel(rows) {
     const ws       = wb.addWorksheet(`Loja ${ln} - ${nomeLoja}`);
 
     ws.columns = [
-      { header: 'Código',    key: 'Codigo',   width: 14 },
-      { header: 'Descrição', key: 'Descricao',width: 44 },
-      { header: 'Grupo',     key: 'Grupo',    width: 22 },
-      { header: 'SubGrupo',  key: 'SubGrupo', width: 22 },
-      { header: 'Estoque',   key: chave,      width: 12 },
+      { header: 'Código',        key: 'Codigo',   width: 14 },
+      { header: 'Descrição',     key: 'Descricao',width: 44 },
+      { header: 'Grupo',         key: 'Grupo',    width: 22 },
+      { header: 'SubGrupo',      key: 'SubGrupo', width: 22 },
+      { header: 'Estoque/Loja',  key: 'contagem', width: 14 },
+      { header: 'Sistema',       key: chave,      width: 12 },
     ];
 
     const hdr = ws.getRow(1);
@@ -91,7 +92,7 @@ async function gerarExcel(rows) {
     hdr.height = 20;
 
     itens.forEach((r, i) => {
-      const row = ws.addRow({ Codigo: r.Codigo, Descricao: r.Descricao, Grupo: r.Grupo, SubGrupo: r.SubGrupo, [chave]: r[chave] });
+      const row = ws.addRow({ Codigo: r.Codigo, Descricao: r.Descricao, Grupo: r.Grupo, SubGrupo: r.SubGrupo, contagem: '', [chave]: r[chave] });
       const bg  = i % 2 === 0 ? BRNCO : CINZA;
       row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }; cell.alignment = { vertical: 'middle' }; });
       const cel = row.getCell(chave);
@@ -99,7 +100,7 @@ async function gerarExcel(rows) {
       row.height = 16;
     });
 
-    ws.autoFilter = { from: 'A1', to: 'E1' };
+    ws.autoFilter = { from: 'A1', to: 'F1' };
     ws.views = [{ state: 'frozen', ySplit: 1 }];
 
     // rodapé com total

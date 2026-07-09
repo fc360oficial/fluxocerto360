@@ -1279,27 +1279,39 @@ app.get('/api/gestao-gerencial', withCache(10), async (req, res) => {
       participacao:totAv>0?+(g.av/totAv*100).toFixed(1):0
     })).sort((a,b)=>b.avaria-a.avaria);
 
-    // Ticket médio por loja (sempre todas as 6, independente do filtro)
-    const ticketLojas = await Promise.all([1,2,3,4,5,6].map(async ln => {
-      const [[rA],[rB]] = await Promise.all([
-        q(`SELECT COUNT(DISTINCT CONCAT(nECF,'-',CCF)) cupons, SUM(ValorTotalNovo) venda FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIni, dFimAtual]).catch(()=>[{cupons:0,venda:0}]),
-        q(`SELECT COUNT(DISTINCT CONCAT(nECF,'-',CCF)) cupons, SUM(ValorTotalNovo) venda FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N'`, [dIniAnt, dFimAnt]).catch(()=>[{cupons:0,venda:0}])
-      ]);
-      const cupons=parseInt(rA?.cupons||0), venda=parseFloat(rA?.venda||0);
-      const cuponsAnt=parseInt(rB?.cupons||0), vendaAnt=parseFloat(rB?.venda||0);
-      const ticket=cupons>0?+(venda/cupons).toFixed(2):0;
-      const ticketAnt=cuponsAnt>0?+(vendaAnt/cuponsAnt).toFixed(2):0;
-      return { loja:ln, venda:+venda.toFixed(2), cupons, ticket,
-               venda_ant:+vendaAnt.toFixed(2), cupons_ant:cuponsAnt, ticket_ant:ticketAnt,
-               dif_pct:ticketAnt>0?+((ticket-ticketAnt)/ticketAnt*100).toFixed(1):null };
-    }));
+    // Ticket médio por mês (Jan → mês selecionado), respeitando filtro de loja
+    const lojasTicket = lojaSel ? [lojaSel] : [1,2,3,4,5,6];
+    const ticketMeses = await Promise.all(
+      Array.from({length: mes}, (_, i) => i + 1).map(async m => {
+        const mmM = mesDB(m);
+        const msStr = String(m).padStart(2,'0');
+        const ehAtual = (m === mes && ehMesAtual);
+        const corte    = ehAtual ? diaCorte : String(new Date(ano,m,0).getDate()).padStart(2,'0');
+        const corteAnt = ehAtual ? diaCorte : String(new Date(anoAnt,m,0).getDate()).padStart(2,'0');
+        const dI=`${ano}-${msStr}-01`,    dF=`${ano}-${msStr}-${corte}`;
+        const dIA=`${anoAnt}-${msStr}-01`, dFA=`${anoAnt}-${msStr}-${corteAnt}`;
+        let cupons=0, venda=0, cuponsAnt=0, vendaAnt=0;
+        await Promise.all(lojasTicket.map(async ln => {
+          const [[rA],[rB]] = await Promise.all([
+            q(`SELECT COUNT(DISTINCT CONCAT(nECF,'-',CCF)) cupons, SUM(ValorTotalNovo) venda FROM \`ln${ln}${mmM}\`.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N'`,[dI,dF]).catch(()=>[{cupons:0,venda:0}]),
+            q(`SELECT COUNT(DISTINCT CONCAT(nECF,'-',CCF)) cupons, SUM(ValorTotalNovo) venda FROM \`ln${ln}${mmM}\`.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N'`,[dIA,dFA]).catch(()=>[{cupons:0,venda:0}])
+          ]);
+          cupons+=parseInt(rA?.cupons||0); venda+=parseFloat(rA?.venda||0);
+          cuponsAnt+=parseInt(rB?.cupons||0); vendaAnt+=parseFloat(rB?.venda||0);
+        }));
+        const ticket=cupons>0?+(venda/cupons).toFixed(2):0;
+        const ticketAnt=cuponsAnt>0?+(vendaAnt/cuponsAnt).toFixed(2):0;
+        return { mes:m, cupons, ticket, cupons_ant:cuponsAnt, ticket_ant:ticketAnt,
+                 dif_pct:ticketAnt>0?+((ticket-ticketAnt)/ticketAnt*100).toFixed(1):null };
+      })
+    );
 
     res.json({
       kpis:{ venda_atual:+totalAtual.toFixed(2), venda_ant:+totalAnt.toFixed(2), crescimento:cresc,
              meta, pct_meta:pctMeta, falta_meta:faltaMeta,
              avaria:+totalAvaria.toFixed(2), avaria_ant:+totalAvariaAnt.toFixed(2),
              avaria_pct:totalAtual>0?+(totalAvaria/totalAtual*100).toFixed(2):0 },
-      grupos, grupos_avaria:gruposAvaria, ticket_lojas:ticketLojas,
+      grupos, grupos_avaria:gruposAvaria, ticket_meses:ticketMeses,
       meta_info:{ dia_corte:diaCorte, mes, ano, ano_ant:anoAnt, loja:lojaSel||'todas' }
     });
   } catch(err){ res.status(500).json({ error:err.message }); }

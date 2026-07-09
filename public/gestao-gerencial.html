@@ -146,8 +146,34 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
 
 /* ─── DOIS PAINEIS ───────────────────────── */
 .dois-paineis{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:900px){.dois-paineis{grid-template-columns:1fr}}
-@media(max-width:640px){.kpi-val{font-size:20px}header{padding:0 16px}.filtros-wrap{padding:12px 16px}main{padding:16px}}
+
+@media(max-width:900px){
+  .dois-paineis{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  header{padding:0 12px;height:54px}
+  .h-back{font-size:11px;padding:4px 7px}
+  .h-title h1{font-size:11px;letter-spacing:1px}
+  .h-title p{display:none}
+  .h-badge{display:none}
+  .filtros-wrap{padding:10px 12px;gap:8px}
+  .f-select{font-size:12px;padding:6px 8px;min-width:0}
+  .f-sep{display:none}
+  .f-info{display:none}
+  .btn-atualizar{padding:7px 12px;font-size:11px}
+  main{padding:12px;gap:14px}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{padding:14px 14px}
+  .kpi-label{font-size:9px}
+  .kpi-val{font-size:18px}
+  .kpi-sub{font-size:10px}
+  .secao-header{padding:12px 14px;flex-wrap:wrap}
+  .secao-header h2{font-size:10px}
+  .secao-header span{font-size:10px}
+  thead th{padding:8px 10px;font-size:9px}
+  tbody td{padding:8px 10px;font-size:12px}
+  .tbl-rank{width:18px;height:18px;font-size:9px;line-height:18px}
+}
 </style>
 </head>
 <body>
@@ -215,14 +241,14 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
     </div>
     <div class="secao">
       <div class="secao-header">
-        <h2>Ticket Médio por Loja</h2>
+        <h2>Ticket Médio por Mês</h2>
         <span id="lbl-ticket-periodo"></span>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead>
             <tr>
-              <th style="text-align:left">Loja</th>
+              <th style="text-align:left">Mês</th>
               <th>Cupons</th>
               <th>Ticket Atual</th>
               <th>Ticket Ant.</th>
@@ -358,15 +384,19 @@ function renderGrupos(d){
 }
 
 function renderTicket(d){
+  const loja=document.getElementById('sel-loja').value;
+  const lojaLabel=loja==='todas'?'Todas as Lojas':'Loja '+loja;
   document.getElementById('lbl-ticket-periodo').textContent=
-    `${MESES[+document.getElementById('sel-mes').value]} ${document.getElementById('sel-ano').value} vs ${d.meta_info.ano_ant}`;
+    `${lojaLabel} · Jan–${MESES[+document.getElementById('sel-mes').value]} ${document.getElementById('sel-ano').value} vs ${d.meta_info.ano_ant}`;
   const tbody=document.getElementById('tbody-ticket');
   tbody.innerHTML='';
-  d.ticket_lojas.forEach(t=>{
+  const MESES_ABR=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  d.ticket_meses.forEach(t=>{
     const dc=t.dif_pct!==null&&t.dif_pct>=0?'td-pos':'td-neg';
     const pt=t.dif_pct!==null?(t.dif_pct>=0?'+':'')+t.dif_pct+'%':'—';
-    tbody.innerHTML+=`<tr>
-      <td>Loja ${t.loja}</td>
+    const atual=t.mes===d.meta_info.mes;
+    tbody.innerHTML+=`<tr${atual?' style="background:rgba(250,204,21,.04)"':''}>
+      <td>${MESES_ABR[t.mes]}${atual?' <span style="font-size:9px;color:var(--brand);font-weight:700">●</span>':''}</td>
       <td>${t.cupons.toLocaleString('pt-BR')}</td>
       <td>${fmt(t.ticket)}</td>
       <td>${fmt(t.ticket_ant)}</td>

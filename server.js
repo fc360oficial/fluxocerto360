@@ -1242,14 +1242,15 @@ app.get('/api/gestao-gerencial', withCache(10), async (req, res) => {
     const totalAvaria    = Object.values(avPorCod).reduce((s,v)=>s+v,0);
     const totalAvariaAnt = parseFloat(avAntRows[0]?.v||0);
 
-    // Venda do dia (dia exato, respeita filtro de loja)
+    // Venda do dia — até o mesmo horário em ambos os anos
     const dHoje    = `${ano}-${mesStr}-${diaCorte}`;
     const dHojeAnt = `${anoAnt}-${mesStr}-${diaCorte}`;
+    const horaAtual = String(hoje.getHours()).padStart(2,'0')+':'+String(hoje.getMinutes()).padStart(2,'0')+':59';
     let vDia=0, vDiaAnt=0;
     await Promise.all(lojas.map(async ln => {
       const [[rA],[rB]] = await Promise.all([
-        q(`SELECT SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data=? AND IndCancel='N'`,[dHoje]).catch(()=>[{v:0}]),
-        q(`SELECT SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data=? AND IndCancel='N'`,[dHojeAnt]).catch(()=>[{v:0}])
+        q(`SELECT SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data=? AND Hora<=? AND IndCancel='N'`,[dHoje,horaAtual]).catch(()=>[{v:0}]),
+        q(`SELECT SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data=? AND Hora<=? AND IndCancel='N'`,[dHojeAnt,horaAtual]).catch(()=>[{v:0}])
       ]);
       vDia+=parseFloat(rA?.v||0); vDiaAnt+=parseFloat(rB?.v||0);
     }));

@@ -104,7 +104,7 @@ body::before{
 
 <nav class="nav">
 
-  <a class="nav-item" href="/index.html">
+  <a class="nav-item" id="item-relatorios" href="/index.html">
     <div class="nav-icon ic-blue">📊</div>
     <div class="nav-body">
       <div class="nav-title">Relatórios Estratégicos</div>
@@ -168,8 +168,9 @@ fetch('/api/me').then(r=>r.json()).then(u=>{
   if(u.perfil==='admin'){
     document.getElementById('item-admin').style.display='flex';
   } else if(u.perfil==='gerencial'){
-    // Esconde tudo exceto Gestão Gerencial
     document.querySelectorAll('.nav-item:not(#item-gerencial), .nav-div, .nav-sub').forEach(el=>el.style.display='none');
+  } else if(u.perfil==='comprador'){
+    document.querySelectorAll('.nav-item:not(#item-relatorios), .nav-div, .nav-sub').forEach(el=>el.style.display='none');
   }
 });
 </script>

@@ -218,28 +218,44 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
       </div>
     </div>
 
-    <div class="secao">
-      <div class="sh"><h2>Ticket Médio por Mês</h2><span id="lbl-ticket"></span></div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr id="thead-ticket-anos">
-              <th style="text-align:left"></th>
-              <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Cupons</th>
-              <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Venda</th>
-              <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Ticket Médio</th>
-              <th></th>
-            </tr>
-            <tr id="thead-ticket-cols">
-              <th style="text-align:left">Mês</th>
-              <th class="bl">Atual</th><th>Ant.</th>
-              <th class="bl">Atual</th><th>Ant.</th>
-              <th class="bl">Atual</th><th>Ant.</th>
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="secao">
+        <div class="sh"><h2>Ticket Médio por Mês</h2><span id="lbl-ticket"></span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr id="thead-ticket-anos">
+                <th style="text-align:left"></th>
+                <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Cupons</th>
+                <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Venda</th>
+                <th colspan="2" style="text-align:center;border-left:1px solid rgba(255,255,255,.08)">Ticket Médio</th>
+                <th></th>
+              </tr>
+              <tr id="thead-ticket-cols">
+                <th style="text-align:left">Mês</th>
+                <th class="bl">Atual</th><th>Ant.</th>
+                <th class="bl">Atual</th><th>Ant.</th>
+                <th class="bl">Atual</th><th>Ant.</th>
+                <th>Dif %</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-ticket"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="secao" id="painel-lojas" style="display:none">
+        <div class="sh"><h2>Venda por Loja</h2><span id="lbl-lojas"></span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th style="text-align:left">Loja</th>
+              <th id="th-lojas-ano">Atual</th>
+              <th id="th-lojas-ant">Ant.</th>
               <th>Dif %</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-ticket"></tbody>
-        </table>
+            </tr></thead>
+            <tbody id="tbody-lojas"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -293,6 +309,7 @@ async function carregar(){
     renderGrupos(d);
     renderTicket(d);
     renderAvaria(d);
+    renderVendaLojas(d);
     document.getElementById('f-info').textContent=`Até dia ${d.meta_info.dia_corte}/${String(mes).padStart(2,'0')}/${ano}`;
     document.getElementById('lbl-grupos').textContent=`${MF[+mes]} ${ano} vs ${d.meta_info.ano_ant}`;
     const lojaL=loja==='todas'?'Todas as lojas':'Loja '+loja;
@@ -399,6 +416,26 @@ function renderTicket(d){
       <td class="${dc}">${pt}</td>
     </tr>`;
   });
+}
+
+function renderVendaLojas(d){
+  const pv=document.getElementById('painel-lojas');
+  if(!d.venda_lojas||!d.venda_lojas.length){pv.style.display='none';return;}
+  document.getElementById('th-lojas-ano').textContent=d.meta_info.ano;
+  document.getElementById('th-lojas-ant').textContent=d.meta_info.ano_ant;
+  document.getElementById('lbl-lojas').textContent=`Até dia ${d.meta_info.dia_corte}`;
+  const tb=document.getElementById('tbody-lojas');tb.innerHTML='';
+  d.venda_lojas.forEach(l=>{
+    const dif=l.venda_ant>0?+((l.venda-l.venda_ant)/l.venda_ant*100).toFixed(1):0;
+    const dc=dif>=0?'tp':'tn';
+    tb.innerHTML+=`<tr>
+      <td>Loja ${l.loja}</td>
+      <td>${R(l.venda)}</td>
+      <td>${R(l.venda_ant)}</td>
+      <td class="${dc}">${dif>=0?'+':''}${dif}%</td>
+    </tr>`;
+  });
+  pv.style.display='flex';
 }
 
 function renderAvaria(d){

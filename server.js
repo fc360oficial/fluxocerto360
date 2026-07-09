@@ -98,7 +98,6 @@ app.post('/api/login', async (req, res) => {
   const perfil = user.perfil || 'gerente';
   req.session.user = { id: user.id, nome: user.nome, usuario: user.usuario, perfil, comprador_nome: user.comprador_nome || null, loja_id: user.loja_id || null };
   let redirect = '/hub.html';
-  if (perfil === 'comprador' && user.comprador_nome) redirect = '/comprador.html?nome=' + encodeURIComponent(user.comprador_nome);
   res.json({ ok: true, nome: user.nome, redirect });
 });
 

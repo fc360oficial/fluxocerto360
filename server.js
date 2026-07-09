@@ -1341,6 +1341,51 @@ app.get('/api/gestao-gerencial', withCache(10), async (req, res) => {
   } catch(err){ res.status(500).json({ error:err.message }); }
 });
 
+// Top 10 produtos por faturamento e quantidade
+app.get('/api/top-produtos', withCache(15), async (req, res) => {
+  try {
+    const hoje = new Date();
+    const ano = req.query.ano ? parseInt(req.query.ano) : hoje.getFullYear();
+    const mes = req.query.mes ? parseInt(req.query.mes) : hoje.getMonth() + 1;
+    const lojaSel = req.query.loja && req.query.loja !== 'todas' ? parseInt(req.query.loja) : null;
+    const lojas = lojaSel ? [lojaSel] : [1,2,3,4,5,6];
+    const mm = mesDB(mes);
+    const mesStr = String(mes).padStart(2,'0');
+    const ehMesAtual = (ano === hoje.getFullYear() && mes === hoje.getMonth() + 1);
+    const diaCorte = ehMesAtual ? String(hoje.getDate()).padStart(2,'0') : String(new Date(ano,mes,0).getDate()).padStart(2,'0');
+    const dIni = `${ano}-${mesStr}-01`;
+    const dFim = `${ano}-${mesStr}-${diaCorte}`;
+
+    const vendaMap = {}, qtdMap = {}, descMap = {};
+    await Promise.all(lojas.map(async ln => {
+      const rows = await q(
+        `SELECT Codigo, Descricao, SUM(ValorTotalNovo) as v, SUM(Qtd) as qtd
+         FROM \`ln${ln}${mm}\`.zcupomitens
+         WHERE Data BETWEEN ? AND ? AND IndCancel='N'
+         GROUP BY Codigo, Descricao`,
+        [dIni, dFim]
+      ).catch(() => []);
+      for (const r of rows) {
+        const vv = parseFloat(r.v || 0);
+        const qq = parseFloat(r.qtd || 0);
+        vendaMap[r.Codigo] = (vendaMap[r.Codigo] || 0) + vv;
+        qtdMap[r.Codigo]   = (qtdMap[r.Codigo]   || 0) + qq;
+        if (!descMap[r.Codigo]) descMap[r.Codigo] = (r.Descricao || r.Codigo).trim();
+      }
+    }));
+
+    const topVenda = Object.entries(vendaMap)
+      .map(([cod, v]) => ({ cod, desc: descMap[cod], v: +v.toFixed(2) }))
+      .sort((a, b) => b.v - a.v).slice(0, 10);
+
+    const topQtd = Object.entries(qtdMap)
+      .map(([cod, q2]) => ({ cod, desc: descMap[cod], qtd: +q2.toFixed(0) }))
+      .sort((a, b) => b.qtd - a.qtd).slice(0, 10);
+
+    res.json({ top_venda: topVenda, top_qtd: topQtd, meta: { mes, ano, loja: lojaSel || 'todas' } });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // Comparativo por lojas: todas as 6 lojas 2025 vs 2026 para um mês
 app.get('/api/comparativo-lojas', withCache(120), async (req, res) => {
   try {

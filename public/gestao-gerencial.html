@@ -228,6 +228,35 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
     </div>
   </div>
 
+  <div class="dois" id="painel-top" style="display:none">
+    <div class="secao">
+      <div class="sh"><h2>Top 10 — Faturamento</h2><span id="lbl-topv"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="text-align:left">Produto</th>
+            <th>Faturamento</th>
+            <th style="min-width:110px">Part %</th>
+          </tr></thead>
+          <tbody id="tbody-topv"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="secao">
+      <div class="sh"><h2>Top 10 — Quantidade</h2><span id="lbl-topq"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="text-align:left">Produto</th>
+            <th>Qtd</th>
+            <th style="min-width:110px">Part %</th>
+          </tr></thead>
+          <tbody id="tbody-topq"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -254,14 +283,20 @@ async function carregar(){
   document.getElementById('kpi-grid').innerHTML='<div style="grid-column:1/-1" class="loading"><div class="spin"></div></div>';
   document.getElementById('painel-merc').style.display='none';
   document.getElementById('painel-avaria').style.display='none';
+  document.getElementById('painel-top').style.display='none';
   try{
-    const r=await fetch(`/api/gestao-gerencial?mes=${mes}&ano=${ano}&loja=${loja}`);
+    const [r,rt]=await Promise.all([
+      fetch(`/api/gestao-gerencial?mes=${mes}&ano=${ano}&loja=${loja}`),
+      fetch(`/api/top-produtos?mes=${mes}&ano=${ano}&loja=${loja}`)
+    ]);
     if(!r.ok)throw new Error((await r.json()).error||r.status);
     const d=await r.json();
+    const dt=rt.ok?await rt.json():null;
     renderKPIs(d);
     renderGrupos(d);
     renderTicket(d);
     renderAvaria(d);
+    if(dt) renderTop(dt);
     document.getElementById('f-info').textContent=`Até dia ${d.meta_info.dia_corte}/${String(mes).padStart(2,'0')}/${ano}`;
     document.getElementById('lbl-grupos').textContent=`${MF[+mes]} ${ano} vs ${d.meta_info.ano_ant}`;
     const lojaL=loja==='todas'?'Todas as lojas':'Loja '+loja;
@@ -382,6 +417,38 @@ function renderAvaria(d){
     </tr>`;
   });
   document.getElementById('painel-avaria').style.display='block';
+}
+
+function renderTop(d){
+  const pv=document.getElementById('painel-top');
+  if(!d.top_venda||!d.top_venda.length){pv.style.display='none';return;}
+  const maxV=d.top_venda[0].v;
+  const totV=d.top_venda.reduce((s,x)=>s+x.v,0);
+  const tbV=document.getElementById('tbody-topv');tbV.innerHTML='';
+  d.top_venda.forEach((p,i)=>{
+    const pct=totV>0?(p.v/totV*100).toFixed(1):0;
+    const bw=maxV>0?+(p.v/maxV*80).toFixed(0):0;
+    tbV.innerHTML+=`<tr>
+      <td><span class="rk">${i+1}</span>${p.desc}</td>
+      <td>${R(p.v)}</td>
+      <td><span class="td-bar"><span class="td-bar-inner" style="width:${bw}px;background:var(--green)"></span>${pct}%</span></td>
+    </tr>`;
+  });
+  const maxQ=d.top_qtd[0]?.qtd||1;
+  const totQ=d.top_qtd.reduce((s,x)=>s+x.qtd,0);
+  const tbQ=document.getElementById('tbody-topq');tbQ.innerHTML='';
+  d.top_qtd.forEach((p,i)=>{
+    const pct=totQ>0?(p.qtd/totQ*100).toFixed(1):0;
+    const bw=maxQ>0?+(p.qtd/maxQ*80).toFixed(0):0;
+    tbQ.innerHTML+=`<tr>
+      <td><span class="rk">${i+1}</span>${p.desc}</td>
+      <td>${p.qtd.toLocaleString('pt-BR')}</td>
+      <td><span class="td-bar"><span class="td-bar-inner" style="width:${bw}px;background:var(--blue)"></span>${pct}%</span></td>
+    </tr>`;
+  });
+  document.getElementById('lbl-topv').textContent=`${MF[+d.meta.mes]} ${d.meta.ano}`;
+  document.getElementById('lbl-topq').textContent=`${MF[+d.meta.mes]} ${d.meta.ano}`;
+  pv.style.display='grid';
 }
 
 carregar();

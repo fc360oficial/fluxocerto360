@@ -1241,6 +1241,19 @@ app.get('/api/gestao-gerencial', withCache(10), async (req, res) => {
     const totalAvaria    = Object.values(avPorCod).reduce((s,v)=>s+v,0);
     const totalAvariaAnt = parseFloat(avAntRows[0]?.v||0);
 
+    // Venda do dia (dia exato, respeita filtro de loja)
+    const dHoje    = `${ano}-${mesStr}-${diaCorte}`;
+    const dHojeAnt = `${anoAnt}-${mesStr}-${diaCorte}`;
+    let vDia=0, vDiaAnt=0;
+    await Promise.all(lojas.map(async ln => {
+      const [[rA],[rB]] = await Promise.all([
+        q(`SELECT SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data=? AND IndCancel='N'`,[dHoje]).catch(()=>[{v:0}]),
+        q(`SELECT SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data=? AND IndCancel='N'`,[dHojeAnt]).catch(()=>[{v:0}])
+      ]);
+      vDia+=parseFloat(rA?.v||0); vDiaAnt+=parseFloat(rB?.v||0);
+    }));
+    const vDiaCrsc = vDiaAnt>0?+((vDia-vDiaAnt)/vDiaAnt*100).toFixed(1):0;
+
     // Items → grupo
     const itens = await q(
       `SELECT i.CodigoBarra, g.CodGrupo, g.Descricao as gNome
@@ -1321,6 +1334,7 @@ app.get('/api/gestao-gerencial', withCache(10), async (req, res) => {
              meta, pct_meta:pctMeta, falta_meta:faltaMeta,
              avaria:+totalAvaria.toFixed(2), avaria_ant:+totalAvariaAnt.toFixed(2),
              avaria_pct:totalAtual>0?+(totalAvaria/totalAtual*100).toFixed(2):0 },
+      venda_dia:{ atual:+vDia.toFixed(2), ant:+vDiaAnt.toFixed(2), crescimento:vDiaCrsc, dia:diaCorte },
       grupos, grupos_avaria:gruposAvaria, ticket_meses:ticketMeses, venda_lojas:vendaLojas,
       meta_info:{ dia_corte:diaCorte, mes, ano, ano_ant:anoAnt, loja:lojaSel||'todas' }
     });

@@ -63,7 +63,8 @@ header{
 main{flex:1;padding:18px 24px;display:flex;flex-direction:column;gap:16px}
 
 /* ─── KPI ─── */
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.k-d::before{background:linear-gradient(90deg,var(--cyan,#06B6D4),transparent)}
 .kpi{background:linear-gradient(145deg,var(--card2),var(--card));
   border:1px solid var(--border-md);border-radius:var(--r);
   padding:16px 18px 14px;position:relative;overflow:hidden}
@@ -118,7 +119,8 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
 
 /* ─── RESPONSIVE ─── */
 @media(max-width:900px){.dois{grid-template-columns:1fr}}
-@media(max-width:800px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1000px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){
   header{padding:0 14px;height:50px}
   .h-title p,.h-live{display:none}
@@ -305,6 +307,14 @@ function renderKPIs(d){
     <div class="kv">${R(k.avaria)}</div>
     <div class="ks"><span class="badge ${aC}">${k.avaria_pct}% da venda</span>${k.avaria_ant>0?' Ant: '+R(k.avaria_ant):''}</div>
     <div class="kb"><div style="width:${bA}%;background:var(--red)"></div></div>
+  </div>
+  <div class="kpi k-d">
+    <div class="kl">Venda do Dia ${d.meta_info.dia_corte}/${String(d.meta_info.mes).padStart(2,'0')}</div>
+    <div class="kv" style="color:#06B6D4">${R(d.venda_dia.atual)}</div>
+    <div class="ks">
+      <span class="badge ${d.venda_dia.crescimento>=0?'bu':'bd'}">${d.venda_dia.crescimento>=0?'+':''}${d.venda_dia.crescimento}%</span>
+      vs ${d.meta_info.ano_ant}: ${R(d.venda_dia.ant)}
+    </div>
   </div>`;
 }
 

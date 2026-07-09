@@ -285,22 +285,18 @@ async function carregar(){
   document.getElementById('painel-avaria').style.display='none';
   document.getElementById('painel-top').style.display='none';
   try{
-    const [r,rt]=await Promise.all([
-      fetch(`/api/gestao-gerencial?mes=${mes}&ano=${ano}&loja=${loja}`),
-      fetch(`/api/top-produtos?mes=${mes}&ano=${ano}&loja=${loja}`)
-    ]);
+    const r=await fetch(`/api/gestao-gerencial?mes=${mes}&ano=${ano}&loja=${loja}`);
     if(!r.ok)throw new Error((await r.json()).error||r.status);
     const d=await r.json();
-    const dt=rt.ok?await rt.json():null;
     renderKPIs(d);
     renderGrupos(d);
     renderTicket(d);
     renderAvaria(d);
-    if(dt) renderTop(dt);
     document.getElementById('f-info').textContent=`Até dia ${d.meta_info.dia_corte}/${String(mes).padStart(2,'0')}/${ano}`;
     document.getElementById('lbl-grupos').textContent=`${MF[+mes]} ${ano} vs ${d.meta_info.ano_ant}`;
     const lojaL=loja==='todas'?'Todas as lojas':'Loja '+loja;
     document.getElementById('lbl-ticket').textContent=`${lojaL} · Jan–${MA[+mes]} ${ano} vs ${d.meta_info.ano_ant}`;
+    carregarTop(mes,ano,loja);
   }catch(e){
     document.getElementById('kpi-grid').innerHTML=`<div style="grid-column:1/-1" class="loading"><div class="err-box">Erro: ${e.message}</div></div>`;
   }finally{btn.disabled=false;btn.textContent='Atualizar';}
@@ -417,6 +413,19 @@ function renderAvaria(d){
     </tr>`;
   });
   document.getElementById('painel-avaria').style.display='block';
+}
+
+async function carregarTop(mes,ano,loja){
+  const pv=document.getElementById('painel-top');
+  const spin='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:24px"><div style="display:inline-flex;gap:8px;align-items:center"><div class="spin"></div>Carregando top produtos...</div></td></tr>';
+  document.getElementById('tbody-topv').innerHTML=spin;
+  document.getElementById('tbody-topq').innerHTML='<tr><td colspan="3"></td></tr>';
+  pv.style.display='grid';
+  try{
+    const rt=await fetch(`/api/top-produtos?mes=${mes}&ano=${ano}&loja=${loja}`);
+    if(rt.ok) renderTop(await rt.json());
+    else pv.style.display='none';
+  }catch(e){ pv.style.display='none'; }
 }
 
 function renderTop(d){

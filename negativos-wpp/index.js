@@ -1,14 +1,19 @@
 'use strict';
 const mysql   = require('mysql2/promise');
 const cron    = require('node-cron');
-const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
+const path    = require('path');
+const fs      = require('fs');
 const qrcode  = require('qrcode-terminal');
 const pino    = require('pino');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 
 const DB = { host: '192.168.2.252', port: 3306, user: 'root', password: '1900', database: 'central', connectTimeout: 15000 };
 const GRUPO_NOME = 'CENTRAL ( Aux ) PREVENÇÃO DE PERDAS';
+const LOGO_PATH  = path.join(__dirname, '..', 'public', 'logo.png');
 const logger = pino({ level: 'info' });
+
+const NOMES_LOJA = { 1:'CAHU', 2:'MURIBECA', 3:'PONTE', 4:'ATACAREJO', 5:'PORTA LARGA', 6:'JARDIM JORDAO' };
 
 let sock = null;
 
@@ -19,7 +24,7 @@ async function buscarNegativos() {
   try {
     const [rows] = await conn.query(`
       SELECT
-        i.Codigo,
+        i.CodigoBarra                          AS Codigo,
         i.Descricao,
         COALESCE(g.Descricao, 'SEM GRUPO')    AS Grupo,
         COALESCE(sg.Descricao, 'SEM SUBGRUPO') AS SubGrupo,
@@ -40,13 +45,12 @@ async function buscarNegativos() {
       LEFT JOIN central.grupo    g  ON g.CodGrupo     = sg.CodGrupo
       WHERE i.CodDesativado = 0
         AND i.Descricao NOT LIKE '% KG%'
+        AND i.CodigoBarra IS NOT NULL
+        AND CHAR_LENGTH(i.CodigoBarra) > 5
         AND (
-          COALESCE(e1.Qtd, 0) < 0 OR
-          COALESCE(e2.Qtd, 0) < 0 OR
-          COALESCE(e3.Qtd, 0) < 0 OR
-          COALESCE(e4.Qtd, 0) < 0 OR
-          COALESCE(e5.Qtd, 0) < 0 OR
-          COALESCE(e6.Qtd, 0) < 0
+          COALESCE(e1.Qtd, 0) < 0 OR COALESCE(e2.Qtd, 0) < 0 OR
+          COALESCE(e3.Qtd, 0) < 0 OR COALESCE(e4.Qtd, 0) < 0 OR
+          COALESCE(e5.Qtd, 0) < 0 OR COALESCE(e6.Qtd, 0) < 0
         )
       ORDER BY g.Descricao, sg.Descricao, i.Descricao
     `);
@@ -56,70 +60,76 @@ async function buscarNegativos() {
   }
 }
 
-// ── Excel ─────────────────────────────────────────────────────────────────────
+// ── PDF ───────────────────────────────────────────────────────────────────────
 
-const NOMES_LOJA = { 1:'CAHU', 2:'MURIBECA', 3:'PONTE', 4:'ATACAREJO', 5:'PORTA LARGA', 6:'JARDIM JORDAO' };
+async function gerarPDF(rows) {
+  const doc    = new PDFDocument({ size: 'A4', margin: 0, bufferPages: true });
+  const chunks = [];
+  doc.on('data', c => chunks.push(c));
 
-async function gerarExcel(rows) {
-  const wb = new ExcelJS.Workbook();
+  const hoje     = new Date();
+  const dataHora = hoje.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
+                 + ' — ' + hoje.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
 
-  const AZUL  = 'FF1E40AF';
-  const BRNCO = 'FFFFFFFF';
-  const VERML = 'FFDC2626';
-  const CINZA = 'FFF1F5F9';
+  const ML = 36, MR = 36, PW = 595 - ML - MR; // margens e largura
+  const CX = ML, CD = ML + 110, CEL = ML + 360, CSI = ML + 435; // col X positions
+  const CWX = 105, CWD = 245, CWEL = 70, CWSI = PW - (CD - ML) - CWD - CWEL - 5;
+
+  function desenharCabecalho(ln) {
+    let y = 30;
+
+    // Fundo azul topo
+    doc.rect(0, 0, 595, 68).fill('#1E40AF');
+
+    // Logo
+    const logoExiste = fs.existsSync(LOGO_PATH);
+    if (logoExiste) {
+      try { doc.image(LOGO_PATH, ML, y - 4, { height: 44 }); } catch(_) {}
+    }
+
+    // Título
+    const txX = logoExiste ? ML + 60 : ML;
+    doc.fillColor('#FFFFFF').fontSize(18).font('Helvetica-Bold')
+       .text('ECONÔMICO RELATÓRIOS', txX, y, { width: PW - 60 });
+    doc.fillColor('#BFDBFE').fontSize(9).font('Helvetica')
+       .text('Auditoria de Estoque Negativo', txX, y + 22, { width: PW - 60 });
+    y = 68;
+
+    // Nome da loja
+    doc.rect(0, y, 595, 24).fill('#1E3A5F');
+    doc.fillColor('#FFFFFF').fontSize(12).font('Helvetica-Bold')
+       .text(`Loja ${ln} — ${NOMES_LOJA[ln] || 'LOJA ' + ln}`, ML, y + 6);
+    y += 24;
+
+    // Data
+    doc.rect(0, y, 595, 16).fill('#E2E8F0');
+    doc.fillColor('#334155').fontSize(8).font('Helvetica-Oblique')
+       .text(`Tipo: AUDITORIA ESTOQUE   |   Emissão: ${dataHora}`, ML, y + 4);
+    y += 16;
+
+    // Cabeçalho colunas
+    doc.rect(0, y, 595, 18).fill('#334E68');
+    doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
+    doc.text('Código',        CX,  y + 5, { width: CWX, align:'center' });
+    doc.text('Descrição',     CD,  y + 5, { width: CWD });
+    doc.text('Estoque/Loja',  CEL, y + 5, { width: CWEL, align:'center' });
+    doc.text('Sistema',       CSI, y + 5, { width: CWSI, align:'center' });
+    y += 18;
+
+    return y;
+  }
+
+  let primeiraLoja = true;
 
   for (let ln = 1; ln <= 6; ln++) {
-    const chave    = 'L' + ln;
-    const itens    = rows.filter(r => parseFloat(r[chave]) < 0);
-    const nomeLoja = NOMES_LOJA[ln] || ('LOJA ' + ln);
-    const ws       = wb.addWorksheet(`Loja ${ln} - ${nomeLoja}`);
+    const chave = 'L' + ln;
+    const itens = rows.filter(r => parseFloat(r[chave]) < 0);
 
-    ws.columns = [
-      { key: 'Codigo',   width: 16 },
-      { key: 'Descricao',width: 46 },
-      { key: 'contagem', width: 14 },
-      { key: 'sistema',  width: 12 },
-    ];
+    if (!primeiraLoja) doc.addPage();
+    primeiraLoja = false;
 
-    const agora    = new Date();
-    const dataHora = agora.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
-                   + ' — ' + agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    let y = desenharCabecalho(ln);
 
-    // Linha 1: marca
-    const r1 = ws.addRow(['ECONÔMICO RELATÓRIOS', '', '', '']);
-    ws.mergeCells(`A${r1.number}:D${r1.number}`);
-    r1.getCell(1).fill      = { type:'pattern', pattern:'solid', fgColor:{ argb: AZUL } };
-    r1.getCell(1).font      = { bold:true, color:{ argb: BRNCO }, size:14, name:'Calibri' };
-    r1.getCell(1).alignment = { horizontal:'center', vertical:'middle' };
-    r1.height = 28;
-
-    // Linha 2: nome da loja
-    const r2 = ws.addRow([`Loja ${ln} — ${nomeLoja}`, '', '', '']);
-    ws.mergeCells(`A${r2.number}:D${r2.number}`);
-    r2.getCell(1).fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF1E3A5F' } };
-    r2.getCell(1).font      = { bold:true, color:{ argb: BRNCO }, size:12 };
-    r2.getCell(1).alignment = { horizontal:'center', vertical:'middle' };
-    r2.height = 22;
-
-    // Linha 3: data/hora + tipo
-    const r3 = ws.addRow([`Tipo: AUDITORIA ESTOQUE — Emissão: ${dataHora}`, '', '', '']);
-    ws.mergeCells(`A${r3.number}:D${r3.number}`);
-    r3.getCell(1).fill      = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFE2E8F0' } };
-    r3.getCell(1).font      = { italic:true, color:{ argb:'FF334155' }, size:10 };
-    r3.getCell(1).alignment = { horizontal:'center', vertical:'middle' };
-    r3.height = 18;
-
-    // Linha 4: cabeçalho das colunas
-    const hdr = ws.addRow(['Código', 'Descrição', 'Estoque/Loja', 'Sistema']);
-    hdr.eachCell(cell => {
-      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
-      cell.font      = { bold: true, color: { argb: BRNCO }, size: 11 };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
-    hdr.height = 22;
-    ws.views = [{ state: 'frozen', ySplit: 4 }];
-
-    // Agrupa por SubGrupo
     const grupos = {};
     itens.forEach(r => {
       const g = (r.SubGrupo || r.Grupo || 'SEM GRUPO').toUpperCase();
@@ -127,34 +137,61 @@ async function gerarExcel(rows) {
       grupos[g].push(r);
     });
 
-    let linhaIdx = 0;
+    let idx = 0;
     for (const [nomeGrupo, produtos] of Object.entries(grupos)) {
-      // Linha de cabeçalho do grupo (laranja, estilo ERP)
-      const gRow = ws.addRow([nomeGrupo, '', '', '']);
-      ws.mergeCells(`A${gRow.number}:D${gRow.number}`);
-      gRow.getCell(1).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFA500' } };
-      gRow.getCell(1).font      = { bold: true, color: { argb: 'FF000000' }, size: 10 };
-      gRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
-      gRow.height = 18;
+      // Nova página se necessário
+      if (y > 790) {
+        doc.addPage();
+        y = desenharCabecalho(ln);
+      }
 
-      // Produtos do grupo
-      produtos.forEach(r => {
-        const row = ws.addRow({ Codigo: r.Codigo, Descricao: r.Descricao, contagem: '', sistema: r[chave] });
-        const bg  = linhaIdx % 2 === 0 ? BRNCO : CINZA;
-        row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }; cell.alignment = { vertical: 'middle' }; });
-        const cel = row.getCell('sistema');
-        if (parseFloat(cel.value) < 0) cel.font = { color: { argb: VERML }, bold: true };
-        row.height = 16;
-        linhaIdx++;
-      });
+      // Linha do grupo (laranja)
+      doc.rect(0, y, 595, 16).fill('#F97316');
+      doc.fillColor('#000000').fontSize(8).font('Helvetica-Bold')
+         .text(nomeGrupo, ML + 4, y + 4, { width: PW });
+      y += 16;
+
+      for (const r of produtos) {
+        if (y > 800) {
+          doc.addPage();
+          y = desenharCabecalho(ln);
+        }
+
+        const bg = idx % 2 === 0 ? '#FFFFFF' : '#F1F5F9';
+        doc.rect(0, y, 595, 14).fill(bg);
+
+        const desc = String(r.Descricao || '').substring(0, 48);
+        doc.fillColor('#1F2937').fontSize(8).font('Helvetica');
+        doc.text(String(r.Codigo  || ''), CX,  y + 3, { width: CWX });
+        doc.text(desc,                    CD,  y + 3, { width: CWD });
+        doc.text('',                      CEL, y + 3, { width: CWEL, align:'center' });
+        doc.fillColor('#DC2626').font('Helvetica-Bold')
+           .text(String(r[chave]), CSI, y + 3, { width: CWSI, align:'center' });
+
+        // Linha separadora sutil
+        doc.strokeColor('#E2E8F0').lineWidth(0.3)
+           .moveTo(0, y + 14).lineTo(595, y + 14).stroke();
+
+        y += 14;
+        idx++;
+      }
     }
 
     // Rodapé total
-    const totRow = ws.addRow({ Codigo: '', Descricao: `Total: ${itens.length} produto(s)`, contagem: '', sistema: '' });
-    totRow.font = { bold: true, italic: true, color: { argb: 'FF64748B' } };
+    if (y > 800) { doc.addPage(); y = desenharCabecalho(ln); }
+    doc.rect(0, y, 595, 16).fill('#F8FAFC');
+    doc.fillColor('#64748B').fontSize(8).font('Helvetica-Oblique')
+       .text(`Total: ${itens.length} produto(s) com estoque negativo`, ML, y + 4);
+    y += 16;
+
+    // Rodapé de página
+    doc.rect(0, 820, 595, 22).fill('#1E40AF');
+    doc.fillColor('#93C5FD').fontSize(7).font('Helvetica')
+       .text('ECONÔMICO RELATÓRIOS  |  Gerado automaticamente  |  Uso interno', ML, 826, { align:'center', width: PW });
   }
 
-  return wb.xlsx.writeBuffer();
+  doc.end();
+  return new Promise(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
 }
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
@@ -172,7 +209,6 @@ async function conectar() {
 
   sock.ev.on('creds.update', saveCreds);
 
-  // Handler único — resolve a Promise E trata reconexões futuras
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Timeout conexão WA')), 120000);
     let resolvido = false;
@@ -194,14 +230,14 @@ async function conectar() {
           else process.exit(1);
         } else {
           logger.warn('Conexão encerrada, reconectando...');
-          if (resolvido) setTimeout(conectar, 5000); // só reconecta após primeira conexão
+          if (resolvido) setTimeout(conectar, 5000);
         }
       }
     });
   });
 }
 
-async function enviarPlanilha(buffer, nProdutos) {
+async function enviarPDF(buffer, nProdutos) {
   const grupos = await sock.groupFetchAllParticipating();
   const jid    = Object.keys(grupos).find(id => grupos[id].subject === GRUPO_NOME);
 
@@ -215,12 +251,12 @@ async function enviarPlanilha(buffer, nProdutos) {
 
   await sock.sendMessage(jid, {
     document: Buffer.from(buffer),
-    mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    fileName: `negativos_${new Date().toISOString().slice(0,10)}.xlsx`,
+    mimetype: 'application/pdf',
+    fileName: `negativos_${new Date().toISOString().slice(0,10)}.pdf`,
     caption,
   });
 
-  logger.info(`Planilha enviada para "${GRUPO_NOME}" (${nProdutos} itens)`);
+  logger.info(`PDF enviado para "${GRUPO_NOME}" (${nProdutos} itens)`);
 }
 
 // ── Rotina principal ──────────────────────────────────────────────────────────
@@ -233,8 +269,8 @@ async function rotina() {
       logger.info('Nenhum estoque negativo encontrado.');
       return;
     }
-    const buffer = await gerarExcel(rows);
-    await enviarPlanilha(buffer, rows.length);
+    const buffer = await gerarPDF(rows);
+    await enviarPDF(buffer, rows.length);
   } catch (err) {
     logger.error({ err }, 'Erro na rotina de negativos');
   }
@@ -246,7 +282,6 @@ async function rotina() {
   logger.info('Conectando ao WhatsApp...');
   await conectar();
 
-  // Seg-sex às 08:00 (America/Sao_Paulo)
   cron.schedule('0 8 * * 1-5', rotina, { timezone: 'America/Sao_Paulo' });
   logger.info('Agendamento ativo: seg-sex 08:00 (Brasília). Aguardando...');
 })();

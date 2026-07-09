@@ -244,11 +244,11 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
         </div>
       </div>
       <div class="secao" id="painel-lojas" style="display:none">
-        <div class="sh"><h2>Venda por Loja</h2><span id="lbl-lojas"></span></div>
+        <div class="sh"><h2 id="sh-lojas-titulo">Venda por Loja</h2><span id="lbl-lojas"></span></div>
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th style="text-align:left">Loja</th>
+              <th id="th-lojas-loja" style="text-align:left">Loja</th>
               <th id="th-lojas-ano">Atual</th>
               <th id="th-lojas-ant">Ant.</th>
               <th>Dif %</th>
@@ -420,21 +420,41 @@ function renderTicket(d){
 
 function renderVendaLojas(d){
   const pv=document.getElementById('painel-lojas');
-  if(!d.venda_lojas||!d.venda_lojas.length){pv.style.display='none';return;}
+  const lojaEsp=d.meta_info.loja!=='todas';
   document.getElementById('th-lojas-ano').textContent=d.meta_info.ano;
   document.getElementById('th-lojas-ant').textContent=d.meta_info.ano_ant;
-  document.getElementById('lbl-lojas').textContent=`Até dia ${d.meta_info.dia_corte}`;
   const tb=document.getElementById('tbody-lojas');tb.innerHTML='';
-  d.venda_lojas.forEach(l=>{
-    const dif=l.venda_ant>0?+((l.venda-l.venda_ant)/l.venda_ant*100).toFixed(1):0;
-    const dc=dif>=0?'tp':'tn';
-    tb.innerHTML+=`<tr>
-      <td>Loja ${l.loja}</td>
-      <td>${R(l.venda)}</td>
-      <td>${R(l.venda_ant)}</td>
-      <td class="${dc}">${dif>=0?'+':''}${dif}%</td>
-    </tr>`;
-  });
+
+  if(lojaEsp){
+    if(!d.ticket_meses||!d.ticket_meses.length){pv.style.display='none';return;}
+    document.getElementById('sh-lojas-titulo').textContent='Venda Mensal';
+    document.getElementById('th-lojas-loja').textContent='Mês';
+    document.getElementById('lbl-lojas').textContent=`Loja ${d.meta_info.loja} · Até dia ${d.meta_info.dia_corte}`;
+    d.ticket_meses.forEach(t=>{
+      const dif=t.venda_ant>0?+((t.venda-t.venda_ant)/t.venda_ant*100).toFixed(1):0;
+      const dc=dif>=0?'tp':'tn';
+      const atual=t.mes===d.meta_info.mes;
+      tb.innerHTML+=`<tr${atual?' style="background:rgba(250,204,21,.04)"':''}>
+        <td>${MA[t.mes]}${atual?'<span style="font-size:9px;color:var(--brand);margin-left:4px">●</span>':''}</td>
+        <td>${R(t.venda||0)}</td><td>${R(t.venda_ant||0)}</td>
+        <td class="${dc}">${dif>=0?'+':''}${dif}%</td>
+      </tr>`;
+    });
+  } else {
+    if(!d.venda_lojas||!d.venda_lojas.length){pv.style.display='none';return;}
+    document.getElementById('sh-lojas-titulo').textContent='Venda por Loja';
+    document.getElementById('th-lojas-loja').textContent='Loja';
+    document.getElementById('lbl-lojas').textContent=`Até dia ${d.meta_info.dia_corte}`;
+    d.venda_lojas.forEach(l=>{
+      const dif=l.venda_ant>0?+((l.venda-l.venda_ant)/l.venda_ant*100).toFixed(1):0;
+      const dc=dif>=0?'tp':'tn';
+      tb.innerHTML+=`<tr>
+        <td>Loja ${l.loja}</td>
+        <td>${R(l.venda)}</td><td>${R(l.venda_ant)}</td>
+        <td class="${dc}">${dif>=0?'+':''}${dif}%</td>
+      </tr>`;
+    });
+  }
   pv.style.display='flex';
 }
 

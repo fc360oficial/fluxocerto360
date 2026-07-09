@@ -74,13 +74,12 @@ async function gerarExcel(rows) {
     const nomeLoja = NOMES_LOJA[ln] || ('LOJA ' + ln);
     const ws       = wb.addWorksheet(`Loja ${ln} - ${nomeLoja}`);
 
+    // Colunas sem Grupo/SubGrupo — igual ao relatório do ERP
     ws.columns = [
-      { header: 'Código',        key: 'Codigo',   width: 14 },
-      { header: 'Descrição',     key: 'Descricao',width: 44 },
-      { header: 'Grupo',         key: 'Grupo',    width: 22 },
-      { header: 'SubGrupo',      key: 'SubGrupo', width: 22 },
-      { header: 'Estoque/Loja',  key: 'contagem', width: 14 },
-      { header: 'Sistema',       key: chave,      width: 12 },
+      { header: 'Código',       key: 'Codigo',   width: 16 },
+      { header: 'Descrição',    key: 'Descricao',width: 46 },
+      { header: 'Estoque/Loja', key: 'contagem', width: 14 },
+      { header: 'Sistema',      key: 'sistema',  width: 12 },
     ];
 
     const hdr = ws.getRow(1);
@@ -89,22 +88,41 @@ async function gerarExcel(rows) {
       cell.font      = { bold: true, color: { argb: BRNCO }, size: 11 };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
     });
-    hdr.height = 20;
-
-    itens.forEach((r, i) => {
-      const row = ws.addRow({ Codigo: r.Codigo, Descricao: r.Descricao, Grupo: r.Grupo, SubGrupo: r.SubGrupo, contagem: '', [chave]: r[chave] });
-      const bg  = i % 2 === 0 ? BRNCO : CINZA;
-      row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }; cell.alignment = { vertical: 'middle' }; });
-      const cel = row.getCell(chave);
-      if (parseFloat(cel.value) < 0) cel.font = { color: { argb: VERML }, bold: true };
-      row.height = 16;
-    });
-
-    ws.autoFilter = { from: 'A1', to: 'F1' };
+    hdr.height = 22;
     ws.views = [{ state: 'frozen', ySplit: 1 }];
 
-    // rodapé com total
-    const totRow = ws.addRow({ Codigo: '', Descricao: `Total: ${itens.length} produto(s)`, Grupo: '', SubGrupo: '', [chave]: '' });
+    // Agrupa por SubGrupo
+    const grupos = {};
+    itens.forEach(r => {
+      const g = (r.SubGrupo || r.Grupo || 'SEM GRUPO').toUpperCase();
+      if (!grupos[g]) grupos[g] = [];
+      grupos[g].push(r);
+    });
+
+    let linhaIdx = 0;
+    for (const [nomeGrupo, produtos] of Object.entries(grupos)) {
+      // Linha de cabeçalho do grupo (laranja, estilo ERP)
+      const gRow = ws.addRow([nomeGrupo, '', '', '']);
+      ws.mergeCells(`A${gRow.number}:D${gRow.number}`);
+      gRow.getCell(1).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFA500' } };
+      gRow.getCell(1).font      = { bold: true, color: { argb: 'FF000000' }, size: 10 };
+      gRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+      gRow.height = 18;
+
+      // Produtos do grupo
+      produtos.forEach(r => {
+        const row = ws.addRow({ Codigo: r.Codigo, Descricao: r.Descricao, contagem: '', sistema: r[chave] });
+        const bg  = linhaIdx % 2 === 0 ? BRNCO : CINZA;
+        row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }; cell.alignment = { vertical: 'middle' }; });
+        const cel = row.getCell('sistema');
+        if (parseFloat(cel.value) < 0) cel.font = { color: { argb: VERML }, bold: true };
+        row.height = 16;
+        linhaIdx++;
+      });
+    }
+
+    // Rodapé total
+    const totRow = ws.addRow({ Codigo: '', Descricao: `Total: ${itens.length} produto(s)`, contagem: '', sistema: '' });
     totRow.font = { bold: true, italic: true, color: { argb: 'FF64748B' } };
   }
 

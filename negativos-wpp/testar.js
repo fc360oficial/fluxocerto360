@@ -50,12 +50,10 @@ async function gerarExcel(rows) {
     const itens = rows.filter(r => parseFloat(r[chave])<0);
     const ws    = wb.addWorksheet(`Loja ${ln} - ${NOMES_LOJA[ln]||'LOJA '+ln}`);
     ws.columns = [
-      {header:'Código',       key:'Codigo',   width:14},
-      {header:'Descrição',    key:'Descricao',width:44},
-      {header:'Grupo',        key:'Grupo',    width:22},
-      {header:'SubGrupo',     key:'SubGrupo', width:22},
+      {header:'Código',       key:'Codigo',   width:16},
+      {header:'Descrição',    key:'Descricao',width:46},
       {header:'Estoque/Loja', key:'contagem', width:14},
-      {header:'Sistema',      key:chave,      width:12},
+      {header:'Sistema',      key:'sistema',  width:12},
     ];
     const hdr = ws.getRow(1);
     hdr.eachCell(c => {
@@ -63,18 +61,34 @@ async function gerarExcel(rows) {
       c.font={bold:true,color:{argb:'FFFFFFFF'},size:11};
       c.alignment={horizontal:'center',vertical:'middle'};
     });
-    hdr.height=20;
-    itens.forEach((r,i) => {
-      const row = ws.addRow({Codigo:r.Codigo,Descricao:r.Descricao,Grupo:r.Grupo,SubGrupo:r.SubGrupo,contagem:'',[chave]:r[chave]});
-      const bg  = i%2===0?'FFFFFFFF':'FFF1F5F9';
-      row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:bg}};c.alignment={vertical:'middle'};});
-      const cel=row.getCell(chave);
-      if(parseFloat(cel.value)<0) cel.font={color:{argb:'FFDC2626'},bold:true};
-      row.height=16;
-    });
-    ws.autoFilter={from:'A1',to:'F1'};
+    hdr.height=22;
     ws.views=[{state:'frozen',ySplit:1}];
-    const tot=ws.addRow({Codigo:'',Descricao:`Total: ${itens.length} produto(s)`,Grupo:'',SubGrupo:'',[chave]:''});
+
+    const grupos={};
+    itens.forEach(r => {
+      const g=(r.SubGrupo||r.Grupo||'SEM GRUPO').toUpperCase();
+      if(!grupos[g]) grupos[g]=[];
+      grupos[g].push(r);
+    });
+
+    let idx=0;
+    for(const [nomeGrupo,produtos] of Object.entries(grupos)){
+      const gRow=ws.addRow([nomeGrupo,'','','']);
+      ws.mergeCells(`A${gRow.number}:D${gRow.number}`);
+      gRow.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFA500'}};
+      gRow.getCell(1).font={bold:true,color:{argb:'FF000000'},size:10};
+      gRow.getCell(1).alignment={horizontal:'left',vertical:'middle',indent:1};
+      gRow.height=18;
+      produtos.forEach(r=>{
+        const row=ws.addRow({Codigo:r.Codigo,Descricao:r.Descricao,contagem:'',sistema:r[chave]});
+        const bg=idx%2===0?'FFFFFFFF':'FFF1F5F9';
+        row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:bg}};c.alignment={vertical:'middle'};});
+        const cel=row.getCell('sistema');
+        if(parseFloat(cel.value)<0) cel.font={color:{argb:'FFDC2626'},bold:true};
+        row.height=16; idx++;
+      });
+    }
+    const tot=ws.addRow({Codigo:'',Descricao:`Total: ${itens.length} produto(s)`,contagem:'',sistema:''});
     tot.font={bold:true,italic:true,color:{argb:'FF64748B'}};
   }
   return wb.xlsx.writeBuffer();

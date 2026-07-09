@@ -40,7 +40,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .badge-admin{background:rgba(250,204,21,.15);color:#FACC15;border:1px solid rgba(250,204,21,.3)}
 .badge-gerente{background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.25)}
-.badge-comprador{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25)}
+.badge-comprador{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,246,.25)}
+.badge-gerencial{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)}
 
 .comp-tag{font-size:10px;color:#a78bfa;font-weight:600;margin-top:2px}
 
@@ -99,7 +100,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   <div class="tbl-wrap">
     <table class="tbl">
       <thead><tr>
-        <th>#</th><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Comprador</th><th>Ações</th>
+        <th>#</th><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Vínculo</th><th>Ações</th>
       </tr></thead>
       <tbody id="tbody">
         <tr><td colspan="6" class="empty"><div class="empty-icon">⏳</div>Carregando...</td></tr>
@@ -128,8 +129,9 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
     </div>
     <div class="field">
       <label>Perfil</label>
-      <select id="f-perfil" onchange="toggleCompradorField()">
+      <select id="f-perfil" onchange="toggleExtraFields()">
         <option value="gerente">Gerente</option>
+        <option value="gerencial">Gerencial (por loja)</option>
         <option value="comprador">Comprador</option>
         <option value="admin">Admin</option>
       </select>
@@ -143,6 +145,18 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
         <option value="STHEPHANNY">STHEPHANNY</option>
         <option value="CRISLANE">CRISLANE</option>
         <option value="PATRICIA">PATRICIA</option>
+      </select>
+    </div>
+    <div class="field" id="field-loja" style="display:none">
+      <label>Loja vinculada</label>
+      <select id="f-loja">
+        <option value="">-- selecione --</option>
+        <option value="1">Loja 1</option>
+        <option value="2">Loja 2</option>
+        <option value="3">Loja 3</option>
+        <option value="4">Loja 4</option>
+        <option value="5">Loja 5</option>
+        <option value="6">Loja 6</option>
       </select>
     </div>
     <div class="msg-erro" id="modal-erro"></div>
@@ -170,11 +184,13 @@ function renderStats() {
   const total = usuarios.length;
   const admins = usuarios.filter(u => u.perfil === 'admin').length;
   const gerentes = usuarios.filter(u => u.perfil === 'gerente').length;
+  const gerenciais = usuarios.filter(u => u.perfil === 'gerencial').length;
   const compradores = usuarios.filter(u => u.perfil === 'comprador').length;
   document.getElementById('stats').innerHTML = `
     <div class="stat"><div class="stat-v">${total}</div><div class="stat-l">Total</div></div>
     <div class="stat"><div class="stat-v" style="color:#FACC15">${admins}</div><div class="stat-l">Admin</div></div>
     <div class="stat"><div class="stat-v" style="color:#60a5fa">${gerentes}</div><div class="stat-l">Gerente</div></div>
+    <div class="stat"><div class="stat-v" style="color:#22c55e">${gerenciais}</div><div class="stat-l">Gerencial</div></div>
     <div class="stat"><div class="stat-v" style="color:#a78bfa">${compradores}</div><div class="stat-l">Comprador</div></div>
   `;
 }
@@ -182,6 +198,7 @@ function renderStats() {
 function badgePerfil(p) {
   if (p === 'admin')     return '<span class="badge badge-admin">Admin</span>';
   if (p === 'comprador') return '<span class="badge badge-comprador">Comprador</span>';
+  if (p === 'gerencial') return '<span class="badge badge-gerencial">Gerencial</span>';
   return '<span class="badge badge-gerente">Gerente</span>';
 }
 
@@ -197,7 +214,7 @@ function renderTabela() {
       <td><div class="u-nome">${u.nome}</div></td>
       <td><div class="u-login">${u.usuario}</div></td>
       <td>${badgePerfil(u.perfil)}</td>
-      <td>${u.comprador_nome ? `<div class="comp-tag">▸ ${u.comprador_nome}</div>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+      <td>${u.perfil==='comprador'&&u.comprador_nome ? `<div class="comp-tag">▸ ${u.comprador_nome}</div>` : u.perfil==='gerencial'&&u.loja_id ? `<div class="comp-tag" style="color:#22c55e">▸ Loja ${u.loja_id}</div>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
       <td>
         <div class="acoes">
           <button class="btn-acao btn-edit" onclick="editarUsuario(${u.id})">✏ Editar</button>
@@ -209,9 +226,10 @@ function renderTabela() {
   `).join('');
 }
 
-function toggleCompradorField() {
+function toggleExtraFields() {
   const p = document.getElementById('f-perfil').value;
   document.getElementById('field-comprador').style.display = p === 'comprador' ? '' : 'none';
+  document.getElementById('field-loja').style.display = p === 'gerencial' ? '' : 'none';
 }
 
 function abrirModal(titulo = '👤 Novo Usuário') {
@@ -223,13 +241,14 @@ function abrirModal(titulo = '👤 Novo Usuário') {
   document.getElementById('f-senha').value = '';
   document.getElementById('f-perfil').value = 'gerente';
   document.getElementById('f-comprador').value = '';
+  document.getElementById('f-loja').value = '';
   document.getElementById('f-senha-label').textContent = 'Senha';
   document.getElementById('f-senha-hint').textContent = '';
   document.getElementById('f-senha').placeholder = '••••••••';
   document.getElementById('f-usuario').readOnly = false;
   document.getElementById('modal-erro').style.display = 'none';
   document.getElementById('modal-ok').style.display = 'none';
-  toggleCompradorField();
+  toggleExtraFields();
   document.getElementById('modal-overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-nome').focus(), 50);
 }
@@ -245,12 +264,13 @@ function editarUsuario(id) {
   document.getElementById('f-senha').value = '';
   document.getElementById('f-perfil').value = u.perfil;
   document.getElementById('f-comprador').value = u.comprador_nome || '';
+  document.getElementById('f-loja').value = u.loja_id || '';
   document.getElementById('f-senha-label').textContent = 'Nova Senha (deixe em branco para não alterar)';
   document.getElementById('f-senha-hint').textContent = 'Opcional — só preencha se quiser trocar a senha';
   document.getElementById('f-senha').placeholder = 'deixe em branco para manter';
   document.getElementById('modal-erro').style.display = 'none';
   document.getElementById('modal-ok').style.display = 'none';
-  toggleCompradorField();
+  toggleExtraFields();
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -265,12 +285,13 @@ function trocarSenha(id) {
   document.getElementById('f-senha').value = '';
   document.getElementById('f-perfil').value = u.perfil;
   document.getElementById('f-comprador').value = u.comprador_nome || '';
+  document.getElementById('f-loja').value = u.loja_id || '';
   document.getElementById('f-senha-label').textContent = 'Nova Senha';
   document.getElementById('f-senha-hint').textContent = '';
   document.getElementById('f-senha').placeholder = 'Digite a nova senha';
   document.getElementById('modal-erro').style.display = 'none';
   document.getElementById('modal-ok').style.display = 'none';
-  toggleCompradorField();
+  toggleExtraFields();
   document.getElementById('modal-overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-senha').focus(), 50);
 }
@@ -294,18 +315,20 @@ async function salvar() {
   const senha = document.getElementById('f-senha').value;
   const perfil = document.getElementById('f-perfil').value;
   const comprador_nome = perfil === 'comprador' ? document.getElementById('f-comprador').value : null;
+  const loja_id = perfil === 'gerencial' ? document.getElementById('f-loja').value : null;
   const editId = document.getElementById('edit-id').value;
 
   if (!nome) { mostrarErroModal('Informe o nome.'); return; }
   if (!usuario) { mostrarErroModal('Informe o usuário.'); return; }
   if (!modoEdicao && !senha) { mostrarErroModal('Informe a senha.'); return; }
   if (perfil === 'comprador' && !comprador_nome) { mostrarErroModal('Selecione o comprador vinculado.'); return; }
+  if (perfil === 'gerencial' && !loja_id) { mostrarErroModal('Selecione a loja vinculada.'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Salvando...';
 
   try {
-    const body = { nome, usuario, perfil, comprador_nome };
+    const body = { nome, usuario, perfil, comprador_nome, loja_id };
     if (senha) body.senha = senha;
 
     const url = modoEdicao ? `/api/admin/usuarios/${editId}` : '/api/admin/usuarios';

@@ -113,7 +113,7 @@ body::before{
     <span class="nav-arrow">▶</span>
   </a>
 
-  <a class="nav-item" href="/gestao-gerencial.html">
+  <a class="nav-item" id="item-gerencial" href="/gestao-gerencial.html">
     <div class="nav-icon ic-green">📈</div>
     <div class="nav-body">
       <div class="nav-title">Gestão Gerencial</div>
@@ -165,7 +165,12 @@ function toggleTV(){
   btn.classList.toggle('expandido',aberto);
 }
 fetch('/api/me').then(r=>r.json()).then(u=>{
-  if(u.perfil==='admin') document.getElementById('item-admin').style.display='flex';
+  if(u.perfil==='admin'){
+    document.getElementById('item-admin').style.display='flex';
+  } else if(u.perfil==='gerencial'){
+    // Esconde tudo exceto Gestão Gerencial
+    document.querySelectorAll('.nav-item:not(#item-gerencial), .nav-div, .nav-sub').forEach(el=>el.style.display='none');
+  }
 });
 </script>
 </body>

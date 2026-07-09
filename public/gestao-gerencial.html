@@ -211,7 +211,7 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
         <table>
           <thead><tr>
             <th style="text-align:left">Grupo</th>
-            <th>Venda Atual</th><th>Ano Ant.</th><th>Dif R$</th><th>Dif %</th><th>Part %</th>
+            <th>Venda Atual</th><th>Ano Ant.</th><th>Dif %</th><th>Part %</th>
           </tr></thead>
           <tbody id="tbody-grupos"></tbody>
         </table>
@@ -360,7 +360,7 @@ function renderGrupos(d){
     tb.innerHTML+=`<tr>
       <td><span class="rk">${i+1}</span>${g.nome}</td>
       <td>${R(g.venda_atual)}</td><td>${R(g.venda_ant)}</td>
-      <td class="${dc}">${R(g.dif_r)}</td><td class="${dc}">${pt}</td>
+      <td class="${dc}">${pt}</td>
       <td><span class="td-bar"><span class="td-bar-inner" style="width:${bw}px"></span>${g.participacao}%</span></td>
     </tr>`;
   });
@@ -461,7 +461,14 @@ function renderTop(d){
   pv.style.display='grid';
 }
 
-carregar();
+fetch('/api/me').then(r=>r.json()).then(u=>{
+  if(u.perfil==='gerencial'&&u.loja_id){
+    const sel=document.getElementById('sel-loja');
+    sel.value=u.loja_id;
+    sel.disabled=true;
+    sel.style.opacity='.6';
+  }
+}).catch(()=>{}).finally(()=>carregar());
 </script>
 </body>
 </html>

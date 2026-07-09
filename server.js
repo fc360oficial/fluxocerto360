@@ -96,7 +96,7 @@ app.post('/api/login', async (req, res) => {
   const ok = await bcrypt.compare(String(senha), user.senha_hash);
   if (!ok) return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
   const perfil = user.perfil || 'gerente';
-  req.session.user = { id: user.id, nome: user.nome, usuario: user.usuario, perfil, comprador_nome: user.comprador_nome || null };
+  req.session.user = { id: user.id, nome: user.nome, usuario: user.usuario, perfil, comprador_nome: user.comprador_nome || null, loja_id: user.loja_id || null };
   let redirect = '/hub.html';
   if (perfil === 'comprador' && user.comprador_nome) redirect = '/comprador.html?nome=' + encodeURIComponent(user.comprador_nome);
   res.json({ ok: true, nome: user.nome, redirect });
@@ -121,16 +121,16 @@ function salvarUsuarios() {
 }
 
 app.get('/api/admin/usuarios', requireAdmin, (req, res) => {
-  res.json(usuarios.map(u => ({ id: u.id, nome: u.nome, usuario: u.usuario, perfil: u.perfil || 'gerente', comprador_nome: u.comprador_nome || null })));
+  res.json(usuarios.map(u => ({ id: u.id, nome: u.nome, usuario: u.usuario, perfil: u.perfil || 'gerente', comprador_nome: u.comprador_nome || null, loja_id: u.loja_id || null })));
 });
 
 app.post('/api/admin/usuarios', requireAdmin, async (req, res) => {
-  const { nome, usuario, senha, perfil, comprador_nome } = req.body || {};
+  const { nome, usuario, senha, perfil, comprador_nome, loja_id } = req.body || {};
   if (!nome || !usuario || !senha || !perfil) return res.status(400).json({ error: 'Campos obrigatórios: nome, usuario, senha, perfil' });
   if (usuarios.find(u => u.usuario === usuario.toLowerCase().trim())) return res.status(400).json({ error: 'Usuário já existe' });
   const hash = await bcrypt.hash(String(senha), 10);
   const novoId = Math.max(...usuarios.map(u => u.id), 0) + 1;
-  usuarios.push({ id: novoId, nome: nome.trim(), usuario: usuario.toLowerCase().trim(), senha_hash: hash, perfil, comprador_nome: comprador_nome || null });
+  usuarios.push({ id: novoId, nome: nome.trim(), usuario: usuario.toLowerCase().trim(), senha_hash: hash, perfil, comprador_nome: comprador_nome || null, loja_id: loja_id ? parseInt(loja_id) : null });
   salvarUsuarios();
   res.json({ ok: true, id: novoId });
 });
@@ -139,7 +139,7 @@ app.put('/api/admin/usuarios/:id', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   const idx = usuarios.findIndex(u => u.id === id);
   if (idx === -1) return res.status(404).json({ error: 'Usuário não encontrado' });
-  const { nome, usuario, senha, perfil, comprador_nome } = req.body || {};
+  const { nome, usuario, senha, perfil, comprador_nome, loja_id } = req.body || {};
   if (nome) usuarios[idx].nome = nome.trim();
   if (usuario) {
     if (usuarios.find(u => u.usuario === usuario.toLowerCase().trim() && u.id !== id)) return res.status(400).json({ error: 'Usuário já existe' });
@@ -148,6 +148,7 @@ app.put('/api/admin/usuarios/:id', requireAdmin, async (req, res) => {
   if (senha) usuarios[idx].senha_hash = await bcrypt.hash(String(senha), 10);
   if (perfil) usuarios[idx].perfil = perfil;
   usuarios[idx].comprador_nome = comprador_nome || null;
+  usuarios[idx].loja_id = loja_id ? parseInt(loja_id) : null;
   salvarUsuarios();
   res.json({ ok: true });
 });

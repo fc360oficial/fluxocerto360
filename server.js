@@ -1195,6 +1195,101 @@ app.get('/api/comparativo-mercadologico', withCache(240), async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── GESTÃO GERENCIAL ──────────────────────────────────────────
+app.get('/api/gestao-gerencial', withCache(10), async (req, res) => {
+  try {
+    const hoje    = new Date();
+    const ano     = req.query.ano  ? parseInt(req.query.ano)  : hoje.getFullYear();
+    const mes     = req.query.mes  ? parseInt(req.query.mes)  : hoje.getMonth() + 1;
+    const lojaSel = req.query.loja && req.query.loja !== 'todas' ? parseInt(req.query.loja) : null;
+    const lojas   = lojaSel ? [lojaSel] : [1,2,3,4,5,6];
+    const anoAnt  = ano - 1;
+    const mm      = mesDB(mes);
+    const mesStr  = String(mes).padStart(2,'0');
+    const ehMesAtual = (ano === hoje.getFullYear() && mes === hoje.getMonth() + 1);
+    const diaCorte   = ehMesAtual ? String(hoje.getDate()).padStart(2,'0') : String(new Date(ano,mes,0).getDate()).padStart(2,'0');
+    const dIni       = `${ano}-${mesStr}-01`;
+    const dFimAtual  = `${ano}-${mesStr}-${diaCorte}`;
+    const dIniAnt    = `${anoAnt}-${mesStr}-01`;
+    const dFimAnt    = `${anoAnt}-${mesStr}-${diaCorte}`;
+
+    // Vendas por Codigo — atual e ano anterior até mesmo dia
+    const vAtual = {}, vAnt = {};
+    await Promise.all(lojas.map(async ln => {
+      const [rA, rB] = await Promise.all([
+        q(`SELECT Codigo, SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N' GROUP BY Codigo`, [dIni, dFimAtual]).catch(()=>[]),
+        q(`SELECT Codigo, SUM(ValorTotalNovo) v FROM \`ln${ln}${mm}\`.zcupomitens WHERE Data BETWEEN ? AND ? AND IndCancel='N' GROUP BY Codigo`, [dIniAnt, dFimAnt]).catch(()=>[])
+      ]);
+      for (const r of rA) vAtual[r.Codigo] = (vAtual[r.Codigo]||0) + parseFloat(r.v||0);
+      for (const r of rB) vAnt[r.Codigo]   = (vAnt[r.Codigo]  ||0) + parseFloat(r.v||0);
+    }));
+
+    const totalAtual = Object.values(vAtual).reduce((s,v)=>s+v,0);
+    const totalAnt   = Object.values(vAnt).reduce((s,v)=>s+v,0);
+    const meta       = +(totalAnt * 1.05).toFixed(2);
+    const cresc      = totalAnt > 0 ? +((totalAtual-totalAnt)/totalAnt*100).toFixed(1) : 0;
+    const pctMeta    = meta > 0 ? +(totalAtual/meta*100).toFixed(1) : 0;
+    const faltaMeta  = +(Math.max(meta-totalAtual,0)).toFixed(2);
+
+    // Avaria do período
+    const avParams  = lojaSel ? [dIni, dFimAtual, lojaSel] : [dIni, dFimAtual];
+    const avWhere   = lojaSel ? 'AND nLoja=?' : '';
+    const avRows    = await q(`SELECT CodigoBarras, SUM(Total) v FROM central.avariaconsumo WHERE DataLan BETWEEN ? AND ? AND Status IN (0,2) ${avWhere} GROUP BY CodigoBarras`, avParams).catch(()=>[]);
+    const avAntRows = await q(`SELECT COALESCE(SUM(Total),0) v FROM central.avariaconsumo WHERE DataLan BETWEEN ? AND ? AND Status IN (0,2) ${avWhere}`, lojaSel ? [dIniAnt, dFimAnt, lojaSel] : [dIniAnt, dFimAnt]).catch(()=>[{}]);
+    const avPorCod  = {};
+    for (const r of avRows) avPorCod[r.CodigoBarras] = (avPorCod[r.CodigoBarras]||0) + parseFloat(r.v||0);
+    const totalAvaria    = Object.values(avPorCod).reduce((s,v)=>s+v,0);
+    const totalAvariaAnt = parseFloat(avAntRows[0]?.v||0);
+
+    // Items → grupo
+    const itens = await q(
+      `SELECT i.CodigoBarra, g.CodGrupo, g.Descricao as gNome
+       FROM central.itens i
+       INNER JOIN central.gruposub gs ON gs.CodSubGrupo=i.CodGrupoSub AND gs.CodDesativado=0
+       INNER JOIN central.grupo g ON g.CodGrupo=gs.CodGrupo
+       WHERE i.CodDesativado=0 AND i.CodGrupoSub>0`
+    ).catch(()=>[]);
+
+    // Venda por grupo
+    const gV = {};
+    for (const it of itens) {
+      const a=vAtual[it.CodigoBarra]||0, b=vAnt[it.CodigoBarra]||0;
+      if (!a && !b) continue;
+      if (!gV[it.CodGrupo]) gV[it.CodGrupo]={nome:it.gNome?.trim()||'—',a:0,b:0};
+      gV[it.CodGrupo].a+=a; gV[it.CodGrupo].b+=b;
+    }
+    const grupos = Object.values(gV).filter(g=>g.a||g.b).map(g=>({
+      nome:g.nome, venda_atual:+g.a.toFixed(2), venda_ant:+g.b.toFixed(2),
+      dif_r:+(g.a-g.b).toFixed(2),
+      dif_pct:g.b>0?+((g.a-g.b)/g.b*100).toFixed(1):null,
+      participacao:totalAtual>0?+(g.a/totalAtual*100).toFixed(1):0
+    })).sort((a,b)=>b.venda_atual-a.venda_atual);
+
+    // Avaria por grupo
+    const gA = {};
+    for (const it of itens) {
+      const av=avPorCod[it.CodigoBarra]||0; if(!av) continue;
+      if (!gA[it.CodGrupo]) gA[it.CodGrupo]={nome:it.gNome?.trim()||'—',av:0};
+      gA[it.CodGrupo].av+=av;
+    }
+    const totAv = Object.values(gA).reduce((s,g)=>s+g.av,0);
+    const gruposAvaria = Object.values(gA).filter(g=>g.av>0).map(g=>({
+      nome:g.nome, avaria:+g.av.toFixed(2),
+      pct_venda:totalAtual>0?+(g.av/totalAtual*100).toFixed(2):0,
+      participacao:totAv>0?+(g.av/totAv*100).toFixed(1):0
+    })).sort((a,b)=>b.avaria-a.avaria);
+
+    res.json({
+      kpis:{ venda_atual:+totalAtual.toFixed(2), venda_ant:+totalAnt.toFixed(2), crescimento:cresc,
+             meta, pct_meta:pctMeta, falta_meta:faltaMeta,
+             avaria:+totalAvaria.toFixed(2), avaria_ant:+totalAvariaAnt.toFixed(2),
+             avaria_pct:totalAtual>0?+(totalAvaria/totalAtual*100).toFixed(2):0 },
+      grupos, grupos_avaria:gruposAvaria,
+      meta_info:{ dia_corte:diaCorte, mes, ano, ano_ant:anoAnt, loja:lojaSel||'todas' }
+    });
+  } catch(err){ res.status(500).json({ error:err.message }); }
+});
+
 // Comparativo por lojas: todas as 6 lojas 2025 vs 2026 para um mês
 app.get('/api/comparativo-lojas', withCache(120), async (req, res) => {
   try {

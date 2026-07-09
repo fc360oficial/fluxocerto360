@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gestão Gerencial — Econômico Relatórios</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08111F;--bg2:#0B1220;
+  --card:#121B2E;--card2:#172033;
+  --brand:#FACC15;
+  --green:#22C55E;--green-bg:rgba(34,197,94,.12);
+  --red:#EF4444;--red-bg:rgba(239,68,68,.12);
+  --amber:#F59E0B;--amber-bg:rgba(245,158,11,.12);
+  --blue:#3B82F6;--blue-bg:rgba(59,130,246,.12);
+  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
+  --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
+  --r:16px;--r-sm:10px;
+  --sh:0 8px 32px rgba(0,0,0,.35);
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+html,body{min-height:100%;font-family:var(--font);background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column}
+
+/* ─── HEADER ─────────────────────────────── */
+header{
+  background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
+  border-bottom:1px solid var(--border-md);
+  box-shadow:0 4px 40px rgba(0,0,0,.55),0 1px 0 rgba(250,204,21,.08);
+  padding:0 28px;height:68px;
+  display:flex;align-items:center;gap:20px;flex-shrink:0;position:sticky;top:0;z-index:100;
+}
+.h-back{
+  display:flex;align-items:center;gap:8px;
+  color:var(--text3);text-decoration:none;font-size:12px;font-weight:600;
+  transition:color .2s;padding:6px 10px;border-radius:8px;border:1px solid transparent;
+}
+.h-back:hover{color:var(--text2);border-color:var(--border-md)}
+.h-divider{width:1px;height:28px;background:var(--border-md)}
+.h-title{flex:1}
+.h-title h1{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase}
+.h-title p{font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.h-badge{
+  background:var(--green-bg);border:1px solid rgba(34,197,94,.3);
+  color:var(--green);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:5px;
+}
+.h-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ─── FILTROS ─────────────────────────────── */
+.filtros-wrap{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:14px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.f-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.f-select{
+  background:var(--bg2);border:1px solid var(--border-md);border-radius:8px;
+  color:var(--text2);font-size:13px;padding:7px 12px;cursor:pointer;outline:none;
+  transition:border-color .2s;min-width:120px;
+}
+.f-select:focus{border-color:var(--brand);color:var(--text)}
+.f-select option{background:#1e2d45}
+.f-sep{width:1px;height:24px;background:var(--border-md)}
+.btn-atualizar{
+  background:var(--brand);color:#0a0e18;border:none;border-radius:8px;
+  font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  padding:8px 18px;cursor:pointer;transition:background .2s;white-space:nowrap;
+}
+.btn-atualizar:hover{background:#e0b800}
+.btn-atualizar:disabled{opacity:.5;cursor:not-allowed}
+.f-info{margin-left:auto;font-size:11px;color:var(--text3)}
+
+/* ─── MAIN ────────────────────────────────── */
+main{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:24px}
+
+/* ─── KPIs ────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kpi{
+  background:var(--card);border:1px solid var(--border-md);border-radius:var(--r);
+  padding:20px 22px;position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
+.kpi:hover::before{opacity:1}
+.kpi-venda::before{background:radial-gradient(ellipse at top left,rgba(34,197,94,.06),transparent 60%)}
+.kpi-ant::before{background:radial-gradient(ellipse at top left,rgba(59,130,246,.06),transparent 60%)}
+.kpi-meta::before{background:radial-gradient(ellipse at top left,rgba(250,204,21,.06),transparent 60%)}
+.kpi-falta::before{background:radial-gradient(ellipse at top left,rgba(245,158,11,.06),transparent 60%)}
+.kpi-avaria::before{background:radial-gradient(ellipse at top left,rgba(239,68,68,.06),transparent 60%)}
+.kpi-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.kpi-val{font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.kpi-venda .kpi-val{color:var(--green)}
+.kpi-ant .kpi-val{color:var(--blue)}
+.kpi-meta .kpi-val{color:var(--brand)}
+.kpi-falta .kpi-val{color:var(--amber)}
+.kpi-avaria .kpi-val{color:var(--red)}
+.kpi-sub{margin-top:8px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge-up{background:var(--green-bg);color:var(--green)}
+.badge-down{background:var(--red-bg);color:var(--red)}
+.badge-warn{background:var(--amber-bg);color:var(--amber)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.kpi-bar-wrap{margin-top:12px;height:4px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.kpi-bar{height:100%;border-radius:4px;transition:width .6s ease}
+.kpi-bar-green{background:var(--green)}
+.kpi-bar-yellow{background:var(--brand)}
+.kpi-bar-red{background:var(--red)}
+
+/* ─── SEÇÃO ───────────────────────────────── */
+.secao{background:var(--card);border:1px solid var(--border-md);border-radius:var(--r);overflow:hidden}
+.secao-header{
+  padding:16px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.secao-header h2{font-size:11px;font-weight:800;color:var(--text2);letter-spacing:2px;text-transform:uppercase}
+.secao-header span{font-size:11px;color:var(--text3)}
+
+/* ─── TABELA ─────────────────────────────── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+thead th{
+  padding:10px 16px;font-size:10px;font-weight:700;color:var(--text3);
+  letter-spacing:1px;text-transform:uppercase;white-space:nowrap;
+  border-bottom:1px solid var(--border-md);text-align:right;
+}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+tbody td{padding:10px 16px;font-size:13px;color:var(--text2);text-align:right;white-space:nowrap}
+tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.td-pos{color:var(--green)}
+.td-neg{color:var(--red)}
+.td-warn{color:var(--amber)}
+.td-part{display:inline-flex;align-items:center;gap:6px}
+.td-part-bar{height:4px;border-radius:4px;background:var(--blue);opacity:.5;flex-shrink:0;display:inline-block}
+.tbl-rank{display:inline-block;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.06);font-size:10px;font-weight:700;color:var(--text3);text-align:center;line-height:22px;margin-right:6px;flex-shrink:0}
+
+/* ─── GRÁFICO ─────────────────────────────── */
+.chart-wrap{padding:20px 22px}
+canvas{display:block;width:100%}
+
+/* ─── LOADING / ERRO ──────────────────────── */
+.estado{padding:48px;text-align:center;color:var(--text3);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.erro-msg{color:var(--red);background:var(--red-bg);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px 18px;font-size:12px}
+
+/* ─── DOIS PAINEIS ───────────────────────── */
+.dois-paineis{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.dois-paineis{grid-template-columns:1fr}}
+@media(max-width:640px){.kpi-val{font-size:20px}header{padding:0 16px}.filtros-wrap{padding:12px 16px}main{padding:16px}}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="h-back" href="/hub.html">← Início</a>
+  <div class="h-divider"></div>
+  <div class="h-title">
+    <h1>Gestão Gerencial</h1>
+    <p>Desempenho mercadológico · Metas · Avaria</p>
+  </div>
+  <div class="h-badge"><span class="h-badge-dot"></span>AO VIVO</div>
+</header>
+
+<div class="filtros-wrap">
+  <span class="f-label">Mês</span>
+  <select class="f-select" id="sel-mes">
+    <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+    <option value="3">Março</option><option value="4">Abril</option>
+    <option value="5">Maio</option><option value="6">Junho</option>
+    <option value="7">Julho</option><option value="8">Agosto</option>
+    <option value="9">Setembro</option><option value="10">Outubro</option>
+    <option value="11">Novembro</option><option value="12">Dezembro</option>
+  </select>
+  <select class="f-select" id="sel-ano" style="min-width:90px"></select>
+  <div class="f-sep"></div>
+  <span class="f-label">Loja</span>
+  <select class="f-select" id="sel-loja">
+    <option value="todas">Todas as Lojas</option>
+    <option value="1">Loja 1</option><option value="2">Loja 2</option>
+    <option value="3">Loja 3</option><option value="4">Loja 4</option>
+    <option value="5">Loja 5</option><option value="6">Loja 6</option>
+  </select>
+  <button class="btn-atualizar" id="btn-att" onclick="carregar()">Atualizar</button>
+  <span class="f-info" id="f-info"></span>
+</div>
+
+<main>
+
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="estado"><div class="spinner"></div></div>
+  </div>
+
+  <div class="dois-paineis" id="painel-merc" style="display:none">
+    <div class="secao">
+      <div class="secao-header">
+        <h2>Venda por Mercadológico</h2>
+        <span id="lbl-periodo"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Grupo</th>
+              <th>Venda Atual</th>
+              <th>Ano Ant.</th>
+              <th>Dif R$</th>
+              <th>Dif %</th>
+              <th>Part. %</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-grupos"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="secao">
+      <div class="secao-header"><h2>Top 10 Grupos — Venda Atual</h2></div>
+      <div class="chart-wrap"><canvas id="chart-grupos"></canvas></div>
+    </div>
+  </div>
+
+  <div class="secao" id="painel-avaria" style="display:none">
+    <div class="secao-header">
+      <h2>Avaria por Mercadológico</h2>
+      <span id="lbl-avaria-total"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left">Grupo</th>
+            <th>Avaria R$</th>
+            <th>% da Venda</th>
+            <th>% do Total Avaria</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-avaria"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const MESES=['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+(function(){
+  const hoje=new Date();
+  document.getElementById('sel-mes').value=hoje.getMonth()+1;
+  const selAno=document.getElementById('sel-ano');
+  const ano=hoje.getFullYear();
+  for(let y=ano;y>=ano-3;y--){
+    const o=document.createElement('option');o.value=y;o.textContent=y;selAno.appendChild(o);
+  }
+  selAno.value=ano;
+})();
+
+function fmt(v){return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtS(v){return (v>=0?'+':'')+v+'%';}
+
+async function carregar(){
+  const mes=document.getElementById('sel-mes').value;
+  const ano=document.getElementById('sel-ano').value;
+  const loja=document.getElementById('sel-loja').value;
+  const btn=document.getElementById('btn-att');
+  btn.disabled=true;btn.textContent='Carregando...';
+  document.getElementById('kpi-grid').innerHTML='<div class="estado"><div class="spinner"></div></div>';
+  document.getElementById('painel-merc').style.display='none';
+  document.getElementById('painel-avaria').style.display='none';
+  try{
+    const r=await fetch(`/api/gestao-gerencial?mes=${mes}&ano=${ano}&loja=${loja}`);
+    if(!r.ok)throw new Error((await r.json()).error||r.status);
+    const d=await r.json();
+    renderKPIs(d);
+    renderGrupos(d);
+    renderAvaria(d);
+    document.getElementById('f-info').textContent=`Até dia ${d.meta_info.dia_corte}/${String(mes).padStart(2,'0')}/${ano}`;
+    document.getElementById('lbl-periodo').textContent=`${MESES[+mes]} ${ano} vs ${d.meta_info.ano_ant}`;
+  }catch(e){
+    document.getElementById('kpi-grid').innerHTML=`<div class="estado"><div class="erro-msg">Erro: ${e.message}</div></div>`;
+  }finally{btn.disabled=false;btn.textContent='Atualizar';}
+}
+
+function renderKPIs(d){
+  const k=d.kpis;
+  const cC=k.crescimento>=0?'badge-up':'badge-down';
+  const mC=k.pct_meta>=100?'badge-up':k.pct_meta>=80?'badge-warn':'badge-down';
+  const aC=k.avaria_pct<=1?'badge-up':k.avaria_pct<=2?'badge-warn':'badge-down';
+  const bMeta=Math.min(k.pct_meta,100);
+  const bVenda=k.meta>0?Math.min(k.venda_atual/k.meta*100,100).toFixed(1):0;
+  const bAv=Math.min(k.avaria_pct/3*100,100).toFixed(1);
+  document.getElementById('kpi-grid').innerHTML=`
+    <div class="kpi kpi-venda">
+      <div class="kpi-label">Venda Atual</div>
+      <div class="kpi-val">${fmt(k.venda_atual)}</div>
+      <div class="kpi-sub"><span class="kpi-badge ${cC}">${fmtS(k.crescimento)}</span>vs mesmo período ${d.meta_info.ano_ant}</div>
+      <div class="kpi-bar-wrap"><div class="kpi-bar kpi-bar-green" style="width:${bVenda}%"></div></div>
+    </div>
+    <div class="kpi kpi-ant">
+      <div class="kpi-label">Mesmo Período ${d.meta_info.ano_ant}</div>
+      <div class="kpi-val">${fmt(k.venda_ant)}</div>
+      <div class="kpi-sub">Base para cálculo da meta</div>
+    </div>
+    <div class="kpi kpi-meta">
+      <div class="kpi-label">Meta do Mês</div>
+      <div class="kpi-val"><span class="kpi-badge ${mC}" style="font-size:22px;padding:4px 12px">${k.pct_meta}%</span></div>
+      <div class="kpi-sub">Meta: ${fmt(k.meta)} &nbsp;(+5% sobre ${d.meta_info.ano_ant})</div>
+      <div class="kpi-bar-wrap"><div class="kpi-bar kpi-bar-yellow" style="width:${bMeta}%"></div></div>
+    </div>
+    <div class="kpi kpi-falta">
+      <div class="kpi-label">Falta para a Meta</div>
+      <div class="kpi-val">${fmt(k.falta_meta)}</div>
+      <div class="kpi-sub">${k.falta_meta<=0?'✓ Meta atingida!':'Necessário para atingir a meta'}</div>
+    </div>
+    <div class="kpi kpi-avaria">
+      <div class="kpi-label">Avaria do Mês</div>
+      <div class="kpi-val">${fmt(k.avaria)}</div>
+      <div class="kpi-sub"><span class="kpi-badge ${aC}">${k.avaria_pct}% da venda</span>${k.avaria_ant>0?'Ant: '+fmt(k.avaria_ant):''}</div>
+      <div class="kpi-bar-wrap"><div class="kpi-bar kpi-bar-red" style="width:${bAv}%"></div></div>
+    </div>`;
+}
+
+function renderGrupos(d){
+  const tbody=document.getElementById('tbody-grupos');
+  tbody.innerHTML='';
+  const maxP=d.grupos.length>0?d.grupos[0].participacao:1;
+  d.grupos.forEach((g,i)=>{
+    const dc=g.dif_r>=0?'td-pos':'td-neg';
+    const pt=g.dif_pct!==null?(g.dif_pct>=0?'+':'')+g.dif_pct+'%':'—';
+    const bw=maxP>0?(g.participacao/maxP*60).toFixed(1):0;
+    tbody.innerHTML+=`<tr>
+      <td><span class="tbl-rank">${i+1}</span>${g.nome}</td>
+      <td>${fmt(g.venda_atual)}</td>
+      <td>${fmt(g.venda_ant)}</td>
+      <td class="${dc}">${fmt(g.dif_r)}</td>
+      <td class="${dc}">${pt}</td>
+      <td><span class="td-part"><span class="td-part-bar" style="width:${bw}px"></span>${g.participacao}%</span></td>
+    </tr>`;
+  });
+  document.getElementById('painel-merc').style.display='grid';
+  setTimeout(()=>renderChart(d.grupos),80);
+}
+
+function renderChart(grupos){
+  const top=grupos.slice(0,10);
+  const canvas=document.getElementById('chart-grupos');
+  const W=canvas.offsetWidth||600, H=260;
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  const pL=8,pR=8,pT=16,pB=48;
+  const cW=W-pL-pR, cH=H-pT-pB;
+  const slot=cW/top.length, bW=slot*0.65;
+  const maxV=top.reduce((m,g)=>Math.max(m,g.venda_atual,g.venda_ant),1);
+  const sc=cH/maxV;
+  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
+  for(let i=1;i<=4;i++){
+    const y=pT+cH-cH/4*i;
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(pL+cW,y);ctx.stroke();
+  }
+  top.forEach((g,i)=>{
+    const x=pL+slot*i+(slot-bW)/2;
+    const hA=g.venda_atual*sc, hB=g.venda_ant*sc;
+    ctx.fillStyle='rgba(59,130,246,.3)';
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x,pT+cH-hB,bW/2,hB,[3,3,0,0]);
+    else ctx.rect(x,pT+cH-hB,bW/2,hB);
+    ctx.fill();
+    ctx.fillStyle='rgba(34,197,94,.75)';
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x+bW/2,pT+cH-hA,bW/2,hA,[3,3,0,0]);
+    else ctx.rect(x+bW/2,pT+cH-hA,bW/2,hA);
+    ctx.fill();
+    const nm=g.nome.length>8?g.nome.substring(0,7)+'…':g.nome;
+    ctx.fillStyle='rgba(148,163,184,.7)';
+    ctx.font='bold 9px "Segoe UI",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(nm,x+bW/2,H-pB+14);
+  });
+  ctx.font='bold 10px "Segoe UI",sans-serif';
+  ctx.fillStyle='rgba(34,197,94,.9)';ctx.fillRect(pL,H-14,12,8);
+  ctx.fillStyle='rgba(148,163,184,.8)';ctx.textAlign='left';ctx.fillText('Atual',pL+16,H-7);
+  ctx.fillStyle='rgba(59,130,246,.7)';ctx.fillRect(pL+60,H-14,12,8);
+  ctx.fillStyle='rgba(148,163,184,.8)';ctx.fillText('Ano ant.',pL+76,H-7);
+}
+
+function renderAvaria(d){
+  const tbody=document.getElementById('tbody-avaria');
+  tbody.innerHTML='';
+  document.getElementById('lbl-avaria-total').textContent='Total: '+fmt(d.kpis.avaria);
+  d.grupos_avaria.forEach((g,i)=>{
+    const ac=g.pct_venda<=1?'td-pos':g.pct_venda<=2?'td-warn':'td-neg';
+    tbody.innerHTML+=`<tr>
+      <td><span class="tbl-rank">${i+1}</span>${g.nome}</td>
+      <td>${fmt(g.avaria)}</td>
+      <td class="${ac}">${g.pct_venda}%</td>
+      <td>${g.participacao}%</td>
+    </tr>`;
+  });
+  document.getElementById('painel-avaria').style.display='block';
+}
+
+carregar();
+</script>
+</body>
+</html>

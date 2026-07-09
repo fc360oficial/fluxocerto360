@@ -492,7 +492,7 @@ function renderTop(d){
   const pv=document.getElementById('painel-top');
   if(!d.top_venda||!d.top_venda.length){pv.style.display='none';return;}
   const maxV=d.top_venda[0].v;
-  const totV=d.top_venda.reduce((s,x)=>s+x.v,0);
+  const totV=d.total_venda||d.top_venda.reduce((s,x)=>s+x.v,0);
   const tbV=document.getElementById('tbody-topv');tbV.innerHTML='';
   d.top_venda.forEach((p,i)=>{
     const pct=totV>0?(p.v/totV*100).toFixed(1):0;
@@ -504,7 +504,7 @@ function renderTop(d){
     </tr>`;
   });
   const maxQ=d.top_qtd[0]?.qtd||1;
-  const totQ=d.top_qtd.reduce((s,x)=>s+x.qtd,0);
+  const totQ=d.total_qtd||d.top_qtd.reduce((s,x)=>s+x.qtd,0);
   const tbQ=document.getElementById('tbody-topq');tbQ.innerHTML='';
   d.top_qtd.forEach((p,i)=>{
     const pct=totQ>0?(p.qtd/totQ*100).toFixed(1):0;

@@ -1375,6 +1375,9 @@ app.get('/api/top-produtos', withCache(15), async (req, res) => {
       }
     }));
 
+    const totalVenda = Object.values(vendaMap).reduce((s,v)=>s+v,0);
+    const totalQtd   = Object.values(qtdMap).reduce((s,v)=>s+v,0);
+
     const topVenda = Object.entries(vendaMap)
       .map(([cod, v]) => ({ cod, desc: descMap[cod], v: +v.toFixed(2) }))
       .sort((a, b) => b.v - a.v).slice(0, 10);
@@ -1383,7 +1386,7 @@ app.get('/api/top-produtos', withCache(15), async (req, res) => {
       .map(([cod, q2]) => ({ cod, desc: descMap[cod], qtd: +q2.toFixed(0) }))
       .sort((a, b) => b.qtd - a.qtd).slice(0, 10);
 
-    res.json({ top_venda: topVenda, top_qtd: topQtd, meta: { mes, ano, loja: lojaSel || 'todas' } });
+    res.json({ top_venda: topVenda, top_qtd: topQtd, total_venda: +totalVenda.toFixed(2), total_qtd: +totalQtd.toFixed(0), meta: { mes, ano, loja: lojaSel || 'todas' } });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 

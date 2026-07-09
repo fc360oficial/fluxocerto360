@@ -7,206 +7,165 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#08111F;--bg2:#0B1220;
-  --card:#121B2E;--card2:#172033;
+  --bg:#08111F;--bg2:#0d1a2e;
+  --card:#111827;--card-h:#141f33;
   --brand:#FACC15;
-  --green:#22C55E;--red:#EF4444;
-  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
-  --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
-  --r:20px;--r-sm:12px;
-  --sh:0 8px 32px rgba(0,0,0,.35);
+  --green:#22C55E;--red:#EF4444;--blue:#3B82F6;--violet:#8B5CF6;
+  --text:#F1F5F9;--text2:#94A3B8;--text3:#475569;
+  --border:rgba(255,255,255,.07);--border-md:rgba(255,255,255,.12);
   --font:'Segoe UI',system-ui,-apple-system,sans-serif;
 }
 html,body{min-height:100%;font-family:var(--font);background:var(--bg);color:var(--text)}
-body{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:32px 20px;min-height:100vh;position:relative;overflow:hidden;
-}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px 16px}
 body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:
-    radial-gradient(ellipse 55% 50% at 10% 50%,rgba(59,130,246,.05) 0%,transparent 60%),
-    radial-gradient(ellipse 45% 45% at 90% 10%,rgba(250,204,21,.06) 0%,transparent 60%),
-    radial-gradient(ellipse 40% 55% at 50% 110%,rgba(34,197,94,.03) 0%,transparent 50%);
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 40% at 80% 0%,rgba(250,204,21,.04) 0%,transparent 60%),
+             radial-gradient(ellipse 40% 60% at 0% 80%,rgba(59,130,246,.04) 0%,transparent 60%);
 }
 
-/* ── LOGO / HEADER ── */
-.topo{text-align:center;margin-bottom:48px;position:relative;z-index:1}
-.topo-logo{height:100px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);margin-bottom:20px}
-.topo h1{font-size:20px;font-weight:900;color:var(--brand);letter-spacing:4px;text-transform:uppercase;line-height:1}
-.topo p{font-size:13px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:8px}
+/* ── TOPO ── */
+.topo{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:28px;z-index:1;position:relative}
+.topo-logo{height:56px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
+.topo-nome{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase}
 
-/* ── HUB ── */
-.hub{width:100%;max-width:500px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+/* ── CONTAINER ── */
+.nav{width:100%;max-width:380px;z-index:1;position:relative;display:flex;flex-direction:column;gap:2px}
 
-/* ── CARD PRINCIPAL ── */
-.hcard{
-  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 100%);
-  border:1px solid var(--border-md);border-radius:var(--r);
-  overflow:hidden;box-shadow:var(--sh);
-  transition:border-color .3s,box-shadow .3s;
-}
-.hcard:hover{
-  border-color:rgba(250,204,21,.3);
-  box-shadow:var(--sh),0 0 28px rgba(250,204,21,.07);
-}
-.hcard-main{
-  display:flex;align-items:center;gap:20px;
-  padding:28px 32px;cursor:pointer;user-select:none;
-  text-decoration:none;color:inherit;
-}
-.hcard-icon{
-  width:56px;height:56px;border-radius:14px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:26px;
-  background:rgba(250,204,21,.10);border:1px solid rgba(250,204,21,.18);
-}
-.hcard-tv .hcard-icon{background:rgba(250,204,21,.10);border-color:rgba(250,204,21,.18)}
-.hcard-body{flex:1;text-align:center}
-.hcard-body h2{
-  font-size:16px;font-weight:900;color:var(--brand);
-  letter-spacing:3px;text-transform:uppercase;line-height:1;margin-bottom:6px;
-}
-.hcard-tv .hcard-body h2{color:var(--brand)}
-.hcard-body p{font-size:12px;color:var(--text3);line-height:1.4}
-.hcard-arrow{
-  font-size:11px;color:var(--text3);flex-shrink:0;
-  transition:transform .3s,color .3s;
-}
-.hcard.aberto .hcard-arrow{transform:rotate(90deg);color:var(--brand)}
-.hcard-tv.aberto .hcard-arrow{color:var(--brand)}
+/* ── SEÇÃO ── */
+.nav-section{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:16px 4px 6px;margin-top:4px}
+.nav-section:first-child{padding-top:0}
 
-/* ── SUB-PAINEL (TV) ── */
-.hcard-sub{
+/* ── ITEM ── */
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 16px;border-radius:10px;
+  text-decoration:none;color:var(--text2);
+  background:var(--card);border:1px solid var(--border);
+  transition:background .15s,border-color .15s,color .15s;
+  cursor:pointer;user-select:none;
+}
+.nav-item:hover,.nav-item.ativo{
+  background:var(--card-h);border-color:var(--border-md);color:var(--text);
+}
+.nav-icon{
+  width:34px;height:34px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+}
+.ic-yellow{background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.2)}
+.ic-blue{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2)}
+.ic-green{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2)}
+.ic-violet{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)}
+.ic-slate{background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.2)}
+.nav-body{flex:1;min-width:0}
+.nav-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
+.nav-desc{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-arrow{font-size:10px;color:var(--text3);flex-shrink:0;transition:transform .25s,color .15s}
+.nav-item:hover .nav-arrow,.nav-item.ativo .nav-arrow{color:var(--brand)}
+.nav-item.expandido .nav-arrow{transform:rotate(90deg);color:var(--brand)}
+
+/* ── SUB-ITENS (TV) ── */
+.nav-sub{
   max-height:0;overflow:hidden;
-  transition:max-height .35s ease;
-  border-top:0 solid var(--border);
+  transition:max-height .3s ease;
 }
-.hcard.aberto .hcard-sub{max-height:260px;border-top-width:1px}
+.nav-sub.aberto{max-height:300px}
+.sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 0 4px 46px}
+.sub-item{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;border-radius:8px;
+  background:var(--bg2);border:1px solid var(--border);
+  text-decoration:none;color:var(--text3);font-size:11px;font-weight:600;
+  transition:background .15s,color .15s,border-color .15s;
+}
+.sub-item:hover{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.25);color:#93c5fd}
+.sub-item span:first-child{font-size:15px}
 
-.sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 20px 20px}
-.sub-btn{
-  display:flex;align-items:center;gap:10px;
-  padding:14px 16px;border-radius:var(--r-sm);cursor:pointer;
-  text-decoration:none;
-  background:var(--card);border:1px solid var(--border-md);
-  color:var(--text2);font-size:12px;font-weight:700;
-  transition:background .2s,border-color .2s,color .2s,transform .15s;
-}
-.sub-btn:hover{
-  background:rgba(96,165,250,.08);border-color:rgba(96,165,250,.3);
-  color:#93c5fd;transform:translateY(-1px);
-}
-.sub-btn span:first-child{font-size:18px;flex-shrink:0}
-
-/* Painéis TV só fazem sentido em telas grandes */
-@media (max-width: 480px){ .hcard-tv{ display:none } }
+/* ── DIVISOR ── */
+.nav-div{height:1px;background:var(--border);margin:8px 0}
 
 /* ── RODAPÉ ── */
-.rodape{
-  margin-top:36px;position:relative;z-index:1;
-  display:flex;align-items:center;gap:20px;
-}
-.rodape-link{
-  font-size:11px;color:var(--text3);text-decoration:none;
+.rodape{margin-top:20px;z-index:1;position:relative}
+.btn-sair{
+  background:none;border:none;cursor:pointer;
+  font-size:11px;color:var(--text3);font-family:var(--font);
   letter-spacing:1px;text-transform:uppercase;
-  transition:color .2s;cursor:pointer;background:none;border:none;
+  padding:6px 12px;border-radius:6px;
+  transition:color .15s,background .15s;
 }
-.rodape-link:hover{color:var(--red)}
-.rodape-sep{width:1px;height:12px;background:var(--border-md)}
+.btn-sair:hover{color:var(--red);background:rgba(239,68,68,.06)}
 </style>
 </head>
 <body>
 
 <div class="topo">
   <img class="topo-logo" src="/logo.png" alt="Econômico">
-  <h1>Econômico Relatórios</h1>
-  <p>Selecione uma área para continuar</p>
+  <div class="topo-nome">Econômico Relatórios</div>
 </div>
 
-<div class="hub">
+<nav class="nav">
 
-  <!-- GESTÃO GERENCIAL -->
-  <a class="hcard" href="/gestao-gerencial.html">
-    <div class="hcard-main">
-      <div class="hcard-icon">📈</div>
-      <div class="hcard-body">
-        <h2>Gestão Gerencial</h2>
-        <p>KPIs · Meta do mês · Mercadológico · Avaria por grupo</p>
-      </div>
-      <div class="hcard-arrow">▶</div>
+  <a class="nav-item" href="/gestao-gerencial.html">
+    <div class="nav-icon ic-green">📈</div>
+    <div class="nav-body">
+      <div class="nav-title">Gestão Gerencial</div>
+      <div class="nav-desc">KPIs · Meta · Mercadológico · Avaria</div>
     </div>
+    <span class="nav-arrow">▶</span>
   </a>
 
-  <!-- RELATÓRIOS ESTRATÉGICOS -->
-  <a class="hcard" href="/index.html">
-    <div class="hcard-main">
-      <div class="hcard-icon">📊</div>
-      <div class="hcard-body">
-        <h2>Relatórios Estratégicos</h2>
-        <p>Dashboard completo · KPIs · Faturamento · Margem · Top produtos por loja</p>
-      </div>
-      <div class="hcard-arrow">▶</div>
+  <a class="nav-item" href="/index.html">
+    <div class="nav-icon ic-blue">📊</div>
+    <div class="nav-body">
+      <div class="nav-title">Relatórios Estratégicos</div>
+      <div class="nav-desc">Faturamento · Margem · Top produtos</div>
     </div>
+    <span class="nav-arrow">▶</span>
   </a>
 
-  <!-- PAINÉIS TV -->
-  <div class="hcard hcard-tv" id="card-tv">
-    <div class="hcard-main" onclick="toggleTV()">
-      <div class="hcard-icon">📺</div>
-      <div class="hcard-body">
-        <h2>Painéis TV</h2>
-        <p>Telas para exibição em TV · Todos Setores · Diretoria · Compras · Precificação</p>
-      </div>
-      <div class="hcard-arrow" id="arrow-tv">▶</div>
+  <div class="nav-item" id="btn-tv" onclick="toggleTV()">
+    <div class="nav-icon ic-slate">📺</div>
+    <div class="nav-body">
+      <div class="nav-title">Painéis TV</div>
+      <div class="nav-desc">Supervisão · Diretoria · Compras · Precificação</div>
     </div>
-    <div class="hcard-sub">
-      <div class="sub-grid">
-        <a class="sub-btn" href="/supervisao.html">
-          <span>🎛️</span><span>Todos Setores</span>
-        </a>
-        <a class="sub-btn" href="/diretoria.html">
-          <span>🏪</span><span>Diretoria</span>
-        </a>
-        <a class="sub-btn" href="/compras.html">
-          <span>🛒</span><span>Compras</span>
-        </a>
-        <a class="sub-btn" href="/precificacao.html">
-          <span>💲</span><span>Precificação</span>
-        </a>
-      </div>
+    <span class="nav-arrow" id="arrow-tv">▶</span>
+  </div>
+  <div class="nav-sub" id="sub-tv">
+    <div class="sub-grid">
+      <a class="sub-item" href="/supervisao.html"><span>🎛️</span>Todos Setores</a>
+      <a class="sub-item" href="/diretoria.html"><span>🏪</span>Diretoria</a>
+      <a class="sub-item" href="/compras.html"><span>🛒</span>Compras</a>
+      <a class="sub-item" href="/precificacao.html"><span>💲</span>Precificação</a>
     </div>
   </div>
 
-</div>
+  <div class="nav-div"></div>
 
-<div id="card-admin" style="display:none">
-  <!-- ADMIN: Gerenciamento de Usuários -->
-  <a class="hcard" href="/admin-usuarios.html">
-    <div class="hcard-main">
-      <div class="hcard-icon">👥</div>
-      <div class="hcard-body">
-        <h2>Gerenciamento de Usuários</h2>
-        <p>Criar, editar e excluir usuários · Perfis: Admin, Gerente, Comprador</p>
-      </div>
-      <div class="hcard-arrow">▶</div>
+  <a class="nav-item" id="item-admin" href="/admin-usuarios.html" style="display:none">
+    <div class="nav-icon ic-violet">👥</div>
+    <div class="nav-body">
+      <div class="nav-title">Usuários</div>
+      <div class="nav-desc">Gerenciar acessos e perfis</div>
     </div>
+    <span class="nav-arrow">▶</span>
   </a>
-</div>
+
+</nav>
 
 <div class="rodape">
-  <button class="rodape-link" onclick="logout()">Sair</button>
+  <button class="btn-sair" onclick="window.location.href='/api/logout'">Sair</button>
 </div>
 
 <script>
-function toggleTV() {
-  document.getElementById('card-tv').classList.toggle('aberto');
+function toggleTV(){
+  const sub=document.getElementById('sub-tv');
+  const btn=document.getElementById('btn-tv');
+  const arrow=document.getElementById('arrow-tv');
+  const aberto=sub.classList.toggle('aberto');
+  btn.classList.toggle('expandido',aberto);
 }
-function logout() {
-  window.location.href = '/api/logout';
-}
-// Mostra card admin só se for admin
 fetch('/api/me').then(r=>r.json()).then(u=>{
-  if (u.perfil === 'admin') document.getElementById('card-admin').style.display = '';
+  if(u.perfil==='admin') document.getElementById('item-admin').style.display='flex';
 });
 </script>
 </body>

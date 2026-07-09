@@ -137,9 +137,6 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
 .td-part-bar{height:4px;border-radius:4px;background:var(--blue);opacity:.5;flex-shrink:0;display:inline-block}
 .tbl-rank{display:inline-block;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.06);font-size:10px;font-weight:700;color:var(--text3);text-align:center;line-height:22px;margin-right:6px;flex-shrink:0}
 
-/* ─── GRÁFICO ─────────────────────────────── */
-.chart-wrap{padding:20px 22px}
-canvas{display:block;width:100%}
 
 /* ─── LOADING / ERRO ──────────────────────── */
 .estado{padding:48px;text-align:center;color:var(--text3);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
@@ -217,8 +214,24 @@ canvas{display:block;width:100%}
       </div>
     </div>
     <div class="secao">
-      <div class="secao-header"><h2>Top 10 Grupos — Venda Atual</h2></div>
-      <div class="chart-wrap"><canvas id="chart-grupos"></canvas></div>
+      <div class="secao-header">
+        <h2>Ticket Médio por Loja</h2>
+        <span id="lbl-ticket-periodo"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Loja</th>
+              <th>Cupons</th>
+              <th>Ticket Atual</th>
+              <th>Ticket Ant.</th>
+              <th>Dif %</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-ticket"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -276,6 +289,7 @@ async function carregar(){
     const d=await r.json();
     renderKPIs(d);
     renderGrupos(d);
+    renderTicket(d);
     renderAvaria(d);
     document.getElementById('f-info').textContent=`Até dia ${d.meta_info.dia_corte}/${String(mes).padStart(2,'0')}/${ano}`;
     document.getElementById('lbl-periodo').textContent=`${MESES[+mes]} ${ano} vs ${d.meta_info.ano_ant}`;
@@ -341,53 +355,24 @@ function renderGrupos(d){
     </tr>`;
   });
   document.getElementById('painel-merc').style.display='grid';
-  setTimeout(()=>renderChart(d.grupos),80);
 }
 
-function renderChart(grupos){
-  const top=grupos.slice(0,10);
-  const canvas=document.getElementById('chart-grupos');
-  const W=canvas.offsetWidth||600, H=260;
-  const dpr=window.devicePixelRatio||1;
-  canvas.width=W*dpr; canvas.height=H*dpr;
-  canvas.style.height=H+'px';
-  const ctx=canvas.getContext('2d');
-  ctx.scale(dpr,dpr);
-  ctx.clearRect(0,0,W,H);
-  const pL=8,pR=8,pT=16,pB=48;
-  const cW=W-pL-pR, cH=H-pT-pB;
-  const slot=cW/top.length, bW=slot*0.65;
-  const maxV=top.reduce((m,g)=>Math.max(m,g.venda_atual,g.venda_ant),1);
-  const sc=cH/maxV;
-  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
-  for(let i=1;i<=4;i++){
-    const y=pT+cH-cH/4*i;
-    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(pL+cW,y);ctx.stroke();
-  }
-  top.forEach((g,i)=>{
-    const x=pL+slot*i+(slot-bW)/2;
-    const hA=g.venda_atual*sc, hB=g.venda_ant*sc;
-    ctx.fillStyle='rgba(59,130,246,.3)';
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(x,pT+cH-hB,bW/2,hB,[3,3,0,0]);
-    else ctx.rect(x,pT+cH-hB,bW/2,hB);
-    ctx.fill();
-    ctx.fillStyle='rgba(34,197,94,.75)';
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(x+bW/2,pT+cH-hA,bW/2,hA,[3,3,0,0]);
-    else ctx.rect(x+bW/2,pT+cH-hA,bW/2,hA);
-    ctx.fill();
-    const nm=g.nome.length>8?g.nome.substring(0,7)+'…':g.nome;
-    ctx.fillStyle='rgba(148,163,184,.7)';
-    ctx.font='bold 9px "Segoe UI",sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText(nm,x+bW/2,H-pB+14);
+function renderTicket(d){
+  document.getElementById('lbl-ticket-periodo').textContent=
+    `${MESES[+document.getElementById('sel-mes').value]} ${document.getElementById('sel-ano').value} vs ${d.meta_info.ano_ant}`;
+  const tbody=document.getElementById('tbody-ticket');
+  tbody.innerHTML='';
+  d.ticket_lojas.forEach(t=>{
+    const dc=t.dif_pct!==null&&t.dif_pct>=0?'td-pos':'td-neg';
+    const pt=t.dif_pct!==null?(t.dif_pct>=0?'+':'')+t.dif_pct+'%':'—';
+    tbody.innerHTML+=`<tr>
+      <td>Loja ${t.loja}</td>
+      <td>${t.cupons.toLocaleString('pt-BR')}</td>
+      <td>${fmt(t.ticket)}</td>
+      <td>${fmt(t.ticket_ant)}</td>
+      <td class="${dc}">${pt}</td>
+    </tr>`;
   });
-  ctx.font='bold 10px "Segoe UI",sans-serif';
-  ctx.fillStyle='rgba(34,197,94,.9)';ctx.fillRect(pL,H-14,12,8);
-  ctx.fillStyle='rgba(148,163,184,.8)';ctx.textAlign='left';ctx.fillText('Atual',pL+16,H-7);
-  ctx.fillStyle='rgba(59,130,246,.7)';ctx.fillRect(pL+60,H-14,12,8);
-  ctx.fillStyle='rgba(148,163,184,.8)';ctx.fillText('Ano ant.',pL+76,H-7);
 }
 
 function renderAvaria(d){

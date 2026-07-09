@@ -49,20 +49,31 @@ async function gerarExcel(rows) {
     const chave = 'L'+ln;
     const itens = rows.filter(r => parseFloat(r[chave])<0);
     const ws    = wb.addWorksheet(`Loja ${ln} - ${NOMES_LOJA[ln]||'LOJA '+ln}`);
-    ws.columns = [
-      {header:'Código',       key:'Codigo',   width:16},
-      {header:'Descrição',    key:'Descricao',width:46},
-      {header:'Estoque/Loja', key:'contagem', width:14},
-      {header:'Sistema',      key:'sistema',  width:12},
-    ];
-    const hdr = ws.getRow(1);
-    hdr.eachCell(c => {
-      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E40AF'}};
-      c.font={bold:true,color:{argb:'FFFFFFFF'},size:11};
-      c.alignment={horizontal:'center',vertical:'middle'};
-    });
+    ws.columns=[{key:'Codigo',width:16},{key:'Descricao',width:46},{key:'contagem',width:14},{key:'sistema',width:12}];
+    const agora=new Date();
+    const dataHora=agora.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' — '+agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const r1=ws.addRow(['ECONÔMICO RELATÓRIOS','','','']);
+    ws.mergeCells(`A${r1.number}:D${r1.number}`);
+    r1.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E40AF'}};
+    r1.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},size:14,name:'Calibri'};
+    r1.getCell(1).alignment={horizontal:'center',vertical:'middle'};
+    r1.height=28;
+    const r2=ws.addRow([`Loja ${ln} — ${NOMES_LOJA[ln]||'LOJA '+ln}`,'','','']);
+    ws.mergeCells(`A${r2.number}:D${r2.number}`);
+    r2.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E3A5F'}};
+    r2.getCell(1).font={bold:true,color:{argb:'FFFFFFFF'},size:12};
+    r2.getCell(1).alignment={horizontal:'center',vertical:'middle'};
+    r2.height=22;
+    const r3=ws.addRow([`Tipo: AUDITORIA ESTOQUE — Emissão: ${dataHora}`,'','','']);
+    ws.mergeCells(`A${r3.number}:D${r3.number}`);
+    r3.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE2E8F0'}};
+    r3.getCell(1).font={italic:true,color:{argb:'FF334155'},size:10};
+    r3.getCell(1).alignment={horizontal:'center',vertical:'middle'};
+    r3.height=18;
+    const hdr=ws.addRow(['Código','Descrição','Estoque/Loja','Sistema']);
+    hdr.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E40AF'}};c.font={bold:true,color:{argb:'FFFFFFFF'},size:11};c.alignment={horizontal:'center',vertical:'middle'};});
     hdr.height=22;
-    ws.views=[{state:'frozen',ySplit:1}];
+    ws.views=[{state:'frozen',ySplit:4}];
 
     const grupos={};
     itens.forEach(r => {

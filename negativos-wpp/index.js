@@ -58,57 +58,54 @@ async function buscarNegativos() {
 
 // ── Excel ─────────────────────────────────────────────────────────────────────
 
+const NOMES_LOJA = { 1:'CAHU', 2:'MURIBECA', 3:'PONTE', 4:'ATACAREJO', 5:'PORTA LARGA', 6:'JARDIM JORDAO' };
+
 async function gerarExcel(rows) {
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('Estoque Negativo');
 
-  const AZUL   = '1E40AF';
-  const BRANCO = 'FFFFFF';
-  const VERML  = 'DC2626';
-  const CINZA  = 'F1F5F9';
+  const AZUL  = 'FF1E40AF';
+  const BRNCO = 'FFFFFFFF';
+  const VERML = 'FFDC2626';
+  const CINZA = 'FFF1F5F9';
 
-  ws.columns = [
-    { header: 'Código',    key: 'Codigo',   width: 14 },
-    { header: 'Descrição', key: 'Descricao',width: 40 },
-    { header: 'Grupo',     key: 'Grupo',    width: 20 },
-    { header: 'SubGrupo',  key: 'SubGrupo', width: 20 },
-    { header: 'Loja 1',    key: 'L1',       width: 9  },
-    { header: 'Loja 2',    key: 'L2',       width: 9  },
-    { header: 'Loja 3',    key: 'L3',       width: 9  },
-    { header: 'Loja 4',    key: 'L4',       width: 9  },
-    { header: 'Loja 5',    key: 'L5',       width: 9  },
-    { header: 'Loja 6',    key: 'L6',       width: 9  },
-  ];
+  for (let ln = 1; ln <= 6; ln++) {
+    const chave    = 'L' + ln;
+    const itens    = rows.filter(r => parseFloat(r[chave]) < 0);
+    const nomeLoja = NOMES_LOJA[ln] || ('LOJA ' + ln);
+    const ws       = wb.addWorksheet(`Loja ${ln} - ${nomeLoja}`);
 
-  // Cabeçalho azul
-  const hdr = ws.getRow(1);
-  hdr.eachCell(cell => {
-    cell.fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + AZUL } };
-    cell.font   = { bold: true, color: { argb: 'FF' + BRANCO }, size: 11 };
-    cell.border = { bottom: { style: 'thin', color: { argb: 'FF' + BRANCO } } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-  });
-  hdr.height = 20;
+    ws.columns = [
+      { header: 'Código',    key: 'Codigo',   width: 14 },
+      { header: 'Descrição', key: 'Descricao',width: 44 },
+      { header: 'Grupo',     key: 'Grupo',    width: 22 },
+      { header: 'SubGrupo',  key: 'SubGrupo', width: 22 },
+      { header: 'Estoque',   key: chave,      width: 12 },
+    ];
 
-  rows.forEach((r, i) => {
-    const row = ws.addRow(r);
-    const bg  = i % 2 === 0 ? 'FFFFFFFF' : 'FF' + CINZA;
-    row.eachCell(cell => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-      cell.alignment = { vertical: 'middle' };
+    const hdr = ws.getRow(1);
+    hdr.eachCell(cell => {
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+      cell.font      = { bold: true, color: { argb: BRNCO }, size: 11 };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
     });
-    // Células negativas em vermelho
-    ['L1','L2','L3','L4','L5','L6'].forEach(col => {
-      const cell = row.getCell(col);
-      if (parseFloat(cell.value) < 0) {
-        cell.font = { color: { argb: 'FF' + VERML }, bold: true };
-      }
-    });
-    row.height = 16;
-  });
+    hdr.height = 20;
 
-  ws.autoFilter = { from: 'A1', to: 'J1' };
-  ws.views = [{ state: 'frozen', ySplit: 1 }];
+    itens.forEach((r, i) => {
+      const row = ws.addRow({ Codigo: r.Codigo, Descricao: r.Descricao, Grupo: r.Grupo, SubGrupo: r.SubGrupo, [chave]: r[chave] });
+      const bg  = i % 2 === 0 ? BRNCO : CINZA;
+      row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }; cell.alignment = { vertical: 'middle' }; });
+      const cel = row.getCell(chave);
+      if (parseFloat(cel.value) < 0) cel.font = { color: { argb: VERML }, bold: true };
+      row.height = 16;
+    });
+
+    ws.autoFilter = { from: 'A1', to: 'E1' };
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+
+    // rodapé com total
+    const totRow = ws.addRow({ Codigo: '', Descricao: `Total: ${itens.length} produto(s)`, Grupo: '', SubGrupo: '', [chave]: '' });
+    totRow.font = { bold: true, italic: true, color: { argb: 'FF64748B' } };
+  }
 
   return wb.xlsx.writeBuffer();
 }

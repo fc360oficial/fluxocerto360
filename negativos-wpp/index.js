@@ -62,136 +62,86 @@ async function buscarNegativos() {
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
 
-async function gerarPDF(rows) {
+function gerarPDFLoja(rows, ln, dataHora) {
   const doc    = new PDFDocument({ size: 'A4', margin: 0, bufferPages: true });
   const chunks = [];
   doc.on('data', c => chunks.push(c));
 
-  const hoje     = new Date();
-  const dataHora = hoje.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
-                 + ' — ' + hoje.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-
-  const ML = 36, MR = 36, PW = 595 - ML - MR; // margens e largura
-  const CX = ML, CD = ML + 110, CEL = ML + 360, CSI = ML + 435; // col X positions
+  const ML = 36, MR = 36, PW = 595 - ML - MR;
+  const CX = ML, CD = ML + 110, CEL = ML + 360, CSI = ML + 435;
   const CWX = 105, CWD = 245, CWEL = 70, CWSI = PW - (CD - ML) - CWD - CWEL - 5;
 
-  function desenharCabecalho(ln) {
+  function desenharCabecalho() {
     let y = 30;
-
-    // Fundo azul topo
     doc.rect(0, 0, 595, 68).fill('#1E40AF');
-
-    // Logo
     const logoExiste = fs.existsSync(LOGO_PATH);
-    if (logoExiste) {
-      try { doc.image(LOGO_PATH, ML, y - 4, { height: 44 }); } catch(_) {}
-    }
-
-    // Título
+    if (logoExiste) { try { doc.image(LOGO_PATH, ML, y - 4, { height: 44 }); } catch(_) {} }
     const txX = logoExiste ? ML + 60 : ML;
     doc.fillColor('#FFFFFF').fontSize(18).font('Helvetica-Bold')
        .text('ECONÔMICO RELATÓRIOS', txX, y, { width: PW - 60 });
     doc.fillColor('#BFDBFE').fontSize(9).font('Helvetica')
        .text('Auditoria de Estoque Negativo', txX, y + 22, { width: PW - 60 });
     y = 68;
-
-    // Nome da loja
     doc.rect(0, y, 595, 24).fill('#1E3A5F');
     doc.fillColor('#FFFFFF').fontSize(12).font('Helvetica-Bold')
        .text(`Loja ${ln} — ${NOMES_LOJA[ln] || 'LOJA ' + ln}`, ML, y + 6);
     y += 24;
-
-    // Data
     doc.rect(0, y, 595, 16).fill('#E2E8F0');
     doc.fillColor('#334155').fontSize(8).font('Helvetica-Oblique')
        .text(`Tipo: AUDITORIA ESTOQUE   |   Emissão: ${dataHora}`, ML, y + 4);
     y += 16;
-
-    // Cabeçalho colunas
     doc.rect(0, y, 595, 18).fill('#334E68');
     doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
-    doc.text('Código',        CX,  y + 5, { width: CWX, align:'center' });
-    doc.text('Descrição',     CD,  y + 5, { width: CWD });
-    doc.text('Estoque/Loja',  CEL, y + 5, { width: CWEL, align:'center' });
-    doc.text('Sistema',       CSI, y + 5, { width: CWSI, align:'center' });
-    y += 18;
-
-    return y;
+    doc.text('Código',       CX,  y + 5, { width: CWX, align: 'center' });
+    doc.text('Descrição',    CD,  y + 5, { width: CWD });
+    doc.text('Estoque/Loja', CEL, y + 5, { width: CWEL, align: 'center' });
+    doc.text('Sistema',      CSI, y + 5, { width: CWSI, align: 'center' });
+    return y + 18;
   }
 
-  let primeiraLoja = true;
+  const chave = 'L' + ln;
+  const itens = rows.filter(r => parseFloat(r[chave]) < 0);
+  let y = desenharCabecalho();
 
-  for (let ln = 1; ln <= 6; ln++) {
-    const chave = 'L' + ln;
-    const itens = rows.filter(r => parseFloat(r[chave]) < 0);
+  const grupos = {};
+  itens.forEach(r => {
+    const g = (r.SubGrupo || r.Grupo || 'SEM GRUPO').toUpperCase();
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(r);
+  });
 
-    if (!primeiraLoja) doc.addPage();
-    primeiraLoja = false;
-
-    let y = desenharCabecalho(ln);
-
-    const grupos = {};
-    itens.forEach(r => {
-      const g = (r.SubGrupo || r.Grupo || 'SEM GRUPO').toUpperCase();
-      if (!grupos[g]) grupos[g] = [];
-      grupos[g].push(r);
-    });
-
-    let idx = 0;
-    for (const [nomeGrupo, produtos] of Object.entries(grupos)) {
-      // Nova página se necessário
-      if (y > 790) {
-        doc.addPage();
-        y = desenharCabecalho(ln);
-      }
-
-      // Linha do grupo (laranja)
-      doc.rect(0, y, 595, 16).fill('#F97316');
-      doc.fillColor('#000000').fontSize(8).font('Helvetica-Bold')
-         .text(nomeGrupo, ML + 4, y + 4, { width: PW });
-      y += 16;
-
-      for (const r of produtos) {
-        if (y > 800) {
-          doc.addPage();
-          y = desenharCabecalho(ln);
-        }
-
-        const bg = idx % 2 === 0 ? '#FFFFFF' : '#F1F5F9';
-        doc.rect(0, y, 595, 14).fill(bg);
-
-        const desc = String(r.Descricao || '').substring(0, 48);
-        doc.fillColor('#1F2937').fontSize(8).font('Helvetica');
-        doc.text(String(r.Codigo  || ''), CX,  y + 3, { width: CWX });
-        doc.text(desc,                    CD,  y + 3, { width: CWD });
-        doc.text('',                      CEL, y + 3, { width: CWEL, align:'center' });
-        doc.fillColor('#DC2626').font('Helvetica-Bold')
-           .text(String(r[chave]), CSI, y + 3, { width: CWSI, align:'center' });
-
-        // Linha separadora sutil
-        doc.strokeColor('#E2E8F0').lineWidth(0.3)
-           .moveTo(0, y + 14).lineTo(595, y + 14).stroke();
-
-        y += 14;
-        idx++;
-      }
-    }
-
-    // Rodapé total
-    if (y > 800) { doc.addPage(); y = desenharCabecalho(ln); }
-    doc.rect(0, y, 595, 16).fill('#F8FAFC');
-    doc.fillColor('#64748B').fontSize(8).font('Helvetica-Oblique')
-       .text(`Total: ${itens.length} produto(s) com estoque negativo`, ML, y + 4);
+  let idx = 0;
+  for (const [nomeGrupo, produtos] of Object.entries(grupos)) {
+    if (y > 790) { doc.addPage(); y = desenharCabecalho(); }
+    doc.rect(0, y, 595, 16).fill('#F97316');
+    doc.fillColor('#000000').fontSize(8).font('Helvetica-Bold')
+       .text(nomeGrupo, ML + 4, y + 4, { width: PW });
     y += 16;
-
-    // Rodapé de página
-    doc.rect(0, 820, 595, 22).fill('#1E40AF');
-    doc.fillColor('#93C5FD').fontSize(7).font('Helvetica')
-       .text('ECONÔMICO RELATÓRIOS  |  Gerado automaticamente  |  Uso interno', ML, 826, { align:'center', width: PW });
+    for (const r of produtos) {
+      if (y > 800) { doc.addPage(); y = desenharCabecalho(); }
+      const bg = idx % 2 === 0 ? '#FFFFFF' : '#F1F5F9';
+      doc.rect(0, y, 595, 14).fill(bg);
+      doc.fillColor('#1F2937').fontSize(8).font('Helvetica');
+      doc.text(String(r.Codigo || ''),                    CX,  y + 3, { width: CWX });
+      doc.text(String(r.Descricao || '').substring(0,48), CD,  y + 3, { width: CWD });
+      doc.text('',                                        CEL, y + 3, { width: CWEL, align: 'center' });
+      doc.fillColor('#DC2626').font('Helvetica-Bold')
+         .text(String(r[chave]), CSI, y + 3, { width: CWSI, align: 'center' });
+      doc.strokeColor('#E2E8F0').lineWidth(0.3).moveTo(0, y + 14).lineTo(595, y + 14).stroke();
+      y += 14; idx++;
+    }
   }
+
+  if (y > 800) { doc.addPage(); y = desenharCabecalho(); }
+  doc.rect(0, y, 595, 16).fill('#F8FAFC');
+  doc.fillColor('#64748B').fontSize(8).font('Helvetica-Oblique')
+     .text(`Total: ${itens.length} produto(s) com estoque negativo`, ML, y + 4);
+  doc.rect(0, 820, 595, 22).fill('#1E40AF');
+  doc.fillColor('#93C5FD').fontSize(7).font('Helvetica')
+     .text('ECONÔMICO RELATÓRIOS  |  Gerado automaticamente  |  Uso interno', ML, 826, { align: 'center', width: PW });
 
   doc.end();
-  return new Promise(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
+  return new Promise(resolve => doc.on('end', () => resolve({ buffer: Buffer.concat(chunks), total: itens.length })));
 }
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
@@ -237,7 +187,7 @@ async function conectar() {
   });
 }
 
-async function enviarPDF(buffer, nProdutos) {
+async function enviarPDFsLojas(rows) {
   const grupos = await sock.groupFetchAllParticipating();
   const jid    = Object.keys(grupos).find(id => grupos[id].subject === GRUPO_NOME);
 
@@ -246,17 +196,32 @@ async function enviarPDF(buffer, nProdutos) {
     return;
   }
 
-  const hoje    = new Date().toLocaleDateString('pt-BR');
-  const caption = `*Estoque Negativo — ${hoje}*\n${nProdutos} produto(s) com estoque negativo (excl. balança)`;
+  const hoje     = new Date();
+  const dataStr  = hoje.toLocaleDateString('pt-BR');
+  const dataHora = hoje.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
+                 + ' — ' + hoje.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  const dataNome = hoje.toISOString().slice(0, 10);
 
-  await sock.sendMessage(jid, {
-    document: Buffer.from(buffer),
-    mimetype: 'application/pdf',
-    fileName: `negativos_${new Date().toISOString().slice(0,10)}.pdf`,
-    caption,
-  });
+  for (let ln = 1; ln <= 6; ln++) {
+    const itens = rows.filter(r => parseFloat(r['L' + ln]) < 0);
+    if (itens.length === 0) {
+      logger.info(`Loja ${ln} (${NOMES_LOJA[ln]}): sem negativos, pulando`);
+      continue;
+    }
 
-  logger.info(`PDF enviado para "${GRUPO_NOME}" (${nProdutos} itens)`);
+    const { buffer, total } = await gerarPDFLoja(rows, ln, dataHora);
+    const nomeLoja = (NOMES_LOJA[ln] || 'LOJA' + ln).replace(/\s+/g, '_');
+
+    await sock.sendMessage(jid, {
+      document: Buffer.from(buffer),
+      mimetype: 'application/pdf',
+      fileName: `negativos_loja${ln}_${nomeLoja}_${dataNome}.pdf`,
+      caption:  `*Estoque Negativo — Loja ${ln} (${NOMES_LOJA[ln]}) — ${dataStr}*\n${total} produto(s) negativos`,
+    });
+
+    logger.info(`Loja ${ln}: PDF enviado (${total} itens)`);
+    await new Promise(r => setTimeout(r, 1500));
+  }
 }
 
 // ── Rotina principal ──────────────────────────────────────────────────────────
@@ -269,8 +234,7 @@ async function rotina() {
       logger.info('Nenhum estoque negativo encontrado.');
       return;
     }
-    const buffer = await gerarPDF(rows);
-    await enviarPDF(buffer, rows.length);
+    await enviarPDFsLojas(rows);
   } catch (err) {
     logger.error({ err }, 'Erro na rotina de negativos');
   }

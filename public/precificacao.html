@@ -427,12 +427,7 @@ function aplicarRefresh() {
     colBodies.push(bodyEl);
   }
 
-  if (window.parent !== window && _carSessao === 0) {
-    currentIdx = 0;
-    document.querySelectorAll('.col').forEach((c, i) => c.classList.toggle('ativo', i === 0));
-  } else {
-    setTimeout(() => iniciarCarrossel(0, 0), 200); // sempre começa pela loja 1
-  }
+  setTimeout(() => iniciarCarrossel(0, 0), 200);
 
   try {
     document.getElementById('tot-neg').textContent   = totNeg;

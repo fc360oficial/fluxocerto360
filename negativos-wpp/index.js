@@ -23,30 +23,30 @@ async function buscarNegativos() {
         i.Descricao,
         COALESCE(g.Descricao, 'SEM GRUPO')    AS Grupo,
         COALESCE(sg.Descricao, 'SEM SUBGRUPO') AS SubGrupo,
-        COALESCE(e1.Estoque, 0) AS L1,
-        COALESCE(e2.Estoque, 0) AS L2,
-        COALESCE(e3.Estoque, 0) AS L3,
-        COALESCE(e4.Estoque, 0) AS L4,
-        COALESCE(e5.Estoque, 0) AS L5,
-        COALESCE(e6.Estoque, 0) AS L6
+        COALESCE(e1.Qtd, 0) AS L1,
+        COALESCE(e2.Qtd, 0) AS L2,
+        COALESCE(e3.Qtd, 0) AS L3,
+        COALESCE(e4.Qtd, 0) AS L4,
+        COALESCE(e5.Qtd, 0) AS L5,
+        COALESCE(e6.Qtd, 0) AS L6
       FROM central.itens i
-      LEFT JOIN central.estoquen1 e1 ON e1.nInterno = i.nInterno
-      LEFT JOIN central.estoquen2 e2 ON e2.nInterno = i.nInterno
-      LEFT JOIN central.estoquen3 e3 ON e3.nInterno = i.nInterno
-      LEFT JOIN central.estoquen4 e4 ON e4.nInterno = i.nInterno
-      LEFT JOIN central.estoquen5 e5 ON e5.nInterno = i.nInterno
-      LEFT JOIN central.estoquen6 e6 ON e6.nInterno = i.nInterno
+      LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
       LEFT JOIN central.gruposub sg ON sg.CodSubGrupo = i.CodGrupoSub
       LEFT JOIN central.grupo    g  ON g.CodGrupo     = sg.CodGrupo
       WHERE i.CodDesativado = 0
         AND i.Descricao NOT LIKE '% KG%'
         AND (
-          COALESCE(e1.Estoque, 0) < 0 OR
-          COALESCE(e2.Estoque, 0) < 0 OR
-          COALESCE(e3.Estoque, 0) < 0 OR
-          COALESCE(e4.Estoque, 0) < 0 OR
-          COALESCE(e5.Estoque, 0) < 0 OR
-          COALESCE(e6.Estoque, 0) < 0
+          COALESCE(e1.Qtd, 0) < 0 OR
+          COALESCE(e2.Qtd, 0) < 0 OR
+          COALESCE(e3.Qtd, 0) < 0 OR
+          COALESCE(e4.Qtd, 0) < 0 OR
+          COALESCE(e5.Qtd, 0) < 0 OR
+          COALESCE(e6.Qtd, 0) < 0
         )
       ORDER BY g.Descricao, sg.Descricao, i.Descricao
     `);

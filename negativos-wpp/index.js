@@ -128,28 +128,31 @@ async function conectar() {
 
   sock.ev.on('creds.update', saveCreds);
 
-  sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
-    if (qr) {
-      logger.info('Escaneie o QR abaixo para autenticar:');
-      qrcode.generate(qr, { small: true });
-    }
-    if (connection === 'open')  logger.info('WhatsApp conectado');
-    if (connection === 'close') {
-      const code = lastDisconnect?.error?.output?.statusCode;
-      if (code !== DisconnectReason.loggedOut) {
-        logger.warn('Conexão encerrada, reconectando...');
-        setTimeout(conectar, 5000);
-      } else {
-        logger.error('Sessão encerrada. Apague a pasta auth_info e reinicie.');
-      }
-    }
-  });
-
-  // Aguarda conexão aberta
+  // Handler único — resolve a Promise E trata reconexões futuras
   await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Timeout conexão WA')), 60000);
-    sock.ev.on('connection.update', ({ connection }) => {
-      if (connection === 'open') { clearTimeout(timer); resolve(); }
+    const timer = setTimeout(() => reject(new Error('Timeout conexão WA')), 120000);
+    let resolvido = false;
+
+    sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+      if (qr) {
+        logger.info('Escaneie o QR abaixo para autenticar:');
+        qrcode.generate(qr, { small: true });
+      }
+      if (connection === 'open') {
+        logger.info('WhatsApp conectado');
+        if (!resolvido) { resolvido = true; clearTimeout(timer); resolve(); }
+      }
+      if (connection === 'close') {
+        const code = lastDisconnect?.error?.output?.statusCode;
+        if (code === DisconnectReason.loggedOut) {
+          logger.error('Sessão encerrada. Apague a pasta auth_info e reinicie.');
+          if (!resolvido) { clearTimeout(timer); reject(new Error('Deslogado')); }
+          else process.exit(1);
+        } else {
+          logger.warn('Conexão encerrada, reconectando...');
+          if (resolvido) setTimeout(conectar, 5000); // só reconecta após primeira conexão
+        }
+      }
     });
   });
 }

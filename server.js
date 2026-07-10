@@ -1031,14 +1031,14 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
            AND c.CodFornec > 0
          GROUP BY c.CodFornec, c.NomeFornec, ca.nome
          ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
-      q(`SELECT nReg as lista_id, nFornecedor FROM central.c_cotacao_lista WHERE l${loja} = 1`)
+      q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`)
     ]);
 
     // Mapa fornecedor → lista_id
     const fornecToLista = {};
     for (const l of listasRows) {
-      if (!fornecToLista[l.nFornecedor]) fornecToLista[l.nFornecedor] = [];
-      fornecToLista[l.nFornecedor].push(l.lista_id);
+      if (!fornecToLista[l.CodFornec]) fornecToLista[l.CodFornec] = [];
+      fornecToLista[l.CodFornec].push(l.lista_id);
     }
 
     // Agrupar por comprador

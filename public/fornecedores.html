@@ -346,17 +346,17 @@ table.comp-t tr:hover td{background:#ffffff05}
       <label>Ano</label>
       <select id="fil-ano"><option value="2026">2026</option><option value="2025">2025</option></select>
     </div>
-    <div class="fg">
+    <div class="fg" id="fg-fornecedor">
       <label>Fornecedor</label>
       <input type="text" id="fil-busca" placeholder="buscar..." onkeydown="if(event.key==='Enter')carregar()">
     </div>
-    <div class="fg">
+    <div class="fg" id="fg-comprador">
       <label>Comprador</label>
       <select id="fil-comprador">
         <option value="">Todos</option>
       </select>
     </div>
-    <button class="btn btn-blue" onclick="carregar()">🔍 Buscar</button>
+    <button class="btn btn-blue" id="btn-buscar" onclick="carregar()">🔍 Buscar</button>
   </div>
 
   <div class="kpi-row" id="kpi-row"></div>
@@ -1115,11 +1115,15 @@ async function verSemFornecedor() {
 let _abaAtiva = 'ranking';
 function trocarAba(aba) {
   _abaAtiva = aba;
-  document.getElementById('sec-ranking').style.display = aba === 'ranking' ? '' : 'none';
-  document.getElementById('sec-compras').style.display  = aba === 'compras'  ? '' : 'none';
+  const soCompras = aba === 'compras';
+  document.getElementById('fg-fornecedor').style.display = soCompras ? 'none' : '';
+  document.getElementById('fg-comprador').style.display  = soCompras ? 'none' : '';
+  document.getElementById('btn-buscar').style.display    = soCompras ? 'none' : '';
+  document.getElementById('sec-ranking').style.display = soCompras ? 'none' : '';
+  document.getElementById('sec-compras').style.display  = soCompras ? '' : 'none';
   document.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + aba).classList.add('active');
-  if (aba === 'compras') carregarCompras();
+  if (soCompras) carregarCompras();
 }
 
 // ── COMPRAS POR COMPRADOR ──

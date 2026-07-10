@@ -88,7 +88,10 @@ const todosDots   = [dotD,dotCT,dotP,dotC,dotR,dotMG,dotM];
 
 function mostrar(iframe, dot, nome) {
   atual = nome;
-  todosFrames.forEach(f => f.classList.remove('visivel'));
+  todosFrames.forEach(f => {
+    f.classList.remove('visivel');
+    if (f !== iframe) f.src = 'about:blank'; // para scripts em background
+  });
   todosDots.forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');

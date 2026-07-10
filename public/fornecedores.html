@@ -392,7 +392,10 @@ table.comp-t tr:hover td{background:#ffffff05}
 
   <!-- SEÇÃO COMPRAS POR COMPRADOR -->
   <div id="sec-compras" style="display:none">
-    <div id="compras-kpi" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div id="compras-kpi" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+      <button class="btn btn-slate" onclick="imprimirCompras()" style="flex-shrink:0">🖨️ Imprimir</button>
+    </div>
     <div class="comp-cards" id="comp-cards"><div class="spinner"></div></div>
   </div>
 </div>
@@ -1217,6 +1220,54 @@ async function abrirFornecedorPorId(id) {
     await carregar();
   }
   abrirDrawer(id, 'produtos');
+}
+
+function imprimirCompras() {
+  const p = params();
+  const w = window.open('', '_blank');
+  const kpis = document.getElementById('compras-kpi').innerHTML;
+  const cards = document.getElementById('comp-cards').innerHTML;
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Compras por Comprador · Loja ${p.loja} · ${mesesNomes[+p.mes]} ${p.ano}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:system-ui,sans-serif;background:#fff;color:#0f172a;padding:24px;font-size:12px}
+      h1{font-size:16px;font-weight:800;margin-bottom:4px}
+      p.sub{font-size:11px;color:#64748b;margin-bottom:16px}
+      .kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+      .kpi{border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;min-width:140px}
+      .kpi .v{font-size:18px;font-weight:800}
+      .kpi .l{font-size:10px;color:#64748b;margin-top:2px}
+      .comp-card{border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;overflow:hidden}
+      .comp-card-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fafc}
+      .comp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+      .comp-nome{font-size:13px;font-weight:700;flex:1}
+      .comp-total{font-size:14px;font-weight:800}
+      .comp-pct{font-size:10px;color:#64748b;margin-left:3px}
+      .comp-chev,.comp-bar-wrap{display:none}
+      .comp-body{display:block!important;border-top:1px solid #e2e8f0}
+      table.comp-t{width:100%;border-collapse:collapse;font-size:11px}
+      table.comp-t th{padding:6px 12px;text-align:left;color:#475569;font-size:9px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #e2e8f0;background:#f1f5f9}
+      table.comp-t th.r{text-align:right}
+      table.comp-t td{padding:6px 12px;border-bottom:1px solid #f1f5f9;color:#1e293b}
+      table.comp-t td.r{text-align:right}
+      .comp-resumo{padding:8px 14px;display:flex;gap:16px;flex-wrap:wrap;background:#fafafa;border-bottom:1px solid #e2e8f0;font-size:10px;color:#64748b}
+      .comp-resumo span{color:#0f172a;font-weight:700}
+      .link-lista{display:none}
+      img.logo{height:36px;margin-bottom:4px}
+      .header{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #FACC15}
+      @media print{button{display:none!important}}
+    </style>
+  </head><body>
+    <div class="header">
+      <img src="/logo.png" class="logo">
+      <div><h1>Compras por Comprador</h1><p class="sub">Loja ${p.loja} · ${mesesNomes[+p.mes]} ${p.ano} · Emitido em ${new Date().toLocaleString('pt-BR')}</p></div>
+    </div>
+    <div class="kpis">${kpis}</div>
+    ${cards}
+    <script>setTimeout(()=>window.print(),300)<\/script>
+  </body></html>`);
+  w.document.close();
 }
 
 carregar();

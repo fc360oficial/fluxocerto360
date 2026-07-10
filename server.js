@@ -1020,16 +1020,16 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
     const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
 
     const [comprasRows, listasRows] = await Promise.all([
-      q(`SELECT c.CodFornec, f.Nome as fornecedor_nome,
+      q(`SELECT c.CodFornec, c.NomeFornec as fornecedor_nome,
                COALESCE(ca.nome, 'SEM COMPRADOR') as comprador,
                COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total
          FROM central.compras c
-         INNER JOIN central.fornecedor f ON f.CodFornec = c.CodFornec
          LEFT JOIN central.c_cotacao_agenda_comprador ca
                ON ca.codFornec = c.CodFornec AND ca.nLoja = ?
          WHERE c.nLoja = ? AND MONTH(c.DataRecto) = ? AND YEAR(c.DataRecto) = ?
            AND c.Movimentacao = 'COMPRA' AND c.Tipo = 'PNF' AND c.Status = 'F'
-         GROUP BY c.CodFornec, f.Nome, ca.nome
+           AND c.CodFornec > 0
+         GROUP BY c.CodFornec, c.NomeFornec, ca.nome
          ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
       q(`SELECT nReg as lista_id, nFornecedor FROM central.c_cotacao_lista WHERE l${loja} = 1`)
     ]);

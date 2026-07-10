@@ -1137,6 +1137,7 @@ async function carregarCompras() {
     const r = await fetch(`/api/fornecedores/compras-resumo?loja=${p.loja}&mes=${p.mes}&ano=${p.ano}`);
     if (r.status === 401) { location.href = '/login.html'; return; }
     const data = await r.json();
+    if (data.error) throw new Error(data.error);
     _comprasCache = data; _comprasCacheKey = key;
     renderCompras(data);
   } catch (e) {

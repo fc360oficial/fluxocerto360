@@ -3194,6 +3194,61 @@ app.get('/api/ruptura/comprador-listas', withCache(60), async (req, res) => {
   res.json(result);
 });
 
+// Distribuição por loja dos produtos de uma lista de compra
+app.get('/api/ruptura/lista-lojas', async (req, res) => {
+  const listaId = parseInt(req.query.listaId);
+  if (!listaId) return res.status(400).json({ error: 'listaId obrigatório' });
+  try {
+    // Todos os produtos da lista
+    const itens = await q(
+      `SELECT li.Codigobarra, i.Descricao
+       FROM central.c_cotacao_lista_itens li
+       LEFT JOIN central.itens i ON i.CodigoBarra = li.Codigobarra AND i.CodDesativado = 0
+       WHERE li.nCotacao = ?
+       ORDER BY i.Descricao`,
+      [listaId]
+    );
+    if (!itens.length) return res.json({ total: 0, lojas: {} });
+
+    const barcodes = itens.map(r => r.Codigobarra);
+    const placeholders = barcodes.map(() => '?').join(',');
+
+    // Consulta paralela nas 6 lojas
+    const estoques = await Promise.all([1,2,3,4,5,6].map(ln =>
+      q(`SELECT CodigoBarra, Qtd FROM central.estoquen${ln}
+         WHERE CodigoBarra IN (${placeholders})`, barcodes)
+    ));
+
+    const NOMES = { 1:'CAHU', 2:'MURIBECA', 3:'PONTE', 4:'ATACAREJO', 5:'PORTA LARGA', 6:'JARDIM JORDAO' };
+    const lojas = {};
+    for (let i = 0; i < 6; i++) {
+      const ln = i + 1;
+      const mapa = {};
+      estoques[i].forEach(r => { mapa[r.CodigoBarra] = parseFloat(r.Qtd) || 0; });
+      const comEstoque    = barcodes.filter(cb => (mapa[cb] || 0) > 0).length;
+      const semEstoque    = barcodes.filter(cb => (mapa[cb] || 0) === 0).length;
+      const negativos     = barcodes.filter(cb => (mapa[cb] || 0) < 0).length;
+      const naoEncontrado = barcodes.filter(cb => mapa[cb] === undefined).length;
+      lojas[ln] = { nome: NOMES[ln], comEstoque, semEstoque, negativos, naoEncontrado, total: barcodes.length };
+    }
+
+    // Detalhe produto a produto por loja
+    const detalhe = itens.map(item => {
+      const row = { codigo: item.Codigobarra, produto: item.Descricao || item.Codigobarra };
+      for (let i = 0; i < 6; i++) {
+        const ln = i + 1;
+        const mapa = {};
+        estoques[i].forEach(r => { mapa[r.CodigoBarra] = parseFloat(r.Qtd); });
+        const qtd = mapa[item.Codigobarra];
+        row['l'+ln] = qtd === undefined ? null : qtd;
+      }
+      return row;
+    });
+
+    res.json({ total: barcodes.length, lojas, detalhe });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/ruptura', withCache(30), async (req, res) => {
   try {
     const hoje = new Date();

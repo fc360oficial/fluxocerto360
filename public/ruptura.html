@@ -654,10 +654,11 @@ function abrirFornecedor(listaId, nome) {
 
   document.getElementById('modal-tabs').innerHTML = abas.map((a,i) =>
     `<button class="modal-tab${i===0?' active':''}" onclick="modalAba(this,'${a.id}')">${a.label}</button>`
-  ).join('');
+  ).join('') + `<button class="modal-tab" onclick="modalAba(this,'lojas')" style="margin-left:auto;border-color:#3b82f6;color:#3b82f6">🏪 Por Loja</button>`;
 
   window._modalAbas = {};
   abas.forEach(a => { window._modalAbas[a.id] = { dados: a.dados, cols: a.cols }; });
+  window._modalListaId = listaId;
   renderModalAba('rup');
   document.getElementById('modal-fornec').classList.add('open');
 }
@@ -665,7 +666,8 @@ function abrirFornecedor(listaId, nome) {
 function modalAba(btn, id) {
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  renderModalAba(id);
+  if (id === 'lojas') renderModalLojas();
+  else renderModalAba(id);
 }
 
 function renderModalAba(id) {
@@ -677,6 +679,67 @@ function renderModalAba(id) {
     return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:${r.cobertura<=3?'var(--red)':r.cobertura<=7?'var(--orange)':'#f59e0b'}">${fmtD(r.cobertura)}</td><td class="r" style="color:#94a3b8">${(r.vmd||0).toFixed(1)} un</td><td class="r">${fmtR(r.vmd_valor)}</td></tr>`;
   }).join('');
   body.innerHTML = `<table class="modal-tbl"><thead><tr>${aba.cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas}</tbody></table>`;
+}
+
+async function renderModalLojas() {
+  const body = document.getElementById('modal-body');
+  const listaId = window._modalListaId;
+  body.innerHTML = '<div class="modal-empty">⏳ Carregando distribuição por loja...</div>';
+  try {
+    const r = await fetch(`/api/ruptura/lista-lojas?listaId=${listaId}`);
+    const d = await r.json();
+    if (!d.total) { body.innerHTML = '<div class="modal-empty">Nenhum produto encontrado nesta lista.</div>'; return; }
+
+    const CORES = { comEstoque:'#22c55e', semEstoque:'#ef4444', negativos:'#f97316', naoEncontrado:'#64748b' };
+    const lojaCards = Object.entries(d.lojas).map(([ln, lj]) => {
+      const pct = lj.total > 0 ? Math.round(lj.comEstoque / lj.total * 100) : 0;
+      const corBarra = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+      return `<div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px 16px;min-width:140px;flex:1">
+        <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:6px">LOJA ${ln}</div>
+        <div style="font-size:10px;color:#94a3b8;margin-bottom:8px">${lj.nome}</div>
+        <div style="background:#1e293b;border-radius:4px;height:6px;margin-bottom:10px">
+          <div style="background:${corBarra};height:6px;border-radius:4px;width:${pct}%"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px">
+          <span style="color:#22c55e">✓ ${lj.comEstoque} <small style="color:#64748b">c/ estoque</small></span>
+          <span style="color:#ef4444">✗ ${lj.semEstoque} <small style="color:#64748b">zerado</small></span>
+          ${lj.negativos>0?`<span style="color:#f97316">⚠ ${lj.negativos} <small style="color:#64748b">negativo</small></span>`:''}
+        </div>
+        <div style="margin-top:6px;font-size:11px;font-weight:700;color:${corBarra}">${pct}% presente</div>
+      </div>`;
+    }).join('');
+
+    // Tabela detalhe produto x loja
+    const cabLoja = [1,2,3,4,5,6].map(n => `<th style="text-align:center;white-space:nowrap">L${n}</th>`).join('');
+    const linhas = d.detalhe.map(r => {
+      const cels = [1,2,3,4,5,6].map(n => {
+        const v = r['l'+n];
+        if (v === null) return `<td style="text-align:center;color:#475569">—</td>`;
+        if (v < 0)  return `<td style="text-align:center;color:#f97316;font-weight:700">${v}</td>`;
+        if (v === 0) return `<td style="text-align:center;color:#ef4444">0</td>`;
+        return `<td style="text-align:center;color:#22c55e">${v}</td>`;
+      }).join('');
+      return `<tr><td style="color:#94a3b8;font-size:10px">${r.codigo}</td><td>${r.produto}</td>${cels}</tr>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div style="padding:14px 16px">
+        <div style="font-size:11px;color:#64748b;margin-bottom:10px">
+          Total de produtos na lista: <b style="color:#f1f5f9">${d.total}</b>
+          &nbsp;·&nbsp; <span style="color:#22c55e">Verde = c/ estoque</span>
+          &nbsp;·&nbsp; <span style="color:#ef4444">Vermelho = zerado</span>
+          &nbsp;·&nbsp; <span style="color:#f97316">Laranja = negativo</span>
+          &nbsp;·&nbsp; <span style="color:#475569">— = não cadastrado nesta loja</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${lojaCards}</div>
+        <div style="overflow-x:auto">
+          <table class="modal-tbl">
+            <thead><tr><th>Código</th><th>Produto</th>${cabLoja}</tr></thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch(e) { body.innerHTML = `<div class="modal-empty">Erro: ${e.message}</div>`; }
 }
 
 function filtrarFornec(busca) {

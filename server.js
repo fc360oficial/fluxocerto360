@@ -860,7 +860,7 @@ app.get('/api/faturamento-lojas', async (req, res) => {
 
 // Resumo geral por fornecedor (deve vir ANTES de /:id)
 const _resumoCache = {}, _resumoCacheTs = {};
-const RESUMO_TTL = 5 * 60 * 1000;
+const RESUMO_TTL = 30 * 60 * 1000;
 
 app.get('/api/fornecedores/resumo', async (req, res) => {
   try {
@@ -3487,6 +3487,18 @@ const server = app.listen(3003, '0.0.0.0', () => {
       res.resume();
       console.log('✓ Cache ruptura pré-aquecido');
     }).on('error', () => {});
+    // Pré-aquecer resumo de fornecedores para todas as lojas
+    const hoje = new Date();
+    const mes = hoje.getMonth() + 1;
+    const ano = hoje.getFullYear();
+    [1,2,3,4,5,6].forEach((ln, i) => {
+      setTimeout(() => {
+        http.get(`http://127.0.0.1:3003/api/fornecedores/resumo?loja=${ln}&mes=${mes}&ano=${ano}`, r => {
+          r.resume();
+          console.log(`✓ Cache fornecedores loja ${ln} pré-aquecido`);
+        }).on('error', () => {});
+      }, i * 4000); // 4s entre cada loja para não sobrecarregar o MySQL
+    });
   }, 3000);
 });
 server.on('error', err => {

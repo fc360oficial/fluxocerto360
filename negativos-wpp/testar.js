@@ -208,9 +208,15 @@ function gerarPDFLoja(itens, ln, hoje) {
   logger.info('Conectando ao WhatsApp...');
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
   const { version } = await fetchLatestBaileysVersion();
-  const sock = makeWASocket({ version, auth:state, logger:pino({ level:'silent' }) });
+  const sock = makeWASocket({
+    version,
+    auth:   state,
+    logger: pino({ level:'silent' }),
+    keepAliveIntervalMs: 15000,
+  });
   sock.ev.on('creds.update', saveCreds);
 
+  // Aguarda conexão abrir
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Timeout WA')), 60000);
     let ok = false;
@@ -228,6 +234,19 @@ function gerarPDFLoja(itens, ln, hoje) {
   const dataStr  = hoje.toLocaleDateString('pt-BR');
   const dataNome = hoje.toISOString().slice(0, 10);
 
+  async function enviarComRetry(jid, mensagem, tentativas = 3) {
+    for (let t = 1; t <= tentativas; t++) {
+      try {
+        await sock.sendMessage(jid, mensagem);
+        return;
+      } catch (err) {
+        logger.warn(`Tentativa ${t}/${tentativas} falhou: ${err.message}`);
+        if (t < tentativas) await new Promise(r => setTimeout(r, 5000));
+        else throw err;
+      }
+    }
+  }
+
   for (let ln = 1; ln <= 6; ln++) {
     const itens = porLoja[ln] || [];
     if (!itens.length) { logger.info(`Loja ${ln}: sem negativos, pulando`); continue; }
@@ -236,16 +255,16 @@ function gerarPDFLoja(itens, ln, hoje) {
     try {
       const { buffer, total } = await gerarPDFLoja(itens, ln, hoje);
       const nomeLoja = (NOMES_LOJA[ln]||'LOJA'+ln).replace(/\s+/g,'_');
-      await sock.sendMessage(jid, {
+      await enviarComRetry(jid, {
         document: Buffer.from(buffer),
         mimetype: 'application/pdf',
         fileName: `negativos_loja${ln}_${nomeLoja}_${dataNome}.pdf`,
         caption:  `*Estoque Negativo — Loja ${ln} (${NOMES_LOJA[ln]}) — ${dataStr}*\n${total} produto(s) negativos`,
       });
       logger.info(`Loja ${ln}: PDF enviado (${total} itens)`);
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 5000));
     } catch (err) {
-      logger.error({ err }, `Erro Loja ${ln}`);
+      logger.error(`Erro Loja ${ln}: ${err.message}`);
     }
   }
 

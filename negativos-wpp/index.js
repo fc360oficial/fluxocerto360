@@ -252,7 +252,7 @@ async function conectar() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
   const { version } = await fetchLatestBaileysVersion();
 
-  sock = makeWASocket({ version, auth:state, logger:pino({level:'silent'}), printQRInTerminal:false });
+  sock = makeWASocket({ version, auth:state, logger:pino({level:'silent'}), printQRInTerminal:false, keepAliveIntervalMs:15000 });
   sock.ev.on('creds.update', saveCreds);
 
   await new Promise((resolve, reject) => {

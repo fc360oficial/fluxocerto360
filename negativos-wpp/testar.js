@@ -148,35 +148,50 @@ function gerarPDFLoja(itens, ln, hoje) {
 
   let y = cabecalho();
 
-  const grupos = {};
+  // Agrupa: Grupo → SubGrupo → produtos (igual ao mercadológico do ERP)
+  const arvore = {};
   rows.forEach(r => {
-    const g = (r.SubGrupo||r.Grupo||'SEM GRUPO').toUpperCase();
-    if (!grupos[g]) grupos[g] = [];
-    grupos[g].push(r);
+    const grp = (r.Grupo    || 'SEM GRUPO').toUpperCase();
+    const sub = (r.SubGrupo || 'SEM SUBGRUPO').toUpperCase();
+    if (!arvore[grp]) arvore[grp] = {};
+    if (!arvore[grp][sub]) arvore[grp][sub] = [];
+    arvore[grp][sub].push(r);
   });
 
+  const SUB_H = 14;
   let idx = 0;
-  for (const [nomeGrupo, produtos] of Object.entries(grupos)) {
+
+  for (const [nomeGrupo, subGrupos] of Object.entries(arvore)) {
     if (y > 788) { doc.addPage(); y = retomarCabecalho(); }
-    doc.rect(0,y,PW,GRP_H).fill(COR.laranjaL);
-    ln_(0,y,PW,y,COR.laranja,0.4); ln_(0,y+GRP_H,PW,y+GRP_H,COR.laranja,0.4);
-    doc.fillColor(COR.laranja).fontSize(8).font('Helvetica-Bold').text('▸',ML,y+(GRP_H-8)/2,{width:12,lineBreak:false});
-    doc.fillColor(COR.navy).fontSize(7.5).font('Helvetica-Bold').text(nomeGrupo,ML+14,y+(GRP_H-7.5)/2+0.5,{width:CW-14,lineBreak:false});
+    // Cabeçalho do GRUPO — fundo laranja sólido
+    doc.rect(0,y,PW,GRP_H).fill(COR.laranja);
+    doc.fillColor(COR.navy).fontSize(8).font('Helvetica-Bold')
+       .text(nomeGrupo, ML+6, y+(GRP_H-8)/2, {width:CW-6, lineBreak:false});
     y += GRP_H;
 
-    for (const r of produtos) {
-      if (y > 800) { doc.addPage(); y = retomarCabecalho(); }
-      const bg = idx%2===0 ? COR.branco : COR.cinza;
-      doc.rect(0,y,PW,ROW_H).fill(bg);
-      txt(r.Codigo||'',                             C.cod.x, y,C.cod.w, ROW_H,{size:7.5});
-      txt(String(r.Descricao||'').substring(0,54),  C.desc.x,y,C.desc.w,ROW_H,{size:7.5});
-      txt('',                                       C.est.x, y,C.est.w, ROW_H,{size:7.5,align:'center'});
-      txt(String(r.Estoque),                        C.sis.x, y,C.sis.w, ROW_H,{cor:COR.vermelho,font:'Helvetica-Bold',size:7.5,align:'center'});
-      ln_(0,       y+ROW_H,PW,      y+ROW_H,COR.borda,0.3);
-      ln_(C.desc.x,y,      C.desc.x,y+ROW_H,COR.borda,0.3);
-      ln_(C.est.x, y,      C.est.x, y+ROW_H,COR.borda,0.3);
-      ln_(C.sis.x, y,      C.sis.x, y+ROW_H,COR.borda,0.3);
-      y += ROW_H; idx++;
+    for (const [nomeSub, produtos] of Object.entries(subGrupos)) {
+      if (y > 790) { doc.addPage(); y = retomarCabecalho(); }
+      // Sub-cabeçalho — laranja claro, indentado
+      doc.rect(0,y,PW,SUB_H).fill(COR.laranjaL);
+      ln_(0,y+SUB_H,PW,y+SUB_H,COR.laranja,0.4);
+      doc.fillColor(COR.laranja).fontSize(7).font('Helvetica-Bold').text('▸',ML+10,y+(SUB_H-7)/2,{width:10,lineBreak:false});
+      doc.fillColor(COR.navySec).fontSize(7).font('Helvetica-Bold').text(nomeSub,ML+22,y+(SUB_H-7)/2,{width:CW-22,lineBreak:false});
+      y += SUB_H;
+
+      for (const r of produtos) {
+        if (y > 800) { doc.addPage(); y = retomarCabecalho(); }
+        const bg = idx%2===0 ? COR.branco : COR.cinza;
+        doc.rect(0,y,PW,ROW_H).fill(bg);
+        txt(r.Codigo||'',                             C.cod.x, y,C.cod.w, ROW_H,{size:7.5});
+        txt(String(r.Descricao||'').substring(0,54),  C.desc.x,y,C.desc.w,ROW_H,{size:7.5});
+        txt('',                                       C.est.x, y,C.est.w, ROW_H,{size:7.5,align:'center'});
+        txt(String(r.Estoque),                        C.sis.x, y,C.sis.w, ROW_H,{cor:COR.vermelho,font:'Helvetica-Bold',size:7.5,align:'center'});
+        ln_(0,       y+ROW_H,PW,      y+ROW_H,COR.borda,0.3);
+        ln_(C.desc.x,y,      C.desc.x,y+ROW_H,COR.borda,0.3);
+        ln_(C.est.x, y,      C.est.x, y+ROW_H,COR.borda,0.3);
+        ln_(C.sis.x, y,      C.sis.x, y+ROW_H,COR.borda,0.3);
+        y += ROW_H; idx++;
+      }
     }
   }
 
@@ -184,7 +199,7 @@ function gerarPDFLoja(itens, ln, hoje) {
   ln_(ML, y, PW-MR, y, COR.laranja, 0.8);
   y += 6;
   doc.fillColor(COR.navySec).fontSize(7.5).font('Helvetica-Bold')
-     .text(`TOTAL: ${itens.length} produto(s) com estoque negativo nesta loja`, ML, y, { width:CW });
+     .text(`TOTAL: ${rows.length} produto(s) com estoque negativo nesta loja`, ML, y, { width:CW });
 
   doc.rect(0,PH-20,PW,20).fill(COR.cinzaMd);
   ln_(0,PH-20,PW,PH-20,COR.laranja,1.5);

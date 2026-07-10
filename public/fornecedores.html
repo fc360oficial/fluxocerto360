@@ -1113,6 +1113,7 @@ async function verSemFornecedor() {
 
 // ── ABAS PRINCIPAIS ──
 let _abaAtiva = 'ranking';
+function trocarAba(aba) {
   _abaAtiva = aba;
   document.getElementById('sec-ranking').style.display = aba === 'ranking' ? '' : 'none';
   document.getElementById('sec-compras').style.display  = aba === 'compras'  ? '' : 'none';

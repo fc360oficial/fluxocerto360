@@ -65,6 +65,8 @@ app.use((req, res, next) => {
     '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado', '/api/pendencias/prevencao-bonif',
     '/api/ruptura/debug-comprador'];
   if (publico.includes(req.path)) return next();
+  // Pré-aquecimento interno (somente localhost)
+  if (req.headers['x-internal-warmup'] === 'fc360warmup2026' && req.socket.remoteAddress === '::1') return next();
   const ext = req.path.split('.').pop().toLowerCase();
   if (['js','css','png','jpg','jpeg','gif','svg','ico','woff','woff2','ttf','eot','map'].includes(ext)) return next();
   if (req.session && req.session.user) {
@@ -3493,11 +3495,15 @@ const server = app.listen(3003, '0.0.0.0', () => {
     const ano = hoje.getFullYear();
     [1,2,3,4,5,6].forEach((ln, i) => {
       setTimeout(() => {
-        http.get(`http://127.0.0.1:3003/api/fornecedores/resumo?loja=${ln}&mes=${mes}&ano=${ano}`, r => {
+        http.get({
+          host: '127.0.0.1', port: 3003,
+          path: `/api/fornecedores/resumo?loja=${ln}&mes=${mes}&ano=${ano}`,
+          headers: { 'x-internal-warmup': 'fc360warmup2026' }
+        }, r => {
           r.resume();
           console.log(`✓ Cache fornecedores loja ${ln} pré-aquecido`);
         }).on('error', () => {});
-      }, i * 4000); // 4s entre cada loja para não sobrecarregar o MySQL
+      }, i * 5000); // 5s entre cada loja para não sobrecarregar o MySQL
     });
   }, 3000);
 });

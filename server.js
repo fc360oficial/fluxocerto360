@@ -1012,6 +1012,66 @@ app.get('/api/fornecedores/resumo', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Compras por comprador (hierarquia: comprador → fornecedor)
+app.get('/api/fornecedores/compras-resumo', async (req, res) => {
+  try {
+    const loja = parseInt(req.query.loja) || 1;
+    const mes  = parseInt(req.query.mes)  || new Date().getMonth() + 1;
+    const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
+
+    const [comprasRows, listasRows] = await Promise.all([
+      q(`SELECT c.CodFornec, f.Nome as fornecedor_nome,
+               COALESCE(ca.nome, 'SEM COMPRADOR') as comprador,
+               COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total
+         FROM central.compras c
+         INNER JOIN central.fornecedor f ON f.CodFornec = c.CodFornec
+         LEFT JOIN central.c_cotacao_agenda_comprador ca
+               ON ca.codFornec = c.CodFornec AND ca.nLoja = ?
+         WHERE c.nLoja = ? AND MONTH(c.DataRecto) = ? AND YEAR(c.DataRecto) = ?
+           AND c.Movimentacao = 'COMPRA' AND c.Tipo = 'PNF' AND c.Status = 'F'
+         GROUP BY c.CodFornec, f.Nome, ca.nome
+         ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
+      q(`SELECT nReg as lista_id, nFornecedor FROM central.c_cotacao_lista WHERE l${loja} = 1`)
+    ]);
+
+    // Mapa fornecedor → lista_id
+    const fornecToLista = {};
+    for (const l of listasRows) {
+      if (!fornecToLista[l.nFornecedor]) fornecToLista[l.nFornecedor] = [];
+      fornecToLista[l.nFornecedor].push(l.lista_id);
+    }
+
+    // Agrupar por comprador
+    const porComprador = {};
+    let totalGeral = 0;
+    for (const r of comprasRows) {
+      const comp = r.comprador;
+      const tot  = parseFloat(r.total || 0);
+      totalGeral += tot;
+      if (!porComprador[comp]) porComprador[comp] = { comprador: comp, total: 0, fornecedores: [] };
+      porComprador[comp].total += tot;
+      porComprador[comp].fornecedores.push({
+        id: r.CodFornec,
+        nome: (r.fornecedor_nome || '').trim(),
+        total: +tot.toFixed(2),
+        qtd_nfs: parseInt(r.qtd_nfs),
+        listas: fornecToLista[r.CodFornec] || []
+      });
+    }
+
+    // Ordenar: compradores com mais compra primeiro, SEM COMPRADOR por último
+    const lista = Object.values(porComprador)
+      .map(c => ({ ...c, total: +c.total.toFixed(2), pct: totalGeral > 0 ? +(c.total / totalGeral * 100).toFixed(1) : 0 }))
+      .sort((a, b) => {
+        if (a.comprador === 'SEM COMPRADOR') return 1;
+        if (b.comprador === 'SEM COMPRADOR') return -1;
+        return b.total - a.total;
+      });
+
+    res.json({ total: +totalGeral.toFixed(2), por_comprador: lista });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // Cache de itens mercadológico (muda raramente)
 let _itensCache = null, _itensCacheTs = 0;
 async function getItensGrupo() {

@@ -205,46 +205,49 @@ function gerarPDFLoja(itens, ln, hoje) {
   }
   if (!total) { logger.info('Nenhum negativo. Encerrando.'); process.exit(0); }
 
-  logger.info('Conectando ao WhatsApp...');
-  const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
   const { version } = await fetchLatestBaileysVersion();
-  const sock = makeWASocket({
-    version,
-    auth:   state,
-    logger: pino({ level:'silent' }),
-    keepAliveIntervalMs: 15000,
-  });
-  sock.ev.on('creds.update', saveCreds);
+  let jid = null;
 
-  // Aguarda conexão abrir
-  await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Timeout WA')), 60000);
-    let ok = false;
-    sock.ev.on('connection.update', ({ connection, qr }) => {
-      if (qr) qrcode.generate(qr, { small:true });
-      if (connection === 'open' && !ok) { ok = true; clearTimeout(timer); resolve(); }
+  // Reconecta e retorna socket pronto
+  async function conectar() {
+    const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
+    const s = makeWASocket({ version, auth:state, logger:pino({level:'silent'}) });
+    s.ev.on('creds.update', saveCreds);
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Timeout WA')), 60000);
+      let ok = false;
+      s.ev.on('connection.update', ({ connection, qr }) => {
+        if (qr) qrcode.generate(qr, { small:true });
+        if (connection === 'open' && !ok) { ok = true; clearTimeout(timer); resolve(); }
+      });
     });
-  });
+    return s;
+  }
+
+  logger.info('Conectando ao WhatsApp...');
+  let sock = await conectar();
+  logger.info('Conectado.');
 
   const todosGrupos = await sock.groupFetchAllParticipating();
-  const jid = Object.keys(todosGrupos).find(id => todosGrupos[id].subject === GRUPO_NOME);
+  jid = Object.keys(todosGrupos).find(id => todosGrupos[id].subject === GRUPO_NOME);
   if (!jid) { logger.error(`Grupo "${GRUPO_NOME}" não encontrado`); process.exit(1); }
 
   const hoje     = new Date();
   const dataStr  = hoje.toLocaleDateString('pt-BR');
   const dataNome = hoje.toISOString().slice(0, 10);
 
-  async function enviarComRetry(jid, mensagem, tentativas = 3) {
-    for (let t = 1; t <= tentativas; t++) {
+  async function enviar(mensagem) {
+    for (let t = 1; t <= 3; t++) {
       try {
         await sock.sendMessage(jid, mensagem);
         return;
       } catch (err) {
-        logger.warn(`Tentativa ${t}/${tentativas} falhou: ${err.message}`);
-        if (t < tentativas) await new Promise(r => setTimeout(r, 5000));
-        else throw err;
+        logger.warn(`Tentativa ${t}/3: ${err.message} — reconectando...`);
+        await new Promise(r => setTimeout(r, 4000));
+        sock = await conectar();
       }
     }
+    throw new Error('Falha após 3 tentativas');
   }
 
   for (let ln = 1; ln <= 6; ln++) {
@@ -255,14 +258,14 @@ function gerarPDFLoja(itens, ln, hoje) {
     try {
       const { buffer, total } = await gerarPDFLoja(itens, ln, hoje);
       const nomeLoja = (NOMES_LOJA[ln]||'LOJA'+ln).replace(/\s+/g,'_');
-      await enviarComRetry(jid, {
+      await enviar({
         document: Buffer.from(buffer),
         mimetype: 'application/pdf',
         fileName: `negativos_loja${ln}_${nomeLoja}_${dataNome}.pdf`,
         caption:  `*Estoque Negativo — Loja ${ln} (${NOMES_LOJA[ln]}) — ${dataStr}*\n${total} produto(s) negativos`,
       });
       logger.info(`Loja ${ln}: PDF enviado (${total} itens)`);
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 4000));
     } catch (err) {
       logger.error(`Erro Loja ${ln}: ${err.message}`);
     }

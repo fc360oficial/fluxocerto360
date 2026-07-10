@@ -18,43 +18,32 @@ const NOMES_LOJA = { 1:'CAHU', 2:'MURIBECA', 3:'PONTE', 4:'ATACAREJO', 5:'PORTA 
 async function buscarNegativos() {
   const conn = await mysql.createConnection(DB);
   try {
-    const [rows] = await conn.query(`
-      SELECT
-        i.CodigoBarra                           AS Codigo,
-        i.Descricao,
-        COALESCE(g.Descricao,  'SEM GRUPO')    AS Grupo,
-        COALESCE(sg.Descricao, 'SEM SUBGRUPO') AS SubGrupo,
-        COALESCE(e1.Qtd, 0) AS L1,
-        COALESCE(e2.Qtd, 0) AS L2,
-        COALESCE(e3.Qtd, 0) AS L3,
-        COALESCE(e4.Qtd, 0) AS L4,
-        COALESCE(e5.Qtd, 0) AS L5,
-        COALESCE(e6.Qtd, 0) AS L6
-      FROM central.itens i
-      LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.gruposub sg ON sg.CodSubGrupo = i.CodGrupoSub
-      LEFT JOIN central.grupo    g  ON g.CodGrupo     = sg.CodGrupo
-      WHERE i.CodDesativado = 0
-        AND i.Descricao NOT LIKE '% KG%'
-        AND i.CodigoBarra IS NOT NULL
-        AND CHAR_LENGTH(i.CodigoBarra) >= 7
-        AND (
-          COALESCE(e1.Qtd,0)<0 OR COALESCE(e2.Qtd,0)<0 OR
-          COALESCE(e3.Qtd,0)<0 OR COALESCE(e4.Qtd,0)<0 OR
-          COALESCE(e5.Qtd,0)<0 OR COALESCE(e6.Qtd,0)<0
-        )
-      ORDER BY g.Descricao, sg.Descricao, i.Descricao
-    `);
-    return rows;
+    const resultados = await Promise.all(
+      [1,2,3,4,5,6].map(ln => conn.query(`
+        SELECT
+          i.CodigoBarra                           AS Codigo,
+          i.Descricao,
+          COALESCE(g.Descricao,  'SEM GRUPO')    AS Grupo,
+          COALESCE(sg.Descricao, 'SEM SUBGRUPO') AS SubGrupo,
+          e.Qtd                                  AS Estoque
+        FROM central.itens i
+        JOIN central.estoquen${ln} e ON e.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.gruposub sg ON sg.CodSubGrupo = i.CodGrupoSub
+        LEFT JOIN central.grupo    g  ON g.CodGrupo     = sg.CodGrupo
+        WHERE i.CodDesativado = 0
+          AND i.Descricao NOT LIKE '% KG%'
+          AND i.CodigoBarra IS NOT NULL
+          AND CHAR_LENGTH(i.CodigoBarra) >= 7
+          AND e.Qtd < 0
+        ORDER BY g.Descricao, sg.Descricao, i.Descricao
+      `))
+    );
+    return Object.fromEntries(resultados.map(([rows], i) => [i + 1, rows]));
   } finally { conn.end(); }
 }
 
-function gerarPDFLoja(rows, ln, hoje) {
+function gerarPDFLoja(itens, ln, hoje) {
+  const rows = itens;
   const doc    = new PDFDocument({ size:'A4', margin:0, bufferPages:true });
   const chunks = [];
   doc.on('data', c => chunks.push(c));
@@ -157,12 +146,10 @@ function gerarPDFLoja(rows, ln, hoje) {
     return y+COL_H;
   }
 
-  const chave = 'L'+ln;
-  const itens = rows.filter(r => parseFloat(r[chave]) < 0);
   let y = cabecalho();
 
   const grupos = {};
-  itens.forEach(r => {
+  rows.forEach(r => {
     const g = (r.SubGrupo||r.Grupo||'SEM GRUPO').toUpperCase();
     if (!grupos[g]) grupos[g] = [];
     grupos[g].push(r);
@@ -184,7 +171,7 @@ function gerarPDFLoja(rows, ln, hoje) {
       txt(r.Codigo||'',                             C.cod.x, y,C.cod.w, ROW_H,{size:7.5});
       txt(String(r.Descricao||'').substring(0,54),  C.desc.x,y,C.desc.w,ROW_H,{size:7.5});
       txt('',                                       C.est.x, y,C.est.w, ROW_H,{size:7.5,align:'center'});
-      txt(String(r[chave]),                         C.sis.x, y,C.sis.w, ROW_H,{cor:COR.vermelho,font:'Helvetica-Bold',size:7.5,align:'center'});
+      txt(String(r.Estoque),                        C.sis.x, y,C.sis.w, ROW_H,{cor:COR.vermelho,font:'Helvetica-Bold',size:7.5,align:'center'});
       ln_(0,       y+ROW_H,PW,      y+ROW_H,COR.borda,0.3);
       ln_(C.desc.x,y,      C.desc.x,y+ROW_H,COR.borda,0.3);
       ln_(C.est.x, y,      C.est.x, y+ROW_H,COR.borda,0.3);
@@ -209,17 +196,14 @@ function gerarPDFLoja(rows, ln, hoje) {
 }
 
 (async () => {
-  logger.info('Buscando negativos...');
-  const rows = await buscarNegativos();
-  logger.info(`${rows.length} produto(s) encontrado(s) com algum negativo`);
-
-  // Mostra contagem por loja
+  logger.info('Buscando negativos (6 queries paralelas)...');
+  const porLoja = await buscarNegativos();
+  const total = Object.values(porLoja).reduce((s,a) => s+a.length, 0);
+  logger.info(`Total negativos encontrados: ${total}`);
   for (let ln = 1; ln <= 6; ln++) {
-    const n = rows.filter(r => parseFloat(r['L'+ln]) < 0).length;
-    logger.info(`  Loja ${ln} (${NOMES_LOJA[ln]}): ${n} negativo(s)`);
+    logger.info(`  Loja ${ln} (${NOMES_LOJA[ln]}): ${(porLoja[ln]||[]).length} negativo(s)`);
   }
-
-  if (!rows.length) { logger.info('Nenhum negativo. Encerrando.'); process.exit(0); }
+  if (!total) { logger.info('Nenhum negativo. Encerrando.'); process.exit(0); }
 
   logger.info('Conectando ao WhatsApp...');
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
@@ -245,12 +229,12 @@ function gerarPDFLoja(rows, ln, hoje) {
   const dataNome = hoje.toISOString().slice(0, 10);
 
   for (let ln = 1; ln <= 6; ln++) {
-    const itens = rows.filter(r => parseFloat(r['L'+ln]) < 0);
+    const itens = porLoja[ln] || [];
     if (!itens.length) { logger.info(`Loja ${ln}: sem negativos, pulando`); continue; }
 
     logger.info(`Gerando PDF Loja ${ln}...`);
     try {
-      const { buffer, total } = await gerarPDFLoja(rows, ln, hoje);
+      const { buffer, total } = await gerarPDFLoja(itens, ln, hoje);
       const nomeLoja = (NOMES_LOJA[ln]||'LOJA'+ln).replace(/\s+/g,'_');
       await sock.sendMessage(jid, {
         document: Buffer.from(buffer),

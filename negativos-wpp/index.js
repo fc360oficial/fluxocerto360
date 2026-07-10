@@ -21,46 +21,37 @@ let sock = null;
 async function buscarNegativos() {
   const conn = await mysql.createConnection(DB);
   try {
-    const [rows] = await conn.query(`
-      SELECT
-        i.CodigoBarra                           AS Codigo,
-        i.Descricao,
-        COALESCE(g.Descricao,  'SEM GRUPO')    AS Grupo,
-        COALESCE(sg.Descricao, 'SEM SUBGRUPO') AS SubGrupo,
-        COALESCE(e1.Qtd, 0) AS L1,
-        COALESCE(e2.Qtd, 0) AS L2,
-        COALESCE(e3.Qtd, 0) AS L3,
-        COALESCE(e4.Qtd, 0) AS L4,
-        COALESCE(e5.Qtd, 0) AS L5,
-        COALESCE(e6.Qtd, 0) AS L6
-      FROM central.itens i
-      LEFT JOIN central.estoquen1 e1 ON e1.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen2 e2 ON e2.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen3 e3 ON e3.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen4 e4 ON e4.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen5 e5 ON e5.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.estoquen6 e6 ON e6.CodigoBarra = i.CodigoBarra
-      LEFT JOIN central.gruposub sg ON sg.CodSubGrupo = i.CodGrupoSub
-      LEFT JOIN central.grupo    g  ON g.CodGrupo     = sg.CodGrupo
-      WHERE i.CodDesativado = 0
-        AND i.Descricao NOT LIKE '% KG%'
-        AND i.CodigoBarra IS NOT NULL
-        AND CHAR_LENGTH(i.CodigoBarra) >= 7
-        AND (
-          COALESCE(e1.Qtd,0)<0 OR COALESCE(e2.Qtd,0)<0 OR
-          COALESCE(e3.Qtd,0)<0 OR COALESCE(e4.Qtd,0)<0 OR
-          COALESCE(e5.Qtd,0)<0 OR COALESCE(e6.Qtd,0)<0
-        )
-      ORDER BY g.Descricao, sg.Descricao, i.Descricao
-    `);
-    return rows;
+    // 6 queries simples em paralelo — muito mais rápido que 1 query com 6 JOINs
+    const resultados = await Promise.all(
+      [1,2,3,4,5,6].map(ln => conn.query(`
+        SELECT
+          i.CodigoBarra                           AS Codigo,
+          i.Descricao,
+          COALESCE(g.Descricao,  'SEM GRUPO')    AS Grupo,
+          COALESCE(sg.Descricao, 'SEM SUBGRUPO') AS SubGrupo,
+          e.Qtd                                  AS Estoque
+        FROM central.itens i
+        JOIN central.estoquen${ln} e ON e.CodigoBarra = i.CodigoBarra
+        LEFT JOIN central.gruposub sg ON sg.CodSubGrupo = i.CodGrupoSub
+        LEFT JOIN central.grupo    g  ON g.CodGrupo     = sg.CodGrupo
+        WHERE i.CodDesativado = 0
+          AND i.Descricao NOT LIKE '% KG%'
+          AND i.CodigoBarra IS NOT NULL
+          AND CHAR_LENGTH(i.CodigoBarra) >= 7
+          AND e.Qtd < 0
+        ORDER BY g.Descricao, sg.Descricao, i.Descricao
+      `))
+    );
+    // Retorna objeto { 1: [...], 2: [...], ..., 6: [...] }
+    return Object.fromEntries(resultados.map(([rows], i) => [i + 1, rows]));
   } finally { conn.end(); }
 }
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
 // Estilo: fundo branco, texto navy escuro, acento laranja/âmbar
 
-function gerarPDFLoja(rows, ln, hoje) {
+function gerarPDFLoja(itens, ln, hoje) {
+  const rows = itens; // já filtrado por loja
   const doc    = new PDFDocument({ size:'A4', margin:0, bufferPages:true });
   const chunks = [];
   doc.on('data', c => chunks.push(c));
@@ -171,12 +162,10 @@ function gerarPDFLoja(rows, ln, hoje) {
   }
 
   // ── Conteúdo ────────────────────────────────────────────────────────────────
-  const chave = 'L' + ln;
-  const itens = rows.filter(r => parseFloat(r[chave]) < 0);
   let y = cabecalho();
 
   const grupos = {};
-  itens.forEach(r => {
+  rows.forEach(r => {
     const g = (r.SubGrupo || r.Grupo || 'SEM GRUPO').toUpperCase();
     if (!grupos[g]) grupos[g] = [];
     grupos[g].push(r);
@@ -208,7 +197,7 @@ function gerarPDFLoja(rows, ln, hoje) {
       txt(r.Codigo||'',                              C.cod.x,  y, C.cod.w,  ROW_H, { size:7.5 });
       txt(String(r.Descricao||'').substring(0,54),   C.desc.x, y, C.desc.w, ROW_H, { size:7.5 });
       txt('',                                        C.est.x,  y, C.est.w,  ROW_H, { size:7.5, align:'center' });
-      txt(String(r[chave]),                          C.sis.x,  y, C.sis.w,  ROW_H, { cor:COR.vermelho, font:'Helvetica-Bold', size:7.5, align:'center' });
+      txt(String(r.Estoque),                         C.sis.x,  y, C.sis.w,  ROW_H, { cor:COR.vermelho, font:'Helvetica-Bold', size:7.5, align:'center' });
 
       // Bordas linha
       ln_(0,        y+ROW_H, PW,       y+ROW_H, COR.borda, 0.3);
@@ -291,7 +280,7 @@ async function conectar() {
   });
 }
 
-async function enviarPDFsLojas(rows) {
+async function enviarPDFsLojas(porLoja) {
   const grupos = await sock.groupFetchAllParticipating();
   const jid    = Object.keys(grupos).find(id => grupos[id].subject === GRUPO_NOME);
   if (!jid) { logger.error(`Grupo "${GRUPO_NOME}" não encontrado`); return; }
@@ -301,12 +290,12 @@ async function enviarPDFsLojas(rows) {
   const dataNome = hoje.toISOString().slice(0, 10);
 
   for (let ln = 1; ln <= 6; ln++) {
-    const itens = rows.filter(r => parseFloat(r['L' + ln]) < 0);
+    const itens = porLoja[ln] || [];
     logger.info(`Loja ${ln} (${NOMES_LOJA[ln]}): ${itens.length} negativo(s)`);
-    if (itens.length === 0) continue;
+    if (!itens.length) continue;
 
     try {
-      const { buffer, total } = await gerarPDFLoja(rows, ln, hoje);
+      const { buffer, total } = await gerarPDFLoja(itens, ln, hoje);
       const nomeLoja = (NOMES_LOJA[ln]||'LOJA'+ln).replace(/\s+/g,'_');
       await sock.sendMessage(jid, {
         document: Buffer.from(buffer),
@@ -327,10 +316,11 @@ async function enviarPDFsLojas(rows) {
 async function rotina() {
   logger.info('Iniciando rotina de negativos...');
   try {
-    const rows = await buscarNegativos();
-    logger.info(`Total com algum negativo: ${rows.length}`);
-    if (!rows.length) { logger.info('Nenhum estoque negativo.'); return; }
-    await enviarPDFsLojas(rows);
+    const porLoja = await buscarNegativos();
+    const total   = Object.values(porLoja).reduce((s, arr) => s + arr.length, 0);
+    logger.info(`Total negativos: ${total}`);
+    if (!total) { logger.info('Nenhum estoque negativo.'); return; }
+    await enviarPDFsLojas(porLoja);
   } catch (err) {
     logger.error({ err }, 'Erro na rotina');
   }

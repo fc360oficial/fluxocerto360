@@ -1108,11 +1108,8 @@ async function verSemFornecedor() {
   }
 }
 
-carregar();
-
 // ── ABAS PRINCIPAIS ──
 let _abaAtiva = 'ranking';
-function trocarAba(aba) {
   _abaAtiva = aba;
   document.getElementById('sec-ranking').style.display = aba === 'ranking' ? '' : 'none';
   document.getElementById('sec-compras').style.display  = aba === 'compras'  ? '' : 'none';
@@ -1217,11 +1214,12 @@ function toggleCard(id) {
 async function abrirFornecedorPorId(id) {
   if (!dados || !dados.find) return;
   if (!dados.find(r => r.id === id)) {
-    // Ranking não carregado ainda — carrega e depois abre
     await carregar();
   }
   abrirDrawer(id, 'produtos');
 }
+
+carregar();
 </script>
 </body>
 </html>

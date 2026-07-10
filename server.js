@@ -1044,11 +1044,15 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
       fornecToLista[l.CodFornec].push(l.lista_id);
     }
 
+    // Compradores desativados — aparecem como SEM COMPRADOR
+    const COMPRADORES_INATIVOS = ['RODRIGO CAHU'];
+
     // Agrupar por comprador
     const porComprador = {};
     let totalGeral = 0;
     for (const r of comprasRows) {
-      const comp = r.comprador;
+      const compRaw = r.comprador;
+      const comp = COMPRADORES_INATIVOS.includes((compRaw || '').toUpperCase().trim()) ? 'SEM COMPRADOR' : compRaw;
       const tot  = parseFloat(r.total || 0);
       totalGeral += tot;
       if (!porComprador[comp]) porComprador[comp] = { comprador: comp, total: 0, fornecedores: [] };

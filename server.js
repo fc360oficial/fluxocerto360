@@ -860,6 +860,20 @@ app.get('/api/faturamento-lojas', async (req, res) => {
 // MÓDULO FORNECEDORES
 // ═══════════════════════════════════════════════════
 
+// Cache compartilhado de fornecedoritens (independe de loja)
+let _fornecItensCache = null, _fornecItensCacheTs = 0;
+async function getFornecItens() {
+  if (_fornecItensCache && Date.now() - _fornecItensCacheTs < 15 * 60 * 1000) return _fornecItensCache;
+  _fornecItensCache = await q(`
+    SELECT fi.CodFornecedor, fi.CodigoBarra
+    FROM central.fornecedoritens fi
+    INNER JOIN central.itens it ON it.CodigoBarra = fi.CodigoBarra AND it.CodDesativado = 0
+    WHERE fi.Backup = 0
+  `).catch(() => []);
+  _fornecItensCacheTs = Date.now();
+  return _fornecItensCache;
+}
+
 // Resumo geral por fornecedor (deve vir ANTES de /:id)
 const _resumoCache = {}, _resumoCacheTs = {};
 const RESUMO_TTL = 30 * 60 * 1000;
@@ -886,15 +900,12 @@ app.get('/api/fornecedores/resumo', async (req, res) => {
     let wf = 'WHERE CodDesativado=0', pf = [];
     if (busca) { wf += ' AND (Nome LIKE ? OR NomeCompleto LIKE ?)'; pf.push(`%${busca}%`, `%${busca}%`); }
 
-    const [vendasRows, prodRows, avariaRows, avariaStatusRows, compradorRows, fornecs] = await Promise.all([
+    const [vendasRows, fornecItensRaw, custoLojaRows, avariaRows, avariaStatusRows, compradorRows, fornecs] = await Promise.all([
       q(`SELECT Codigo, SUM(QtdNovo) as qtd, SUM(ValorTotalNovo) as valor, SUM(Custo) as custo_total
          FROM \`ln${lojaSel}${mm}\`.zcupomitens
          WHERE Data BETWEEN ? AND ? AND IndCancel='N' GROUP BY Codigo`, [dIni, dFim]).catch(() => []),
-      q(`SELECT fi.CodFornecedor, fi.CodigoBarra, c.Custo
-         FROM central.fornecedoritens fi
-         INNER JOIN central.itens it ON it.CodigoBarra = fi.CodigoBarra AND it.CodDesativado = 0
-         LEFT JOIN central.custoloja${lojaSel} c ON c.CodigoBarra = fi.CodigoBarra
-         WHERE fi.Backup = 0`).catch(() => []),
+      getFornecItens(),
+      q(`SELECT CodigoBarra, Custo FROM central.custoloja${lojaSel} WHERE Custo > 0`).catch(() => []),
       q(`SELECT a.CodFornec, SUM(a.Total) as total, COUNT(*) as qtd
          FROM central.avariaconsumo a
          INNER JOIN central.fornecedoritens fi ON fi.CodigoBarra = a.CodigoBarras AND fi.CodFornecedor = a.CodFornec AND fi.Backup = 0
@@ -911,6 +922,11 @@ app.get('/api/fornecedores/resumo', async (req, res) => {
         [lojaSel]).catch(() => []),
       q(`SELECT CodFornec, Nome, NomeCompleto FROM central.fornecedor ${wf}`, pf).catch(() => [])
     ]);
+
+    // Monta prodRows: fornecItens + custo da loja em memória
+    const custoLojaMap = {};
+    for (const r of custoLojaRows) custoLojaMap[r.CodigoBarra] = parseFloat(r.Custo) || 0;
+    const prodRows = fornecItensRaw.map(fi => ({ CodFornecedor: fi.CodFornecedor, CodigoBarra: fi.CodigoBarra, Custo: custoLojaMap[fi.CodigoBarra] || 0 }));
 
     // Processa vendas
     let vendasMap = {}, totalLojaReal = 0, totalCustoLoja = 0;
@@ -3503,7 +3519,7 @@ const server = app.listen(3003, '0.0.0.0', () => {
           r.resume();
           console.log(`✓ Cache fornecedores loja ${ln} pré-aquecido`);
         }).on('error', () => {});
-      }, i * 5000); // 5s entre cada loja para não sobrecarregar o MySQL
+      }, i * 2000); // 2s entre cada loja
     });
   }, 3000);
 });

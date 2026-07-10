@@ -1153,8 +1153,11 @@ function renderCompras(data) {
   // KPIs
   const totalFornec = data.por_comprador.filter(c => c.comprador !== 'SEM COMPRADOR').reduce((s,c) => s + c.total, 0);
   const semFornec   = data.por_comprador.find(c => c.comprador === 'SEM COMPRADOR');
+  const tv = data.total_venda || 0;
+  const pctCompraVenda = tv > 0 ? (data.total / tv * 100).toFixed(1) : '—';
   document.getElementById('compras-kpi').innerHTML = `
     <div class="kpi"><div class="v">${fmt(data.total)}</div><div class="l">Total Comprado · ${lojaNome} · ${mesNome}</div></div>
+    ${tv > 0 ? `<div class="kpi"><div class="v" style="color:#a78bfa">${fmt(tv)}</div><div class="l">Total Venda · ${mesNome} · <b>${pctCompraVenda}% compra/venda</b></div></div>` : ''}
     <div class="kpi"><div class="v" style="color:#60a5fa">${data.por_comprador.filter(c => c.comprador !== 'SEM COMPRADOR').length}</div><div class="l">Compradores ativos</div></div>
     <div class="kpi"><div class="v" style="color:#22c55e">${fmt(totalFornec)}</div><div class="l">Com comprador (${data.total > 0 ? (totalFornec/data.total*100).toFixed(1) : 0}%)</div></div>
     ${semFornec ? `<div class="kpi"><div class="v" style="color:#f87171">${fmt(semFornec.total)}</div><div class="l">Sem comprador (${semFornec.pct}%)</div></div>` : ''}
@@ -1168,16 +1171,20 @@ function renderCompras(data) {
   const html = todos.map((c, idx) => {
     const cor  = c.comprador === 'SEM COMPRADOR' ? '#64748b' : COMP_CORES[idx % COMP_CORES.length];
     const qtdNfs = c.fornecedores.reduce((s,f) => s + f.qtd_nfs, 0);
+    const pctVenda = tv > 0 ? (c.total / tv * 100).toFixed(1) : null;
     const rows = c.fornecedores.map((f, fi) => {
       const listaLinks = f.listas.length
         ? f.listas.map(lid => `<span class="link-lista" onclick="abrirFornecedorPorId(${f.id})">#${lid}</span>`).join('')
         : '<span style="color:#334155">—</span>';
+      const pctCompra = data.total > 0 ? (f.total/data.total*100).toFixed(1) : 0;
+      const pctV = tv > 0 ? (f.total/tv*100).toFixed(1) : null;
       return `<tr>
         <td>${fi + 1}</td>
         <td><span style="font-weight:600;color:#e2e8f0">${f.nome}</span>${listaLinks}</td>
         <td class="r">${f.qtd_nfs} NF${f.qtd_nfs !== 1 ? 's' : ''}</td>
         <td class="r" style="color:#FACC15;font-weight:700">${fmt(f.total)}</td>
-        <td class="r" style="color:#64748b">${data.total > 0 ? (f.total/data.total*100).toFixed(1) : 0}%</td>
+        <td class="r" style="color:#64748b">${pctCompra}%</td>
+        ${pctV !== null ? `<td class="r" style="color:#a78bfa">${pctV}% <span style="font-size:9px;color:#475569">s/venda</span></td>` : ''}
       </tr>`;
     }).join('');
 
@@ -1186,7 +1193,11 @@ function renderCompras(data) {
         <div class="comp-dot" style="background:${cor}"></div>
         <div class="comp-nome">${c.comprador}</div>
         <div class="comp-bar-wrap"><div class="comp-bar-fill" style="width:${c.pct}%;background:${cor}"></div></div>
-        <div><span class="comp-total">${fmt(c.total)}</span><span class="comp-pct">${c.pct}%</span></div>
+        <div>
+          <span class="comp-total">${fmt(c.total)}</span>
+          <span class="comp-pct">${c.pct}% s/compra</span>
+          ${pctVenda !== null ? `<span class="comp-pct" style="color:#a78bfa;margin-left:6px">${pctVenda}% s/venda</span>` : ''}
+        </div>
         <div style="font-size:11px;color:#475569;margin:0 4px">${c.fornecedores.length} fornec · ${qtdNfs} NFs</div>
         <div class="comp-chev">▼</div>
       </div>
@@ -1195,11 +1206,12 @@ function renderCompras(data) {
           <div class="comp-resumo-item">Fornecedores: <span>${c.fornecedores.length}</span></div>
           <div class="comp-resumo-item">NFs recebidas: <span>${qtdNfs}</span></div>
           <div class="comp-resumo-item">Total comprado: <span>${fmt(c.total)}</span></div>
-          <div class="comp-resumo-item">% do total: <span>${c.pct}%</span></div>
+          <div class="comp-resumo-item">% s/compras: <span>${c.pct}%</span></div>
+          ${pctVenda !== null ? `<div class="comp-resumo-item">% s/venda: <span style="color:#a78bfa">${pctVenda}%</span></div>` : ''}
         </div>
         <div class="comp-table-wrap">
           <table class="comp-t">
-            <thead><tr><th>#</th><th>Fornecedor / Lista</th><th class="r">NFs</th><th class="r">Comprado R$</th><th class="r">% Total</th></tr></thead>
+            <thead><tr><th>#</th><th>Fornecedor / Lista</th><th class="r">NFs</th><th class="r">Comprado R$</th><th class="r">% Compra</th>${tv > 0 ? '<th class="r">% Venda</th>' : ''}</tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>

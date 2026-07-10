@@ -1019,7 +1019,7 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
     const mes  = parseInt(req.query.mes)  || new Date().getMonth() + 1;
     const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
 
-    const [comprasRows, listasRows] = await Promise.all([
+    const [comprasRows, listasRows, vendaRows] = await Promise.all([
       q(`SELECT c.CodFornec, c.NomeFornec as fornecedor_nome,
                COALESCE(
                  (SELECT nome FROM central.c_cotacao_agenda_comprador
@@ -1033,7 +1033,8 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
            AND c.CodFornec > 0
          GROUP BY c.CodFornec, c.NomeFornec
          ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
-      q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`)
+      q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`),
+      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano])
     ]);
 
     // Mapa fornecedor → lista_id
@@ -1070,7 +1071,8 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
         return b.total - a.total;
       });
 
-    res.json({ total: +totalGeral.toFixed(2), por_comprador: lista });
+    const totalVenda = parseFloat(vendaRows[0]?.total || 0);
+    res.json({ total: +totalGeral.toFixed(2), total_venda: +totalVenda.toFixed(2), por_comprador: lista });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

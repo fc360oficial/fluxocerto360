@@ -1156,22 +1156,34 @@ function renderCompras(data) {
   const mesNome  = mesesNomes[+p.mes];
 
   // KPIs
-  const totalFornec = data.por_comprador.filter(c => c.comprador !== 'SEM COMPRADOR').reduce((s,c) => s + c.total, 0);
+  const compradoresAtivos = data.por_comprador.filter(c => c.comprador !== 'SEM COMPRADOR');
+  const totalFornec = compradoresAtivos.reduce((s,c) => s + c.total, 0);
   const semFornec   = data.por_comprador.find(c => c.comprador === 'SEM COMPRADOR');
   const tv = data.total_venda || 0;
   const pctCompraVenda = tv > 0 ? (data.total / tv * 100).toFixed(1) : '—';
+
+  // Top 5 compradores (já ordenados por total desc no servidor)
+  const top5 = compradoresAtivos.slice(0, 5);
+  const totalTop5 = top5.reduce((s,c) => s + c.total, 0);
+  const pctTop5Venda = tv > 0 ? (totalTop5 / tv * 100).toFixed(1) : null;
+  const pctSemVenda  = (tv > 0 && semFornec) ? (semFornec.total / tv * 100).toFixed(1) : null;
+
   const kpiVenda = tv > 0
     ? '<div class="kpi"><div class="v" style="color:#a78bfa">' + fmt(tv) + '</div><div class="l">Total Venda · ' + mesNome + ' · <b>' + pctCompraVenda + '% compra/venda</b></div></div>'
     : '';
-  const kpiSemComp = semFornec
-    ? '<div class="kpi"><div class="v" style="color:#f87171">' + fmt(semFornec.total) + '</div><div class="l">Sem comprador (' + semFornec.pct + '%)</div></div>'
+  const kpiTop5 = pctTop5Venda !== null
+    ? '<div class="kpi"><div class="v" style="color:#22c55e">' + pctTop5Venda + '%</div><div class="l">Top ' + top5.length + ' compradores s/venda · ' + fmt(totalTop5) + '</div></div>'
     : '';
+  const kpiSemVenda = pctSemVenda !== null
+    ? '<div class="kpi"><div class="v" style="color:#f87171">' + pctSemVenda + '%</div><div class="l">Sem comprador s/venda · ' + fmt(semFornec.total) + '</div></div>'
+    : (semFornec ? '<div class="kpi"><div class="v" style="color:#f87171">' + fmt(semFornec.total) + '</div><div class="l">Sem comprador</div></div>' : '');
+
   document.getElementById('compras-kpi').innerHTML =
     '<div class="kpi"><div class="v">' + fmt(data.total) + '</div><div class="l">Total Comprado · ' + lojaNome + ' · ' + mesNome + '</div></div>' +
     kpiVenda +
-    '<div class="kpi"><div class="v" style="color:#60a5fa">' + data.por_comprador.filter(c => c.comprador !== 'SEM COMPRADOR').length + '</div><div class="l">Compradores ativos</div></div>' +
-    '<div class="kpi"><div class="v" style="color:#22c55e">' + fmt(totalFornec) + '</div><div class="l">Com comprador (' + (data.total > 0 ? (totalFornec/data.total*100).toFixed(1) : 0) + '%)</div></div>' +
-    kpiSemComp;
+    '<div class="kpi"><div class="v" style="color:#60a5fa">' + compradoresAtivos.length + '</div><div class="l">Compradores ativos</div></div>' +
+    kpiTop5 +
+    kpiSemVenda;
 
   // Cards
   const compradores = data.por_comprador.filter(c => c.comprador !== 'SEM COMPRADOR');

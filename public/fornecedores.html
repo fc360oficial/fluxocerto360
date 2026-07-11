@@ -1202,18 +1202,37 @@ function renderCompras(data) {
       ? '<div class="comp-resumo-item">% s/venda: <span style="color:#a78bfa">' + pctVenda + '%</span></div>'
       : '';
 
+    const isSemComp = c.comprador === 'SEM COMPRADOR';
+    const comLista  = isSemComp ? c.fornecedores.filter(function(f){ return f.listas.length > 0; }) : [];
+    const alertaLista = (isSemComp && comLista.length > 0)
+      ? '<div style="margin:6px 14px 0;padding:6px 10px;background:#422006;border:1px solid #92400e;border-radius:6px;font-size:11px;color:#fbbf24">' +
+          '⚠️ ' + comLista.length + ' fornecedor(es) têm lista de compra mas estão sem comprador: ' +
+          comLista.map(function(f){ return '<b>' + f.nome + '</b> (Cód.' + f.id + ')'; }).join(', ') +
+        '</div>'
+      : '';
+
     const rows = c.fornecedores.map(function(f, fi) {
-      const listaLinks = f.listas.length
-        ? f.listas.map(function(lid){ return '<span class="link-lista" onclick="abrirFornecedorPorId(' + f.id + ')">#' + lid + '</span>'; }).join('')
-        : '<span style="color:#334155">—</span>';
+      const temLista = f.listas.length > 0;
+      const listaTag = temLista
+        ? f.listas.map(function(lid){ return '<span style="display:inline-block;background:#1e3a5f;color:#60a5fa;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:3px;cursor:pointer" onclick="abrirFornecedorPorId(' + f.id + ')">Lista #' + lid + '</span>'; }).join('')
+        : '<span style="font-size:9px;color:#334155">sem lista</span>';
+      const alertaSem = (isSemComp && temLista)
+        ? '<span style="font-size:9px;background:#7c2d12;color:#fca5a5;padding:1px 5px;border-radius:3px;margin-left:4px">tem lista</span>'
+        : '';
       const pctCompra = data.total > 0 ? (f.total/data.total*100).toFixed(1) : 0;
       const tdVenda = tv > 0
         ? '<td class="r" style="color:#a78bfa">' + (f.total/tv*100).toFixed(1) + '% <span style="font-size:9px;color:#475569">s/venda</span></td>'
         : '';
-      return '<tr>' +
-        '<td>' + (fi+1) + '</td>' +
-        '<td><span style="font-weight:600;color:#e2e8f0">' + f.nome + '</span>' + listaLinks + '</td>' +
-        '<td class="r">' + f.qtd_nfs + ' NF' + (f.qtd_nfs !== 1 ? 's' : '') + '</td>' +
+      return '<tr' + (isSemComp && temLista ? ' style="background:#1c0a00"' : '') + '>' +
+        '<td style="color:#64748b;font-size:10px">' + (fi+1) + '</td>' +
+        '<td>' +
+          '<div style="font-weight:600;color:#e2e8f0">' + f.nome + alertaSem + '</div>' +
+          '<div style="margin-top:2px">' +
+            '<span style="font-size:9px;color:#475569;margin-right:6px">Cód. ' + f.id + '</span>' +
+            listaTag +
+          '</div>' +
+        '</td>' +
+        '<td class="r" style="color:#94a3b8">' + f.qtd_nfs + ' NF' + (f.qtd_nfs !== 1 ? 's' : '') + '</td>' +
         '<td class="r" style="color:#FACC15;font-weight:700">' + fmt(f.total) + '</td>' +
         '<td class="r" style="color:#64748b">' + pctCompra + '%</td>' +
         tdVenda +
@@ -1241,9 +1260,10 @@ function renderCompras(data) {
           '<div class="comp-resumo-item">% s/compras: <span>' + c.pct + '%</span></div>' +
           itemVenda +
         '</div>' +
+        alertaLista +
         '<div class="comp-table-wrap">' +
           '<table class="comp-t">' +
-            '<thead><tr><th>#</th><th>Fornecedor / Lista</th><th class="r">NFs</th><th class="r">Comprado R$</th><th class="r">% Compra</th>' + thVenda + '</tr></thead>' +
+            '<thead><tr><th>#</th><th>Fornecedor · Cód · Lista</th><th class="r">NFs</th><th class="r">Comprado R$</th><th class="r">% Compra</th>' + thVenda + '</tr></thead>' +
             '<tbody>' + rows + '</tbody>' +
           '</table>' +
         '</div>' +

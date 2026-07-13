@@ -1024,6 +1024,9 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
                COALESCE(
                  (SELECT nome FROM central.c_cotacao_agenda_comprador
                   WHERE codFornec = c.CodFornec AND nLoja = ? LIMIT 1),
+                 (SELECT cap.nome FROM central.c_cotacao_agenda_comprador cap
+                  JOIN central.c_cotacao_lista cl ON cl.nReg = cap.nLista
+                  WHERE cl.CodFornec = c.CodFornec AND cl.l${loja} = 1 LIMIT 1),
                  'SEM COMPRADOR'
                ) as comprador,
                COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total

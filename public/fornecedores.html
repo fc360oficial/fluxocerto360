@@ -325,7 +325,7 @@ table.comp-t tr:hover td{background:#ffffff05}
   <div class="filtros">
     <div class="fg">
       <label>Loja</label>
-      <select id="fil-loja">
+      <select id="fil-loja" onchange="onFiltroComprasChange()">
         <option value="1">Loja 1</option><option value="2">Loja 2</option>
         <option value="3">Loja 3</option><option value="4">Loja 4</option>
         <option value="5">Loja 5</option><option value="6">Loja 6</option>
@@ -333,7 +333,7 @@ table.comp-t tr:hover td{background:#ffffff05}
     </div>
     <div class="fg">
       <label>Mês</label>
-      <select id="fil-mes">
+      <select id="fil-mes" onchange="onFiltroComprasChange()">
         <option value="1">Janeiro</option><option value="2">Fevereiro</option>
         <option value="3">Março</option><option value="4">Abril</option>
         <option value="5">Maio</option><option value="6">Junho</option>
@@ -344,7 +344,7 @@ table.comp-t tr:hover td{background:#ffffff05}
     </div>
     <div class="fg">
       <label>Ano</label>
-      <select id="fil-ano"><option value="2026">2026</option><option value="2025">2025</option></select>
+      <select id="fil-ano" onchange="onFiltroComprasChange()"><option value="2026">2026</option><option value="2025">2025</option></select>
     </div>
     <div class="fg" id="fg-fornecedor">
       <label>Fornecedor</label>
@@ -1119,11 +1119,17 @@ function trocarAba(aba) {
   document.getElementById('fg-fornecedor').style.display = soCompras ? 'none' : '';
   document.getElementById('fg-comprador').style.display  = soCompras ? 'none' : '';
   document.getElementById('btn-buscar').style.display    = soCompras ? 'none' : '';
-  document.getElementById('sec-ranking').style.display = soCompras ? 'none' : '';
-  document.getElementById('sec-compras').style.display  = soCompras ? '' : 'none';
+  document.getElementById('kpi-row').style.display       = soCompras ? 'none' : '';
+  document.getElementById('insights-box').style.display  = 'none';
+  document.getElementById('sec-ranking').style.display   = soCompras ? 'none' : '';
+  document.getElementById('sec-compras').style.display   = soCompras ? '' : 'none';
   document.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + aba).classList.add('active');
   if (soCompras) carregarCompras();
+}
+
+function onFiltroComprasChange() {
+  if (_abaAtiva === 'compras') { _comprasCache = null; _comprasCacheKey = ''; carregarCompras(); }
 }
 
 // ── COMPRAS POR COMPRADOR ──

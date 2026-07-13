@@ -1038,20 +1038,27 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
          ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
       q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`),
       q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano]),
-      q(`SELECT codFornec, nLista FROM central.c_cotacao_agenda_comprador WHERE nLoja=? AND nLista IS NOT NULL AND nLista > 0`, [loja])
+      q(`SELECT codFornec, nLista, nome FROM central.c_cotacao_agenda_comprador WHERE nLoja=? AND nLista IS NOT NULL AND nLista > 0`, [loja])
     ]);
 
-    // Mapa fornecedor → lista_ids (de c_cotacao_lista e de c_cotacao_agenda_comprador)
-    const fornecToLista = {};
+    // Mapa: codFornec → Set<lista_id> (qualquer comprador) — usado para alerta SEM COMPRADOR
+    const fornecTemLista = {};
     for (const l of listasRows) {
-      if (!fornecToLista[l.CodFornec]) fornecToLista[l.CodFornec] = new Set();
-      fornecToLista[l.CodFornec].add(l.lista_id);
+      if (!fornecTemLista[l.CodFornec]) fornecTemLista[l.CodFornec] = new Set();
+      fornecTemLista[l.CodFornec].add(l.lista_id);
     }
     for (const a of agendaRows) {
-      if (!fornecToLista[a.codFornec]) fornecToLista[a.codFornec] = new Set();
-      fornecToLista[a.codFornec].add(a.nLista);
+      if (!fornecTemLista[a.codFornec]) fornecTemLista[a.codFornec] = new Set();
+      fornecTemLista[a.codFornec].add(a.nLista);
     }
-    for (const k of Object.keys(fornecToLista)) fornecToLista[k] = [...fornecToLista[k]];
+
+    // Mapa: codFornec → comprador → Set<lista_id> — listas específicas de cada comprador
+    const fornecListaByComp = {};
+    for (const a of agendaRows) {
+      if (!fornecListaByComp[a.codFornec]) fornecListaByComp[a.codFornec] = {};
+      if (!fornecListaByComp[a.codFornec][a.nome]) fornecListaByComp[a.codFornec][a.nome] = new Set();
+      fornecListaByComp[a.codFornec][a.nome].add(a.nLista);
+    }
 
     // Compradores desativados — aparecem como SEM COMPRADOR
     const COMPRADORES_INATIVOS = ['RODRIGO CAHU'];
@@ -1066,12 +1073,18 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
       totalGeral += tot;
       if (!porComprador[comp]) porComprador[comp] = { comprador: comp, total: 0, fornecedores: [] };
       porComprador[comp].total += tot;
+      // Listas: apenas as associadas a este comprador; temLista=true se tiver qualquer lista (para alerta)
+      const listasComp = (fornecListaByComp[r.CodFornec] && fornecListaByComp[r.CodFornec][compRaw])
+        ? [...fornecListaByComp[r.CodFornec][compRaw]]
+        : [];
+      const temLista = (fornecTemLista[r.CodFornec] && fornecTemLista[r.CodFornec].size > 0);
       porComprador[comp].fornecedores.push({
         id: r.CodFornec,
         nome: (r.fornecedor_nome || '').trim(),
         total: +tot.toFixed(2),
         qtd_nfs: parseInt(r.qtd_nfs),
-        listas: fornecToLista[r.CodFornec] || []
+        listas: listasComp,
+        temLista
       });
     }
 

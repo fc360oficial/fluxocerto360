@@ -1262,7 +1262,7 @@ function renderCompras(data) {
       : '';
 
     const rows = c.fornecedores.map(function(f, fi) {
-      const temLista = f.listas.length > 0;
+      const temLista = f.temLista || f.listas.length > 0;
       const listaTag = temLista
         ? f.listas.map(function(lid){ return '<span style="display:inline-block;background:#1e3a5f;color:#60a5fa;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:3px;cursor:pointer" onclick="abrirFornecedorPorId(' + f.id + ')">Lista #' + lid + '</span>'; }).join('')
         : '<span style="font-size:9px;color:#334155">sem lista</span>';

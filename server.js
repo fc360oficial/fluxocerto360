@@ -1023,10 +1023,14 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
       q(`SELECT c.CodFornec, c.NomeFornec as fornecedor_nome,
                COALESCE(
                  (SELECT nome FROM central.c_cotacao_agenda_comprador
-                  WHERE codFornec = c.CodFornec AND nLoja = ? LIMIT 1),
+                  WHERE codFornec = c.CodFornec AND nLoja = ?
+                  AND nome IS NOT NULL AND TRIM(nome) != '' AND nome != '0'
+                  LIMIT 1),
                  (SELECT cap.nome FROM central.c_cotacao_agenda_comprador cap
                   JOIN central.c_cotacao_lista cl ON cl.nReg = cap.nLista
-                  WHERE cl.CodFornec = c.CodFornec AND cl.l${loja} = 1 LIMIT 1),
+                  WHERE cl.CodFornec = c.CodFornec AND cl.l${loja} = 1
+                  AND cap.nome IS NOT NULL AND TRIM(cap.nome) != '' AND cap.nome != '0'
+                  LIMIT 1),
                  'SEM COMPRADOR'
                ) as comprador,
                COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total
@@ -1038,7 +1042,7 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
          ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
       q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`),
       q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano]),
-      q(`SELECT codFornec, nLista, nome FROM central.c_cotacao_agenda_comprador WHERE nLoja=? AND nLista IS NOT NULL AND nLista > 0`, [loja])
+      q(`SELECT codFornec, nLista, nome FROM central.c_cotacao_agenda_comprador WHERE nLoja=? AND nLista IS NOT NULL AND nLista > 0 AND nome IS NOT NULL AND TRIM(nome) != '' AND nome != '0'`, [loja])
     ]);
 
     // Mapa: codFornec → Set<lista_id> (qualquer comprador) — usado para alerta SEM COMPRADOR

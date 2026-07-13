@@ -1019,7 +1019,7 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
     const mes  = parseInt(req.query.mes)  || new Date().getMonth() + 1;
     const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
 
-    const [comprasRows, listasRows, vendaRows] = await Promise.all([
+    const [comprasRows, listasRows, vendaRows, agendaRows] = await Promise.all([
       q(`SELECT c.CodFornec, c.NomeFornec as fornecedor_nome,
                COALESCE(
                  (SELECT nome FROM central.c_cotacao_agenda_comprador
@@ -1037,15 +1037,21 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
          GROUP BY c.CodFornec, c.NomeFornec
          ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
       q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`),
-      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano])
+      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano]),
+      q(`SELECT codFornec, nLista FROM central.c_cotacao_agenda_comprador WHERE nLoja=? AND nLista IS NOT NULL AND nLista > 0`, [loja])
     ]);
 
-    // Mapa fornecedor → lista_id
+    // Mapa fornecedor → lista_ids (de c_cotacao_lista e de c_cotacao_agenda_comprador)
     const fornecToLista = {};
     for (const l of listasRows) {
-      if (!fornecToLista[l.CodFornec]) fornecToLista[l.CodFornec] = [];
-      fornecToLista[l.CodFornec].push(l.lista_id);
+      if (!fornecToLista[l.CodFornec]) fornecToLista[l.CodFornec] = new Set();
+      fornecToLista[l.CodFornec].add(l.lista_id);
     }
+    for (const a of agendaRows) {
+      if (!fornecToLista[a.codFornec]) fornecToLista[a.codFornec] = new Set();
+      fornecToLista[a.codFornec].add(a.nLista);
+    }
+    for (const k of Object.keys(fornecToLista)) fornecToLista[k] = [...fornecToLista[k]];
 
     // Compradores desativados — aparecem como SEM COMPRADOR
     const COMPRADORES_INATIVOS = ['RODRIGO CAHU'];
@@ -1080,6 +1086,34 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
 
     const totalVenda = parseFloat(vendaRows[0]?.total || 0);
     res.json({ total: +totalGeral.toFixed(2), total_venda: +totalVenda.toFixed(2), por_comprador: lista });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Produtos de um fornecedor via listas (painéis de comprador)
+app.get('/api/fornecedores/compras-produtos', async (req, res) => {
+  try {
+    const codFornec = parseInt(req.query.codFornec);
+    const loja = parseInt(req.query.loja) || 1;
+    if (!codFornec) return res.json({ produtos: [], listas: [] });
+
+    const [listasA, listasB] = await Promise.all([
+      q(`SELECT nReg as lista_id FROM central.c_cotacao_lista WHERE CodFornec = ? AND l${loja} = 1`, [codFornec]),
+      q(`SELECT nLista as lista_id FROM central.c_cotacao_agenda_comprador WHERE codFornec = ? AND nLoja = ? AND nLista IS NOT NULL AND nLista > 0`, [codFornec, loja])
+    ]);
+
+    const listaIds = [...new Set([...listasA.map(r => r.lista_id), ...listasB.map(r => r.lista_id)])].filter(Boolean);
+    if (!listaIds.length) return res.json({ produtos: [], listas: [] });
+
+    const ph = listaIds.map(() => '?').join(',');
+    const produtos = await q(`
+      SELECT i.nCotacao as lista_id, i.Codigobarra, ci.Descricao, ci.Unid, i.QtdEmb
+      FROM central.c_cotacao_lista_itens i
+      INNER JOIN central.itens ci ON ci.CodigoBarra = i.Codigobarra AND ci.CodDesativado = 0
+      WHERE i.nCotacao IN (${ph})
+      ORDER BY i.nCotacao, i.Posicao, ci.Descricao
+    `, listaIds);
+
+    res.json({ produtos, listas: listaIds });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

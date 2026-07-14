@@ -1012,91 +1012,70 @@ app.get('/api/fornecedores/resumo', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Compras por comprador (hierarquia: comprador → fornecedor)
+// Compras por comprador — fonte de verdade: NREGS_COMPRADOR (Excel), não o ERP
 app.get('/api/fornecedores/compras-resumo', async (req, res) => {
   try {
     const loja = parseInt(req.query.loja) || 1;
     const mes  = parseInt(req.query.mes)  || new Date().getMonth() + 1;
     const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
 
-    const [comprasRows, listasRows, vendaRows, agendaRows] = await Promise.all([
+    const [comprasRows, listasRows, vendaRows] = await Promise.all([
       q(`SELECT c.CodFornec, c.NomeFornec as fornecedor_nome,
-               COALESCE(
-                 (SELECT nome FROM central.c_cotacao_agenda_comprador
-                  WHERE codFornec = c.CodFornec AND nLoja = ?
-                  AND nome IS NOT NULL AND TRIM(nome) != '' AND nome != '0'
-                  LIMIT 1),
-                 (SELECT cap.nome FROM central.c_cotacao_agenda_comprador cap
-                  JOIN central.c_cotacao_lista cl ON cl.nReg = cap.nLista
-                  WHERE cl.CodFornec = c.CodFornec AND cl.l${loja} = 1
-                  AND cap.nome IS NOT NULL AND TRIM(cap.nome) != '' AND cap.nome != '0'
-                  LIMIT 1),
-                 (SELECT nome FROM central.c_cotacao_agenda_comprador
-                  WHERE codFornec = c.CodFornec
-                  AND nome IS NOT NULL AND TRIM(nome) != '' AND nome != '0'
-                  LIMIT 1),
-                 'SEM COMPRADOR'
-               ) as comprador,
                COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total
          FROM central.compras c
          WHERE c.nLoja = ? AND MONTH(c.DataRecto) = ? AND YEAR(c.DataRecto) = ?
            AND c.Movimentacao = 'COMPRA' AND c.Tipo = 'PNF' AND c.Status = 'F'
            AND c.CodFornec > 0
          GROUP BY c.CodFornec, c.NomeFornec
-         ORDER BY comprador, total DESC`, [loja, loja, mes, ano]),
+         ORDER BY total DESC`, [loja, mes, ano]),
       q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`),
-      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano]),
-      q(`SELECT codFornec, nLista, nome FROM central.c_cotacao_agenda_comprador WHERE nLoja=? AND nLista IS NOT NULL AND nLista > 0 AND nome IS NOT NULL AND TRIM(nome) != '' AND nome != '0'`, [loja])
+      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano])
     ]);
 
-    // Mapa: codFornec → Set<lista_id> (qualquer comprador) — usado para alerta SEM COMPRADOR
-    const fornecTemLista = {};
-    for (const l of listasRows) {
-      if (!fornecTemLista[l.CodFornec]) fornecTemLista[l.CodFornec] = new Set();
-      fornecTemLista[l.CodFornec].add(l.lista_id);
-    }
-    for (const a of agendaRows) {
-      if (!fornecTemLista[a.codFornec]) fornecTemLista[a.codFornec] = new Set();
-      fornecTemLista[a.codFornec].add(a.nLista);
+    // Mapa invertido lista → comprador (via Excel)
+    const listaToComp = {};
+    for (const [comp, nRegs] of Object.entries(NREGS_COMPRADOR)) {
+      for (const nReg of nRegs) listaToComp[nReg] = comp;
     }
 
-    // Mapa: codFornec → comprador → Set<lista_id> — listas específicas de cada comprador
+    // Por codFornec: qual comprador + quais listas desse comprador
+    const codFornecToComp = {};
     const fornecListaByComp = {};
-    for (const a of agendaRows) {
-      if (!fornecListaByComp[a.codFornec]) fornecListaByComp[a.codFornec] = {};
-      if (!fornecListaByComp[a.codFornec][a.nome]) fornecListaByComp[a.codFornec][a.nome] = new Set();
-      fornecListaByComp[a.codFornec][a.nome].add(a.nLista);
-    }
+    const fornecTemLista = {};
 
-    // Compradores desativados — aparecem como SEM COMPRADOR
-    const COMPRADORES_INATIVOS = ['RODRIGO CAHU'];
+    for (const l of listasRows) {
+      const comp = listaToComp[l.lista_id];
+      fornecTemLista[l.CodFornec] = true; // tem lista em qualquer comprador
+      if (comp) {
+        codFornecToComp[l.CodFornec] = comp;
+        if (!fornecListaByComp[l.CodFornec]) fornecListaByComp[l.CodFornec] = {};
+        if (!fornecListaByComp[l.CodFornec][comp]) fornecListaByComp[l.CodFornec][comp] = new Set();
+        fornecListaByComp[l.CodFornec][comp].add(l.lista_id);
+      }
+    }
 
     // Agrupar por comprador
     const porComprador = {};
     let totalGeral = 0;
     for (const r of comprasRows) {
-      const compRaw = r.comprador;
-      const comp = COMPRADORES_INATIVOS.includes((compRaw || '').toUpperCase().trim()) ? 'SEM COMPRADOR' : compRaw;
+      const comp = codFornecToComp[r.CodFornec] || 'SEM COMPRADOR';
       const tot  = parseFloat(r.total || 0);
       totalGeral += tot;
       if (!porComprador[comp]) porComprador[comp] = { comprador: comp, total: 0, fornecedores: [] };
       porComprador[comp].total += tot;
-      // Listas: apenas as associadas a este comprador; temLista=true se tiver qualquer lista (para alerta)
-      const listasComp = (fornecListaByComp[r.CodFornec] && fornecListaByComp[r.CodFornec][compRaw])
-        ? [...fornecListaByComp[r.CodFornec][compRaw]]
+      const listasComp = (fornecListaByComp[r.CodFornec] && fornecListaByComp[r.CodFornec][comp])
+        ? [...fornecListaByComp[r.CodFornec][comp]]
         : [];
-      const temLista = (fornecTemLista[r.CodFornec] && fornecTemLista[r.CodFornec].size > 0);
       porComprador[comp].fornecedores.push({
         id: r.CodFornec,
         nome: (r.fornecedor_nome || '').trim(),
         total: +tot.toFixed(2),
         qtd_nfs: parseInt(r.qtd_nfs),
         listas: listasComp,
-        temLista
+        temLista: fornecTemLista[r.CodFornec] || false
       });
     }
 
-    // Ordenar: compradores com mais compra primeiro, SEM COMPRADOR por último
     const lista = Object.values(porComprador)
       .map(c => ({ ...c, total: +c.total.toFixed(2), pct: totalGeral > 0 ? +(c.total / totalGeral * 100).toFixed(1) : 0 }))
       .sort((a, b) => {

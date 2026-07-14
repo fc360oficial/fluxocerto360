@@ -1110,9 +1110,10 @@ app.get('/api/fornecedores/compras-produtos', async (req, res) => {
     const loja = parseInt(req.query.loja) || 1;
     if (!codFornec) return res.json({ produtos: [], listas: [] });
 
-    const listasA = await q(`SELECT nReg as lista_id FROM central.c_cotacao_lista WHERE CodFornec = ? AND l${loja} = 1`, [codFornec]);
     const allNRegsExcel = Object.values(NREGS_COMPRADOR).flat();
-    const listaIds = [...new Set(listasA.map(r => r.lista_id).filter(id => allNRegsExcel.includes(id)))].filter(Boolean);
+    const exPh = allNRegsExcel.map(() => '?').join(',');
+    const listasA = await q(`SELECT nReg as lista_id FROM central.c_cotacao_lista WHERE CodFornec = ? AND nReg IN (${exPh})`, [codFornec, ...allNRegsExcel]);
+    const listaIds = [...new Set(listasA.map(r => r.lista_id))].filter(Boolean);
     if (!listaIds.length) return res.json({ produtos: [], listas: [] });
 
     const ph = listaIds.map(() => '?').join(',');

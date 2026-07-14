@@ -3587,6 +3587,7 @@ q(`CREATE TABLE IF NOT EXISTS central.prevencao_bonif (
 
 // TEMP: descobrir tabela de itens de entrada
 app.get('/api/_diag/tabelas-central', async (req, res) => {
+  if (req.query.token !== 'diag2026') return res.status(403).end();
   const rows = await q(`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='central' ORDER BY TABLE_NAME`).catch(e => [{err:e.message}]);
   res.json(rows);
 });

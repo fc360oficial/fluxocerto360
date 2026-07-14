@@ -1114,21 +1114,32 @@ app.get('/api/fornecedores/compras-produtos', async (req, res) => {
 
     // Busca NFs de compra do fornecedor no período
     const nfsRows = await q(`
-      SELECT nReg FROM central.compras
+      SELECT nReg, nCompra FROM central.compras
       WHERE CodFornec = ? AND nLoja = ? AND MONTH(DataRecto) = ? AND YEAR(DataRecto) = ?
         AND Movimentacao = 'COMPRA' AND Tipo = 'PNF' AND Status = 'F'
     `, [codFornec, loja, mes, ano]);
 
-    const nRegIds = nfsRows.map(r => r.nReg).filter(Boolean);
-    if (!nRegIds.length) return res.json({ produtos: [], nfs: [] });
+    if (!nfsRows.length) return res.json({ produtos: [], nfs: 0 });
 
-    const ph = nRegIds.map(() => '?').join(',');
-    const itens = await q(`
-      SELECT p.CodigoBarra, p.Descricao, p.Qtd, p.Preco, p.Total, p.Unid
-      FROM central.compraprodutos p
-      WHERE p.nCompra IN (${ph})
-      ORDER BY p.Descricao
-    `, nRegIds);
+    // Tenta via nReg (PK) primeiro; se vazio, tenta via nCompra
+    const nRegIds   = nfsRows.map(r => r.nReg).filter(Boolean);
+    const nCompraIds = [...new Set(nfsRows.map(r => r.nCompra).filter(Boolean))];
+
+    let itens = [];
+    if (nRegIds.length) {
+      const ph = nRegIds.map(() => '?').join(',');
+      itens = await q(`
+        SELECT p.CodigoBarra, p.Descricao, p.Qtd, p.Preco, p.Total, p.Unid
+        FROM central.compraprodutos p WHERE p.nCompra IN (${ph})
+      `, nRegIds);
+    }
+    if (!itens.length && nCompraIds.length) {
+      const ph = nCompraIds.map(() => '?').join(',');
+      itens = await q(`
+        SELECT p.CodigoBarra, p.Descricao, p.Qtd, p.Preco, p.Total, p.Unid
+        FROM central.compraprodutos p WHERE p.nCompra IN (${ph})
+      `, nCompraIds);
+    }
 
     // Consolida por produto (mesmo produto pode aparecer em NFs diferentes)
     const mapa = {};

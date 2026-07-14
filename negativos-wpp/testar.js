@@ -225,7 +225,7 @@ function gerarPDFLoja(itens, ln, hoje) {
 
   // Reconecta e retorna socket pronto
   async function conectar() {
-    const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
+    const { state, saveCreds } = await useMultiFileAuthState('./auth_info_teste');
     const s = makeWASocket({ version, auth:state, logger:pino({level:'silent'}) });
     s.ev.on('creds.update', saveCreds);
     await new Promise((resolve, reject) => {
@@ -245,7 +245,15 @@ function gerarPDFLoja(itens, ln, hoje) {
 
   const todosGrupos = await sock.groupFetchAllParticipating();
   jid = Object.keys(todosGrupos).find(id => todosGrupos[id].subject === GRUPO_NOME);
-  if (!jid) { logger.error(`Grupo "${GRUPO_NOME}" não encontrado`); process.exit(1); }
+  if (!jid) {
+    jid = Object.keys(todosGrupos).find(id => todosGrupos[id].subject.toLowerCase().includes('prevenção') || todosGrupos[id].subject.toLowerCase().includes('prevencao'));
+    const todosNomes = Object.values(todosGrupos).map(g => `  • "${g.subject}"`).join('\n');
+    if (!jid) {
+      logger.error(`Grupo "${GRUPO_NOME}" não encontrado. Grupos disponíveis:\n${todosNomes}`);
+      process.exit(1);
+    }
+    logger.warn(`Grupo exato não encontrado. Usando: "${todosGrupos[jid].subject}"\nGrupos disponíveis:\n${todosNomes}`);
+  }
 
   const hoje     = new Date();
   const dataStr  = hoje.toLocaleDateString('pt-BR');

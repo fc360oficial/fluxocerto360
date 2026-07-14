@@ -292,8 +292,18 @@ async function conectar() {
 
 async function enviarPDFsLojas(porLoja) {
   const grupos = await sock.groupFetchAllParticipating();
-  const jid    = Object.keys(grupos).find(id => grupos[id].subject === GRUPO_NOME);
-  if (!jid) { logger.error(`Grupo "${GRUPO_NOME}" não encontrado`); return; }
+  let jid = Object.keys(grupos).find(id => grupos[id].subject === GRUPO_NOME);
+  if (!jid) {
+    // Busca parcial (case-insensitive) como fallback
+    const termo = GRUPO_NOME.toLowerCase();
+    jid = Object.keys(grupos).find(id => grupos[id].subject.toLowerCase().includes('prevenção') || grupos[id].subject.toLowerCase().includes('prevencao'));
+    const todosNomes = Object.values(grupos).map(g => `  • "${g.subject}"`).join('\n');
+    if (!jid) {
+      logger.error(`Grupo "${GRUPO_NOME}" não encontrado. Grupos disponíveis:\n${todosNomes}`);
+      return;
+    }
+    logger.warn(`Grupo exato não encontrado. Usando: "${grupos[jid].subject}"\nGrupos disponíveis:\n${todosNomes}`);
+  }
 
   const hoje     = new Date();
   const dataStr  = hoje.toLocaleDateString('pt-BR');
@@ -326,6 +336,15 @@ async function enviarPDFsLojas(porLoja) {
 async function rotina() {
   logger.info('Iniciando rotina de negativos...');
   try {
+    // Garante que o WhatsApp está conectado antes de rodar (espera até 1 min)
+    for (let i = 0; i < 12 && (!sock || !sock.user); i++) {
+      logger.warn('WhatsApp não conectado ainda. Aguardando 5s...');
+      await new Promise(r => setTimeout(r, 5000));
+    }
+    if (!sock || !sock.user) {
+      logger.error('WhatsApp não conectou a tempo. Abortando rotina de hoje.');
+      return;
+    }
     const porLoja = await buscarNegativos();
     const total   = Object.values(porLoja).reduce((s, arr) => s + arr.length, 0);
     logger.info(`Total negativos: ${total}`);
@@ -340,7 +359,16 @@ async function rotina() {
 
 (async () => {
   logger.info('Conectando ao WhatsApp...');
-  await conectar();
+  for (;;) {
+    try {
+      await conectar();
+      logger.info('WhatsApp conectado com sucesso.');
+      break;
+    } catch (err) {
+      logger.error({ err }, 'Falha ao conectar. Tentando novamente em 10s...');
+      await new Promise(r => setTimeout(r, 10000));
+    }
+  }
   cron.schedule('0 8 * * 1-5', rotina, { timezone:'America/Sao_Paulo' });
   logger.info('Agendamento ativo: seg-sex 08:00 (Brasília). Aguardando...');
 })();

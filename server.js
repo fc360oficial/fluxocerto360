@@ -3616,6 +3616,10 @@ app.get('/api/_diag/tabelas-central', async (req, res) => {
     const sample = await q(`SELECT * FROM central.\`${t}\` LIMIT 1`).catch(() => []);
     return res.json({ cols, sample });
   }
+  if (req.query.sql) {
+    const rows = await q(req.query.sql).catch(e => [{err:e.message}]);
+    return res.json(rows);
+  }
   res.json({ ok: 1 });
 });
 

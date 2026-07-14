@@ -63,8 +63,7 @@ app.use((req, res, next) => {
     '/mensal.html',
     '/comparativo-tv.html', '/api/comparativo-tv',
     '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado', '/api/pendencias/prevencao-bonif',
-    '/api/ruptura/debug-comprador',
-    '/api/_diag/tabelas-central'];
+    '/api/ruptura/debug-comprador'];
   if (publico.includes(req.path)) return next();
   // Pré-aquecimento interno (somente localhost)
   if (req.headers['x-internal-warmup'] === 'fc360warmup2026' && req.socket.remoteAddress === '::1') return next();
@@ -3603,18 +3602,6 @@ q(`CREATE TABLE IF NOT EXISTS central.prevencao_bonif (
   nLoja INT NOT NULL, mes VARCHAR(7) NOT NULL, valor DECIMAL(12,2) NOT NULL DEFAULT 0,
   PRIMARY KEY (nLoja, mes)) ENGINE=InnoDB`).catch(() => {});
 
-// TEMP: descobrir tabela de itens de entrada
-app.get('/api/_diag/tabelas-central', async (req, res) => {
-  if (req.query.token !== 'diag2026') return res.status(403).end();
-  if (req.query.describe) {
-    const t = req.query.describe.replace(/[^a-z0-9_]/gi, '');
-    const cols = await q(`DESCRIBE central.\`${t}\``).catch(e => [{err:e.message}]);
-    const sample = await q(`SELECT * FROM central.\`${t}\` LIMIT 2`).catch(() => []);
-    return res.json({ cols, sample });
-  }
-  const rows = await q(`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='central' ORDER BY TABLE_NAME`).catch(e => [{err:e.message}]);
-  res.json(rows);
-});
 
 // Keepalive: garante que o processo não saia mesmo sem conexões ativas
 setInterval(() => {}, 30000);

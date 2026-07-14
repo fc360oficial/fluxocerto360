@@ -1233,8 +1233,12 @@ function renderCompras(data) {
   const pctTop5Venda = tv > 0 ? (totalTop5 / tv * 100).toFixed(1) : null;
   const pctSemVenda  = (tv > 0 && semFornec) ? (semFornec.total / tv * 100).toFixed(1) : null;
 
+  const pctColor = parseFloat(pctCompraVenda) > 100 ? '#f87171' : parseFloat(pctCompraVenda) > 85 ? '#facc15' : '#22c55e';
   const kpiVenda = tv > 0
-    ? '<div class="kpi"><div class="v" style="color:#a78bfa">' + fmt(tv) + '</div><div class="l">Total Venda · ' + mesNome + ' · <b>' + pctCompraVenda + '% compra/venda</b></div></div>'
+    ? '<div class="kpi"><div class="v" style="color:#a78bfa">' + fmt(tv) + '</div><div class="l">Total Venda · ' + mesNome + '</div></div>'
+    : '';
+  const kpiRatio = tv > 0
+    ? '<div class="kpi"><div class="v" style="color:' + pctColor + '">' + pctCompraVenda + '%</div><div class="l">Compra / Venda · R$ ' + ((data.total/tv)*1000|0)/10 + ' centavos p/ R$1 vendido</div></div>'
     : '';
   const kpiTop5 = pctTop5Venda !== null
     ? '<div class="kpi"><div class="v" style="color:#22c55e">' + pctTop5Venda + '%</div><div class="l">Top ' + top5.length + ' compradores s/venda · ' + fmt(totalTop5) + '</div></div>'
@@ -1246,6 +1250,7 @@ function renderCompras(data) {
   document.getElementById('compras-kpi').innerHTML =
     '<div class="kpi"><div class="v">' + fmt(data.total) + '</div><div class="l">Total Comprado · ' + lojaNome + ' · ' + mesNome + '</div></div>' +
     kpiVenda +
+    kpiRatio +
     '<div class="kpi"><div class="v" style="color:#60a5fa">' + compradoresAtivos.length + '</div><div class="l">Compradores ativos</div></div>' +
     kpiTop5 +
     kpiSemVenda;

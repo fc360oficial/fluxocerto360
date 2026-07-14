@@ -1034,7 +1034,7 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
     const allExcelNRegs = Object.values(NREGS_COMPRADOR).flat();
     const excelPh = allExcelNRegs.map(() => '?').join(',');
 
-    const [comprasRows, listasRows, vendaRows] = await Promise.all([
+    const [comprasRows, listasRows, vendaRows, dashComprasRows, diasRows] = await Promise.all([
       q(`SELECT c.CodFornec, c.NomeFornec as fornecedor_nome,
                COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total
          FROM central.compras c
@@ -1044,7 +1044,13 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
          GROUP BY c.CodFornec, c.NomeFornec
          ORDER BY total DESC`, [loja, mes, ano]),
       q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE nReg IN (${excelPh})`, allExcelNRegs),
-      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano])
+      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano]),
+      q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.compras WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano]),
+      q(`SELECT DATE(DataRecto) as dia, SUM(TotalNota) as total
+         FROM central.compras
+         WHERE nLoja=? AND MONTH(DataRecto)=? AND YEAR(DataRecto)=?
+           AND Movimentacao='COMPRA' AND Tipo='PNF' AND Status='F' AND CodFornec > 0
+         GROUP BY DATE(DataRecto) ORDER BY dia ASC`, [loja, mes, ano])
     ]);
 
     // Mapa invertido lista → comprador (via Excel)
@@ -1100,7 +1106,25 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
       });
 
     const totalVenda = parseFloat(vendaRows[0]?.total || 0);
-    res.json({ total: +totalGeral.toFixed(2), total_venda: +totalVenda.toFixed(2), por_comprador: lista });
+
+    // Calcular até que data o dashboard.compras (e dashboard.vendas) foi sincronizado
+    const dashComprasTotal = parseFloat(dashComprasRows[0]?.total || 0);
+    let ultimaSincData = null;
+    let acumulado = 0;
+    for (const dia of diasRows) {
+      acumulado += parseFloat(dia.total || 0);
+      if (acumulado <= dashComprasTotal + 5) { // tolerância de R$5 para arredondamento
+        ultimaSincData = dia.dia;
+      } else break;
+    }
+    let vendaHorasAtraso = null;
+    if (ultimaSincData) {
+      const fimDia = new Date(ultimaSincData);
+      fimDia.setHours(23, 59, 59, 999);
+      vendaHorasAtraso = Math.floor((Date.now() - fimDia.getTime()) / 3600000);
+    }
+
+    res.json({ total: +totalGeral.toFixed(2), total_venda: +totalVenda.toFixed(2), venda_horas_atraso: vendaHorasAtraso, ultima_sinc: ultimaSincData, por_comprador: lista });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -1234,8 +1234,12 @@ function renderCompras(data) {
   const pctSemVenda  = (tv > 0 && semFornec) ? (semFornec.total / tv * 100).toFixed(1) : null;
 
   const pctColor = parseFloat(pctCompraVenda) > 100 ? '#f87171' : parseFloat(pctCompraVenda) > 85 ? '#facc15' : '#22c55e';
+  const hAtraso = data.venda_horas_atraso;
+  const atrasoLabel = hAtraso != null
+    ? (hAtraso < 2 ? ' · atualizado agora' : ' · ' + hAtraso + 'h atrás ⚠')
+    : '';
   const kpiVenda = tv > 0
-    ? '<div class="kpi"><div class="v" style="color:#a78bfa">' + fmt(tv) + '</div><div class="l">Total Venda · ' + mesNome + '</div></div>'
+    ? '<div class="kpi"><div class="v" style="color:#a78bfa">' + fmt(tv) + '</div><div class="l">Total Venda · ' + mesNome + atrasoLabel + '</div></div>'
     : '';
   const kpiRatio = tv > 0
     ? '<div class="kpi"><div class="v" style="color:' + pctColor + '">' + pctCompraVenda + '%</div><div class="l">Compra / Venda · R$ ' + ((data.total/tv)*1000|0)/10 + ' centavos p/ R$1 vendido</div></div>'

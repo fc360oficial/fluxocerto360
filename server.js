@@ -3589,6 +3589,12 @@ q(`CREATE TABLE IF NOT EXISTS central.prevencao_bonif (
 // TEMP: descobrir tabela de itens de entrada
 app.get('/api/_diag/tabelas-central', async (req, res) => {
   if (req.query.token !== 'diag2026') return res.status(403).end();
+  if (req.query.describe) {
+    const t = req.query.describe.replace(/[^a-z0-9_]/gi, '');
+    const cols = await q(`DESCRIBE central.\`${t}\``).catch(e => [{err:e.message}]);
+    const sample = await q(`SELECT * FROM central.\`${t}\` LIMIT 2`).catch(() => []);
+    return res.json({ cols, sample });
+  }
   const rows = await q(`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='central' ORDER BY TABLE_NAME`).catch(e => [{err:e.message}]);
   res.json(rows);
 });

@@ -1109,24 +1109,41 @@ app.get('/api/fornecedores/compras-produtos', async (req, res) => {
   try {
     const codFornec = parseInt(req.query.codFornec);
     const loja = parseInt(req.query.loja) || 1;
-    if (!codFornec) return res.json({ produtos: [], listas: [] });
+    const mes  = parseInt(req.query.mes)  || new Date().getMonth() + 1;
+    const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
+    if (!codFornec) return res.json({ produtos: [], nfs: [] });
 
-    const allNRegsExcel = Object.values(NREGS_COMPRADOR).flat();
-    const exPh = allNRegsExcel.map(() => '?').join(',');
-    const listasA = await q(`SELECT nReg as lista_id FROM central.c_cotacao_lista WHERE CodFornec = ? AND nReg IN (${exPh})`, [codFornec, ...allNRegsExcel]);
-    const listaIds = [...new Set(listasA.map(r => r.lista_id))].filter(Boolean);
-    if (!listaIds.length) return res.json({ produtos: [], listas: [] });
+    // Busca NFs de compra do fornecedor no período
+    const nfsRows = await q(`
+      SELECT nReg FROM central.compras
+      WHERE CodFornec = ? AND nLoja = ? AND MONTH(DataRecto) = ? AND YEAR(DataRecto) = ?
+        AND Movimentacao = 'COMPRA' AND Tipo = 'PNF' AND Status = 'F'
+    `, [codFornec, loja, mes, ano]);
 
-    const ph = listaIds.map(() => '?').join(',');
-    const produtos = await q(`
-      SELECT i.nCotacao as lista_id, i.Codigobarra, ci.Descricao, ci.Unid, i.QtdEmb
-      FROM central.c_cotacao_lista_itens i
-      INNER JOIN central.itens ci ON ci.CodigoBarra = i.Codigobarra AND ci.CodDesativado = 0
-      WHERE i.nCotacao IN (${ph})
-      ORDER BY i.nCotacao, i.Posicao, ci.Descricao
-    `, listaIds);
+    const nRegIds = nfsRows.map(r => r.nReg).filter(Boolean);
+    if (!nRegIds.length) return res.json({ produtos: [], nfs: [] });
 
-    res.json({ produtos, listas: listaIds });
+    const ph = nRegIds.map(() => '?').join(',');
+    const itens = await q(`
+      SELECT p.CodigoBarra, p.Descricao, p.Qtd, p.Preco, p.Total, p.Unid
+      FROM central.compraprodutos p
+      WHERE p.nCompra IN (${ph})
+      ORDER BY p.Descricao
+    `, nRegIds);
+
+    // Consolida por produto (mesmo produto pode aparecer em NFs diferentes)
+    const mapa = {};
+    for (const it of itens) {
+      const cod = it.CodigoBarra;
+      if (!mapa[cod]) mapa[cod] = { CodigoBarra: cod, Descricao: (it.Descricao || '').trim(), Qtd: 0, Total: 0, Unid: it.Unid || '' };
+      mapa[cod].Qtd   += parseFloat(it.Qtd   || 0);
+      mapa[cod].Total += parseFloat(it.Total  || 0);
+    }
+    const produtos = Object.values(mapa)
+      .map(p => ({ ...p, Qtd: +p.Qtd.toFixed(3), Total: +p.Total.toFixed(2) }))
+      .sort((a, b) => a.Descricao.localeCompare(b.Descricao));
+
+    res.json({ produtos, nfs: nRegIds.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

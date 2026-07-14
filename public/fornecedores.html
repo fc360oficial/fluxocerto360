@@ -1136,42 +1136,39 @@ function onFiltroComprasChange() {
 const COMP_CORES = ['#6366f1','#f43f5e','#f59e0b','#14b8a6','#a855f7','#3b82f6','#10b981','#f97316','#ec4899'];
 let _comprasCache = null, _comprasCacheKey = '';
 
-async function verProdutosFornec(codFornec, nomeFornec, loja) {
+const MESES_PT = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+async function verProdutosFornec(codFornec, nomeFornec, loja, mes, ano) {
   const modal = document.getElementById('modal-produtos');
   document.getElementById('modal-fornec-nome').textContent = nomeFornec;
   document.getElementById('modal-produtos-body').innerHTML = '<div class="spinner"></div>';
   modal.style.display = 'flex';
   try {
-    const r = await fetch('/api/fornecedores/compras-produtos?codFornec=' + codFornec + '&loja=' + loja);
+    const url = '/api/fornecedores/compras-produtos?codFornec=' + codFornec + '&loja=' + loja + '&mes=' + mes + '&ano=' + ano;
+    const r = await fetch(url);
     const data = await r.json();
-    if (!data.produtos.length) {
-      document.getElementById('modal-produtos-body').innerHTML = '<div style="color:#64748b;padding:20px;text-align:center">Nenhum produto na lista deste fornecedor</div>';
+    if (!data.produtos || !data.produtos.length) {
+      document.getElementById('modal-produtos-body').innerHTML = '<div style="color:#64748b;padding:20px;text-align:center">Sem compras registradas neste período</div>';
       return;
     }
-    // Agrupar por lista
-    const porLista = {};
-    for (const p of data.produtos) {
-      if (!porLista[p.lista_id]) porLista[p.lista_id] = [];
-      porLista[p.lista_id].push(p);
-    }
-    let html = '';
-    for (const lid of Object.keys(porLista).sort()) {
-      const itens = porLista[lid];
-      html += '<div style="margin-bottom:12px">' +
-        '<div style="font-size:11px;color:#60a5fa;font-weight:700;margin-bottom:4px;padding:3px 8px;background:#1e3a5f;border-radius:4px;display:inline-block">Lista #' + lid + ' · ' + itens.length + ' itens</div>' +
-        '<table style="width:100%;border-collapse:collapse">' +
-        '<thead><tr style="border-bottom:1px solid #1e293b">' +
-        '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">PRODUTO</th>' +
-        '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">CÓD. BARRAS</th>' +
-        '</tr></thead><tbody>';
-      itens.forEach(function(it, i) {
-        html += '<tr style="border-bottom:1px solid #0f172a;' + (i%2===0?'background:#0a1628':'') + '">' +
-          '<td style="font-size:11px;color:#cbd5e1;padding:4px 6px">' + it.Descricao + '</td>' +
-          '<td style="font-size:10px;color:#475569;padding:4px 6px">' + it.Codigobarra + '</td>' +
-          '</tr>';
-      });
-      html += '</tbody></table></div>';
-    }
+    const periodo = MESES_PT[+mes] + '/' + ano;
+    let html = '<div style="font-size:11px;color:#60a5fa;margin-bottom:10px;padding:4px 8px;background:#1e293b;border-radius:4px;display:inline-block">' +
+      data.nfs + ' NF(s) · ' + data.produtos.length + ' produtos · ' + periodo + '</div>' +
+      '<table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr style="border-bottom:1px solid #1e293b">' +
+      '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">PRODUTO</th>' +
+      '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">CÓD. BARRAS</th>' +
+      '<th style="text-align:right;font-size:9px;color:#475569;padding:3px 6px">QTD</th>' +
+      '<th style="text-align:right;font-size:9px;color:#475569;padding:3px 6px">TOTAL R$</th>' +
+      '</tr></thead><tbody>';
+    data.produtos.forEach(function(it, i) {
+      html += '<tr style="border-bottom:1px solid #0f172a;' + (i%2===0?'background:#0a1628':'') + '">' +
+        '<td style="font-size:11px;color:#cbd5e1;padding:4px 6px">' + it.Descricao + '</td>' +
+        '<td style="font-size:10px;color:#475569;padding:4px 6px">' + it.CodigoBarra + '</td>' +
+        '<td style="font-size:11px;color:#94a3b8;padding:4px 6px;text-align:right">' + it.Qtd.toLocaleString('pt-BR') + '</td>' +
+        '<td style="font-size:11px;color:#FACC15;padding:4px 6px;text-align:right">' + it.Total.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
     document.getElementById('modal-produtos-body').innerHTML = html;
   } catch(e) {
     document.getElementById('modal-produtos-body').innerHTML = '<div style="color:#f87171;padding:20px">Erro: ' + e.message + '</div>';
@@ -1272,7 +1269,7 @@ function renderCompras(data) {
         ? '<td class="r" style="color:#a78bfa">' + (f.total/tv*100).toFixed(1) + '% <span style="font-size:9px;color:#475569">s/venda</span></td>'
         : '';
       const trBg = isSemComp && temLista ? 'background:#1c0a00;' : '';
-      return '<tr style="' + trBg + 'cursor:pointer" onclick="verProdutosFornec(' + f.id + ',\'' + f.nome.replace(/'/g,"\\'") + '\',' + p.loja + ')">' +
+      return '<tr style="' + trBg + 'cursor:pointer" onclick="verProdutosFornec(' + f.id + ',\'' + f.nome.replace(/'/g,"\\'") + '\',' + p.loja + ',' + p.mes + ',' + p.ano + ')">' +
         '<td style="color:#64748b;font-size:10px">' + (fi+1) + '</td>' +
         '<td>' +
           '<div style="font-weight:600;color:#e2e8f0">' + f.nome + alertaSem + '</div>' +

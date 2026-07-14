@@ -1104,57 +1104,49 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Produtos de um fornecedor via listas (painéis de comprador)
+// Produtos de um fornecedor via NFs reais de entrada (axmlprodutos)
 app.get('/api/fornecedores/compras-produtos', async (req, res) => {
   try {
     const codFornec = parseInt(req.query.codFornec);
     const loja = parseInt(req.query.loja) || 1;
     const mes  = parseInt(req.query.mes)  || new Date().getMonth() + 1;
     const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
-    if (!codFornec) return res.json({ produtos: [], nfs: [] });
+    if (!codFornec) return res.json({ produtos: [], nfs: 0 });
 
-    // Busca NFs de compra do fornecedor no período
-    const nfsRows = await q(`
-      SELECT nReg, nCompra FROM central.compras
+    // Busca itens via axmlprodutos, ligado por CNPJ+nNota+Serie da compras
+    const itens = await q(`
+      SELECT ap.CodigoBarras, ap.Descricao, ap.Und,
+             SUM(ap.Qtd) as Qtd,
+             SUM(CAST(REPLACE(ap.ValorTotal,',','.') AS DECIMAL(12,2))) as Total,
+             COUNT(DISTINCT c.nReg) as qtd_nfs
+      FROM central.compras c
+      INNER JOIN central.axmlprodutos ap
+        ON ap.CNPJemit = c.CNPJ
+        AND ap.nNota   = CAST(c.nNota AS DECIMAL(12,0))
+        AND ap.nSerie  = c.Serie
+      WHERE c.CodFornec = ? AND c.nLoja = ?
+        AND MONTH(c.DataRecto) = ? AND YEAR(c.DataRecto) = ?
+        AND c.Movimentacao = 'COMPRA' AND c.Tipo = 'PNF' AND c.Status = 'F'
+      GROUP BY ap.CodigoBarras, ap.Descricao, ap.Und
+      ORDER BY ap.Descricao
+    `, [codFornec, loja, mes, ano]);
+
+    // Conta NFs distintas da compra para exibir no cabeçalho
+    const nfsCount = await q(`
+      SELECT COUNT(*) as total FROM central.compras
       WHERE CodFornec = ? AND nLoja = ? AND MONTH(DataRecto) = ? AND YEAR(DataRecto) = ?
         AND Movimentacao = 'COMPRA' AND Tipo = 'PNF' AND Status = 'F'
     `, [codFornec, loja, mes, ano]);
 
-    if (!nfsRows.length) return res.json({ produtos: [], nfs: 0 });
+    const produtos = itens.map(p => ({
+      CodigoBarra: p.CodigoBarras,
+      Descricao: (p.Descricao || '').trim(),
+      Qtd: +parseFloat(p.Qtd || 0).toFixed(3),
+      Total: +parseFloat(p.Total || 0).toFixed(2),
+      Unid: p.Und || ''
+    }));
 
-    // Tenta via nReg (PK) primeiro; se vazio, tenta via nCompra
-    const nRegIds   = nfsRows.map(r => r.nReg).filter(Boolean);
-    const nCompraIds = [...new Set(nfsRows.map(r => r.nCompra).filter(Boolean))];
-
-    let itens = [];
-    if (nRegIds.length) {
-      const ph = nRegIds.map(() => '?').join(',');
-      itens = await q(`
-        SELECT p.CodigoBarra, p.Descricao, p.Qtd, p.Preco, p.Total, p.Unid
-        FROM central.compraprodutos p WHERE p.nCompra IN (${ph})
-      `, nRegIds);
-    }
-    if (!itens.length && nCompraIds.length) {
-      const ph = nCompraIds.map(() => '?').join(',');
-      itens = await q(`
-        SELECT p.CodigoBarra, p.Descricao, p.Qtd, p.Preco, p.Total, p.Unid
-        FROM central.compraprodutos p WHERE p.nCompra IN (${ph})
-      `, nCompraIds);
-    }
-
-    // Consolida por produto (mesmo produto pode aparecer em NFs diferentes)
-    const mapa = {};
-    for (const it of itens) {
-      const cod = it.CodigoBarra;
-      if (!mapa[cod]) mapa[cod] = { CodigoBarra: cod, Descricao: (it.Descricao || '').trim(), Qtd: 0, Total: 0, Unid: it.Unid || '' };
-      mapa[cod].Qtd   += parseFloat(it.Qtd   || 0);
-      mapa[cod].Total += parseFloat(it.Total  || 0);
-    }
-    const produtos = Object.values(mapa)
-      .map(p => ({ ...p, Qtd: +p.Qtd.toFixed(3), Total: +p.Total.toFixed(2) }))
-      .sort((a, b) => a.Descricao.localeCompare(b.Descricao));
-
-    res.json({ produtos, nfs: nRegIds.length });
+    res.json({ produtos, nfs: parseInt(nfsCount[0]?.total || 0) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

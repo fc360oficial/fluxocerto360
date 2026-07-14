@@ -1029,6 +1029,10 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
     const mes  = parseInt(req.query.mes)  || new Date().getMonth() + 1;
     const ano  = parseInt(req.query.ano)  || new Date().getFullYear();
 
+    // Todas as listas do Excel (sem filtro de loja — o Excel define comprador, não a loja)
+    const allExcelNRegs = Object.values(NREGS_COMPRADOR).flat();
+    const excelPh = allExcelNRegs.map(() => '?').join(',');
+
     const [comprasRows, listasRows, vendaRows] = await Promise.all([
       q(`SELECT c.CodFornec, c.NomeFornec as fornecedor_nome,
                COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total
@@ -1038,7 +1042,7 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
            AND c.CodFornec > 0
          GROUP BY c.CodFornec, c.NomeFornec
          ORDER BY total DESC`, [loja, mes, ano]),
-      q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE l${loja} = 1`),
+      q(`SELECT nReg as lista_id, CodFornec FROM central.c_cotacao_lista WHERE nReg IN (${excelPh})`, allExcelNRegs),
       q(`SELECT COALESCE(SUM(Total), 0) as total FROM dashboard.vendas WHERE nLoja=? AND Mes=? AND Ano=?`, [loja, mes, ano])
     ]);
 

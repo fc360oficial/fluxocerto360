@@ -1131,11 +1131,12 @@ app.get('/api/fornecedores/compras-produtos', async (req, res) => {
       ORDER BY ap.Descricao
     `, [codFornec, loja, mes, ano]);
 
-    // Conta NFs distintas da compra para exibir no cabeçalho
-    const nfsCount = await q(`
-      SELECT COUNT(*) as total FROM central.compras
+    // Lista das NFs do período para exibir ao clicar
+    const nfsList = await q(`
+      SELECT nNota, Serie, DataRecto, TotalNota FROM central.compras
       WHERE CodFornec = ? AND nLoja = ? AND MONTH(DataRecto) = ? AND YEAR(DataRecto) = ?
         AND Movimentacao = 'COMPRA' AND Tipo = 'PNF' AND Status = 'F'
+      ORDER BY DataRecto DESC
     `, [codFornec, loja, mes, ano]);
 
     const produtos = itens.map(p => ({
@@ -1146,7 +1147,7 @@ app.get('/api/fornecedores/compras-produtos', async (req, res) => {
       Unid: p.Und || ''
     }));
 
-    res.json({ produtos, nfs: parseInt(nfsCount[0]?.total || 0) });
+    res.json({ produtos, nfs: nfsList.length, nfsList });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

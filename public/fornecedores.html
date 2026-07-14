@@ -1151,8 +1151,28 @@ async function verProdutosFornec(codFornec, nomeFornec, loja, mes, ano) {
       return;
     }
     const periodo = MESES_PT[+mes] + '/' + ano;
-    let html = '<div style="font-size:11px;color:#60a5fa;margin-bottom:10px;padding:4px 8px;background:#1e293b;border-radius:4px;display:inline-block">' +
-      data.nfs + ' NF(s) · ' + data.produtos.length + ' produtos · ' + periodo + '</div>' +
+    // Badge de NFs clicável
+    const nfsBadgeId = 'nfs-badge-' + codFornec;
+    const nfsListId  = 'nfs-list-' + codFornec;
+    let nfsListHtml = '';
+    if (data.nfsList && data.nfsList.length) {
+      nfsListHtml = '<div id="' + nfsListId + '" style="display:none;margin-top:6px;padding:8px 10px;background:#0f172a;border:1px solid #1e293b;border-radius:6px">' +
+        data.nfsList.map(function(nf) {
+          const dt = nf.DataRecto ? new Date(nf.DataRecto).toLocaleDateString('pt-BR') : '';
+          const tot = parseFloat(nf.TotalNota||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #1e293b;font-size:11px">' +
+            '<span style="color:#60a5fa;font-weight:600">NF ' + nf.nNota + (nf.Serie && nf.Serie!=='0' ? ' / Série ' + nf.Serie : '') + '</span>' +
+            '<span style="color:#64748b;margin:0 10px">' + dt + '</span>' +
+            '<span style="color:#FACC15">R$ ' + tot + '</span>' +
+            '</div>';
+        }).join('') +
+        '</div>';
+    }
+    let html = '<div style="margin-bottom:10px">' +
+      '<span id="' + nfsBadgeId + '" onclick="(function(el,lid){var l=document.getElementById(lid);l.style.display=l.style.display===\'none\'?\'block\':\'none\';})(this,\'' + nfsListId + '\')" style="font-size:11px;color:#60a5fa;padding:4px 8px;background:#1e293b;border-radius:4px;display:inline-block;cursor:pointer" title="Ver números das NFs">' +
+      data.nfs + ' NF(s) · ' + data.produtos.length + ' produtos · ' + periodo + ' ▾</span>' +
+      nfsListHtml +
+      '</div>' +
       '<table style="width:100%;border-collapse:collapse">' +
       '<thead><tr style="border-bottom:1px solid #1e293b">' +
       '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">PRODUTO</th>' +

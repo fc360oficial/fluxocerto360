@@ -349,7 +349,19 @@ async function rotina() {
     const total   = Object.values(porLoja).reduce((s, arr) => s + arr.length, 0);
     logger.info(`Total negativos: ${total}`);
     if (!total) { logger.info('Nenhum estoque negativo.'); return; }
-    await enviarPDFsLojas(porLoja);
+
+    // Retry no envio: a conexão WA reconecta periodicamente e pode estar
+    // momentaneamente fechada bem na hora do cron (visto em produção)
+    for (let tentativa = 1; tentativa <= 5; tentativa++) {
+      try {
+        await enviarPDFsLojas(porLoja);
+        return;
+      } catch (err) {
+        logger.error({ err }, `Erro na rotina (tentativa ${tentativa}/5). Aguardando reconexão...`);
+        if (tentativa < 5) await new Promise(r => setTimeout(r, 15000));
+      }
+    }
+    logger.error('Rotina falhou após 5 tentativas. Desistindo por hoje.');
   } catch (err) {
     logger.error({ err }, 'Erro na rotina');
   }

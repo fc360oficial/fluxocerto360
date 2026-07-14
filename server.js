@@ -1031,6 +1031,10 @@ app.get('/api/fornecedores/compras-resumo', async (req, res) => {
                   WHERE cl.CodFornec = c.CodFornec AND cl.l${loja} = 1
                   AND cap.nome IS NOT NULL AND TRIM(cap.nome) != '' AND cap.nome != '0'
                   LIMIT 1),
+                 (SELECT nome FROM central.c_cotacao_agenda_comprador
+                  WHERE codFornec = c.CodFornec
+                  AND nome IS NOT NULL AND TRIM(nome) != '' AND nome != '0'
+                  LIMIT 1),
                  'SEM COMPRADOR'
                ) as comprador,
                COUNT(*) as qtd_nfs, SUM(c.TotalNota) as total

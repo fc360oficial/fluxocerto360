@@ -3585,6 +3585,12 @@ q(`CREATE TABLE IF NOT EXISTS central.prevencao_bonif (
   nLoja INT NOT NULL, mes VARCHAR(7) NOT NULL, valor DECIMAL(12,2) NOT NULL DEFAULT 0,
   PRIMARY KEY (nLoja, mes)) ENGINE=InnoDB`).catch(() => {});
 
+// TEMP: descobrir tabela de itens de entrada
+app.get('/api/_diag/tabelas-central', async (req, res) => {
+  const rows = await q(`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='central' ORDER BY TABLE_NAME`).catch(e => [{err:e.message}]);
+  res.json(rows);
+});
+
 // Keepalive: garante que o processo não saia mesmo sem conexões ativas
 setInterval(() => {}, 30000);
 

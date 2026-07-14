@@ -1162,14 +1162,12 @@ async function verProdutosFornec(codFornec, nomeFornec, loja) {
         '<table style="width:100%;border-collapse:collapse">' +
         '<thead><tr style="border-bottom:1px solid #1e293b">' +
         '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">PRODUTO</th>' +
-        '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">CÓD.</th>' +
-        '<th style="text-align:right;font-size:9px;color:#475569;padding:3px 6px">EMBAL.</th>' +
+        '<th style="text-align:left;font-size:9px;color:#475569;padding:3px 6px">CÓD. BARRAS</th>' +
         '</tr></thead><tbody>';
       itens.forEach(function(it, i) {
         html += '<tr style="border-bottom:1px solid #0f172a;' + (i%2===0?'background:#0a1628':'') + '">' +
           '<td style="font-size:11px;color:#cbd5e1;padding:4px 6px">' + it.Descricao + '</td>' +
           '<td style="font-size:10px;color:#475569;padding:4px 6px">' + it.Codigobarra + '</td>' +
-          '<td style="font-size:10px;color:#94a3b8;text-align:right;padding:4px 6px">' + (it.QtdEmb || '') + ' ' + (it.Unid || '') + '</td>' +
           '</tr>';
       });
       html += '</tbody></table></div>';

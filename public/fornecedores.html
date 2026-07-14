@@ -1136,6 +1136,11 @@ function onFiltroComprasChange() {
 const COMP_CORES = ['#6366f1','#f43f5e','#f59e0b','#14b8a6','#a855f7','#3b82f6','#10b981','#f97316','#ec4899'];
 let _comprasCache = null, _comprasCacheKey = '';
 
+// Auto-refresh compras a cada 3 horas
+setInterval(() => {
+  if (_abaAtiva === 'compras') { _comprasCache = null; _comprasCacheKey = ''; carregarCompras(); }
+}, 3 * 60 * 60 * 1000);
+
 const MESES_PT = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 async function verProdutosFornec(codFornec, nomeFornec, loja, mes, ano) {
   const modal = document.getElementById('modal-produtos');

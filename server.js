@@ -917,9 +917,12 @@ app.get('/api/fornecedores/resumo', async (req, res) => {
                 SUM(Total) as total_geral
          FROM central.avariaconsumo WHERE nLoja=? AND DataLan BETWEEN ? AND ?`,
         [lojaSel, dIni, dFim]).catch(() => [{}]),
-      q(`SELECT codFornec, GROUP_CONCAT(DISTINCT nome ORDER BY nome SEPARATOR ', ') as nomes
-         FROM central.c_cotacao_agenda_comprador WHERE nLoja=? GROUP BY codFornec`,
-        [lojaSel]).catch(() => []),
+      (async () => {
+        const allNRegs = Object.values(NREGS_COMPRADOR).flat();
+        if (!allNRegs.length) return [];
+        const ph = allNRegs.map(() => '?').join(',');
+        return q(`SELECT nReg, CodFornec FROM central.c_cotacao_lista WHERE nReg IN (${ph})`, allNRegs).catch(() => []);
+      })(),
       q(`SELECT CodFornec, Nome, NomeCompleto FROM central.fornecedor ${wf}`, pf).catch(() => [])
     ]);
 
@@ -974,9 +977,16 @@ app.get('/api/fornecedores/resumo', async (req, res) => {
       }
     }
 
+    const _listaToComp = {};
+    for (const [comp, nRegs] of Object.entries(NREGS_COMPRADOR)) {
+      for (const nReg of nRegs) _listaToComp[nReg] = comp;
+    }
     const compradorMap = {};
-    for (const c of compradorRows) compradorMap[c.codFornec] = c.nomes;
-    const todosCompradores = [...new Set(compradorRows.flatMap(r => r.nomes.split(', ')))].sort();
+    for (const r of compradorRows) {
+      const comp = _listaToComp[r.nReg];
+      if (comp) compradorMap[r.CodFornec] = comp;
+    }
+    const todosCompradores = Object.keys(NREGS_COMPRADOR).sort();
 
     let result = fornecs
       .filter(f => fMap[f.CodFornec] || avariaMap[f.CodFornec])
@@ -1096,12 +1106,9 @@ app.get('/api/fornecedores/compras-produtos', async (req, res) => {
     const loja = parseInt(req.query.loja) || 1;
     if (!codFornec) return res.json({ produtos: [], listas: [] });
 
-    const [listasA, listasB] = await Promise.all([
-      q(`SELECT nReg as lista_id FROM central.c_cotacao_lista WHERE CodFornec = ? AND l${loja} = 1`, [codFornec]),
-      q(`SELECT nLista as lista_id FROM central.c_cotacao_agenda_comprador WHERE codFornec = ? AND nLoja = ? AND nLista IS NOT NULL AND nLista > 0`, [codFornec, loja])
-    ]);
-
-    const listaIds = [...new Set([...listasA.map(r => r.lista_id), ...listasB.map(r => r.lista_id)])].filter(Boolean);
+    const listasA = await q(`SELECT nReg as lista_id FROM central.c_cotacao_lista WHERE CodFornec = ? AND l${loja} = 1`, [codFornec]);
+    const allNRegsExcel = Object.values(NREGS_COMPRADOR).flat();
+    const listaIds = [...new Set(listasA.map(r => r.lista_id).filter(id => allNRegsExcel.includes(id)))].filter(Boolean);
     if (!listaIds.length) return res.json({ produtos: [], listas: [] });
 
     const ph = listaIds.map(() => '?').join(',');
@@ -2599,41 +2606,41 @@ app.get('/api/listas-compra', async (req, res) => {
     let sql = `
       SELECT l.nReg, l.Nome, l.NomeFornec, l.CodFornec, l.OperadorLista, l.Obs,
              l.l1, l.l2, l.l3, l.l4, l.l5, l.l6,
-             COUNT(DISTINCT i.nReg) as total_itens,
-             GROUP_CONCAT(DISTINCT cap.nome ORDER BY cap.nome SEPARATOR ', ') as compradores_str
+             COUNT(DISTINCT i.nReg) as total_itens
       FROM central.c_cotacao_lista l
       LEFT JOIN central.c_cotacao_lista_itens i ON i.nCotacao = l.nReg
-      LEFT JOIN central.c_cotacao_agenda_comprador cap ON cap.nLista = l.nReg
       ${filtro}
       GROUP BY l.nReg
+      ORDER BY l.Nome
     `;
-    if (comprador) {
-      sql += ' HAVING compradores_str LIKE ?';
-      params.push('%' + comprador + '%');
-    }
-    sql += ' ORDER BY l.Nome';
 
     const rows = await q(sql, params);
 
-    const compRows = await q(`
-      SELECT DISTINCT nome FROM central.c_cotacao_agenda_comprador
-      WHERE nome IS NOT NULL AND nome != '' AND nome != '0' AND TRIM(nome) != ''
-      ORDER BY nome
-    `);
+    // Comprador via NREGS_COMPRADOR (Excel)
+    const _nRegToComp = {};
+    for (const [comp, nRegs] of Object.entries(NREGS_COMPRADOR)) {
+      for (const nReg of nRegs) _nRegToComp[nReg] = comp;
+    }
+
+    let listasMapped = rows.map(r => ({
+      id: r.nReg,
+      nome: r.Nome?.trim(),
+      fornecedor: r.NomeFornec?.trim(),
+      codFornec: r.CodFornec,
+      operador: r.OperadorLista && r.OperadorLista !== '0' ? r.OperadorLista : null,
+      obs: r.Obs?.trim(),
+      total_itens: r.total_itens,
+      compradores: _nRegToComp[r.nReg] || null,
+      lojas: [1,2,3,4,5,6].filter(n => r['l'+n] == 1)
+    }));
+
+    if (comprador) {
+      listasMapped = listasMapped.filter(l => l.compradores && l.compradores.toUpperCase().includes(comprador.toUpperCase()));
+    }
 
     res.json({
-      listas: rows.map(r => ({
-        id: r.nReg,
-        nome: r.Nome?.trim(),
-        fornecedor: r.NomeFornec?.trim(),
-        codFornec: r.CodFornec,
-        operador: r.OperadorLista && r.OperadorLista !== '0' ? r.OperadorLista : null,
-        obs: r.Obs?.trim(),
-        total_itens: r.total_itens,
-        compradores: r.compradores_str || null,
-        lojas: [1,2,3,4,5,6].filter(n => r['l'+n] == 1)
-      })),
-      compradores: compRows.map(c => c.nome)
+      listas: listasMapped,
+      compradores: Object.keys(NREGS_COMPRADOR).sort()
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -2747,26 +2754,8 @@ app.get('/api/compras/verificar-comprador', async (req, res) => {
       SEX: [277],
     };
 
-    const nRegsCron = [...new Set(Object.values(cronFatima).flat())];
-
-    // Passo 1a: listas linkadas pelo nome (c_cotacao_agenda_comprador)
-    const listasNome = await q(`
-      SELECT DISTINCT nLista
-      FROM central.c_cotacao_agenda_comprador
-      WHERE nome LIKE '%FATIMA%' OR nome LIKE '%FÁTIMA%' OR nome LIKE '%PEREIRA%'
-    `);
-    // Passo 1b: listas com OperadorLista = nome dela
-    const listasOper = await q(`
-      SELECT nReg FROM central.c_cotacao_lista
-      WHERE OperadorLista LIKE '%FATIMA%' OR OperadorLista LIKE '%FÁTIMA%'
-    `);
-
-    const extrasNRegs = [
-      ...listasNome.map(r => r.nLista),
-      ...listasOper.map(r => r.nReg),
-    ].filter(Boolean);
-
-    const todosNRegs = [...new Set([...nRegsCron, ...extrasNRegs])];
+    // Listas da FATIMA via NREGS_COMPRADOR (Excel)
+    const todosNRegs = [...new Set([...Object.values(cronFatima).flat(), ...(NREGS_COMPRADOR.FATIMA || [])])];
     const phN = todosNRegs.map(() => '?').join(',');
 
     // Passo 2: traduz nReg → CodFornec real
@@ -3152,8 +3141,8 @@ app.get('/deploy', (req, res) => {
 app.get('/api/ruptura/debug-comprador', async (req, res) => {
   try {
     const nome = req.query.nome || 'ANA KELLY';
-    const listaRows = await q(`SELECT DISTINCT nLista FROM central.c_cotacao_agenda_comprador WHERE nome = ?`, [nome]).catch(e => ({ err: e.message }));
-    const listIds = Array.isArray(listaRows) ? listaRows.map(r => r.nLista).filter(Boolean) : [];
+    const nomeUp = nome.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+    const listIds = NREGS_COMPRADOR[nomeUp] || [];
     let itensCount = 0;
     let prodsCount = 0;
     if (listIds.length) {
@@ -3169,11 +3158,7 @@ app.get('/api/ruptura/debug-comprador', async (req, res) => {
 
 app.get('/api/ruptura/compradores', withCache(60), async (req, res) => {
   try {
-    const rows = await q(`
-      SELECT DISTINCT nome FROM central.c_cotacao_agenda_comprador
-      WHERE nome IS NOT NULL AND nome != '' ORDER BY nome
-    `).catch(() => []);
-    res.json(rows.map(r => r.nome));
+    res.json(Object.keys(NREGS_COMPRADOR).sort());
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -3393,15 +3378,12 @@ app.get('/api/ruptura', withCache(30), async (req, res) => {
     const LEAD = 3;      // lead time para alerta sem pedido
 
     // Passo 1: produtos + estoque
-    // Com comprador: busca itens das listas do comprador via c_cotacao_agenda_comprador → c_cotacao_lista_itens
-    // Sem comprador: busca todos os itens de todas as listas ativas
+    // Com comprador: listas via NREGS_COMPRADOR (Excel)
+    // Sem comprador: todos os itens de todas as listas ativas
     let prods;
     if (compradorFiltro) {
-      // Pega os nLista do comprador
-      const listaRows = await q(`
-        SELECT DISTINCT nLista FROM central.c_cotacao_agenda_comprador WHERE nome = ?
-      `, [compradorFiltro]).catch(() => []);
-      const listIds = listaRows.map(r => r.nLista).filter(Boolean);
+      const compKey = compradorFiltro.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+      const listIds = NREGS_COMPRADOR[compKey] || [];
       if (!listIds.length) {
         return res.json({
           resumo: { total_rupturas: 0, em_risco: 0, sem_pedido: 0, excesso: 0, alertas: 0, perdaDia: 0, perdaSemana: 0 },

@@ -4,95 +4,145 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Econômico Relatórios — Início</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#08111F;--bg2:#0d1a2e;
-  --card:#111827;--card-h:#141f33;
-  --brand:#FACC15;
-  --green:#22C55E;--red:#EF4444;--blue:#3B82F6;--violet:#8B5CF6;
-  --text:#F1F5F9;--text2:#94A3B8;--text3:#475569;
-  --border:rgba(255,255,255,.07);--border-md:rgba(255,255,255,.12);
-  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  /* ── Superfícies ── */
+  --bg:#F7F7F5;
+  --surface:#FFFFFF;
+  --surface-2:#F1F2F0;
+  --border:#E6E7E3;
+  --border-strong:#D9DAD5;
+
+  /* ── Texto ── */
+  --ink:#16233F;
+  --ink-2:#5B6373;
+  --ink-3:#9AA0AC;
+
+  /* ── Marca ── */
+  --brand:#FFC600;
+  --brand-ink:#5C4600;
+
+  /* ── Semântico ── */
+  --green:#158A4A;
+  --green-bg:#EAF7EF;
+  --red:#D6314A;
+  --red-bg:#FCEBEE;
+
+  --shadow-sm:0 1px 2px rgba(22,35,63,.04);
+  --shadow-md:0 8px 24px -8px rgba(22,35,63,.12);
+  --font:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
 }
-html,body{min-height:100%;font-family:var(--font);background:var(--bg);color:var(--text)}
-body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px 16px}
+html,body{min-height:100%;font-family:var(--font);background:var(--bg);color:var(--ink)}
+body{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:clamp(24px,6vw,48px) 16px;
+}
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;
-  background:radial-gradient(ellipse 60% 40% at 80% 0%,rgba(250,204,21,.04) 0%,transparent 60%),
-             radial-gradient(ellipse 40% 60% at 0% 80%,rgba(59,130,246,.04) 0%,transparent 60%);
+  background:radial-gradient(ellipse 60% 46% at 85% -8%,rgba(255,198,0,.16) 0%,transparent 62%),
+             radial-gradient(ellipse 45% 35% at 0% 100%,rgba(22,35,63,.04) 0%,transparent 60%);
+}
+/* faixa de marca no topo da viewport */
+body::after{
+  content:'';position:fixed;top:0;left:0;right:0;height:5px;z-index:2;
+  background:linear-gradient(90deg,#FFD84D,var(--brand) 45%,#FFB800);
 }
 
 /* ── TOPO ── */
-.topo{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:28px;z-index:1;position:relative}
-.topo-logo{height:56px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
-.topo-nome{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--text3);text-transform:uppercase}
+.topo{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:28px;z-index:1;position:relative}
+.topo-logo-wrap{
+  width:96px;height:96px;border-radius:26px;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 35% 30%,#FFF3C4,#FFDE7A 60%,#FFC600);
+  box-shadow:0 10px 28px -10px rgba(255,198,0,.55),inset 0 1px 0 rgba(255,255,255,.5);
+}
+.topo-logo{height:60px;filter:drop-shadow(0 2px 4px rgba(22,35,63,.15))}
+.topo-nome{font-size:12px;font-weight:700;letter-spacing:3px;color:var(--ink-2);text-transform:uppercase}
+.topo-nome::after{
+  content:'';display:block;width:28px;height:3px;margin:8px auto 0;
+  border-radius:2px;background:var(--brand);
+}
 
-/* ── CONTAINER ── */
-.nav{width:100%;max-width:380px;z-index:1;position:relative;display:flex;flex-direction:column;gap:2px}
+/* ── CARD PRINCIPAL ── */
+.painel{
+  width:100%;max-width:420px;z-index:1;position:relative;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:5px solid var(--brand);
+  border-radius:20px;
+  box-shadow:var(--shadow-md);
+  padding:14px;
+}
+.nav{display:flex;flex-direction:column;gap:3px}
 
 /* ── SEÇÃO ── */
-.nav-section{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;padding:16px 4px 6px;margin-top:4px}
-.nav-section:first-child{padding-top:0}
+.nav-section{font-size:10px;font-weight:700;letter-spacing:1.6px;color:var(--ink-3);text-transform:uppercase;padding:16px 10px 8px;margin-top:2px}
+.nav-section:first-child{padding-top:6px}
 
 /* ── ITEM ── */
 .nav-item{
-  display:flex;align-items:center;gap:12px;
-  padding:13px 16px;border-radius:10px;
-  text-decoration:none;color:var(--text2);
-  background:var(--card);border:1px solid var(--border);
-  transition:background .15s,border-color .15s,color .15s;
-  cursor:pointer;user-select:none;
+  display:flex;align-items:center;gap:14px;
+  padding:14px;border-radius:14px;
+  text-decoration:none;color:var(--ink-2);
+  background:var(--surface);border:1px solid transparent;
+  border-left:3px solid transparent;
+  transition:background .18s ease,border-color .18s ease,transform .12s ease;
+  cursor:pointer;user-select:none;position:relative;
 }
 .nav-item:hover,.nav-item.ativo{
-  background:var(--card-h);border-color:var(--border-md);color:var(--text);
+  background:var(--surface-2);border-left-color:var(--brand);
 }
+.nav-item:active{transform:scale(.997)}
 .nav-icon{
-  width:34px;height:34px;border-radius:8px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:17px;
+  width:40px;height:40px;border-radius:11px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  background:linear-gradient(160deg,#FFFAE8,#FFF1C2);border:1px solid #FCE8A0;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
 }
-.ic-yellow{background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.2)}
-.ic-blue{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2)}
-.ic-green{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2)}
-.ic-violet{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)}
-.ic-slate{background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.2)}
+.nav-item:hover .nav-icon,.nav-item.ativo .nav-icon{background:linear-gradient(160deg,#FFE8A3,var(--brand));border-color:#E8AF00;transform:scale(1.05)}
 .nav-body{flex:1;min-width:0}
-.nav-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
-.nav-desc{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nav-arrow{font-size:10px;color:var(--text3);flex-shrink:0;transition:transform .25s,color .15s}
-.nav-item:hover .nav-arrow,.nav-item.ativo .nav-arrow{color:var(--brand)}
-.nav-item.expandido .nav-arrow{transform:rotate(90deg);color:var(--brand)}
+.nav-title{font-size:14px;font-weight:700;color:var(--ink);line-height:1.25}
+.nav-desc{font-size:12px;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-arrow{font-size:11px;color:var(--ink-3);flex-shrink:0;transition:transform .25s ease,color .18s ease}
+.nav-item:hover .nav-arrow,.nav-item.ativo .nav-arrow{color:var(--brand-ink)}
+.nav-item.expandido .nav-arrow{transform:rotate(90deg);color:var(--brand-ink)}
 
 /* ── SUB-ITENS (TV) ── */
-.nav-sub{
-  max-height:0;overflow:hidden;
-  transition:max-height .3s ease;
-}
+.nav-sub{max-height:0;overflow:hidden;transition:max-height .3s ease}
 .nav-sub.aberto{max-height:300px}
-.sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 0 4px 46px}
+.sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 4px 6px 58px}
 .sub-item{
   display:flex;align-items:center;gap:8px;
-  padding:10px 12px;border-radius:8px;
-  background:var(--bg2);border:1px solid var(--border);
-  text-decoration:none;color:var(--text3);font-size:11px;font-weight:600;
-  transition:background .15s,color .15s,border-color .15s;
+  padding:11px 12px;border-radius:10px;
+  background:var(--surface-2);border:1px solid var(--border);
+  text-decoration:none;color:var(--ink-2);font-size:12px;font-weight:600;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
 }
-.sub-item:hover{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.25);color:#93c5fd}
+.sub-item:hover{background:#FFF6D8;border-color:#FFE38A;color:var(--brand-ink)}
 .sub-item span:first-child{font-size:15px}
 
 /* ── DIVISOR ── */
-.nav-div{height:1px;background:var(--border);margin:8px 0}
+.nav-div{height:1px;background:var(--border);margin:10px 6px}
 
 /* ── RODAPÉ ── */
-.rodape{margin-top:20px;z-index:1;position:relative}
+.rodape{margin-top:24px;z-index:1;position:relative}
 .btn-sair{
   background:none;border:none;cursor:pointer;
-  font-size:11px;color:var(--text3);font-family:var(--font);
-  letter-spacing:1px;text-transform:uppercase;
-  padding:6px 12px;border-radius:6px;
-  transition:color .15s,background .15s;
+  font-size:12px;color:var(--ink-3);font-family:var(--font);font-weight:600;
+  letter-spacing:.6px;
+  padding:8px 14px;border-radius:8px;
+  transition:color .15s ease,background .15s ease;
 }
-.btn-sair:hover{color:var(--red);background:rgba(239,68,68,.06)}
+.btn-sair:hover{color:var(--red);background:var(--red-bg)}
+
+@media(max-width:420px){
+  .painel{border-radius:16px}
+  .sub-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -102,10 +152,11 @@ body::before{
   <div class="topo-nome">Econômico Relatórios</div>
 </div>
 
+<div class="painel">
 <nav class="nav">
 
   <a class="nav-item" id="item-relatorios" href="/index.html">
-    <div class="nav-icon ic-blue">📊</div>
+    <div class="nav-icon">📊</div>
     <div class="nav-body">
       <div class="nav-title">Relatórios Estratégicos</div>
       <div class="nav-desc">Faturamento · Margem · Top produtos</div>
@@ -114,7 +165,7 @@ body::before{
   </a>
 
   <a class="nav-item" id="item-gerencial" href="/gestao-gerencial.html">
-    <div class="nav-icon ic-green">📈</div>
+    <div class="nav-icon">📈</div>
     <div class="nav-body">
       <div class="nav-title">Gestão Gerencial</div>
       <div class="nav-desc">KPIs · Meta · Mercadológico · Avaria</div>
@@ -123,7 +174,7 @@ body::before{
   </a>
 
   <div class="nav-item" id="btn-tv" onclick="toggleTV()">
-    <div class="nav-icon ic-slate">📺</div>
+    <div class="nav-icon">📺</div>
     <div class="nav-body">
       <div class="nav-title">Painéis TV</div>
       <div class="nav-desc">Supervisão · Diretoria · Compras · Precificação</div>
@@ -142,7 +193,7 @@ body::before{
   <div class="nav-div"></div>
 
   <a class="nav-item" id="item-admin" href="/admin-usuarios.html" style="display:none">
-    <div class="nav-icon ic-violet">👥</div>
+    <div class="nav-icon">👥</div>
     <div class="nav-body">
       <div class="nav-title">Usuários</div>
       <div class="nav-desc">Gerenciar acessos e perfis</div>
@@ -151,6 +202,7 @@ body::before{
   </a>
 
 </nav>
+</div>
 
 <div class="rodape">
   <button class="btn-sair" onclick="window.location.href='/api/logout'">Sair</button>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Design System — Econômico Relatórios</title>
+<link rel="stylesheet" href="/design-system.css">
+<style>
+  /* estilos exclusivos desta página de referência */
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 90px}
+  section{margin-bottom:44px}
+  .sec-t{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+    color:var(--amk);border-bottom:1px solid var(--ln);padding-bottom:8px;margin-bottom:18px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+  .swatch{border:1px solid var(--ln);border-radius:9px;overflow:hidden;font-size:10.5px}
+  .swatch i{display:block;height:44px}
+  .swatch b{display:block;padding:6px 9px 1px;font-family:monospace;font-size:10px}
+  .swatch span{display:block;padding:0 9px 7px;color:var(--ink3)}
+  .demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:800px){.demo-grid{grid-template-columns:1fr}}
+  .tv-demo{border-radius:13px;overflow:hidden;border:1px solid var(--ln)}
+</style>
+</head>
+<body class="ds">
+<div class="wrap">
+  <div class="ds-label" style="margin-bottom:8px">Econômico Relatórios · Executive Ink · v1</div>
+  <div class="ds-display">Design System</div>
+  <p class="ds-meta" style="max-width:64ch;margin-top:8px;font-size:13px">
+    Referência viva dos tokens e componentes. Toda tela nova importa
+    <code>/design-system.css</code> e usa apenas o que está nesta página.
+    Regra de ouro do âmbar: só em <b>ação primária</b>, <b>item ativo de navegação</b>
+    e <b>nº 1 de ranking</b> — nunca como cor de texto sobre branco.
+  </p>
+
+  <section style="margin-top:36px">
+    <div class="sec-t">01 · Cores</div>
+    <div class="swatches">
+      <div class="swatch"><i style="background:#FAFAF7"></i><b>#FAFAF7</b><span>--pap · página</span></div>
+      <div class="swatch"><i style="background:#FFFFFF"></i><b>#FFFFFF</b><span>--crd · card</span></div>
+      <div class="swatch"><i style="background:#F1F2ED"></i><b>#F1F2ED</b><span>--wsh · wash</span></div>
+      <div class="swatch"><i style="background:#E7E8E3"></i><b>#E7E8E3</b><span>--ln · borda</span></div>
+      <div class="swatch"><i style="background:#0E1626"></i><b>#0E1626</b><span>--ink · texto</span></div>
+      <div class="swatch"><i style="background:#4E5A72"></i><b>#4E5A72</b><span>--ink2</span></div>
+      <div class="swatch"><i style="background:#98A0B3"></i><b>#98A0B3</b><span>--ink3</span></div>
+      <div class="swatch"><i style="background:#F5B800"></i><b>#F5B800</b><span>--am · marca</span></div>
+      <div class="swatch"><i style="background:#6B4E00"></i><b>#6B4E00</b><span>--amk · texto marca</span></div>
+      <div class="swatch"><i style="background:#137A48"></i><b>#137A48</b><span>--pos</span></div>
+      <div class="swatch"><i style="background:#C22F49"></i><b>#C22F49</b><span>--neg</span></div>
+      <div class="swatch"><i style="background:#2E5E8C"></i><b>#2E5E8C</b><span>--inf</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">02 · Tipografia (Inter · escala única)</div>
+    <div class="ds-card ds-card-pad" style="display:flex;flex-direction:column;gap:14px">
+      <div><span class="ds-label">display 28/800</span><div class="ds-display">R$ 4.642.899,83</div></div>
+      <div><span class="ds-label">kpi 27/800 tabular</span><div class="ds-kpi-v">R$ 184.586,84</div></div>
+      <div><span class="ds-label">h1 19/800</span><div class="ds-h1">Lista de Compra — Loja 1</div></div>
+      <div><span class="ds-label">h2 13.5/700</span><div class="ds-h2">Ranking de Fornecedores</div></div>
+      <div><span class="ds-label">corpo 13/450</span><div>Barbosa e Hoff Comercio de Carnes Ltda — 58,9% do faturamento da loja.</div></div>
+      <div><span class="ds-label">label 10.5/700 caps</span><div class="ds-label">Faturamento do mês</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">03 · Botões</div>
+    <div class="row">
+      <button class="ds-btn ds-btn-primary"><svg class="ds-ic sm"><use href="/icons.svg#refresh"/></svg>Atualizar</button>
+      <button class="ds-btn ds-btn-secondary"><svg class="ds-ic sm"><use href="/icons.svg#download"/></svg>Exportar CSV</button>
+      <button class="ds-btn ds-btn-secondary"><svg class="ds-ic sm"><use href="/icons.svg#printer"/></svg>Imprimir</button>
+      <button class="ds-btn ds-btn-ghost">Cancelar</button>
+      <button class="ds-btn ds-btn-danger">Excluir</button>
+      <button class="ds-btn ds-btn-primary" disabled>Desabilitado</button>
+    </div>
+    <div class="row">
+      <button class="ds-btn ds-btn-primary tall">Entrar na plataforma</button>
+      <span class="ds-meta">variante .tall (40px) para formulários</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">04 · Inputs, busca e segmented</div>
+    <div class="row" style="align-items:flex-end">
+      <div class="ds-field"><label>Usuário</label><input class="ds-input" placeholder="seu usuário"></div>
+      <div class="ds-field"><label>Loja</label>
+        <select class="ds-select"><option>Todas as Lojas</option><option>Loja 1</option></select></div>
+      <div class="ds-search" style="width:260px">
+        <svg class="ds-ic"><use href="/icons.svg#search"/></svg>
+        <input class="ds-input" placeholder="Buscar fornecedor...">
+      </div>
+      <div class="ds-seg"><b class="on">Ranking</b><b>Por comprador</b></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">05 · Pills e chips</div>
+    <div class="row">
+      <span class="ds-pill ds-pill-ok">Ativo</span>
+      <span class="ds-pill ds-pill-bad">Inativo</span>
+      <span class="ds-pill ds-pill-warn">12 NFs</span>
+      <span class="ds-pill ds-pill-info">Em trâmite</span>
+      <span class="ds-pill ds-pill-neutral">Jul/2026</span>
+      <span class="ds-chip ds-chip-up">▲ 8,2%</span>
+      <span class="ds-chip ds-chip-dn">▼ 4,1%</span>
+      <span class="ds-chip ds-chip-flat">0,0%</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">06 · KPI (padrão fixo)</div>
+    <div class="ds-kpi-grid">
+      <div class="ds-kpi">
+        <div class="ds-label">Faturamento do mês</div>
+        <div class="ds-kpi-v">R$ 4.642.899</div>
+        <div class="ds-kpi-foot"><span class="ds-chip ds-chip-dn">▼ 4,1%</span> vs 2025 até dia 15</div>
+        <svg class="spark" width="72" height="26" viewBox="0 0 72 26"><polyline points="0,18 10,15 20,17 30,11 40,13 50,8 62,10 72,6" fill="none" stroke="#0E1626" stroke-width="1.6"/><circle cx="72" cy="6" r="2.4" fill="#F5B800"/></svg>
+      </div>
+      <div class="ds-kpi">
+        <div class="ds-label">Ticket médio</div>
+        <div class="ds-kpi-v">R$ 56,63</div>
+        <div class="ds-kpi-foot"><span class="ds-chip ds-chip-up">▲ 3,2%</span> 81.985 cupons</div>
+      </div>
+      <div class="ds-kpi">
+        <div class="ds-label">Margem s/ venda</div>
+        <div class="ds-kpi-v" style="color:var(--neg)">28,6%</div>
+        <div class="ds-kpi-foot">meta 40% · S/C: 40,1%</div>
+      </div>
+      <div class="ds-kpi">
+        <div class="ds-label">Carregando</div>
+        <div class="ds-skel" style="height:30px;width:70%;margin-top:8px"></div>
+        <div class="ds-skel" style="height:12px;width:50%;margin-top:9px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">07 · Tabela (nº 1 em âmbar · números tabulares)</div>
+    <div class="ds-table-wrap"><table class="ds-table">
+      <thead><tr><th style="width:44px">#</th><th>Fornecedor</th><th>Comprador</th><th class="r">Venda R$</th><th class="r">Margem</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ds-rk top">1</span></td><td class="p">Barbosa e Hoff Carnes<span class="ds-cellbar top"><i style="width:100%"></i></span></td><td>FATIMA</td><td class="r">R$ 108.747,78</td><td class="r" style="color:var(--pos);font-weight:700">31,2%</td><td><span class="ds-pill ds-pill-warn">12 NFs</span></td></tr>
+        <tr><td><span class="ds-rk">2</span></td><td class="p">Camil Alimentos S/A<span class="ds-cellbar"><i style="width:62%"></i></span></td><td>FATIMA</td><td class="r">R$ 22.410,55</td><td class="r" style="color:var(--pos);font-weight:700">24,8%</td><td><span class="ds-pill ds-pill-ok">5 NFs</span></td></tr>
+        <tr><td><span class="ds-rk">3</span></td><td class="p">Alvoar Lácteos NE<span class="ds-cellbar"><i style="width:41%"></i></span></td><td>KELLY</td><td class="r">R$ 18.263,00</td><td class="r" style="color:var(--neg);font-weight:700">11,4%</td><td><span class="ds-pill ds-pill-ok">4 NFs</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sec-t">08 · Toolbar (uma única por tela)</div>
+    <div class="ds-toolbar">
+      <div class="ds-search"><svg class="ds-ic"><use href="/icons.svg#search"/></svg><input class="ds-input" placeholder="Buscar..."></div>
+      <select class="ds-select"><option>Loja 1</option></select>
+      <select class="ds-select"><option>Julho 2026</option></select>
+      <div class="ds-seg"><b class="on">Qtd</b><b>Valor R$</b></div>
+      <div class="end"><span class="ds-meta">712 resultados</span><button class="ds-btn ds-btn-primary">Buscar</button></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">09 · Estados</div>
+    <div class="demo-grid">
+      <div class="ds-card"><div class="ds-empty"><div class="t">Nenhum resultado</div>Ajuste os filtros acima e busque novamente.</div></div>
+      <div class="ds-card ds-card-pad" style="display:flex;flex-direction:column;gap:12px">
+        <div class="ds-error">Erro de conexão com o servidor. Tente novamente.</div>
+        <div class="ds-spinner" style="margin:8px auto"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-t">10 · Modo TV (gêmeo escuro — classe .ds-tv)</div>
+    <div class="tv-demo"><div class="ds ds-tv" style="padding:20px 22px">
+      <div class="ds-kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+        <div class="ds-kpi"><div class="ds-label">Faturamento hoje</div><div class="ds-kpi-v">R$ 312.480</div><div class="ds-kpi-foot"><span class="ds-chip ds-chip-up">▲ 8,2%</span></div></div>
+        <div class="ds-kpi pos"><div class="ds-label">Acumulado do mês</div><div class="ds-kpi-v">R$ 4,64M</div><div class="ds-kpi-foot"><span class="ds-chip ds-chip-dn">▼ 4,1%</span></div></div>
+        <div class="ds-kpi neg"><div class="ds-label">Avaria da rede</div><div class="ds-kpi-v">1,64%</div><div class="ds-kpi-foot">meta 1,0%</div></div>
+      </div>
+      <div class="ds-card ds-card-pad">
+        <div class="ds-label" style="margin-bottom:12px">Venda do dia por loja</div>
+        <div class="ds-tvrank"><span class="nm">Cahu</span><div class="tr"><i style="width:92%"></i></div><b>R$ 89.240</b></div>
+        <div class="ds-tvrank"><span class="nm">Muribeca</span><div class="tr"><i style="width:74%"></i></div><b>R$ 71.803</b></div>
+        <div class="ds-tvrank neg"><span class="nm">Ponte</span><div class="tr"><i style="width:32%"></i></div><b>R$ 30.766</b></div>
+      </div>
+    </div></div>
+  </section>
+</div>
+</body>
+</html>

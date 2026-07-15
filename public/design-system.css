@@ -1,0 +1,284 @@
+/* ═══════════════════════════════════════════════════════════════
+   ECONÔMICO RELATÓRIOS — DESIGN SYSTEM "EXECUTIVE INK" · v1
+   Fonte única de tokens e componentes. Toda tela nova importa este
+   arquivo e usa APENAS estas classes/variáveis — nada de hex solto.
+   Modo TV: adicionar a classe .ds-tv no <body> (gêmeo escuro).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── FONTE ── */
+@font-face{
+  font-family:'InterVar';
+  src:url('/fonts/InterVariable.woff2') format('woff2');
+  font-weight:100 900;
+  font-style:normal;
+  font-display:swap;
+}
+
+/* ── TOKENS · MODO ESCRITÓRIO (claro) ── */
+:root{
+  /* superfícies */
+  --pap:#FAFAF7;          /* fundo de página */
+  --crd:#FFFFFF;          /* cards e painéis */
+  --wsh:#F1F2ED;          /* wash: thead, hover, fundos suaves */
+  --ln:#E7E8E3;           /* borda padrão */
+  --ln2:#D9DAD2;          /* borda forte (inputs) */
+
+  /* tinta */
+  --ink:#0E1626;          /* texto principal / dados */
+  --ink2:#4E5A72;         /* texto secundário */
+  --ink3:#98A0B3;         /* labels, placeholders, meta */
+
+  /* marca — âmbar em exatamente 3 papéis:
+     ação primária · item ativo de navegação · nº1 de ranking */
+  --am:#F5B800;
+  --am-hover:#E5AC00;
+  --amk:#6B4E00;          /* texto "de marca" sobre claro */
+  --amw:#FFF6D9;          /* wash âmbar (ativo de nav) */
+  --am-ln:#EFD98F;        /* borda âmbar suave */
+
+  /* semântico */
+  --pos:#137A48;  --posw:#E7F5EC;
+  --neg:#C22F49;  --negw:#FBEAED;
+  --inf:#2E5E8C;  --infw:#E9EEF6;
+
+  /* forma */
+  --r-sm:7px; --r:9px; --r-lg:13px;
+  --sh-sm:0 1px 2px rgba(14,22,38,.05);
+  --sh-md:0 10px 32px -14px rgba(14,22,38,.18);
+
+  --font:'InterVar',Inter,'Segoe UI Variable','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+
+/* ── TOKENS · MODO TV (gêmeo escuro) ──
+   Regras de densidade TV: máx. 4 KPIs por tela, corpo ≥14px,
+   número de KPI ≥28px, barras de ranking ≥14px de altura. */
+.ds-tv{
+  --pap:#0A1120;
+  --crd:#101A30;
+  --wsh:#182341;
+  --ln:#1D2A46;
+  --ln2:#2A3A5E;
+  --ink:#EAEEF7;
+  --ink2:#AEB8CE;
+  --ink3:#8E9AB5;
+  --am:#FFC933;
+  --am-hover:#FFD34D;
+  --amk:#5C4600;
+  --amw:#2A2410;
+  --am-ln:#4A3E12;
+  --pos:#2FBF71;  --posw:rgba(47,191,113,.14);
+  --neg:#FF5D77;  --negw:rgba(255,93,119,.14);
+  --inf:#5B8DEF;  --infw:rgba(91,141,239,.14);
+  --sh-sm:none;
+  --sh-md:none;
+}
+
+/* ── BASE ── */
+.ds, .ds *, .ds *::before, .ds *::after{box-sizing:border-box}
+.ds{
+  font-family:var(--font);
+  background:var(--pap);
+  color:var(--ink);
+  font-size:13px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  margin:0;
+}
+.ds-tv.ds{font-size:14px}
+
+/* ── TIPOGRAFIA (escala única permitida) ── */
+.ds-display{font-size:28px;font-weight:800;letter-spacing:-.8px;line-height:1.15}
+.ds-kpi-v{font-size:27px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1.1}
+.ds-h1{font-size:19px;font-weight:800;letter-spacing:-.4px}
+.ds-h2{font-size:13.5px;font-weight:700}
+.ds-label{font-size:10.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink3)}
+.ds-meta{font-size:11.5px;color:var(--ink3)}
+.ds-num{font-variant-numeric:tabular-nums}
+.ds-tv .ds-kpi-v{font-size:34px;letter-spacing:-1px}
+.ds-tv .ds-label{font-size:11px;letter-spacing:1.4px}
+
+/* ── ÍCONES (sprite /icons.svg) ──
+   uso: <svg class="ds-ic"><use href="/icons.svg#search"/></svg> */
+.ds-ic{width:17px;height:17px;stroke:currentColor;stroke-width:1.8;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;vertical-align:-3px}
+.ds-ic.sm{width:14px;height:14px}
+.ds-ic.lg{width:20px;height:20px}
+
+/* ── BOTÕES (altura única 36px; formulário usa .tall = 40px) ── */
+.ds-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:36px;padding:0 16px;border-radius:var(--r);border:1px solid transparent;
+  font-family:var(--font);font-size:12.5px;font-weight:700;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,transform .1s ease;
+  white-space:nowrap;user-select:none;text-decoration:none;
+}
+.ds-btn:active{transform:scale(.98)}
+.ds-btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+.ds-btn.tall{height:40px;font-size:13.5px}
+.ds-btn-primary{background:var(--am);color:var(--amk)}
+.ds-btn-primary:hover{background:var(--am-hover)}
+.ds-btn-secondary{background:var(--crd);color:var(--ink2);border-color:var(--ln2)}
+.ds-btn-secondary:hover{border-color:var(--ink3);color:var(--ink)}
+.ds-btn-ghost{background:transparent;color:var(--ink2)}
+.ds-btn-ghost:hover{background:var(--wsh);color:var(--ink)}
+.ds-btn-danger{background:var(--neg);color:#fff}
+.ds-btn-danger:hover{filter:brightness(.92)}
+
+/* ── INPUTS / SELECTS ── */
+.ds-input,.ds-select{
+  height:36px;padding:0 12px;border-radius:var(--r);
+  background:var(--crd);border:1px solid var(--ln2);color:var(--ink);
+  font-family:var(--font);font-size:13px;outline:none;
+  transition:border-color .15s ease;
+}
+.ds-input::placeholder{color:var(--ink3)}
+.ds-input:focus,.ds-select:focus{border-color:var(--am)}
+.ds-select{cursor:pointer;font-weight:600}
+.ds-field{display:flex;flex-direction:column;gap:6px}
+.ds-field>label{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3)}
+
+/* busca com ícone */
+.ds-search{position:relative;display:flex;align-items:center}
+.ds-search .ds-ic{position:absolute;left:11px;color:var(--ink3);pointer-events:none}
+.ds-search .ds-input{padding-left:36px;width:100%;background:var(--wsh);border-color:var(--ln)}
+.ds-search .ds-input:focus{background:var(--crd);border-color:var(--am)}
+
+/* segmented control (alternância binária) */
+.ds-seg{display:inline-flex;background:var(--wsh);border:1px solid var(--ln);border-radius:var(--r);padding:3px;gap:2px}
+.ds-seg>button,.ds-seg>b{
+  padding:6px 13px;border-radius:var(--r-sm);font-size:11.5px;font-weight:700;
+  color:var(--ink3);background:transparent;border:none;cursor:pointer;font-family:var(--font);
+  transition:all .15s ease;
+}
+.ds-seg .on{background:var(--crd);color:var(--ink);box-shadow:0 1px 3px rgba(14,22,38,.14)}
+
+/* ── PILLS (status) ── */
+.ds-pill{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap}
+.ds-pill-ok{background:var(--posw);color:var(--pos)}
+.ds-pill-bad{background:var(--negw);color:var(--neg)}
+.ds-pill-warn{background:var(--amw);color:var(--amk)}
+.ds-tv .ds-pill-warn{color:var(--am)}
+.ds-pill-info{background:var(--infw);color:var(--inf)}
+.ds-pill-neutral{background:var(--wsh);color:var(--ink2)}
+
+/* chip de variação (junto de KPI) */
+.ds-chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;font-variant-numeric:tabular-nums}
+.ds-chip-up{background:var(--posw);color:var(--pos)}
+.ds-chip-dn{background:var(--negw);color:var(--neg)}
+.ds-chip-flat{background:var(--wsh);color:var(--ink2)}
+
+/* ── CARD / PAINEL ── */
+.ds-card{background:var(--crd);border:1px solid var(--ln);border-radius:var(--r-lg);box-shadow:var(--sh-sm)}
+.ds-card-pad{padding:16px 18px}
+.ds-panel-hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--ln)}
+.ds-panel-hd .ds-h2{margin-right:auto}
+.ds-panel-bd{padding:16px 18px}
+
+/* ── KPI (padrão fixo: label → valor → chip+contexto) ── */
+.ds-kpi{background:var(--crd);border:1px solid var(--ln);border-radius:var(--r-lg);
+  box-shadow:var(--sh-sm);padding:16px 18px 14px;position:relative}
+.ds-kpi .ds-kpi-v{margin-top:7px}
+.ds-kpi-foot{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11.5px;color:var(--ink3);flex-wrap:wrap}
+.ds-kpi .spark{position:absolute;right:14px;bottom:12px;opacity:.9}
+.ds-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1100px){.ds-kpi-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.ds-kpi-grid{grid-template-columns:1fr}}
+/* variante TV: barra de status no topo */
+.ds-tv .ds-kpi{padding:18px 20px;overflow:hidden}
+.ds-tv .ds-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--am)}
+.ds-tv .ds-kpi.pos::before{background:var(--pos)}
+.ds-tv .ds-kpi.neg::before{background:var(--neg)}
+.ds-tv .ds-kpi.inf::before{background:var(--inf)}
+
+/* ── TABELA (zebra proibida; nº1 do ranking em âmbar) ── */
+.ds-table-wrap{overflow-x:auto;border-radius:var(--r-lg);border:1px solid var(--ln);background:var(--crd)}
+.ds-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.ds-table th{
+  text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--ink3);padding:10px 18px;background:var(--wsh);font-weight:700;white-space:nowrap;
+}
+.ds-table th.r,.ds-table td.r{text-align:right}
+.ds-table td{padding:10px 18px;border-top:1px solid var(--ln);font-variant-numeric:tabular-nums;color:var(--ink2)}
+.ds-table td.p{font-weight:600;color:var(--ink)}
+.ds-table tbody tr{transition:background .1s}
+.ds-table tbody tr:hover{background:var(--wsh)}
+/* ranking */
+.ds-rk{display:inline-flex;width:22px;height:22px;border-radius:6px;background:var(--wsh);
+  color:var(--ink3);font-size:10.5px;font-weight:800;align-items:center;justify-content:center}
+.ds-rk.top{background:var(--amw);color:var(--amk)}
+.ds-tv .ds-rk.top{color:var(--am)}
+/* micro-barra dentro de célula */
+.ds-cellbar{position:relative;height:5px;border-radius:3px;background:var(--wsh);width:120px;display:inline-block;vertical-align:middle;margin-left:12px}
+.ds-cellbar>i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--ink)}
+.ds-cellbar.top>i{background:var(--am)}
+
+/* ── TOOLBAR (uma única por tela) ── */
+.ds-toolbar{display:flex;gap:10px;align-items:center;background:var(--crd);
+  border:1px solid var(--ln);border-radius:var(--r-lg);padding:10px 12px;flex-wrap:wrap}
+.ds-toolbar .ds-search{flex:1;min-width:180px;max-width:320px}
+.ds-toolbar .end{margin-left:auto;display:flex;align-items:center;gap:8px}
+
+/* ── NAVEGAÇÃO ── */
+/* top-nav (só dashboard) */
+.ds-topnav{background:var(--crd);border-bottom:1px solid var(--ln);display:flex;gap:2px;padding:0 22px;overflow-x:auto}
+.ds-topnav a{padding:11px 14px;font-size:12.5px;font-weight:600;color:var(--ink2);
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:7px;
+  text-decoration:none;white-space:nowrap;transition:color .15s ease}
+.ds-topnav a:hover{color:var(--ink)}
+.ds-topnav a.on{color:var(--ink);border-bottom-color:var(--am)}
+/* sidebar (telas operacionais) — largura única 236px */
+.ds-sidebar{width:236px;background:var(--crd);border-right:1px solid var(--ln);
+  display:flex;flex-direction:column;padding:16px 12px;flex-shrink:0}
+.ds-sidebar .sect{font-size:9.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--ink3);padding:12px 10px 6px}
+.ds-sidebar a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--r);
+  font-size:12.5px;font-weight:600;color:var(--ink2);text-decoration:none;transition:background .12s ease}
+.ds-sidebar a .ds-ic{width:16px;height:16px;color:var(--ink3)}
+.ds-sidebar a:hover{background:var(--wsh);color:var(--ink)}
+.ds-sidebar a.on{background:var(--amw);color:var(--amk)}
+.ds-sidebar a.on .ds-ic{color:var(--amk)}
+
+/* header de app (60px) */
+.ds-appbar{height:60px;background:var(--crd);border-bottom:1px solid var(--ln);
+  display:flex;align-items:center;gap:18px;padding:0 22px}
+.ds-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.ds-brand .sq{width:32px;height:32px;border-radius:9px;background:linear-gradient(150deg,#FFD34D,var(--am));
+  display:flex;align-items:center;justify-content:center;color:var(--amk);font-weight:900;font-size:15px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.ds-brand b{font-size:14px;letter-spacing:-.2px}
+.ds-brand span{display:block;font-size:9.5px;color:var(--ink3);letter-spacing:1.4px;text-transform:uppercase;font-weight:700;margin-top:1px}
+.ds-avatar{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.ds-tv .ds-avatar{background:var(--wsh);color:var(--ink)}
+
+/* ── ESTADOS ── */
+.ds-spinner{width:22px;height:22px;border-radius:50%;border:2px solid var(--ln);
+  border-top-color:var(--am);animation:ds-spin .7s linear infinite;margin:30px auto}
+@keyframes ds-spin{to{transform:rotate(360deg)}}
+.ds-empty{padding:44px 20px;text-align:center;color:var(--ink3);font-size:13px}
+.ds-empty .t{font-size:14px;font-weight:700;color:var(--ink2);margin-bottom:4px}
+.ds-error{background:var(--negw);border:1px solid var(--neg);color:var(--neg);
+  border-radius:var(--r);padding:10px 14px;font-size:12px}
+/* skeleton loading */
+.ds-skel{border-radius:var(--r-sm);background:linear-gradient(90deg,var(--wsh) 25%,var(--ln) 50%,var(--wsh) 75%);
+  background-size:200% 100%;animation:ds-skel 1.3s ease infinite}
+@keyframes ds-skel{to{background-position:-200% 0}}
+
+/* ── RANKING TV (barras grossas, legíveis a 5m) ── */
+.ds-tvrank{display:flex;align-items:center;gap:14px;margin-bottom:11px}
+.ds-tvrank .nm{width:130px;font-size:14px;font-weight:700;text-transform:uppercase}
+.ds-tvrank .tr{flex:1;height:16px;border-radius:8px;background:var(--wsh);position:relative;overflow:hidden}
+.ds-tvrank .tr>i{position:absolute;inset:0 auto 0 0;border-radius:8px;background:linear-gradient(90deg,#FFD34D,var(--am))}
+.ds-tvrank.neg .tr>i{background:linear-gradient(90deg,#FF8296,var(--neg))}
+.ds-tvrank>b{width:100px;text-align:right;font-size:15px;font-variant-numeric:tabular-nums}
+
+/* ── MOTION ── */
+@media(prefers-reduced-motion:reduce){
+  .ds *,.ds *::before,.ds *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+/* ── PRINT ── */
+@media print{
+  .ds{background:#fff}
+  .ds-sidebar,.ds-topnav,.ds-appbar,.ds-toolbar,.ds-btn{display:none!important}
+  .ds-card,.ds-kpi,.ds-table-wrap{box-shadow:none;border-color:#ccc}
+}

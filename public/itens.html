@@ -1,58 +1,70 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mercadológico — Econômico Relatórios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Segoe UI',sans-serif; background:#0f172a; color:#e2e8f0; min-height:100vh; display:flex; flex-direction:column; }
+  :root{
+    --bg:#F7F7F5; --surface:#FFFFFF; --surface-2:#F1F2F0;
+    --border:#E6E7E3; --border-strong:#D9DAD5;
+    --ink:#16233F; --ink-2:#5B6373; --ink-3:#9AA0AC;
+    --brand:#FFC600; --brand-ink:#5C4600;
+    --green:#158A4A; --green-bg:#EAF7EF;
+    --red:#D6314A; --red-bg:#FCEBEE;
+    --font:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  body { font-family:var(--font); background:var(--bg); color:var(--ink); min-height:100vh; display:flex; flex-direction:column; }
 
   header {
-    background:linear-gradient(135deg,#1a1a2e,#16213e);
-    padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
-    border-bottom:3px solid #F9C200; flex-shrink:0;
+    background:var(--surface);
+    padding:12px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border); box-shadow:0 1px 0 var(--brand); flex-shrink:0;
   }
   .logo { display:flex; align-items:center; gap:10px; }
-  .logo-icon { height:42px; width:auto; display:block; }
-  .logo h1 { font-size:17px; font-weight:700; color:#F9C200; letter-spacing:0.5px; }
-  .logo span { font-size:11px; color:#94a3b8; display:block; }
-  .nav-links { display:flex; gap:8px; flex-wrap:wrap; }
-  .nav-links a { color:#F9C200; text-decoration:none; font-size:12px; padding:5px 12px; border-radius:5px; border:1px solid #F9C200; font-weight:600; transition:all .15s; }
-  .nav-links a:hover { background:#F9C200; color:#0f0f1a; }
+  .logo-icon { height:36px; width:auto; display:block; }
+  .logo h1 { font-size:16px; font-weight:800; color:var(--ink); letter-spacing:0.3px; }
+  .logo span { font-size:11px; color:var(--ink-3); display:block; }
+  .nav-links { display:flex; gap:4px; flex-wrap:wrap; }
+  .nav-links a { color:var(--ink-2); text-decoration:none; font-size:12px; padding:6px 10px; font-weight:600; border-bottom:2px solid transparent; transition:all .15s; }
+  .nav-links a:hover { color:var(--ink); border-bottom-color:#FFE38A; }
 
   .layout { display:flex; flex:1; overflow:hidden; }
 
   /* Sidebar de grupos */
   .sidebar {
-    width:280px; background:#1e293b; border-right:1px solid #334155;
+    width:280px; background:var(--surface); border-right:1px solid var(--border);
     overflow-y:auto; flex-shrink:0;
   }
   .sidebar-title {
     padding:16px 16px 10px; font-size:11px; font-weight:700;
-    color:#64748b; text-transform:uppercase; letter-spacing:0.8px;
-    border-bottom:1px solid #334155; position:sticky; top:0;
-    background:#1e293b; z-index:1;
+    color:var(--ink-3); text-transform:uppercase; letter-spacing:0.8px;
+    border-bottom:1px solid var(--border); position:sticky; top:0;
+    background:var(--surface); z-index:1;
   }
   .grupo-item { cursor:pointer; }
   .grupo-header {
-    padding:10px 14px; font-size:13px; font-weight:600; color:#cbd5e1;
+    padding:10px 14px; font-size:13px; font-weight:600; color:var(--ink-2);
     display:flex; align-items:center; justify-content:space-between;
     user-select:none; transition:background 0.15s;
   }
-  .grupo-header:hover { background:#0f172a55; }
-  .grupo-header.ativo { color:#60a5fa; }
-  .grupo-chevron { font-size:10px; transition:transform 0.2s; color:#475569; }
+  .grupo-header:hover { background:var(--surface-2); }
+  .grupo-header.ativo { color:var(--ink); }
+  .grupo-chevron { font-size:10px; transition:transform 0.2s; color:var(--ink-3); }
   .grupo-chevron.aberto { transform:rotate(90deg); }
   .subgrupos { display:none; }
   .subgrupos.aberto { display:block; }
   .subgrupo-item {
-    padding:7px 14px 7px 28px; font-size:12px; color:#94a3b8;
+    padding:7px 14px 7px 28px; font-size:12px; color:var(--ink-2);
     cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:space-between;
   }
-  .subgrupo-item:hover { background:#0f172a55; color:#e2e8f0; }
-  .subgrupo-item.selecionado { background:#F9C20018; color:#F9C200; border-left:2px solid #F9C200; }
-  .subgrupo-cnt { font-size:10px; background:#0f172a; padding:1px 6px; border-radius:10px; color:#475569; }
+  .subgrupo-item:hover { background:var(--surface-2); color:var(--ink); }
+  .subgrupo-item.selecionado { background:#FFF6D8; color:var(--brand-ink); border-left:2px solid var(--brand); }
+  .subgrupo-cnt { font-size:10px; background:var(--surface-2); padding:1px 6px; border-radius:10px; color:var(--ink-3); }
 
   /* Conteúdo principal */
   .conteudo { flex:1; overflow:auto; padding:20px 24px; }
@@ -62,84 +74,79 @@
   }
   .search-wrap { position:relative; flex:1; min-width:200px; }
   .search-wrap input {
-    width:100%; background:#1e293b; border:1px solid #334155; color:#e2e8f0;
-    padding:9px 12px 9px 36px; border-radius:8px; font-size:13px; outline:none;
+    width:100%; background:var(--surface); border:1px solid var(--border-strong); color:var(--ink);
+    padding:9px 12px 9px 36px; border-radius:8px; font-size:13px; outline:none; font-family:var(--font);
   }
-  .search-wrap input:focus { border-color:#F9C200; }
-  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#64748b; font-size:14px; }
+  .search-wrap input:focus { border-color:var(--brand); }
+  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-3); font-size:14px; }
   .filtro-status { display:flex; gap:6px; }
   .btn-status {
-    padding:7px 14px; border-radius:6px; border:1px solid #334155;
-    background:transparent; color:#94a3b8; font-size:12px; cursor:pointer; transition:all 0.15s;
+    padding:7px 14px; border-radius:6px; border:1px solid var(--border-strong);
+    background:var(--surface); color:var(--ink-2); font-size:12px; cursor:pointer; transition:all 0.15s; font-weight:600;
   }
-  .btn-status.ativo { background:#064e3b; border-color:#10b981; color:#6ee7b7; }
-  .btn-status.inativo { background:#450a0a; border-color:#ef4444; color:#fca5a5; }
-  .btn-status.todos { background:#F9C20018; border-color:#F9C200; color:#F9C200; }
+  .btn-status.ativo { background:var(--green-bg); border-color:#B7E4C7; color:var(--green); }
+  .btn-status.inativo { background:var(--red-bg); border-color:#F3C1CB; color:var(--red); }
+  .btn-status.todos { background:#FFF6D8; border-color:var(--brand); color:var(--brand-ink); }
 
   .resultado-info {
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom:14px; flex-wrap:wrap; gap:10px;
   }
-  .resultado-titulo { font-size:14px; font-weight:700; color:#e2e8f0; }
-  .resultado-subtitulo { font-size:12px; color:#64748b; margin-top:2px; }
+  .resultado-titulo { font-size:14px; font-weight:700; color:var(--ink); }
+  .resultado-subtitulo { font-size:12px; color:var(--ink-3); margin-top:2px; }
   .acoes { display:flex; gap:8px; }
-  .btn-export { background:#059669; border:none; color:#fff; padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer; }
-  .btn-print { background:#7c3aed; border:none; color:#fff; padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer; }
+  .btn-export { background:var(--green); border:none; color:#fff; padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
+  .btn-print { background:var(--surface); border:1px solid var(--border-strong); color:var(--ink-2); padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
 
   /* Tabela */
-  .tabela-wrap { background:#1e293b; border-radius:12px; border:1px solid #334155; overflow:hidden; }
+  .tabela-wrap { background:var(--surface); border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 2px rgba(22,35,63,.04); overflow:hidden; }
   table { width:100%; border-collapse:collapse; }
-  thead { background:#0f172a; position:sticky; top:0; z-index:1; }
-  thead th { padding:10px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#64748b; text-align:left; white-space:nowrap; }
+  thead { background:var(--surface-2); position:sticky; top:0; z-index:1; }
+  thead th { padding:10px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--ink-3); text-align:left; white-space:nowrap; }
   th.r, td.r { text-align:right; }
-  tbody tr { border-top:1px solid #334155; transition:background 0.1s; }
-  tbody tr:hover { background:#0f172a55; }
-  td { padding:9px 14px; font-size:12px; color:#cbd5e1; }
-  td.desc { color:#e2e8f0; font-weight:500; max-width:260px; }
-  td.cod { color:#475569; font-size:11px; font-family:monospace; }
-  td.preco { color:#34d399; font-weight:600; }
-  td.estoque-ok { color:#60a5fa; }
-  td.estoque-zero { color:#f87171; }
-  .pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; }
-  .pill-on { background:#064e3b; color:#6ee7b7; }
-  .pill-off { background:#450a0a; color:#fca5a5; }
+  tbody tr { border-top:1px solid var(--border); transition:background 0.1s; }
+  tbody tr:hover { background:var(--surface-2); }
+  td { padding:9px 14px; font-size:12px; color:var(--ink-2); }
+  td.desc { color:var(--ink); font-weight:600; max-width:260px; }
+  td.cod { color:var(--ink-3); font-size:11px; font-family:monospace; }
+  td.preco { color:var(--green); font-weight:700; }
+  td.estoque-ok { color:var(--ink); }
+  td.estoque-zero { color:var(--red); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; }
+  .pill-on { background:var(--green-bg); color:var(--green); }
+  .pill-off { background:var(--red-bg); color:var(--red); }
 
-  .estado-vazio { padding:50px 20px; text-align:center; color:#475569; }
+  .estado-vazio { padding:50px 20px; text-align:center; color:var(--ink-3); }
   .estado-vazio .icon { font-size:40px; margin-bottom:10px; }
 
   .spinner-wrap { padding:50px; text-align:center; }
-  .spinner { width:28px; height:28px; border:3px solid #334155; border-top-color:#3b82f6; border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 10px; }
+  .spinner { width:28px; height:28px; border:3px solid var(--border); border-top-color:var(--brand); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 10px; }
   @keyframes spin { to { transform:rotate(360deg); } }
 
   .paginacao { display:flex; justify-content:center; align-items:center; gap:8px; padding:14px; }
-  .btn-pag { background:#1e293b; border:1px solid #334155; color:#94a3b8; padding:5px 12px; border-radius:5px; cursor:pointer; font-size:12px; }
-  .btn-pag:hover:not(:disabled) { border-color:#3b82f6; color:#60a5fa; }
+  .btn-pag { background:var(--surface); border:1px solid var(--border-strong); color:var(--ink-2); padding:5px 12px; border-radius:5px; cursor:pointer; font-size:12px; }
+  .btn-pag:hover:not(:disabled) { border-color:var(--ink-3); color:var(--ink); }
   .btn-pag:disabled { opacity:0.4; pointer-events:none; }
-  .pag-info { font-size:12px; color:#64748b; }
+  .pag-info { font-size:12px; color:var(--ink-3); }
 
   @media(max-width:768px){
-    /* Header compacto */
     header{padding:10px 14px;flex-wrap:wrap;gap:8px}
-    .logo-icon{height:32px}
+    .logo-icon{height:30px}
     .logo h1{font-size:14px}.logo span{display:none}
     .nav-links{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%}
-    .nav-links a{font-size:11px;padding:7px 6px;text-align:center;border-radius:7px}
-    /* Layout vertical */
+    .nav-links a{font-size:11px;padding:7px 6px;text-align:center;border-radius:7px;background:var(--surface-2);border-bottom:none}
     .layout{flex-direction:column;overflow:visible}
     body{overflow-y:auto}
-    /* Grupos como painel colapsável no topo */
-    .sidebar{width:100%;max-height:240px;overflow-y:auto;border-right:none;border-bottom:1px solid #334155}
+    .sidebar{width:100%;max-height:240px;overflow-y:auto;border-right:none;border-bottom:1px solid var(--border)}
     .sidebar-title{position:static}
     .grupo-header{padding:9px 12px;font-size:12px}
     .subgrupo-item{padding:6px 12px 6px 24px;font-size:11px}
-    /* Conteúdo abaixo */
     .conteudo{padding:10px;overflow:visible}
     .filtros-topo{flex-wrap:wrap;gap:6px}
     .search-wrap{min-width:0;flex:1}
     .search-wrap input{font-size:16px;padding:7px 10px 7px 32px}
     .filtro-status{flex-wrap:wrap}
     .btn-status{font-size:11px;padding:5px 10px}
-    /* Tabela mobile */
     .tabela-wrap{overflow-x:auto}
     .tabela-itens th,.tabela-itens td{padding:7px 8px;font-size:11px;white-space:nowrap}
     .resultado-info{flex-direction:column;align-items:flex-start;gap:6px}
@@ -154,25 +161,12 @@
     .layout { display: block !important; }
     .conteudo { padding: 2px !important; overflow: visible !important; }
     .tabela-wrap { border: none !important; overflow: visible !important; border-radius: 0 !important; }
-    /* Modo todas: ocultar as duas tabelas separadas, mostrar unificada gerada pelo JS */
     #todas-wrap { display: none !important; }
-    #print-unified-wrap {
-      width: 100%;
-      overflow: visible !important;
-    }
-    #print-unified {
-      border-collapse: collapse !important;
-      font-size: 6px !important;
-      white-space: nowrap !important;
-    }
-    #print-unified th, #print-unified td {
-      padding: 2px 3px !important;
-      border: 1px solid #bbb !important;
-      white-space: nowrap !important;
-    }
+    #print-unified-wrap { width: 100%; overflow: visible !important; }
+    #print-unified { border-collapse: collapse !important; font-size: 6px !important; white-space: nowrap !important; }
+    #print-unified th, #print-unified td { padding: 2px 3px !important; border: 1px solid #bbb !important; white-space: nowrap !important; }
     #print-unified thead tr:first-child th { background: #1e3a8a !important; color: white !important; font-size: 7px !important; }
     #print-unified thead tr:last-child th { background: #dde4f0 !important; color: #1e293b !important; }
-    /* Tabela única (modo loja) */
     table { font-size: 8px !important; border-collapse: collapse !important; width: 100% !important; }
     th, td { padding: 3px 5px !important; border: 1px solid #ccc !important; color: #111 !important;
              position: static !important; background: white !important; white-space: nowrap !important; }
@@ -190,7 +184,7 @@
 
 <header>
   <div class="logo">
-    <img src="/logo.png" class="logo-icon" alt="Econômico" style="filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+    <img src="/logo.png" class="logo-icon" alt="Econômico">
     <div>
       <h1>Mercadológico</h1>
       <span>Consulta por Grupo / Subgrupo</span>
@@ -206,8 +200,8 @@
     <a href="/ruptura.html">📉 Rupturas</a>
   </div>
   <div style="display:flex;align-items:center;gap:10px;font-size:12px;margin-left:8px">
-    <span style="color:#94a3b8" id="hdr-user">👤 ...</span>
-    <a href="/api/logout" style="color:#f87171;font-weight:700;text-decoration:none;border:1px solid #7f1d1d;padding:5px 10px;border-radius:6px;background:#450a0a22">🚪 Sair</a>
+    <span style="color:var(--ink-3)" id="hdr-user">👤 ...</span>
+    <a href="/api/logout" style="color:var(--red);font-weight:700;text-decoration:none;border:1px solid var(--red-bg);padding:5px 10px;border-radius:6px;background:var(--red-bg)">🚪 Sair</a>
   </div>
 </header>
 <script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('hdr-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
@@ -232,7 +226,7 @@
           oninput="debounceConsulta()" onkeydown="if(event.key==='Enter') consultarItens()">
       </div>
       <select id="sel-loja" onchange="paginaAtual=1; consultarItens()"
-        style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:9px 12px;border-radius:8px;font-size:13px;outline:none;cursor:pointer;">
+        style="background:var(--surface);border:1px solid var(--border-strong);color:var(--ink);padding:9px 12px;border-radius:8px;font-size:13px;outline:none;cursor:pointer;font-family:var(--font);font-weight:600;">
         <option value="1">Loja 1</option>
         <option value="2">Loja 2</option>
         <option value="3">Loja 3</option>
@@ -384,7 +378,7 @@ async function consultarItens() {
   if (!grupoSel && !subgrupoSel && statusSel !== '1' && !busca) return;
 
   const wrap = document.getElementById('tabela-wrap');
-  wrap.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><p style="color:#64748b;font-size:13px">Consultando...</p></div>';
+  wrap.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><p style="color:var(--ink-3);font-size:13px">Consultando...</p></div>';
 
   try {
     const loja = document.getElementById('sel-loja').value;
@@ -396,7 +390,7 @@ async function consultarItens() {
 
     const r = await fetch('/api/itens?' + params);
     const d = await r.json();
-    if (d.error) { wrap.innerHTML = `<div class="estado-vazio"><p style="color:#ef4444">Erro: ${d.error}</p></div>`; return; }
+    if (d.error) { wrap.innerHTML = `<div class="estado-vazio"><p style="color:var(--red)">Erro: ${d.error}</p></div>`; return; }
 
     dadosAtuais = d.data || [];
     totalPaginas = d.paginas || 1;
@@ -413,7 +407,7 @@ async function consultarItens() {
     renderTabela(dadosAtuais);
     renderPaginacao(d.total, d.pagina, d.paginas);
   } catch (e) {
-    wrap.innerHTML = `<div class="estado-vazio"><p style="color:#ef4444">Erro: ${e.message}</p></div>`;
+    wrap.innerHTML = `<div class="estado-vazio"><p style="color:var(--red)">Erro: ${e.message}</p></div>`;
     console.error('consultarItens erro:', e);
   }
 }
@@ -429,18 +423,18 @@ function renderTabela(data) {
 
   data.forEach((p, i) => {
     const estCls = p.estoque > 0 ? 'estoque-ok' : 'estoque-zero';
-    const margemCor = p.margem >= 30 ? '#34d399' : p.margem >= 15 ? '#fbbf24' : p.margem > 0 ? '#f87171' : '#475569';
+    const margemCor = p.margem >= 30 ? 'var(--green)' : p.margem >= 15 ? 'var(--brand-ink)' : p.margem > 0 ? 'var(--red)' : 'var(--ink-3)';
     html += `<tr>
-      <td style="color:#475569;font-size:11px">${((paginaAtual-1)*50)+i+1}</td>
+      <td style="color:var(--ink-3);font-size:11px">${((paginaAtual-1)*50)+i+1}</td>
       <td class="cod">${p.codigoBarra || '—'}</td>
       <td class="desc">${p.descricao}</td>
-      <td style="font-size:11px;color:#64748b">${p.subgrupo || '—'}</td>
-      <td class="r preco">${p.preco > 0 ? fmt(p.preco) : '<span style="color:#475569">—</span>'}</td>
-      <td class="r" style="color:#94a3b8">${p.custo > 0 ? fmt(p.custo) : '<span style="color:#475569">—</span>'}</td>
-      <td class="r" style="color:${margemCor};font-weight:600">${p.margem > 0 ? p.margem.toFixed(1)+'%' : '<span style="color:#475569">—</span>'}</td>
-      <td class="r ${estCls}" style="font-weight:600">${fmtN(p.estoque)}</td>
-      <td style="font-size:11px;color:#64748b">${p.ultimaCompra || '—'}</td>
-      <td style="color:#64748b;font-size:11px">${p.unidade || '—'}</td>
+      <td style="font-size:11px;color:var(--ink-3)">${p.subgrupo || '—'}</td>
+      <td class="r preco">${p.preco > 0 ? fmt(p.preco) : '<span style="color:var(--ink-3)">—</span>'}</td>
+      <td class="r" style="color:var(--ink-2)">${p.custo > 0 ? fmt(p.custo) : '<span style="color:var(--ink-3)">—</span>'}</td>
+      <td class="r" style="color:${margemCor};font-weight:700">${p.margem > 0 ? p.margem.toFixed(1)+'%' : '<span style="color:var(--ink-3)">—</span>'}</td>
+      <td class="r ${estCls}" style="font-weight:700">${fmtN(p.estoque)}</td>
+      <td style="font-size:11px;color:var(--ink-3)">${p.ultimaCompra || '—'}</td>
+      <td style="color:var(--ink-3);font-size:11px">${p.unidade || '—'}</td>
       <td><span class="pill ${p.ativo ? 'pill-on' : 'pill-off'}">${p.ativo ? 'Ativo' : 'Inativo'}</span></td>
     </tr>`;
   });
@@ -452,49 +446,49 @@ function renderTabela(data) {
 function renderTabelaTodas(data) {
   const ls = [1,2,3,4,5,6];
   const n2 = v => v > 0 ? new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v) : '—';
-  const TD = 'padding:8px 9px;border-top:1px solid #334155';
+  const TD = 'padding:8px 9px;border-top:1px solid var(--border)';
   const TH2 = (bg,cor,n) => `<th class="r" style="background:${bg};color:${cor};padding:5px 9px;font-size:10px">L${n}</th>`;
 
   let lRows='', rRows='';
   data.forEach((p,i) => {
     const num = ((paginaAtual-1)*50)+i+1;
     lRows += `<tr>
-      <td style="${TD};color:#475569;text-align:center;width:32px">${num}</td>
-      <td style="${TD};color:#64748b;font-family:monospace;font-size:10px;width:130px">${p.codigoBarra||'—'}</td>
-      <td style="${TD};font-weight:500;color:#e2e8f0;white-space:normal;min-width:180px;max-width:240px">${p.descricao}</td>
+      <td style="${TD};color:var(--ink-3);text-align:center;width:32px">${num}</td>
+      <td style="${TD};color:var(--ink-3);font-family:monospace;font-size:10px;width:130px">${p.codigoBarra||'—'}</td>
+      <td style="${TD};font-weight:600;color:var(--ink);white-space:normal;min-width:180px;max-width:240px">${p.descricao}</td>
     </tr>`;
     rRows += `<tr>
-      ${p.lojas.map(l=>`<td class="r" style="${TD};color:#34d399">${n2(l.preco)}</td>`).join('')}
-      ${p.lojas.map(l=>`<td class="r" style="${TD};color:#94a3b8">${n2(l.custo)}</td>`).join('')}
+      ${p.lojas.map(l=>`<td class="r" style="${TD};color:var(--green)">${n2(l.preco)}</td>`).join('')}
+      ${p.lojas.map(l=>`<td class="r" style="${TD};color:var(--ink-2)">${n2(l.custo)}</td>`).join('')}
       ${p.lojas.map(l=>{
-        const cor=l.margem>=30?'#34d399':l.margem>=15?'#fbbf24':l.margem>0?'#f87171':'#475569';
-        return `<td class="r" style="${TD};color:${cor};font-weight:600">${l.margem>0?l.margem.toFixed(1)+'%':'—'}</td>`;
+        const cor=l.margem>=30?'var(--green)':l.margem>=15?'var(--brand-ink)':l.margem>0?'var(--red)':'var(--ink-3)';
+        return `<td class="r" style="${TD};color:${cor};font-weight:700">${l.margem>0?l.margem.toFixed(1)+'%':'—'}</td>`;
       }).join('')}
-      ${p.lojas.map(l=>`<td class="r" style="${TD};color:${l.estoque>0?'#60a5fa':'#f87171'};font-weight:600">${fmtN(l.estoque)}</td>`).join('')}
+      ${p.lojas.map(l=>`<td class="r" style="${TD};color:${l.estoque>0?'var(--ink)':'var(--red)'};font-weight:700">${fmtN(l.estoque)}</td>`).join('')}
     </tr>`;
   });
 
-  const lHead = `<thead><tr style="background:#0f172a">
+  const lHead = `<thead><tr style="background:var(--surface-2)">
     <th style="padding:8px 6px;font-size:10px">#</th>
     <th style="padding:8px 9px;font-size:10px;text-align:left">Cód. Barras</th>
     <th style="padding:8px 9px;font-size:10px;text-align:left">Descrição</th>
-  </tr><tr style="background:#0f172a"><th colspan="3"></th></tr></thead>`;
+  </tr><tr style="background:var(--surface-2)"><th colspan="3"></th></tr></thead>`;
 
-  const rHead = `<thead><tr style="background:#0f172a">
-    <th colspan="6" style="background:#1e3a8a55;border-bottom:2px solid #3b82f6;color:#93c5fd;text-align:center;padding:6px">PREÇO</th>
-    <th colspan="6" style="background:#064e3b55;border-bottom:2px solid #10b981;color:#6ee7b7;text-align:center;padding:6px">CUSTO COMPRA</th>
-    <th colspan="6" style="background:#3b1f0a55;border-bottom:2px solid #f59e0b;color:#fbbf24;text-align:center;padding:6px">MARGEM %</th>
-    <th colspan="6" style="background:#0c2a5a55;border-bottom:2px solid #60a5fa;color:#93c5fd;text-align:center;padding:6px">ESTOQUE</th>
-  </tr><tr style="background:#0f172a">
-    ${ls.map(n=>TH2('#1e3a8a33','#93c5fd',n)).join('')}
-    ${ls.map(n=>TH2('#064e3b33','#6ee7b7',n)).join('')}
-    ${ls.map(n=>TH2('#3b1f0a33','#fbbf24',n)).join('')}
-    ${ls.map(n=>TH2('#0c2a5a33','#93c5fd',n)).join('')}
+  const rHead = `<thead><tr style="background:var(--surface-2)">
+    <th colspan="6" style="background:var(--green-bg);border-bottom:2px solid var(--green);color:var(--green);text-align:center;padding:6px">PREÇO</th>
+    <th colspan="6" style="background:#EAF7EF;border-bottom:2px solid var(--green);color:var(--green);text-align:center;padding:6px">CUSTO COMPRA</th>
+    <th colspan="6" style="background:#FFF6D8;border-bottom:2px solid var(--brand);color:var(--brand-ink);text-align:center;padding:6px">MARGEM %</th>
+    <th colspan="6" style="background:var(--surface-2);border-bottom:2px solid var(--ink-3);color:var(--ink-2);text-align:center;padding:6px">ESTOQUE</th>
+  </tr><tr style="background:var(--surface-2)">
+    ${ls.map(n=>TH2('#EAF7EF','var(--green)',n)).join('')}
+    ${ls.map(n=>TH2('#EAF7EF','var(--green)',n)).join('')}
+    ${ls.map(n=>TH2('#FFF6D8','var(--brand-ink)',n)).join('')}
+    ${ls.map(n=>TH2('var(--surface-2)','var(--ink-2)',n)).join('')}
   </tr></thead>`;
 
   document.getElementById('tabela-wrap').innerHTML = `
     <div id="todas-wrap" style="display:flex;overflow:hidden;font-size:12px">
-      <div id="todas-left" style="flex-shrink:0;border-right:2px solid #334155;overflow:hidden">
+      <div id="todas-left" style="flex-shrink:0;border-right:2px solid var(--border-strong);overflow:hidden">
         <table style="border-collapse:collapse">${lHead}<tbody>${lRows}</tbody></table>
       </div>
       <div id="todas-right" style="overflow-x:auto;flex:1">

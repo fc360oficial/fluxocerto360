@@ -4,36 +4,52 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Consulta de Vendas — Econômico Relatórios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+  :root{
+    --bg:#F7F7F5; --surface:#FFFFFF; --surface-2:#F1F2F0;
+    --border:#E6E7E3; --border-strong:#D9DAD5;
+    --ink:#16233F; --ink-2:#5B6373; --ink-3:#9AA0AC;
+    --brand:#FFC600; --brand-ink:#5C4600;
+    --green:#158A4A; --green-bg:#EAF7EF;
+    --red:#D6314A; --red-bg:#FCEBEE;
+    --navy-bg:#E9EEF3;
+    --font:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; }
 
   header {
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    background: var(--surface);
     padding: 16px 32px;
     display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 3px solid #F9C200;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 var(--brand);
+    flex-wrap: wrap; gap: 10px;
   }
   .logo { display: flex; align-items: center; gap: 12px; }
-  .logo-icon { height: 42px; width: auto; display: block; }
-  .logo h1 { font-size: 18px; font-weight: 700; color: #F9C200; letter-spacing: 0.5px; }
-  .logo span { font-size: 12px; color: #94a3b8; display: block; }
-  .header-nav { display:flex; gap:8px; flex-wrap:wrap; }
+  .logo-icon { height: 38px; width: auto; display: block; }
+  .logo h1 { font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: 0.3px; }
+  .logo span { font-size: 12px; color: var(--ink-3); display: block; }
+  .header-nav { display:flex; gap:4px; flex-wrap:wrap; }
   .header-nav a {
-    color: #F9C200; text-decoration: none; font-size: 13px; padding: 6px 14px;
-    border-radius: 6px; border: 1px solid #F9C200; font-weight: 600; transition: all 0.2s;
+    color: var(--ink-2); text-decoration: none; font-size: 12.5px; padding: 8px 12px;
+    font-weight: 600; border-bottom: 2px solid transparent; transition: color .15s ease,border-color .15s ease;
   }
-  .header-nav a:hover { background: #F9C200; color: #0f0f1a; }
+  .header-nav a:hover { color: var(--ink); border-bottom-color: #FFE38A; }
 
   main { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
 
   /* Painel de filtros */
   .filtros-card {
-    background: #1e293b; border-radius: 14px; border: 1px solid #334155;
+    background: var(--surface); border-radius: 14px; border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(22,35,63,.04);
     padding: 28px; margin-bottom: 28px;
   }
   .filtros-title {
-    font-size: 16px; font-weight: 700; color: #e2e8f0;
+    font-size: 16px; font-weight: 700; color: var(--ink);
     margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
   }
   .filtros-grid {
@@ -41,25 +57,25 @@
     gap: 16px; align-items: end;
   }
   .form-group label {
-    display: block; font-size: 11px; font-weight: 600;
-    color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+    display: block; font-size: 11px; font-weight: 700;
+    color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
   }
   .form-group select,
   .form-group input {
-    width: 100%; background: #0f172a; border: 1px solid #334155;
-    color: #e2e8f0; padding: 10px 12px; border-radius: 8px;
-    font-size: 14px; transition: border-color 0.2s; outline: none;
+    width: 100%; background: var(--surface); border: 1px solid var(--border-strong);
+    color: var(--ink); padding: 10px 12px; border-radius: 8px;
+    font-size: 14px; transition: border-color 0.2s; outline: none; font-family: var(--font);
   }
   .form-group select:focus,
-  .form-group input:focus { border-color: #F9C200; }
+  .form-group input:focus { border-color: var(--brand); }
 
   .btn-consultar {
-    width: 100%; background: #F9C200; border: none; color: #0f0f1a;
+    width: 100%; background: var(--brand); border: none; color: var(--brand-ink);
     padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 700;
     cursor: pointer; transition: background 0.2s; display: flex;
     align-items: center; justify-content: center; gap: 8px;
   }
-  .btn-consultar:hover { background: #e0ae00; }
+  .btn-consultar:hover { background: #F0BA00; }
   .btn-consultar:disabled { opacity: 0.5; pointer-events: none; }
 
   .datas-custom { display: none; grid-column: span 2; display: none; }
@@ -70,89 +86,90 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
   }
-  .resultado-title { font-size: 15px; font-weight: 700; color: #e2e8f0; }
+  .resultado-title { font-size: 15px; font-weight: 700; color: var(--ink); }
   .resultado-badges { display: flex; gap: 10px; flex-wrap: wrap; }
   .badge-stat {
-    background: #1e293b; border: 1px solid #334155; border-radius: 8px;
-    padding: 6px 14px; font-size: 12px; color: #94a3b8;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 14px; font-size: 12px; color: var(--ink-2);
   }
-  .badge-stat strong { color: #F9C200; }
+  .badge-stat strong { color: var(--brand-ink); }
 
   .btn-exportar {
-    background: #059669; border: none; color: #fff; padding: 8px 16px;
+    background: var(--green); border: none; color: #fff; padding: 8px 16px;
     border-radius: 6px; font-size: 13px; cursor: pointer; display: flex;
-    align-items: center; gap: 6px; transition: background 0.2s;
+    align-items: center; gap: 6px; transition: background 0.2s; font-weight: 600;
   }
-  .btn-exportar:hover { background: #047857; }
+  .btn-exportar:hover { background: #106E3B; }
   .btn-imprimir {
-    background: #7c3aed; border: none; color: #fff; padding: 8px 16px;
+    background: var(--surface); border: 1px solid var(--border-strong); color: var(--ink-2); padding: 8px 16px;
     border-radius: 6px; font-size: 13px; cursor: pointer; display: flex;
-    align-items: center; gap: 6px; transition: background 0.2s;
+    align-items: center; gap: 6px; transition: all 0.2s; font-weight: 600;
   }
-  .btn-imprimir:hover { background: #6d28d9; }
+  .btn-imprimir:hover { border-color: var(--ink-3); color: var(--ink); }
 
   /* Tabela */
   .tabela-wrap {
-    background: #1e293b; border-radius: 14px; border: 1px solid #334155;
+    background: var(--surface); border-radius: 14px; border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(22,35,63,.04);
     overflow: hidden;
   }
   table { width: 100%; border-collapse: collapse; }
-  thead { background: #0f172a; }
+  thead { background: var(--surface-2); }
   thead th {
     padding: 12px 16px; font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.8px; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-3);
     text-align: left; white-space: nowrap;
   }
   thead th.right { text-align: right; }
   thead th.sortable { cursor: pointer; user-select: none; }
-  thead th.sortable:hover { color: #3b82f6; }
-  tbody tr { border-top: 1px solid #1e293b44; transition: background 0.15s; }
-  tbody tr:hover { background: #1e293b99; }
-  tbody td { padding: 11px 16px; font-size: 13px; color: #cbd5e1; }
+  thead th.sortable:hover { color: var(--ink); }
+  tbody tr { border-top: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody td { padding: 11px 16px; font-size: 13px; color: var(--ink-2); }
   tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
-  tbody td.produto { color: #e2e8f0; font-weight: 500; max-width: 280px; }
-  tbody td.codigo { color: #64748b; font-size: 11px; font-family: monospace; }
-  .rank { color: #64748b; font-size: 12px; font-weight: 700; width: 30px; text-align: center; }
-  .rank.top3 { color: #f59e0b; }
+  tbody td.produto { color: var(--ink); font-weight: 600; max-width: 280px; }
+  tbody td.codigo { color: var(--ink-3); font-size: 11px; font-family: monospace; }
+  .rank { color: var(--ink-3); font-size: 12px; font-weight: 700; width: 30px; text-align: center; }
+  .rank.top3 { color: var(--brand-ink); }
 
   .barra-visual {
-    height: 6px; background: #0f172a; border-radius: 3px; margin-top: 4px; overflow: hidden;
+    height: 6px; background: var(--surface-2); border-radius: 3px; margin-top: 4px; overflow: hidden;
   }
-  .barra-fill { height: 100%; border-radius: 3px; background: #3b82f6; transition: width 0.5s ease; }
+  .barra-fill { height: 100%; border-radius: 3px; background: var(--ink); transition: width 0.5s ease; }
 
-  .valor-verde { color: #10b981; }
-  .valor-azul { color: #60a5fa; }
+  .valor-verde { color: var(--green); font-weight: 600; }
+  .valor-azul { color: var(--ink); font-weight: 700; }
 
   /* Estados */
   .estado-vazio {
-    padding: 60px 20px; text-align: center; color: #475569;
+    padding: 60px 20px; text-align: center; color: var(--ink-3);
   }
   .estado-vazio .icon { font-size: 48px; margin-bottom: 12px; }
   .estado-vazio p { font-size: 14px; }
   .estado-loading {
-    padding: 60px 20px; text-align: center; color: #475569;
+    padding: 60px 20px; text-align: center; color: var(--ink-3);
     display: none;
   }
   .spinner {
-    width: 32px; height: 32px; border: 3px solid #334155;
-    border-top-color: #3b82f6; border-radius: 50%;
+    width: 32px; height: 32px; border: 3px solid var(--border);
+    border-top-color: var(--brand); border-radius: 50%;
     animation: spin 0.8s linear infinite; margin: 0 auto 12px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .paginacao { display: flex; justify-content: center; gap: 8px; padding: 16px; }
-  .paginacao span { color: #64748b; font-size: 13px; }
+  .paginacao span { color: var(--ink-3); font-size: 13px; }
 
   @media (max-width: 1024px) {
     .filtros-grid { grid-template-columns: 1fr 1fr 1fr; }
   }
   @media (max-width: 768px) {
     header { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
-    .logo-icon { height: 32px; }
+    .logo-icon { height: 30px; }
     .logo h1 { font-size: 14px; }
     .logo span { display: none; }
     .header-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; }
-    .header-nav a { font-size: 11px; padding: 7px 8px; text-align: center; border-radius: 7px; }
+    .header-nav a { font-size: 11px; padding: 7px 8px; text-align: center; border-radius: 7px; background: var(--surface-2); border-bottom: none; }
     main { padding: 10px; }
     .filtros-grid { grid-template-columns: 1fr 1fr; }
     .btn-consultar { width: 100%; justify-content: center; }
@@ -164,30 +181,30 @@
     /* Cards mobile */
     .cards-movel { display: flex; flex-direction: column; gap: 6px; }
     .card-item {
-      background: #1e293b; border: 1px solid #334155;
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: 10px; padding: 8px 12px;
     }
     .card-header {
       display: flex; align-items: flex-start; gap: 8px;
-      padding-bottom: 6px; border-bottom: 1px solid #334155; margin-bottom: 4px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
     }
     .card-rank { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
     .card-nome {
-      font-size: 13px; font-weight: 600; color: #f1f5f9; line-height: 1.3;
+      font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.3;
       display: -webkit-box; -webkit-line-clamp: 2;
       -webkit-box-orient: vertical; overflow: hidden;
     }
     .barra-visual { margin-bottom: 6px; }
     .card-stats { display: flex; }
     .card-stat { flex: 1; min-width: 0; }
-    .card-stat-label { font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+    .card-stat-label { font-size: 8px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .4px; }
     .card-stat-val { font-size: 12px; font-weight: 700; }
 
   }
 
   @media print {
     body { background: white; color: black; }
-    header { background: #1e40af !important; -webkit-print-color-adjust: exact; }
+    header { background: #FFFFFF !important; border-bottom: 2px solid #333 !important; -webkit-print-color-adjust: exact; }
     .filtros-card, .btn-exportar, .btn-imprimir, .btn-consultar { display: none !important; }
     .tabela-wrap { border: 1px solid #ccc; }
     thead { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
@@ -201,7 +218,7 @@
 
 <header>
   <div class="logo">
-    <img src="/logo.png" class="logo-icon" alt="Econômico" style="filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+    <img src="/logo.png" class="logo-icon" alt="Econômico">
     <div>
       <h1>Consulta de Vendas</h1>
       <span>Análise por Loja e Período</span>
@@ -215,8 +232,8 @@
     <a href="/pendencias.html">⚠️ Pendências</a>
   </div>
   <div style="display:flex;align-items:center;gap:10px;font-size:12px;margin-left:8px">
-    <span style="color:#94a3b8" id="hdr-user">👤 ...</span>
-    <a href="/api/logout" style="color:#f87171;font-weight:700;text-decoration:none;border:1px solid #7f1d1d;padding:5px 10px;border-radius:6px;background:#450a0a22">🚪 Sair</a>
+    <span style="color:var(--ink-3)" id="hdr-user">👤 ...</span>
+    <a href="/api/logout" style="color:var(--red);font-weight:700;text-decoration:none;border:1px solid var(--red-bg);padding:5px 10px;border-radius:6px;background:var(--red-bg)">🚪 Sair</a>
   </div>
 </header>
 <script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('hdr-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
@@ -423,7 +440,7 @@ async function consultar() {
 
     // Título
     document.getElementById('titulo-resultado').innerHTML =
-      `📊 ${lojaLabel[loja]} — ${periodoLabel[periodo]} <span style="font-size:12px;color:#64748b;font-weight:400">${inicio} a ${fim}</span>`;
+      `📊 ${lojaLabel[loja]} — ${periodoLabel[periodo]} <span style="font-size:12px;color:var(--ink-3);font-weight:400">${inicio} a ${fim}</span>`;
 
     // Badges
     document.getElementById('badges-stat').innerHTML = `
@@ -440,7 +457,7 @@ async function consultar() {
 
     renderTabela(dadosAtuais, ordenar);
   } catch (e) {
-    document.getElementById('tabela-container').innerHTML = `<div class="estado-vazio"><div class="icon">⚠️</div><p style="color:#ef4444">Erro: ${e.message}</p></div>`;
+    document.getElementById('tabela-container').innerHTML = `<div class="estado-vazio"><div class="icon">⚠️</div><p style="color:var(--red)">Erro: ${e.message}</p></div>`;
   } finally {
     document.getElementById('loading').style.display = 'none';
     btn.disabled = false;
@@ -502,7 +519,7 @@ function renderCardsMovel(data) {
   data.forEach((item, i) => {
     const pct = ((item.total_qtd / maxQtd) * 100).toFixed(1);
     const rank = i + 1;
-    const rankIcon = rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : `<strong style="color:#94a3b8">${rank}</strong>`;
+    const rankIcon = rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : `<strong style="color:var(--ink-3)">${rank}</strong>`;
     html += `
       <div class="card-item">
         <div class="card-header">
@@ -525,7 +542,7 @@ function renderCardsMovel(data) {
 function renderTabelaTodas(data) {
   const ls = [1,2,3,4,5,6];
   const n = v => v > 0 ? new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}).format(v) : '—';
-  const c = v => v > 0 ? `<span style="color:#60a5fa">${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v)}</span>` : '—';
+  const c = v => v > 0 ? `<span style="color:var(--ink)">${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v)}</span>` : '—';
 
   let html = `
     <div style="overflow-x:auto">
@@ -534,12 +551,12 @@ function renderTabelaTodas(data) {
         <tr>
           <th rowspan="2" style="width:32px">#</th>
           <th rowspan="2">Produto</th>
-          <th colspan="6" style="text-align:center;background:#1e3a8a44;color:#93c5fd;border-bottom:2px solid #3b82f6">QTD POR LOJA</th>
-          <th rowspan="2" class="right" style="color:#34d399">TOTAL QTD</th>
-          <th rowspan="2" class="right" style="color:#34d399">TOTAL R$</th>
+          <th colspan="6" style="text-align:center;background:var(--navy-bg);color:var(--ink-2);border-bottom:2px solid var(--ink)">QTD POR LOJA</th>
+          <th rowspan="2" class="right" style="color:var(--green)">TOTAL QTD</th>
+          <th rowspan="2" class="right" style="color:var(--green)">TOTAL R$</th>
         </tr>
         <tr>
-          ${ls.map(n=>`<th class="right" style="color:#93c5fd;font-size:10px">L${n}</th>`).join('')}
+          ${ls.map(n=>`<th class="right" style="color:var(--ink-2);font-size:10px">L${n}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -551,7 +568,7 @@ function renderTabelaTodas(data) {
     html += `<tr>
       <td class="rank ${rank<=3?'top3':''}">${rankIcon}</td>
       <td class="produto" style="white-space:normal;min-width:180px">${item.produto}</td>
-      ${ls.map(ln => `<td class="right" style="color:${item.lojas[ln]>0?'#60a5fa':'#475569'}">${n(item.lojas[ln])}</td>`).join('')}
+      ${ls.map(ln => `<td class="right" style="color:${item.lojas[ln]>0?'var(--ink)':'var(--ink-3)'}">${n(item.lojas[ln])}</td>`).join('')}
       <td class="right valor-azul"><strong>${n(item.total_qtd)}</strong></td>
       <td class="right valor-verde">${fmt(item.total_valor)}</td>
     </tr>`;
@@ -559,11 +576,11 @@ function renderTabelaTodas(data) {
 
   // Linha de totais
   const totQtdLoja = ls.map(ln => data.reduce((s,r) => s + (r.lojas[ln]||0), 0));
-  html += `<tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
-    <td colspan="2" style="color:#94a3b8;padding:10px 16px">TOTAL</td>
-    ${totQtdLoja.map(v=>`<td class="right" style="color:#fbbf24">${n(v)}</td>`).join('')}
-    <td class="right" style="color:#fbbf24">${n(data.reduce((s,r)=>s+r.total_qtd,0))}</td>
-    <td class="right" style="color:#fbbf24">${fmt(data.reduce((s,r)=>s+r.total_valor,0))}</td>
+  html += `<tr style="background:var(--surface-2);font-weight:700;border-top:2px solid var(--border-strong)">
+    <td colspan="2" style="color:var(--ink-2);padding:10px 16px">TOTAL</td>
+    ${totQtdLoja.map(v=>`<td class="right" style="color:var(--brand-ink)">${n(v)}</td>`).join('')}
+    <td class="right" style="color:var(--brand-ink)">${n(data.reduce((s,r)=>s+r.total_qtd,0))}</td>
+    <td class="right" style="color:var(--brand-ink)">${fmt(data.reduce((s,r)=>s+r.total_valor,0))}</td>
   </tr>`;
 
   html += '</tbody></table></div>';

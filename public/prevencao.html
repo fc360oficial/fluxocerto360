@@ -3,115 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/design-system.css">
+<script src="/nav.js" defer></script>
 <title>Prevenção de Perdas</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#F7F7F5;color:#16233F;min-height:100vh}
+body{font-family:'InterVar','Segoe UI',sans-serif;background:#EAEBE3;color:#0E1626;min-height:100vh}
 
-.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#FFFFFF;border-right:1px solid #E6E7E3;display:flex;flex-direction:column;z-index:50}
-.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #E6E7E3}
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:236px;background:#FFFFFF;border-right:1px solid #D8D9CF;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #D8D9CF}
 .sidebar-nav{padding:10px 0;flex:1}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#5B6373;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
-.nav-item:hover{background:#E6E7E3;color:#16233F}
-.nav-item.active{background:#FFC60018;color:#5C4600;border-right:3px solid #FFC600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#4E5A72;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#D8D9CF;color:#0E1626}
+.nav-item.active{background:#F5B80018;color:#6B4E00;border-right:3px solid #F5B800}
 .nav-item .ic{font-size:15px;width:20px;text-align:center}
 
-.main{margin-left:220px;padding:24px}
+.main{margin-left:0;padding:24px}
 .page-hdr{margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
-.page-hdr h1{font-size:21px;font-weight:700;color:#16233F}
-.page-hdr p{font-size:12px;color:#5B6373;margin-top:2px}
+.page-hdr h1{font-size:21px;font-weight:700;color:#0E1626}
+.page-hdr p{font-size:12px;color:#4E5A72;margin-top:2px}
 
-.filtros{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.filtros{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .fg{display:flex;flex-direction:column;gap:3px}
-.fg label{font-size:10px;color:#5B6373;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.fg select,.fg input{background:#F7F7F5;border:1px solid #E6E7E3;border-radius:7px;color:#16233F;padding:7px 11px;font-size:13px;outline:none;min-width:140px}
-.fg select:focus,.fg input:focus{border-color:#FFC600}
+.fg label{font-size:10px;color:#4E5A72;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg select,.fg input{background:#EAEBE3;border:1px solid #D8D9CF;border-radius:7px;color:#0E1626;padding:7px 11px;font-size:13px;outline:none;min-width:140px}
+.fg select:focus,.fg input:focus{border-color:#F5B800}
 .btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end}
-.btn-blue{background:#FFC600;color:#5C4600;font-weight:700}.btn-blue:hover{background:#e0ae00}
-.btn-slate{background:#E6E7E3;color:#16233F}.btn-slate:hover{background:#9AA0AC}
+.btn-blue{background:#F5B800;color:#6B4E00;font-weight:700}.btn-blue:hover{background:#E5AC00}
+.btn-slate{background:#D8D9CF;color:#0E1626}.btn-slate:hover{background:#98A0B3}
 
 /* KPI CARDS */
 .kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.kpi{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:10px;padding:12px 16px;min-width:120px;flex:1}
+.kpi{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:12px 16px;min-width:120px;flex:1}
 .kpi .v{font-size:18px;font-weight:700}
-.kpi .l{font-size:10px;color:#5B6373;margin-top:2px}
+.kpi .l{font-size:10px;color:#4E5A72;margin-top:2px}
 
 /* SECTION TITLES */
-.sec-title{font-size:14px;font-weight:700;color:#16233F;padding:10px 0 8px;border-bottom:2px solid #E6E7E3;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.sec-title{font-size:14px;font-weight:700;color:#0E1626;padding:10px 0 8px;border-bottom:2px solid #D8D9CF;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 
 /* TABLES */
 .table-wrap{overflow-x:auto;margin-bottom:12px}
 table.t{width:100%;border-collapse:collapse;font-size:12px}
-table.t thead{background:#F7F7F5}
-table.t th{padding:8px 12px;text-align:left;color:#5B6373;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #E6E7E3}
-table.t td{padding:7px 12px;border-bottom:1px solid #E6E7E344;vertical-align:middle}
+table.t thead{background:#EAEBE3}
+table.t th{padding:8px 12px;text-align:left;color:#4E5A72;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #D8D9CF}
+table.t td{padding:7px 12px;border-bottom:1px solid #D8D9CF44;vertical-align:middle}
 table.t tbody tr:hover{background:#ffffff06}
 table.t th.r,table.t td.r{text-align:right}
-.cod{color:#5B6373;font-size:11px;font-family:monospace}
-.desc{font-weight:500;color:#16233F}
-.neg{color:#D6314A}
-.pos{color:#158A4A}
+.cod{color:#4E5A72;font-size:11px;font-family:monospace}
+.desc{font-weight:500;color:#0E1626}
+.neg{color:#C22F49}
+.pos{color:#137A48}
 .warn{color:#B45C00}
 .info{color:#2C4A6B}
 .bold{font-weight:700}
 
 /* SETOR GRID */
 .setor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
-.setor-card{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:10px;padding:14px 16px;text-align:center}
-.setor-card .nome{font-size:11px;color:#5B6373;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.setor-card{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:14px 16px;text-align:center}
+.setor-card .nome{font-size:11px;color:#4E5A72;font-weight:700;text-transform:uppercase;margin-bottom:6px}
 .setor-card .val{font-size:20px;font-weight:700;color:#B45C00}
 
 /* GRUPO ACCORDION */
-.grupo-bloco{margin-bottom:8px;border:1px solid #E6E7E3;border-radius:10px;overflow:hidden}
+.grupo-bloco{margin-bottom:8px;border:1px solid #D8D9CF;border-radius:10px;overflow:hidden}
 .grupo-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFFFFF;cursor:pointer;user-select:none;transition:background .1s}
 .grupo-hdr:hover{background:#263249}
-.grupo-hdr-nome{font-size:13px;font-weight:700;color:#16233F;flex:1}
+.grupo-hdr-nome{font-size:13px;font-weight:700;color:#0E1626;flex:1}
 .grupo-badge{font-size:11px;font-weight:700;background:#B45C0022;color:#B45C00;border-radius:6px;padding:2px 8px}
 .grupo-badge-blue{background:#0c4a6e44;color:#7dd3fc}
-.grupo-toggle{font-size:11px;color:#5B6373;transition:transform .2s}
+.grupo-toggle{font-size:11px;color:#4E5A72;transition:transform .2s}
 .grupo-hdr.open .grupo-toggle{transform:rotate(180deg)}
-.grupo-body{display:none;background:#F7F7F522}
+.grupo-body{display:none;background:#EAEBE322}
 .grupo-body.open{display:block}
 
 /* MENSAL TABLE */
 .mensal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px}
-.mensal-card{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:8px;padding:10px 12px;text-align:center}
-.mensal-card .mes-label{font-size:10px;color:#5B6373;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.mensal-card{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:8px;padding:10px 12px;text-align:center}
+.mensal-card .mes-label{font-size:10px;color:#4E5A72;font-weight:700;text-transform:uppercase;margin-bottom:4px}
 .mensal-card .mes-val{font-size:16px;font-weight:700}
-.mensal-card .mes-sub{font-size:10px;color:#5B6373;margin-top:2px}
+.mensal-card .mes-sub{font-size:10px;color:#4E5A72;margin-top:2px}
 
 /* TOP 10 FORNECEDORES */
 .top10-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.top10-col{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:10px;padding:14px 16px}
+.top10-col{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:14px 16px}
 .top10-col h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .top10-col h3 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .top10-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.top10-rank{font-size:10px;font-weight:700;color:#5B6373;width:16px;text-align:center;flex-shrink:0}
+.top10-rank{font-size:10px;font-weight:700;color:#4E5A72;width:16px;text-align:center;flex-shrink:0}
 .top10-info{flex:1;min-width:0}
-.top10-nome{font-size:11px;color:#16233F;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-.top10-bar-bg{height:16px;background:#F7F7F5;border-radius:4px;overflow:hidden;position:relative}
+.top10-nome{font-size:11px;color:#0E1626;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.top10-bar-bg{height:16px;background:#EAEBE3;border-radius:4px;overflow:hidden;position:relative}
 .top10-bar{height:100%;border-radius:4px;transition:width .5s ease}
 .top10-val{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;min-width:80px;text-align:right}
-.top10-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #E6E7E3}
-.top10-total span:first-child{font-size:11px;color:#5B6373;font-weight:700;text-transform:uppercase}
+.top10-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #D8D9CF}
+.top10-total span:first-child{font-size:11px;color:#4E5A72;font-weight:700;text-transform:uppercase}
 .top10-total span:last-child{font-size:14px;font-weight:700}
 
 @media(max-width:768px){
   .top10-wrapper{grid-template-columns:1fr}
 }
 
-.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #E6E7E3;border-top-color:#B45C00;animation:spin .7s linear infinite;margin:30px auto}
+.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #D8D9CF;border-top-color:#B45C00;animation:spin .7s linear infinite;margin:30px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
-.empty{padding:30px;text-align:center;color:#9AA0AC;font-size:13px}
+.empty{padding:30px;text-align:center;color:#98A0B3;font-size:13px}
 
 @media(max-width:768px){
-  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #E6E7E3}
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #D8D9CF}
   .sidebar-logo{padding:8px 12px;border-bottom:none;display:flex;align-items:center}
   .sidebar-logo img{width:100px !important;height:auto !important}
   .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
   .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center}
   .nav-item .ic{font-size:12px;width:auto}
-  .nav-item.active{border-right:none;border-bottom:2px solid #FFC600}
+  .nav-item.active{border-right:none;border-bottom:2px solid #F5B800}
   .main{margin-left:0;padding:10px}
   .page-hdr{flex-direction:column;align-items:flex-start}
   .page-hdr h1{font-size:16px}
@@ -128,28 +130,28 @@ table.t th.r,table.t td.r{text-align:right}
   table.t th,table.t td{padding:6px 8px;font-size:10px}
 }
 /* CONSOLIDADO TABLE */
-.bonif-input:focus{border-color:#16233F!important}
-table.t td.r input{font-family:'Segoe UI',sans-serif}
+.bonif-input:focus{border-color:#0E1626!important}
+table.t td.r input{font-family:'InterVar','Segoe UI',sans-serif}
 
 /* REDE KPIs */
 .rede-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
-.rede-kpi{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:10px;padding:14px 16px}
-.rede-kpi .rk-label{font-size:10px;color:#5B6373;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.rede-kpi{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:14px 16px}
+.rede-kpi .rk-label{font-size:10px;color:#4E5A72;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .rede-kpi .rk-val{font-size:22px;font-weight:700;line-height:1.2}
-.rede-kpi .rk-sub{font-size:10px;color:#5B6373;margin-top:4px}
+.rede-kpi .rk-sub{font-size:10px;color:#4E5A72;margin-top:4px}
 
 /* TENDÊNCIA */
-.trend-up{color:#D6314A;font-size:11px;font-weight:700}
-.trend-down{color:#158A4A;font-size:11px;font-weight:700}
+.trend-up{color:#C22F49;font-size:11px;font-weight:700}
+.trend-down{color:#137A48;font-size:11px;font-weight:700}
 
 /* BAR CHART */
 .bar-chart{padding:4px 0 12px}
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-.bar-label{font-size:11px;font-weight:700;color:#16233F;width:150px;flex-shrink:0;text-align:right}
-.bar-track{flex:1;height:20px;background:#F7F7F5;border-radius:4px;position:relative;overflow:visible}
+.bar-label{font-size:11px;font-weight:700;color:#0E1626;width:150px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;height:20px;background:#EAEBE3;border-radius:4px;position:relative;overflow:visible}
 .bar-fill{height:100%;border-radius:4px;min-width:2px}
-.bar-meta-line{position:absolute;top:-4px;bottom:-4px;width:2px;background:#16233F55;border-left:2px dashed #ffffff44}
-.bar-meta-label{position:absolute;top:-16px;font-size:9px;color:#5B6373;transform:translateX(-50%)}
+.bar-meta-line{position:absolute;top:-4px;bottom:-4px;width:2px;background:#0E162655;border-left:2px dashed #ffffff44}
+.bar-meta-label{position:absolute;top:-16px;font-size:9px;color:#4E5A72;transform:translateX(-50%)}
 .bar-pct-lbl{font-size:11px;font-weight:700;width:52px;text-align:right;flex-shrink:0}
 
 @media print{
@@ -186,28 +188,7 @@ table.t td.r input{font-family:'Segoe UI',sans-serif}
 }
 </style>
 </head>
-<body>
-
-<div class="sidebar">
-  <div class="sidebar-logo">
-    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;">
-  </div>
-  <nav class="sidebar-nav">
-    <a href="index.html" class="nav-item"><span class="ic">📊</span> Dashboard</a>
-    <a href="consulta.html" class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
-    <a href="itens.html" class="nav-item"><span class="ic">📂</span> Mercadológico</a>
-    <a href="fornecedores.html" class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
-    <a href="pendencias.html" class="nav-item"><span class="ic">⚠️</span> Pendências</a>
-    <a href="comparativos.html" class="nav-item"><span class="ic">📈</span> Comparativos</a>
-    <a href="prevencao.html" class="nav-item active"><span class="ic">🛡️</span> Prevenção</a>
-    <a href="ruptura.html" class="nav-item"><span class="ic">🤖</span> Gestao de Rupturas</a>
-  </nav>
-  <div style="padding:12px 16px;border-top:1px solid #E6E7E3;margin-top:auto">
-    <div style="font-size:11px;color:#5B6373;margin-bottom:6px" id="sidebar-user">👤 ...</div>
-    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#D6314A;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #F3C1CB;background:#FCEBEE22;transition:background .15s" onmouseover="this.style.background='#FCEBEE'" onmouseout="this.style.background='#FCEBEE22'">🚪 Sair</a>
-  </div>
-</div>
-<script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('sidebar-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
+<body class="ds">
 
 <div class="main">
   <div class="page-hdr">
@@ -319,35 +300,35 @@ function renderConsolidado(d) {
   var prevRedePct = prevVals.length ? prevVals.reduce(function(a,b){return a+b;},0)/prevVals.length : 0;
 
   function getTrend(cur, prv) {
-    if (!prv) return '<span style="color:#9AA0AC;font-size:11px">—</span>';
+    if (!prv) return '<span style="color:#98A0B3;font-size:11px">—</span>';
     var df = +(cur - prv).toFixed(2);
     if (df > 0.01)  return '<span class="trend-up">▲ +' + fmtN(Math.abs(df)) + '%</span>';
     if (df < -0.01) return '<span class="trend-down">▼ ' + fmtN(Math.abs(df)) + '%</span>';
-    return '<span style="color:#5B6373;font-size:11px">→</span>';
+    return '<span style="color:#4E5A72;font-size:11px">→</span>';
   }
 
   // ── KPIs DE REDE ──
   html += '<div class="rede-kpis">';
-  html += '<div class="rede-kpi" style="border-left:3px solid ' + (redePct > 1 ? '#D6314A' : '#158A4A') + '">';
+  html += '<div class="rede-kpi" style="border-left:3px solid ' + (redePct > 1 ? '#C22F49' : '#137A48') + '">';
   html += '<div class="rk-label">% Avaria da Rede</div>';
   html += '<div class="rk-val ' + (redePct > 1 ? 'neg' : 'pos') + '">' + fmtN(redePct) + '%</div>';
   html += '<div class="rk-sub">R$ ' + fmtN(totPre.avMes) + ' em avarias</div>';
   html += '</div>';
 
-  html += '<div class="rede-kpi" style="border-left:3px solid #158A4A">';
+  html += '<div class="rede-kpi" style="border-left:3px solid #137A48">';
   html += '<div class="rk-label">Melhor Loja</div>';
   html += '<div class="rk-val pos">' + (melhorLoja ? fmtN(melhorLoja.pctMes) + '%' : '—') + '</div>';
   html += '<div class="rk-sub">' + (melhorLoja ? melhorLoja.nome : '—') + '</div>';
   html += '</div>';
 
-  html += '<div class="rede-kpi" style="border-left:3px solid #D6314A">';
+  html += '<div class="rede-kpi" style="border-left:3px solid #C22F49">';
   html += '<div class="rk-label">Pior Loja</div>';
   html += '<div class="rk-val neg">' + (piorLoja ? fmtN(piorLoja.pctMes) + '%' : '—') + '</div>';
   html += '<div class="rk-sub">' + (piorLoja ? piorLoja.nome : '—') + '</div>';
   html += '</div>';
 
   var diffRede = prevRedePct ? +(redePct - prevRedePct).toFixed(2) : 0;
-  html += '<div class="rede-kpi" style="border-left:3px solid #16233F">';
+  html += '<div class="rede-kpi" style="border-left:3px solid #0E1626">';
   html += '<div class="rk-label">Vs Mês Anterior</div>';
   html += '<div class="rk-val" style="font-size:16px">' + getTrend(redePct, prevRedePct) + '</div>';
   html += '<div class="rk-sub">Ant: ' + (prevRedePct ? fmtN(prevRedePct) + '%' : '—') + ' → Atual: ' + fmtN(redePct) + '%</div>';
@@ -382,7 +363,7 @@ function renderConsolidado(d) {
   for (var bi = 0; bi < sortedLojas.length; bi++) {
     var bl = sortedLojas[bi];
     var bw = maxPct > 0 ? +(bl.pctMes / maxPct * 100).toFixed(1) : 0;
-    var bc = bl.pctMes > 1 ? '#D6314A' : '#158A4A';
+    var bc = bl.pctMes > 1 ? '#C22F49' : '#137A48';
     html += '<div class="bar-row">';
     html += '<div class="bar-label">' + bl.nome + '</div>';
     html += '<div class="bar-track">';
@@ -393,9 +374,9 @@ function renderConsolidado(d) {
     html += '</div>';
   }
   var redeW = maxPct > 0 ? +(redePct / maxPct * 100).toFixed(1) : 0;
-  var redeC = redePct > 1 ? '#D6314A' : '#158A4A';
-  html += '<div class="bar-row" style="margin-top:10px;border-top:1px solid #E6E7E3;padding-top:10px">';
-  html += '<div class="bar-label" style="color:#16233F">REDE TOTAL</div>';
+  var redeC = redePct > 1 ? '#C22F49' : '#137A48';
+  html += '<div class="bar-row" style="margin-top:10px;border-top:1px solid #D8D9CF;padding-top:10px">';
+  html += '<div class="bar-label" style="color:#0E1626">REDE TOTAL</div>';
   html += '<div class="bar-track">';
   html += '<div class="bar-fill" id="bar-fill-rede" style="width:' + redeW + '%;box-shadow:inset 0 0 0 999px ' + redeC + ';border-color:' + redeC + '"></div>';
   html += '<div class="bar-meta-line bar-meta-dyn" style="left:' + metaPos + '%"></div>';
@@ -406,7 +387,7 @@ function renderConsolidado(d) {
 
   // ── AVARIAS POR MÊS (%) ──
   html += '<div class="sec-title" style="margin-top:8px">📋 AVARIAS POR MÊS (%) — POR LOJA</div>';
-  html += '<p style="font-size:12px;color:#5B6373;margin-bottom:12px">Meta: <b style="color:#158A4A">≤ 1%</b> · Acima = <b style="color:#D6314A">fora do limite</b>. ' + MF[d.mesAtual] + ' é o fechamento atual.</p>';
+  html += '<p style="font-size:12px;color:#4E5A72;margin-bottom:12px">Meta: <b style="color:#137A48">≤ 1%</b> · Acima = <b style="color:#C22F49">fora do limite</b>. ' + MF[d.mesAtual] + ' é o fechamento atual.</p>';
   html += '<div class="table-wrap"><table class="t">';
   html += '<thead><tr><th style="min-width:140px">LOJA</th>';
   for (var m = 1; m <= d.mesAtual; m++) html += '<th class="r">' + MF[m] + '</th>';
@@ -421,7 +402,7 @@ function renderConsolidado(d) {
       var pct = lj.mensal[mi].pct;
       var idAttr = isUltimo ? ' id="mensal-' + i + '"' : '';
       if (pct === 0) {
-        html += '<td class="r" style="color:#9AA0AC">—</td>';
+        html += '<td class="r" style="color:#98A0B3">—</td>';
       } else {
         var cor = pct > 1 ? 'neg' : 'pos';
         html += '<td class="r bold ' + cor + '"' + idAttr + '>-' + fmtN(pct) + '%</td>';
@@ -434,7 +415,7 @@ function renderConsolidado(d) {
 
   // ── DESEMPENHO POR LOJA ──
   html += '<div class="sec-title" style="margin-top:28px">📊 Desempenho por loja</div>';
-  html += '<p style="font-size:12px;color:#5B6373;margin-bottom:12px">Valores em R$.</p>';
+  html += '<p style="font-size:12px;color:#4E5A72;margin-bottom:12px">Valores em R$.</p>';
   html += '<div class="table-wrap"><table class="t" id="tbl-desemp">';
   html += '<thead><tr>';
   html += '<th>LOJA</th><th class="r">VENDA</th><th class="r">AV. BRUTA</th>';
@@ -459,7 +440,7 @@ function renderConsolidado(d) {
     html += '<td class="r">' + fmtN(lj.horti) + '</td>';
     html += '<td class="r">' + fmtN(lj.padaria) + '</td>';
     html += '<td class="r">' + fmtN(lj.saldo) + '</td>';
-    html += '<td class="r"><input type="text" class="bonif-input" data-idx="' + i + '" value="' + fmtN(lj.bonif) + '" style="width:80px;background:#FFFFFF;border:1px solid #9AA0AC;border-radius:4px;color:#16233F;font-size:11px;font-weight:700;padding:3px 6px;text-align:right;outline:none"></td>';
+    html += '<td class="r"><input type="text" class="bonif-input" data-idx="' + i + '" value="' + fmtN(lj.bonif) + '" style="width:80px;background:#FFFFFF;border:1px solid #98A0B3;border-radius:4px;color:#0E1626;font-size:11px;font-weight:700;padding:3px 6px;text-align:right;outline:none"></td>';
     html += '<td class="r bold ' + corFinal + '" id="avf-' + i + '">' + fmtN(avFinal) + '</td>';
     html += '<td class="r neg">' + fmtN(lj.aberto) + '</td>';
     html += '<td class="r info">' + fmtN(lj.tramite) + '</td>';
@@ -477,15 +458,15 @@ function renderConsolidado(d) {
   var totPct = tot.venda > 0 ? +(tot.avMes / tot.venda * 100).toFixed(2) : 0;
   var totCorFinal = tot.avFinal < 0 ? 'pos' : 'neg';
 
-  html += '<tr style="border-top:2px solid #9AA0AC;background:#F7F7F5">';
-  html += '<td class="bold" style="color:#16233F;padding-left:16px">TOTAL</td>';
+  html += '<tr style="border-top:2px solid #98A0B3;background:#EAEBE3">';
+  html += '<td class="bold" style="color:#0E1626;padding-left:16px">TOTAL</td>';
   html += '<td class="r bold">' + fmtN(tot.venda) + '</td>';
   html += '<td class="r bold warn">' + fmtN(tot.avBruta) + '</td>';
   html += '<td class="r bold">' + fmtN(tot.acougue) + '</td>';
   html += '<td class="r bold">' + fmtN(tot.horti) + '</td>';
   html += '<td class="r bold">' + fmtN(tot.padaria) + '</td>';
   html += '<td class="r bold">' + fmtN(tot.saldo) + '</td>';
-  html += '<td class="r bold" style="color:#16233F" id="tot-bonif">' + fmtN(tot.bonif) + '</td>';
+  html += '<td class="r bold" style="color:#0E1626" id="tot-bonif">' + fmtN(tot.bonif) + '</td>';
   html += '<td class="r bold ' + totCorFinal + '" id="tot-avfinal">' + fmtN(tot.avFinal) + '</td>';
   html += '<td class="r bold neg">' + fmtN(tot.aberto) + '</td>';
   html += '<td class="r bold info">' + fmtN(tot.tramite) + '</td>';
@@ -510,9 +491,9 @@ function renderConsolidado(d) {
   }
   var saldoTot = tot.avMes - tot.acougue - tot.horti - tot.padaria;
   var saldoPct = tot.avMes > 0 ? (saldoTot / tot.avMes * 100) : 0;
-  html += '<tr><td class="bold">SALDO (LOJA)</td><td class="r" style="color:#5B6373">' + fmtN(saldoTot) + '</td>';
-  html += '<td class="r" style="color:#5B6373">' + fmtN(saldoPct) + '%</td></tr>';
-  html += '<tr style="border-top:2px solid #9AA0AC"><td class="bold" style="color:#16233F">TOTAL</td>';
+  html += '<tr><td class="bold">SALDO (LOJA)</td><td class="r" style="color:#4E5A72">' + fmtN(saldoTot) + '</td>';
+  html += '<td class="r" style="color:#4E5A72">' + fmtN(saldoPct) + '%</td></tr>';
+  html += '<tr style="border-top:2px solid #98A0B3"><td class="bold" style="color:#0E1626">TOTAL</td>';
   html += '<td class="r bold warn">' + fmtN(tot.avMes) + '</td><td class="r bold">100,00%</td></tr>';
   html += '</tbody></table></div>';
 
@@ -606,25 +587,25 @@ function renderConsolidado(d) {
     if (!ds) return;
     if (mel.length === 0 && pio.length === 0) { ds.innerHTML = ''; return; }
     var h = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
-    h += '<div style="background:#EAF7EF;border:1px solid #158A4A;border-radius:10px;padding:12px 16px">';
-    h += '<div style="font-size:11px;font-weight:700;color:#158A4A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">▼ Melhoraram este mês</div>';
-    if (mel.length === 0) { h += '<div style="color:#9AA0AC;font-size:12px">Nenhuma loja</div>'; }
+    h += '<div style="background:#E7F5EC;border:1px solid #137A48;border-radius:10px;padding:12px 16px">';
+    h += '<div style="font-size:11px;font-weight:700;color:#137A48;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">▼ Melhoraram este mês</div>';
+    if (mel.length === 0) { h += '<div style="color:#98A0B3;font-size:12px">Nenhuma loja</div>'; }
     for (var mi3 = 0; mi3 < mel.length; mi3++) {
       var lm3 = mel[mi3];
-      h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #158A4A">';
-      h += '<span style="font-size:12px;font-weight:600;color:#16233F">' + lm3.nome + '</span>';
-      h += '<span style="font-size:11px;color:#158A4A;font-weight:700">' + fmtN(lm3.pct) + '% <span style="color:#158A4A;font-size:10px">(' + fmtN(lm3.df) + '%)</span></span>';
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #137A48">';
+      h += '<span style="font-size:12px;font-weight:600;color:#0E1626">' + lm3.nome + '</span>';
+      h += '<span style="font-size:11px;color:#137A48;font-weight:700">' + fmtN(lm3.pct) + '% <span style="color:#137A48;font-size:10px">(' + fmtN(lm3.df) + '%)</span></span>';
       h += '</div>';
     }
     h += '</div>';
     h += '<div style="background:#2d0d0d;border:1px solid #F3C1CB;border-radius:10px;padding:12px 16px">';
-    h += '<div style="font-size:11px;font-weight:700;color:#D6314A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">▲ Pioraram este mês</div>';
-    if (pio.length === 0) { h += '<div style="color:#9AA0AC;font-size:12px">Nenhuma loja</div>'; }
+    h += '<div style="font-size:11px;font-weight:700;color:#C22F49;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">▲ Pioraram este mês</div>';
+    if (pio.length === 0) { h += '<div style="color:#98A0B3;font-size:12px">Nenhuma loja</div>'; }
     for (var pi3 = 0; pi3 < pio.length; pi3++) {
       var lp3 = pio[pi3];
       h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #F3C1CB">';
-      h += '<span style="font-size:12px;font-weight:600;color:#16233F">' + lp3.nome + '</span>';
-      h += '<span style="font-size:11px;color:#D6314A;font-weight:700">' + fmtN(lp3.pct) + '% <span style="color:#D6314A;font-size:10px">(+' + fmtN(lp3.df) + '%)</span></span>';
+      h += '<span style="font-size:12px;font-weight:600;color:#0E1626">' + lp3.nome + '</span>';
+      h += '<span style="font-size:11px;color:#C22F49;font-weight:700">' + fmtN(lp3.pct) + '% <span style="color:#C22F49;font-size:10px">(+' + fmtN(lp3.df) + '%)</span></span>';
       h += '</div>';
     }
     h += '</div></div>';
@@ -647,7 +628,7 @@ function renderConsolidado(d) {
     for (var lj2 in pctMap) {
       var p = pctMap[lj2];
       var bw2 = +(p / maxP * 100).toFixed(1);
-      var bc2 = p > 1 ? '#D6314A' : '#158A4A';
+      var bc2 = p > 1 ? '#C22F49' : '#137A48';
       var fEl = document.getElementById('bar-fill-' + lj2);
       if (fEl) { fEl.style.width = bw2 + '%'; fEl.style.boxShadow = 'inset 0 0 0 999px ' + bc2; fEl.style.borderColor = bc2; }
       var lEl = document.getElementById('bar-pct-' + lj2);
@@ -663,7 +644,7 @@ function renderConsolidado(d) {
     }
     var redePct2 = totVenda2 > 0 ? Math.abs(totAvMes2 / totVenda2 * 100) : 0;
     var redeW2 = +(redePct2 / maxP * 100).toFixed(1);
-    var redeC2 = redePct2 > 1 ? '#D6314A' : '#158A4A';
+    var redeC2 = redePct2 > 1 ? '#C22F49' : '#137A48';
     var rf = document.getElementById('bar-fill-rede');
     if (rf) { rf.style.width = redeW2 + '%'; rf.style.boxShadow = 'inset 0 0 0 999px ' + redeC2; rf.style.borderColor = redeC2; }
     var rl = document.getElementById('bar-pct-rede');
@@ -704,7 +685,7 @@ function renderTudo(d) {
   html += '<div class="kpi"><div class="v warn">' + fmt(r.emitido) + '</div><div class="l">Notas Emitidas</div></div>';
   html += '<div class="kpi"><div class="v neg">' + fmt(r.aberto) + '</div><div class="l">Em Aberto</div></div>';
   html += '<div class="kpi"><div class="v info">' + fmt(r.tramite) + '</div><div class="l">Em Trâmite</div></div>';
-  html += '<div class="kpi"><div class="v" style="color:#16233F">' + fmt(r.valorVenda) + '</div><div class="l">Valor Venda</div></div>';
+  html += '<div class="kpi"><div class="v" style="color:#0E1626">' + fmt(r.valorVenda) + '</div><div class="l">Valor Venda</div></div>';
   html += '</div>';
 
   // ── SETOR BREAKDOWN ──
@@ -716,9 +697,9 @@ function renderTudo(d) {
     var v = d.porSetor[s] || 0;
     html += '<div class="setor-card"><div class="nome">' + s + '</div><div class="val">' + fmt(v) + '</div></div>';
   }
-  html += '<div class="setor-card"><div class="nome">SALDO AVARIA</div><div class="val" id="saldo-avaria" style="color:#5B6373">' + fmt(r.saldoAvaria) + '</div></div>';
-  html += '<div class="setor-card"><div class="nome">BONIFICAÇÕES</div><div style="padding:4px 0"><input type="text" id="input-bonif" value="0,00" style="width:100%;background:#FFFFFF;border:1px solid #9AA0AC;border-radius:6px;color:#16233F;font-size:1.1rem;font-weight:700;padding:6px 8px;text-align:center;outline:none" placeholder="Digite o valor"></div></div>';
-  html += '<div class="setor-card"><div class="nome">AVARIAS FINAL</div><div class="val" id="avarias-final" style="color:#D6314A">' + fmt(r.saldoAvaria) + '</div></div>';
+  html += '<div class="setor-card"><div class="nome">SALDO AVARIA</div><div class="val" id="saldo-avaria" style="color:#4E5A72">' + fmt(r.saldoAvaria) + '</div></div>';
+  html += '<div class="setor-card"><div class="nome">BONIFICAÇÕES</div><div style="padding:4px 0"><input type="text" id="input-bonif" value="0,00" style="width:100%;background:#FFFFFF;border:1px solid #98A0B3;border-radius:6px;color:#0E1626;font-size:1.1rem;font-weight:700;padding:6px 8px;text-align:center;outline:none" placeholder="Digite o valor"></div></div>';
+  html += '<div class="setor-card"><div class="nome">AVARIAS FINAL</div><div class="val" id="avarias-final" style="color:#C22F49">' + fmt(r.saldoAvaria) + '</div></div>';
   html += '<div class="setor-card"><div class="nome">% AVARIAS MÊS</div><div class="val" id="pct-avarias">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '%</div></div>';
   html += '</div>';
 
@@ -733,9 +714,9 @@ function renderTudo(d) {
     var mNome = MESES[parseInt(mParts[1])] + '/' + mParts[0];
     var isSel = m.mes === mesVal;
     var pctExib = isSel ? pctMesSel : m.pct;
-    html += '<div class="mensal-card"' + (isSel ? ' style="border-color:#FFC60066"' : '') + '><div class="mes-label">' + mNome + '</div>';
+    html += '<div class="mensal-card"' + (isSel ? ' style="border-color:#F5B80066"' : '') + '><div class="mes-label">' + mNome + '</div>';
     if (!isSel && pctExib === 0) {
-      html += '<div class="mes-val" style="color:#9AA0AC">—</div>';
+      html += '<div class="mes-val" style="color:#98A0B3">—</div>';
     } else {
       var cor = pctExib > 1 ? 'neg' : 'pos';
       var idAttr = isSel ? ' id="mensal-sel-pct"' : '';
@@ -750,10 +731,10 @@ function renderTudo(d) {
   html += '<div class="table-wrap"><table class="t">';
   html += '<thead><tr><th>Situação</th><th class="r">Valor</th><th>Tipo</th></tr></thead>';
   html += '<tbody>';
-  html += '<tr><td class="bold warn">EM ABERTO</td><td class="r bold warn">' + fmt(r.aberto) + '</td><td style="color:#5B6373">Produtos na loja (mês)</td></tr>';
-  html += '<tr><td class="bold info">EM TRÂMITE</td><td class="r bold info">' + fmt(r.tramite) + '</td><td style="color:#5B6373">Produtos descartados (mês)</td></tr>';
-  html += '<tr><td class="bold neg">AVARIAS FINAL</td><td class="r bold neg" id="pendencias-final">' + fmt(r.avariasFinal) + '</td><td style="color:#5B6373">Notas emitidas líquidas (mês)</td></tr>';
-  html += '<tr style="border-top:2px solid #E6E7E3"><td class="bold" style="color:#16233F">TOTAL AVARIA MÊS</td><td class="r bold neg" id="pendencias-total">' + fmt(r.aberto + r.tramite + r.avariasFinal) + '</td><td style="color:#5B6373;font-size:11px" id="pendencias-pct">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '% s/ venda</td></tr>';
+  html += '<tr><td class="bold warn">EM ABERTO</td><td class="r bold warn">' + fmt(r.aberto) + '</td><td style="color:#4E5A72">Produtos na loja (mês)</td></tr>';
+  html += '<tr><td class="bold info">EM TRÂMITE</td><td class="r bold info">' + fmt(r.tramite) + '</td><td style="color:#4E5A72">Produtos descartados (mês)</td></tr>';
+  html += '<tr><td class="bold neg">AVARIAS FINAL</td><td class="r bold neg" id="pendencias-final">' + fmt(r.avariasFinal) + '</td><td style="color:#4E5A72">Notas emitidas líquidas (mês)</td></tr>';
+  html += '<tr style="border-top:2px solid #D8D9CF"><td class="bold" style="color:#0E1626">TOTAL AVARIA MÊS</td><td class="r bold neg" id="pendencias-total">' + fmt(r.aberto + r.tramite + r.avariasFinal) + '</td><td style="color:#4E5A72;font-size:11px" id="pendencias-pct">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '% s/ venda</td></tr>';
   html += '</tbody></table></div>';
 
   // ── TOTAL GERAL (SEM FILTRO DE MÊS) ──
@@ -761,7 +742,7 @@ function renderTudo(d) {
   html += '<div class="kpi-row">';
   html += '<div class="kpi" style="border-left:3px solid #B45C00"><div class="v warn">' + fmt(r.totalGeralAberto) + '</div><div class="l">Em Aberto — Total Geral</div></div>';
   html += '<div class="kpi" style="border-left:3px solid #2C4A6B"><div class="v info">' + fmt(r.totalGeralTramite) + '</div><div class="l">Em Trâmite — Total Geral</div></div>';
-  html += '<div class="kpi" style="border-left:3px solid #D6314A"><div class="v neg">' + fmt(r.totalGeralAberto + r.totalGeralTramite) + '</div><div class="l">Total Pendente</div></div>';
+  html += '<div class="kpi" style="border-left:3px solid #C22F49"><div class="v neg">' + fmt(r.totalGeralAberto + r.totalGeralTramite) + '</div><div class="l">Total Pendente</div></div>';
   html += '</div>';
 
   // ── TOP 10 FORNECEDORES ──
@@ -815,7 +796,7 @@ function renderTop10(abertoFornec, tramiteFornec, totalAberto, totalTramite) {
   var abTop = abertoFornec.slice(0, 10);
   var abMax = abTop.length ? abTop[0].total : 1;
   html += '<div class="top10-col">';
-  html += '<h3><span class="dot" style="background:#D6314A"></span><span style="color:#D6314A">Em Aberto</span> <span style="color:#5B6373;font-weight:400;font-size:11px">— itens físicos na loja</span></h3>';
+  html += '<h3><span class="dot" style="background:#C22F49"></span><span style="color:#C22F49">Em Aberto</span> <span style="color:#4E5A72;font-weight:400;font-size:11px">— itens físicos na loja</span></h3>';
   if (!abTop.length) {
     html += '<div class="empty" style="padding:12px">Nenhum item em aberto.</div>';
   } else {
@@ -825,19 +806,19 @@ function renderTop10(abertoFornec, tramiteFornec, totalAberto, totalTramite) {
       html += '<div class="top10-item">';
       html += '<span class="top10-rank">' + (i + 1) + '</span>';
       html += '<div class="top10-info"><div class="top10-nome" title="' + f.nome + '">' + f.nome + '</div>';
-      html += '<div class="top10-bar-bg"><div class="top10-bar" style="width:' + pct + '%;background:#D6314A"></div></div></div>';
-      html += '<span class="top10-val" style="color:#D6314A">' + fmt(f.total) + '</span>';
+      html += '<div class="top10-bar-bg"><div class="top10-bar" style="width:' + pct + '%;background:#C22F49"></div></div></div>';
+      html += '<span class="top10-val" style="color:#C22F49">' + fmt(f.total) + '</span>';
       html += '</div>';
     }
   }
-  html += '<div class="top10-total"><span>Total</span><span style="color:#D6314A">' + fmt(totalAberto) + '</span></div>';
+  html += '<div class="top10-total"><span>Total</span><span style="color:#C22F49">' + fmt(totalAberto) + '</span></div>';
   html += '</div>';
 
   // Coluna Em Trâmite
   var trTop = tramiteFornec.slice(0, 10);
   var trMax = trTop.length ? trTop[0].total : 1;
   html += '<div class="top10-col">';
-  html += '<h3><span class="dot" style="background:#B45C00"></span><span style="color:#B45C00">Em Trâmite</span> <span style="color:#5B6373;font-weight:400;font-size:11px">— itens descartados a resolver</span></h3>';
+  html += '<h3><span class="dot" style="background:#B45C00"></span><span style="color:#B45C00">Em Trâmite</span> <span style="color:#4E5A72;font-weight:400;font-size:11px">— itens descartados a resolver</span></h3>';
   if (!trTop.length) {
     html += '<div class="empty" style="padding:12px">Nenhum item em trâmite.</div>';
   } else {
@@ -898,12 +879,12 @@ function renderFornecedorSection(titulo, fornecList, itens, prefix, total) {
       html += '<tr>';
       html += '<td class="cod">' + p.CodigoBarras + '</td>';
       html += '<td class="desc">' + (p.Descricao || '') + '</td>';
-      html += '<td style="color:#5B6373;font-size:11px">' + (p.Und || '') + '</td>';
+      html += '<td style="color:#4E5A72;font-size:11px">' + (p.Und || '') + '</td>';
       html += '<td class="r">' + parseFloat(p.Qtd).toLocaleString('pt-BR') + '</td>';
       html += '<td class="r">' + fmtN(p.Valor) + '</td>';
       html += '<td class="r bold warn">' + fmtN(p.Total) + '</td>';
-      html += '<td style="font-size:11px;color:#5B6373">' + (p.Usuario || '') + '</td>';
-      html += '<td style="font-size:11px;color:#5B6373;white-space:nowrap">' + fmtD(p.DataLan) + '</td>';
+      html += '<td style="font-size:11px;color:#4E5A72">' + (p.Usuario || '') + '</td>';
+      html += '<td style="font-size:11px;color:#4E5A72;white-space:nowrap">' + fmtD(p.DataLan) + '</td>';
       html += '</tr>';
     }
     html += '</tbody></table></div></div></div>';

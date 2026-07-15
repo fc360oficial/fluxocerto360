@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Econômico Relatórios — Dashboard</title>
 <link rel="stylesheet" href="/design-system.css">
+<script src="/nav.js" defer></script>
 <style>
   /* layout específico do dashboard — componentes vêm do design system */
   .db-body{padding:20px 22px 28px;max-width:1600px;margin:0 auto}
@@ -42,11 +43,7 @@
 <body class="ds">
 
 <header class="ds-appbar">
-  <a class="ds-brand" href="/hub.html">
-    <img src="/logo.png" class="logo-img" alt="Econômico">
-    <div><b>Econômico</b><span>Relatórios BI</span></div>
-  </a>
-  <div class="ds-search" id="g-search-wrap">
+    <div class="ds-search" id="g-search-wrap">
     <svg class="ds-ic"><use href="/icons.svg#search"/></svg>
     <input class="ds-input" id="g-search" placeholder="Buscar produto em todas as lojas...  (Ctrl K)">
   </div>
@@ -71,26 +68,9 @@
       </button>
       <div id="refresh-countdown">↺ 180:00</div>
     </div>
-    <div class="appbar-user">
-      <div><div class="nm" id="hdr-user">...</div><small>conectado</small></div>
-      <div class="ds-avatar" id="hdr-ava">–</div>
-    </div>
-    <a class="ds-btn ds-btn-ghost" href="/api/logout" title="Sair" style="padding:0 10px">
-      <svg class="ds-ic"><use href="/icons.svg#logout"/></svg>
-    </a>
   </div>
 </header>
 
-<nav class="ds-topnav">
-  <a class="on" href="/index.html"><svg class="ds-ic sm"><use href="/icons.svg#dashboard"/></svg>Dashboard</a>
-  <a href="/consulta.html"><svg class="ds-ic sm"><use href="/icons.svg#search"/></svg>Consulta de Vendas</a>
-  <a href="/itens.html"><svg class="ds-ic sm"><use href="/icons.svg#list"/></svg>Mercadológico</a>
-  <a href="/fornecedores.html"><svg class="ds-ic sm"><use href="/icons.svg#bag"/></svg>Lista de Compra</a>
-  <a href="/pendencias.html"><svg class="ds-ic sm"><use href="/icons.svg#alert"/></svg>Pendências</a>
-  <a href="/comparativos.html"><svg class="ds-ic sm"><use href="/icons.svg#chart"/></svg>Comparativos</a>
-  <a href="/prevencao.html"><svg class="ds-ic sm"><use href="/icons.svg#shield"/></svg>Prevenção</a>
-  <a href="/ruptura.html"><svg class="ds-ic sm"><use href="/icons.svg#trend"/></svg>Rupturas</a>
-</nav>
 
 <main class="db-body">
 
@@ -676,13 +656,6 @@ setInterval(() => { ultimaAtualizacao = Date.now(); carregarTudo(); }, INTERVALO
 document.getElementById('fil-mes').value = new Date().getMonth() + 1;
 
 carregarTudo();
-fetch('/api/me').then(r=>r.json()).then(u=>{
-  if (u.nome) {
-    document.getElementById('hdr-user').textContent = u.nome;
-    const iniciais = u.nome.trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase();
-    document.getElementById('hdr-ava').textContent = iniciais;
-  }
-}).catch(()=>{});
 </script>
 </body>
 </html>

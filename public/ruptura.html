@@ -3,36 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/design-system.css">
+<script src="/nav.js" defer></script>
 <title>Rupturas — Econômico Relatórios</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f172a;--card:#1e293b;--card2:#0f172a;--border:#334155;
-  --brand:#F9C200;--red:#ef4444;--green:#22c55e;--orange:#f97316;--yellow:#eab308;
-  --blue:#38bdf8;--purple:#a78bfa;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --bg:#EAEBE3;--card:#FFFFFF;--card2:#EAEBE3;--border:#D8D9CF;
+  --brand:#F5B800;--red:#C22F49;--green:#137A48;--orange:#B45C00;--yellow:#F5B800;
+  --blue:#2C4A6B;--purple:#0E1626;--text:#0E1626;--text2:#4E5A72;--text3:#4E5A72;
 }
-html,body{height:100%;font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+html,body{height:100%;font-family:'InterVar','Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
 .layout{display:flex;min-height:100vh}
 
 /* SIDEBAR */
-.sidebar{width:220px;background:#1e293b;border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;overflow-y:auto}
+.sidebar{width:236px;background:#FFFFFF;border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;overflow-y:auto}
 .sidebar-logo{padding:20px 16px 14px;border-bottom:1px solid var(--border);text-align:center}
-.sidebar-logo img{height:70px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
+.sidebar-logo img{height:70px;}
 .sidebar-nav{padding:8px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
-.nav-item:hover{background:#334155;color:#f1f5f9}
-.nav-item.active{background:#F9C20018;color:var(--brand);border-right:3px solid var(--brand)}
+.nav-item:hover{background:#D8D9CF;color:#0E1626}
+.nav-item.active{background:#F5B80018;color:#6B4E00;border-right:3px solid var(--brand)}
 .nav-item .ic{font-size:15px;width:20px;text-align:center}
 .sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
 
 /* MAIN */
-.main{margin-left:220px;flex:1;padding:24px;min-height:100vh}
+.main{margin-left:0;flex:1;padding:24px;min-height:100vh}
 .page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
-.page-hdr h1{font-size:20px;font-weight:800;color:#f8fafc}
+.page-hdr h1{font-size:20px;font-weight:800;color:#0E1626}
 .page-hdr p{font-size:12px;color:var(--text3);margin-top:2px}
 .btn{border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
-.btn-brand{background:var(--brand);color:#0f0f1a}.btn-brand:hover{background:#e0ae00}
-.btn-slate{background:#334155;color:#cbd5e1}.btn-slate:hover{background:#475569}
+.btn-brand{background:var(--brand);color:#6B4E00}.btn-brand:hover{background:#E5AC00}
+.btn-slate{background:#D8D9CF;color:#0E1626}.btn-slate:hover{background:#98A0B3}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* KPI CARDS */
@@ -41,23 +43,23 @@ html,body{height:100%;font-family:'Segoe UI',sans-serif;background:var(--bg);col
 .kpi-card .val{font-size:22px;font-weight:800;line-height:1}
 .kpi-card .lbl{font-size:11px;color:var(--text3);margin-top:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .kpi-card .sub{font-size:10px;color:var(--text3);margin-top:3px}
-.kpi-card.danger{border-color:#ef444440}.kpi-card.danger .val{color:var(--red)}
-.kpi-card.warning{border-color:#f9730040}.kpi-card.warning .val{color:var(--orange)}
-.kpi-card.info{border-color:#38bdf840}.kpi-card.info .val{color:var(--blue)}
-.kpi-card.ok{border-color:#22c55e40}.kpi-card.ok .val{color:var(--green)}
-.kpi-card.brand{border-color:#F9C20040}.kpi-card.brand .val{color:var(--brand)}
+.kpi-card.danger{border-color:#C22F4940}.kpi-card.danger .val{color:var(--red)}
+.kpi-card.warning{border-color:#B45C0040}.kpi-card.warning .val{color:var(--orange)}
+.kpi-card.info{border-color:#2C4A6B40}.kpi-card.info .val{color:var(--blue)}
+.kpi-card.ok{border-color:#137A4840}.kpi-card.ok .val{color:var(--green)}
+.kpi-card.brand{border-color:#F5B80040}.kpi-card.brand .val{color:#6B4E00}
 
 /* SECTION */
 .sec{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden}
 .sec-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
-.sec-hdr h2{font-size:14px;font-weight:800;color:#f8fafc;display:flex;align-items:center;gap:8px}
+.sec-hdr h2{font-size:14px;font-weight:800;color:#0E1626;display:flex;align-items:center;gap:8px}
 .sec-hdr .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
-.badge-red{background:#ef444422;color:var(--red)}
-.badge-orange{background:#f9730022;color:var(--orange)}
-.badge-yellow{background:#eab30822;color:var(--yellow)}
-.badge-green{background:#22c55e22;color:var(--green)}
-.badge-blue{background:#38bdf822;color:var(--blue)}
-.badge-purple{background:#a78bfa22;color:var(--purple)}
+.badge-red{background:#C22F4922;color:var(--red)}
+.badge-orange{background:#B45C0022;color:var(--orange)}
+.badge-yellow{background:#F5B80022;color:#6B4E00}
+.badge-green{background:#137A4822;color:var(--green)}
+.badge-blue{background:#2C4A6B22;color:var(--blue)}
+.badge-purple{background:#0E162622;color:var(--purple)}
 .sec-body{padding:0}
 .sec-toggle{font-size:11px;color:var(--text3);transition:transform .2s}
 .sec.collapsed .sec-toggle{transform:rotate(-90deg)}
@@ -66,48 +68,48 @@ html,body{height:100%;font-family:'Segoe UI',sans-serif;background:var(--bg);col
 /* TABLE */
 .tbl-wrap{overflow-x:auto}
 table.t{width:100%;border-collapse:collapse;font-size:12px}
-table.t thead{background:#0f172a}
+table.t thead{background:#EAEBE3}
 table.t th{padding:9px 12px;text-align:left;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--border)}
-table.t td{padding:8px 12px;border-bottom:1px solid #1e293b66;vertical-align:middle}
+table.t td{padding:8px 12px;border-bottom:1px solid #D8D9CF66;vertical-align:middle}
 table.t tr:hover{background:#ffffff05}
 table.t th.r,table.t td.r{text-align:right}
 table.t td.bold{font-weight:700}
 .risk{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
-.risk-ruptura{background:#ef444422;color:var(--red)}
-.risk-critico{background:#f9730022;color:var(--orange)}
-.risk-alto{background:#eab30822;color:var(--yellow)}
-.risk-medio{background:#38bdf822;color:var(--blue)}
-.risk-baixo{background:#22c55e22;color:var(--green)}
+.risk-ruptura{background:#C22F4922;color:var(--red)}
+.risk-critico{background:#B45C0022;color:var(--orange)}
+.risk-alto{background:#F5B80022;color:#6B4E00}
+.risk-medio{background:#2C4A6B22;color:var(--blue)}
+.risk-baixo{background:#137A4822;color:var(--green)}
 
 /* PREVISAO TABS */
 .prev-tabs{display:flex;gap:6px;padding:14px 18px 0;flex-wrap:wrap}
 .prev-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--text2);transition:all .2s}
-.prev-tab.active{background:var(--brand);color:#0f0f1a;border-color:var(--brand)}
+.prev-tab.active{background:var(--brand);color:#6B4E00;border-color:var(--brand)}
 .prev-content{display:none;padding:0 0 4px}
 .prev-content.active{display:block}
 
 /* RESUMO */
-.resumo-box{padding:18px;background:#0f172a;border-radius:10px;margin:14px 18px;border-left:3px solid var(--brand);font-size:13px;line-height:1.6;color:var(--text)}
-.plano-item{display:flex;gap:12px;padding:10px 18px;border-bottom:1px solid #334155;align-items:flex-start}
+.resumo-box{padding:18px;background:#EAEBE3;border-radius:10px;margin:14px 18px;border-left:3px solid var(--brand);font-size:13px;line-height:1.6;color:var(--text)}
+.plano-item{display:flex;gap:12px;padding:10px 18px;border-bottom:1px solid #D8D9CF;align-items:flex-start}
 .plano-item:last-child{border-bottom:none}
 .plano-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
-.plano-tipo-COMPRA{background:#F9C20022;color:var(--brand)}
-.plano-tipo-RUPTURA{background:#ef444422;color:var(--red)}
-.plano-tipo-INVENTARIO{background:#a78bfa22;color:var(--purple)}
-.plano-tipo-TRANSFERENCIA{background:#38bdf822;color:var(--blue)}
+.plano-tipo-COMPRA{background:#F5B80022;color:#6B4E00}
+.plano-tipo-RUPTURA{background:#C22F4922;color:var(--red)}
+.plano-tipo-INVENTARIO{background:#0E162622;color:var(--purple)}
+.plano-tipo-TRANSFERENCIA{background:#2C4A6B22;color:var(--blue)}
 .plano-acao{font-size:13px;font-weight:500;line-height:1.4}
 .plano-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:4px;display:inline-block}
 
 /* LOJA RANK */
 .loja-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;padding:14px 18px}
 .loja-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
-.loja-card .rank{font-size:20px;font-weight:900;color:var(--brand);line-height:1}
-.loja-card .nome{font-size:12px;font-weight:700;margin:4px 0 8px;color:#f8fafc}
+.loja-card .rank{font-size:20px;font-weight:900;color:#6B4E00;line-height:1}
+.loja-card .nome{font-size:12px;font-weight:700;margin:4px 0 8px;color:#0E1626}
 .loja-card .stat{font-size:11px;color:var(--text3)}
 .loja-card .stat span{font-weight:700;color:var(--text)}
 
 /* ALERT */
-.alerta-item{display:flex;gap:10px;padding:10px 18px;border-bottom:1px solid #334155;align-items:flex-start;font-size:12px}
+.alerta-item{display:flex;gap:10px;padding:10px 18px;border-bottom:1px solid #D8D9CF;align-items:flex-start;font-size:12px}
 .alerta-item:last-child{border-bottom:none}
 .alerta-ic{font-size:16px;flex-shrink:0}
 .alerta-msg{flex:1;line-height:1.4}
@@ -119,15 +121,15 @@ table.t td.bold{font-weight:700}
 .hcard .num{font-size:28px;font-weight:900;line-height:1}
 .hcard .sub{font-size:11px;font-weight:600;margin-top:4px}
 .hcard .lbl{font-size:10px;color:var(--text3);margin-top:2px}
-.hcard.h0{border-color:#ef444440}.hcard.h0 .num{color:var(--red)}
-.hcard.h1{border-color:#f9730040}.hcard.h1 .num{color:var(--orange)}
-.hcard.h3{border-color:#eab30840}.hcard.h3 .num{color:var(--yellow)}
-.hcard.h7{border-color:#38bdf840}.hcard.h7 .num{color:var(--blue)}
-.hcard.h15{border-color:#64748b40}.hcard.h15 .num{color:var(--text2)}
+.hcard.h0{border-color:#C22F4940}.hcard.h0 .num{color:var(--red)}
+.hcard.h1{border-color:#B45C0040}.hcard.h1 .num{color:var(--orange)}
+.hcard.h3{border-color:#F5B80040}.hcard.h3 .num{color:#6B4E00}
+.hcard.h7{border-color:#2C4A6B40}.hcard.h7 .num{color:var(--blue)}
+.hcard.h15{border-color:#4E5A7240}.hcard.h15 .num{color:var(--text2)}
 
 /* LOADING */
 .loading{display:flex;align-items:center;justify-content:center;padding:48px;gap:12px;color:var(--text3);font-size:14px}
-.spin{width:20px;height:20px;border:2px solid #334155;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+.spin{width:20px;height:20px;border:2px solid #D8D9CF;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
 
@@ -145,23 +147,23 @@ table.t td.bold{font-weight:700}
 /* MODAL FORNECEDOR */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .modal-overlay.open{display:flex}
-.modal-box{background:#1e293b;border:1px solid #334155;border-radius:12px;width:100%;max-width:860px;margin:auto}
-.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #334155}
-.modal-hdr h3{font-size:15px;font-weight:700;color:#f1f5f9}
-.modal-close{background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:2px 8px;border-radius:4px}
-.modal-close:hover{background:#334155;color:#f1f5f9}
-.modal-tabs{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid #334155;flex-wrap:wrap}
-.modal-tab{padding:5px 14px;border-radius:6px;border:1px solid #334155;background:none;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer}
-.modal-tab.active{background:#334155;color:#f1f5f9}
+.modal-box{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:12px;width:100%;max-width:860px;margin:auto}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #D8D9CF}
+.modal-hdr h3{font-size:15px;font-weight:700;color:#0E1626}
+.modal-close{background:none;border:none;color:#4E5A72;font-size:20px;cursor:pointer;padding:2px 8px;border-radius:4px}
+.modal-close:hover{background:#D8D9CF;color:#0E1626}
+.modal-tabs{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid #D8D9CF;flex-wrap:wrap}
+.modal-tab{padding:5px 14px;border-radius:6px;border:1px solid #D8D9CF;background:none;color:#4E5A72;font-size:12px;font-weight:600;cursor:pointer}
+.modal-tab.active{background:#D8D9CF;color:#0E1626}
 .modal-body{padding:12px 0;max-height:60vh;overflow-y:auto}
-.modal-empty{padding:24px;text-align:center;color:#64748b;font-size:13px}
+.modal-empty{padding:24px;text-align:center;color:#4E5A72;font-size:13px}
 .modal-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.modal-tbl th{padding:8px 14px;background:#0f172a;color:#64748b;text-align:left;font-weight:600;position:sticky;top:0;z-index:1}
-.modal-tbl td{padding:7px 14px;border-bottom:1px solid #1e293b}
-.modal-tbl tr:hover td{background:#0f172a}
+.modal-tbl th{padding:8px 14px;background:#EAEBE3;color:#4E5A72;text-align:left;font-weight:600;position:sticky;top:0;z-index:1}
+.modal-tbl td{padding:7px 14px;border-bottom:1px solid #D8D9CF}
+.modal-tbl tr:hover td{background:#EAEBE3}
 </style>
 </head>
-<body>
+<body class="ds">
 
 <!-- MODAL FORNECEDOR -->
 <div class="modal-overlay" id="modal-fornec" onclick="if(event.target===this)fecharModal()">
@@ -180,26 +182,6 @@ table.t td.bold{font-weight:700}
 <div class="layout">
 
 <!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <img src="/logo.png" alt="Econômico">
-  </div>
-  <nav class="sidebar-nav">
-    <a href="index.html"       class="nav-item"><span class="ic">📊</span> Dashboard</a>
-    <a href="consulta.html"    class="nav-item"><span class="ic">🔍</span> Consulta Vendas</a>
-    <a href="itens.html"       class="nav-item"><span class="ic">📂</span> Mercadológico</a>
-    <a href="fornecedores.html"class="nav-item"><span class="ic">📋</span> Lista de Compra</a>
-    <a href="pendencias.html"  class="nav-item"><span class="ic">⚠️</span> Pendências</a>
-    <a href="comparativos.html"class="nav-item"><span class="ic">📈</span> Comparativos</a>
-    <a href="prevencao.html"   class="nav-item"><span class="ic">🛡️</span> Prevenção</a>
-    <a href="ruptura.html"     class="nav-item active"><span class="ic">🤖</span> Gestao de Rupturas</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div id="sidebar-user">👤 ...</div>
-  </div>
-</aside>
-
-<!-- MAIN -->
 <main class="main">
 
   <div class="page-hdr">
@@ -208,7 +190,7 @@ table.t td.bold{font-weight:700}
       <p>Análise inteligente de estoque · Previsão de ruptura · Plano de ação diário</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <select id="sel-loja" style="background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;padding:6px 10px;font-size:12px">
+      <select id="sel-loja" style="background:#FFFFFF;border:1px solid #98A0B3;border-radius:6px;color:#0E1626;padding:6px 10px;font-size:12px">
         <option value="">Todas as Lojas</option>
         <option value="1">CAHU</option>
         <option value="2">MURIBECA</option>
@@ -217,7 +199,7 @@ table.t td.bold{font-weight:700}
         <option value="5">PORTA LARGA</option>
         <option value="6">JARDIM JORDÃO</option>
       </select>
-      <select id="sel-comprador" style="background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;padding:6px 10px;font-size:12px">
+      <select id="sel-comprador" style="background:#FFFFFF;border:1px solid #98A0B3;border-radius:6px;color:#0E1626;padding:6px 10px;font-size:12px">
         <option value="">Todos os Compradores</option>
       </select>
       <span class="stamp" id="stamp"><span class="dot-live"></span> Aguardando análise</span>
@@ -231,7 +213,6 @@ table.t td.bold{font-weight:700}
 </div>
 
 <script>
-fetch('/api/me').then(r=>r.json()).then(u=>{ if(u.nome) document.getElementById('sidebar-user').textContent='👤 '+u.nome }).catch(()=>{});
 
 fetch('/api/ruptura/compradores').then(r=>r.json()).then(lista=>{
   const sel = document.getElementById('sel-comprador');
@@ -324,8 +305,8 @@ function renderTudo(d) {
       <div class="lbl">Urgência ≤ 3 dias</div>
       <div class="sub">Pedir imediatamente</div>
     </div>
-    <div class="kpi-card" style="border-color:#7c3aed">
-      <div class="val" style="color:#a78bfa">${fmtN(r.excesso||0)}</div>
+    <div class="kpi-card" style="border-color:#0E1626">
+      <div class="val" style="color:#0E1626">${fmtN(r.excesso||0)}</div>
       <div class="lbl">Excesso de Estoque</div>
       <div class="sub">Cobertura &gt; ${d.max_cob||45} dias</div>
     </div>
@@ -351,7 +332,7 @@ function renderTudo(d) {
       <div class="plano-num plano-tipo-${p.tipo}">${i+1}</div>
       <div>
         <div class="plano-acao">${p.acao}</div>
-        <span class="plano-tag plano-tipo-${p.tipo}" style="background:${p.tipo==='COMPRA'?'#F9C20022':p.tipo==='RUPTURA'?'#ef444422':'#a78bfa22'};color:${p.tipo==='COMPRA'?'var(--brand)':p.tipo==='RUPTURA'?'var(--red)':'var(--purple)'}">${p.tipo}</span>
+        <span class="plano-tag plano-tipo-${p.tipo}" style="background:${p.tipo==='COMPRA'?'#F5B80022':p.tipo==='RUPTURA'?'#C22F4922':'#0E162622'};color:${p.tipo==='COMPRA'?'var(--brand)':p.tipo==='RUPTURA'?'var(--red)':'var(--purple)'}">${p.tipo}</span>
       </div>
     </div>`).join('') || '<div class="empty">Nenhuma ação gerada.</div>';
   const planoSec = secao('plano','✅','PLANO DE AÇÃO — O QUE FAZER HOJE',d.plano?.length||0,'badge-brand',planoItens,true);
@@ -401,7 +382,7 @@ function renderTudo(d) {
         <td style="color:var(--text2)">${r2.fornecedor||'—'}</td>
         <td class="r">${fmtN(r2.estoque)}</td>
         <td class="r">${(r2.vmd||0).toFixed(3)}</td>
-        <td class="r" style="color:#a78bfa;font-weight:700">${fmtD(r2.cobertura)}</td>
+        <td class="r" style="color:#0E1626;font-weight:700">${fmtD(r2.cobertura)}</td>
       </tr>`).join('');
     return `<div class="tbl-wrap"><table class="t"><thead><tr><th>Loja</th><th>Produto</th><th>Fornecedor</th><th class="r">Estoque</th><th class="r">VMD un</th><th class="r">Cobertura</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
@@ -426,7 +407,7 @@ function renderTudo(d) {
       <div class="nome">${l.nome}</div>
       <div class="stat">Rupturas: <span style="color:var(--red)">${l.rupturas}</span></div>
       <div class="stat">Em risco: <span style="color:var(--orange)">${l.em_risco||0}</span></div>
-      <div class="stat">Perda/dia: <span style="color:var(--brand)">${fmtR(l.perda)}</span></div>
+      <div class="stat">Perda/dia: <span style="color:#6B4E00">${fmtR(l.perda)}</span></div>
     </div>`).join('') + '</div>';
   const lojasSec = secao('lojas','🏪','RANKING DE LOJAS',null,null,lojasHtml);
 
@@ -436,32 +417,32 @@ function renderTudo(d) {
   const rankFornecHtml = `
   <div style="padding:10px 14px 6px">
     <input id="busca-fornec" type="text" placeholder="🔍 Buscar fornecedor..." oninput="filtrarFornec(this.value)"
-      style="width:100%;max-width:360px;background:#1e293b;border:1px solid #334155;border-radius:6px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none">
+      style="width:100%;max-width:360px;background:#FFFFFF;border:1px solid #D8D9CF;border-radius:6px;color:#0E1626;padding:7px 12px;font-size:13px;outline:none">
   </div>
   <div style="overflow-x:auto">
   <table style="width:100%;border-collapse:collapse;font-size:12px" id="tbl-rank-fornec">
-    <thead><tr style="background:#1e293b;color:#94a3b8">
+    <thead><tr style="background:#FFFFFF;color:#4E5A72">
       <th style="padding:8px 12px;text-align:left">#</th>
       <th style="padding:8px 12px;text-align:left">Fornecedor</th>
       <th style="padding:8px 12px;text-align:center;color:var(--red)">Rupturas</th>
       <th style="padding:8px 12px;text-align:center;color:var(--orange)">Urgência≤3d</th>
-      <th style="padding:8px 12px;text-align:center;color:#f59e0b">Em Risco</th>
-      <th style="padding:8px 12px;text-align:center;color:#8b5cf6">Excesso</th>
-      <th style="padding:8px 12px;text-align:left;color:#94a3b8">Lojas</th>
+      <th style="padding:8px 12px;text-align:center;color:#B45C00">Em Risco</th>
+      <th style="padding:8px 12px;text-align:center;color:#0E1626">Excesso</th>
+      <th style="padding:8px 12px;text-align:left;color:#4E5A72">Lojas</th>
     </tr></thead>
     <tbody id="tbody-rank-fornec">
     ${(d.ranking_fornec||[]).map((f,i) => `
-      <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #1e293b;${i%2===0?'background:#0f172a':''};cursor:pointer" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='${i%2===0?'#0f172a':''}'">
-        <td style="padding:7px 12px;color:#64748b">${i+1}</td>
+      <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #D8D9CF;${i%2===0?'background:#EAEBE3':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EAEBE3':''}'">
+        <td style="padding:7px 12px;color:#4E5A72">${i+1}</td>
         <td style="padding:7px 12px">
-          <div style="font-weight:600;color:#e2e8f0">${f.fornecedor||'N/I'}</div>
-          <div style="font-size:10px;color:#64748b;margin-top:2px">Lista #${f.listaId||'?'}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
+          <div style="font-weight:600;color:#0E1626">${f.fornecedor||'N/I'}</div>
+          <div style="font-size:10px;color:#4E5A72;margin-top:2px">Lista #${f.listaId||'?'}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
         </td>
-        <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.rupturas>0?'var(--red)':'#475569'}">${f.rupturas||0}</td>
-        <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.urgencia>0?'var(--orange)':'#475569'}">${f.urgencia||0}</td>
-        <td style="padding:7px 12px;text-align:center;color:${f.em_risco>0?'#f59e0b':'#475569'}">${f.em_risco||0}</td>
-        <td style="padding:7px 12px;text-align:center;color:${f.excesso>0?'#8b5cf6':'#475569'}">${f.excesso||0}</td>
-        <td style="padding:7px 12px;color:#64748b;font-size:11px">${f.lojas||''}</td>
+        <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.rupturas>0?'var(--red)':'#98A0B3'}">${f.rupturas||0}</td>
+        <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.urgencia>0?'var(--orange)':'#98A0B3'}">${f.urgencia||0}</td>
+        <td style="padding:7px 12px;text-align:center;color:${f.em_risco>0?'#B45C00':'#98A0B3'}">${f.em_risco||0}</td>
+        <td style="padding:7px 12px;text-align:center;color:${f.excesso>0?'#0E1626':'#98A0B3'}">${f.excesso||0}</td>
+        <td style="padding:7px 12px;color:#4E5A72;font-size:11px">${f.lojas||''}</td>
       </tr>`).join('')}
     </tbody>
   </table></div>`;
@@ -504,7 +485,7 @@ function carregar() {
   btn.disabled = true;
   btn.textContent = '⏳ Analisando...';
   document.getElementById('stamp').innerHTML = '<span class="spin"></span> Buscando dados...';
-  document.getElementById('conteudo').innerHTML = '<div class="loading"><span class="spin"></span> Analisando estoque, vendas e cobertura de todos os produtos...<br><small style="color:#64748b;margin-top:8px;display:block">Primeira análise pode levar 2-3 minutos. Próximas serão instantâneas (cache 30min).</small></div>';
+  document.getElementById('conteudo').innerHTML = '<div class="loading"><span class="spin"></span> Analisando estoque, vendas e cobertura de todos os produtos...<br><small style="color:#4E5A72;margin-top:8px;display:block">Primeira análise pode levar 2-3 minutos. Próximas serão instantâneas (cache 30min).</small></div>';
 
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 300000);
@@ -555,36 +536,36 @@ function imprimirModal() {
   <title>Relatório — ${titulo}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1E2952;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#0E1626;padding:0}
     .page{padding:32px 36px}
 
     /* Cabeçalho */
-    .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:3px solid #F59E0B;margin-bottom:18px}
+    .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:3px solid #B45C00;margin-bottom:18px}
     .hdr-logo{display:flex;align-items:center;gap:12px}
     .hdr-logo img{height:44px}
     .hdr-empresa{display:flex;flex-direction:column;gap:2px}
-    .hdr-empresa .nome{font-size:13px;font-weight:700;color:#F59E0B;letter-spacing:1px}
-    .hdr-empresa .sub{font-size:10px;color:#4A5568}
+    .hdr-empresa .nome{font-size:13px;font-weight:700;color:#B45C00;letter-spacing:1px}
+    .hdr-empresa .sub{font-size:10px;color:#98A0B3}
     .hdr-data{text-align:right}
-    .hdr-data .label{font-size:8px;color:#4A5568;text-transform:uppercase;letter-spacing:1px}
-    .hdr-data .valor{font-size:12px;font-weight:700;color:#1E2952;margin-top:2px}
-    .hdr-data .hora{font-size:10px;color:#4A5568}
+    .hdr-data .label{font-size:8px;color:#98A0B3;text-transform:uppercase;letter-spacing:1px}
+    .hdr-data .valor{font-size:12px;font-weight:700;color:#0E1626;margin-top:2px}
+    .hdr-data .hora{font-size:10px;color:#98A0B3}
 
     /* Título */
     .titulo-bloco{display:flex;align-items:stretch;gap:10px;margin-bottom:16px}
-    .titulo-barra{width:4px;background:#F59E0B;border-radius:2px;flex-shrink:0}
-    .titulo-txt h2{font-size:17px;font-weight:700;color:#1E2952;line-height:1.2}
-    .titulo-txt p{font-size:9px;color:#4A5568;margin-top:4px}
-    .badge-aba{display:inline-block;background:#FEF9C3;border:1px solid #F59E0B;color:#92400E;font-size:10px;font-weight:700;padding:2px 10px;border-radius:12px;margin-top:6px}
+    .titulo-barra{width:4px;background:#B45C00;border-radius:2px;flex-shrink:0}
+    .titulo-txt h2{font-size:17px;font-weight:700;color:#0E1626;line-height:1.2}
+    .titulo-txt p{font-size:9px;color:#98A0B3;margin-top:4px}
+    .badge-aba{display:inline-block;background:#FEF9C3;border:1px solid #B45C00;color:#92400E;font-size:10px;font-weight:700;padding:2px 10px;border-radius:12px;margin-top:6px}
 
     /* Tabela */
     table{width:100%;border-collapse:collapse;font-size:9px;margin-top:6px}
-    thead tr{background:#1E2952}
-    thead th{padding:7px 8px;text-align:left;color:#F59E0B;font-weight:700;font-size:8px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
-    thead th:not(:first-child){border-left:1px solid #334155}
+    thead tr{background:#0E1626}
+    thead th{padding:7px 8px;text-align:left;color:#B45C00;font-weight:700;font-size:8px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+    thead th:not(:first-child){border-left:1px solid #D8D9CF}
     tbody tr:nth-child(even){background:#F7F8FA}
     tbody tr:hover{background:#FFFBEB}
-    tbody td{padding:6px 8px;border-bottom:1px solid #E5E7EB;color:#1E2952}
+    tbody td{padding:6px 8px;border-bottom:1px solid #E5E7EB;color:#0E1626}
     tbody td:not(:first-child){border-left:1px solid #EDF0F3}
     .val-red{color:#E53E3E;font-weight:700}
     .val-bold{font-weight:700}
@@ -592,7 +573,7 @@ function imprimirModal() {
     /* Rodapé */
     .rodape{margin-top:20px;padding-top:10px;border-top:1px solid #DDE1E9;display:flex;justify-content:space-between;align-items:center}
     .rodape span{font-size:8px;color:#6B7280}
-    .rodape .total{font-size:9px;font-weight:700;color:#1E2952}
+    .rodape .total{font-size:9px;font-weight:700;color:#0E1626}
 
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style></head><body><div class="page">
@@ -654,7 +635,7 @@ function abrirFornecedor(listaId, nome) {
 
   document.getElementById('modal-tabs').innerHTML = abas.map((a,i) =>
     `<button class="modal-tab${i===0?' active':''}" onclick="modalAba(this,'${a.id}')">${a.label}</button>`
-  ).join('') + `<button class="modal-tab" onclick="modalAba(this,'lojas')" style="margin-left:auto;border-color:#3b82f6;color:#3b82f6">🏪 Por Loja</button>`;
+  ).join('') + `<button class="modal-tab" onclick="modalAba(this,'lojas')" style="margin-left:auto;border-color:#0E1626;color:#0E1626">🏪 Por Loja</button>`;
 
   window._modalAbas = {};
   abas.forEach(a => { window._modalAbas[a.id] = { dados: a.dados, cols: a.cols }; });
@@ -675,8 +656,8 @@ function renderModalAba(id) {
   const body = document.getElementById('modal-body');
   if (!aba || !aba.dados.length) { body.innerHTML = '<div class="modal-empty">Nenhum item nesta categoria.</div>'; return; }
   const linhas = aba.dados.map(r => {
-    if (id === 'rup') return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:#94a3b8">${(r.vmd||0).toFixed(1)} un</td><td class="r">${fmtR(r.vmd_valor)}</td><td class="r" style="color:var(--red)">${fmtR(r.vmd_valor)}</td></tr>`;
-    return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:${r.cobertura<=3?'var(--red)':r.cobertura<=7?'var(--orange)':'#f59e0b'}">${fmtD(r.cobertura)}</td><td class="r" style="color:#94a3b8">${(r.vmd||0).toFixed(1)} un</td><td class="r">${fmtR(r.vmd_valor)}</td></tr>`;
+    if (id === 'rup') return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:#4E5A72">${(r.vmd||0).toFixed(1)} un</td><td class="r">${fmtR(r.vmd_valor)}</td><td class="r" style="color:var(--red)">${fmtR(r.vmd_valor)}</td></tr>`;
+    return `<tr><td><b>${r.lj}</b></td><td>${r.produto}</td><td class="r">${r.estoque}</td><td class="r" style="color:${r.cobertura<=3?'var(--red)':r.cobertura<=7?'var(--orange)':'#B45C00'}">${fmtD(r.cobertura)}</td><td class="r" style="color:#4E5A72">${(r.vmd||0).toFixed(1)} un</td><td class="r">${fmtR(r.vmd_valor)}</td></tr>`;
   }).join('');
   body.innerHTML = `<table class="modal-tbl"><thead><tr>${aba.cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas}</tbody></table>`;
 }
@@ -690,20 +671,20 @@ async function renderModalLojas() {
     const d = await r.json();
     if (!d.total) { body.innerHTML = '<div class="modal-empty">Nenhum produto encontrado nesta lista.</div>'; return; }
 
-    const CORES = { comEstoque:'#22c55e', semEstoque:'#ef4444', negativos:'#f97316', naoEncontrado:'#64748b' };
+    const CORES = { comEstoque:'#137A48', semEstoque:'#C22F49', negativos:'#B45C00', naoEncontrado:'#4E5A72' };
     const lojaCards = Object.entries(d.lojas).map(([ln, lj]) => {
       const pct = lj.total > 0 ? Math.round(lj.comEstoque / lj.total * 100) : 0;
-      const corBarra = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
-      return `<div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px 16px;min-width:140px;flex:1">
-        <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:6px">LOJA ${ln}</div>
-        <div style="font-size:10px;color:#94a3b8;margin-bottom:8px">${lj.nome}</div>
-        <div style="background:#1e293b;border-radius:4px;height:6px;margin-bottom:10px">
+      const corBarra = pct >= 80 ? '#137A48' : pct >= 50 ? '#B45C00' : '#C22F49';
+      return `<div style="background:#EAEBE3;border:1px solid #D8D9CF;border-radius:8px;padding:14px 16px;min-width:140px;flex:1">
+        <div style="font-size:11px;font-weight:700;color:#B45C00;margin-bottom:6px">LOJA ${ln}</div>
+        <div style="font-size:10px;color:#4E5A72;margin-bottom:8px">${lj.nome}</div>
+        <div style="background:#FFFFFF;border-radius:4px;height:6px;margin-bottom:10px">
           <div style="background:${corBarra};height:6px;border-radius:4px;width:${pct}%"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px">
-          <span style="color:#22c55e">✓ ${lj.comEstoque} <small style="color:#64748b">c/ estoque</small></span>
-          <span style="color:#ef4444">✗ ${lj.semEstoque} <small style="color:#64748b">zerado</small></span>
-          ${lj.negativos>0?`<span style="color:#f97316">⚠ ${lj.negativos} <small style="color:#64748b">negativo</small></span>`:''}
+          <span style="color:#137A48">✓ ${lj.comEstoque} <small style="color:#4E5A72">c/ estoque</small></span>
+          <span style="color:#C22F49">✗ ${lj.semEstoque} <small style="color:#4E5A72">zerado</small></span>
+          ${lj.negativos>0?`<span style="color:#B45C00">⚠ ${lj.negativos} <small style="color:#4E5A72">negativo</small></span>`:''}
         </div>
         <div style="margin-top:6px;font-size:11px;font-weight:700;color:${corBarra}">${pct}% presente</div>
       </div>`;
@@ -714,22 +695,22 @@ async function renderModalLojas() {
     const linhas = d.detalhe.map(r => {
       const cels = [1,2,3,4,5,6].map(n => {
         const v = r['l'+n];
-        if (v === null) return `<td style="text-align:center;color:#475569">—</td>`;
-        if (v < 0)  return `<td style="text-align:center;color:#f97316;font-weight:700">${v}</td>`;
-        if (v === 0) return `<td style="text-align:center;color:#ef4444">0</td>`;
-        return `<td style="text-align:center;color:#22c55e">${v}</td>`;
+        if (v === null) return `<td style="text-align:center;color:#98A0B3">—</td>`;
+        if (v < 0)  return `<td style="text-align:center;color:#B45C00;font-weight:700">${v}</td>`;
+        if (v === 0) return `<td style="text-align:center;color:#C22F49">0</td>`;
+        return `<td style="text-align:center;color:#137A48">${v}</td>`;
       }).join('');
-      return `<tr><td style="color:#94a3b8;font-size:10px">${r.codigo}</td><td>${r.produto}</td>${cels}</tr>`;
+      return `<tr><td style="color:#4E5A72;font-size:10px">${r.codigo}</td><td>${r.produto}</td>${cels}</tr>`;
     }).join('');
 
     body.innerHTML = `
       <div style="padding:14px 16px">
-        <div style="font-size:11px;color:#64748b;margin-bottom:10px">
-          Total de produtos na lista: <b style="color:#f1f5f9">${d.total}</b>
-          &nbsp;·&nbsp; <span style="color:#22c55e">Verde = c/ estoque</span>
-          &nbsp;·&nbsp; <span style="color:#ef4444">Vermelho = zerado</span>
-          &nbsp;·&nbsp; <span style="color:#f97316">Laranja = negativo</span>
-          &nbsp;·&nbsp; <span style="color:#475569">— = não cadastrado nesta loja</span>
+        <div style="font-size:11px;color:#4E5A72;margin-bottom:10px">
+          Total de produtos na lista: <b style="color:#0E1626">${d.total}</b>
+          &nbsp;·&nbsp; <span style="color:#137A48">Verde = c/ estoque</span>
+          &nbsp;·&nbsp; <span style="color:#C22F49">Vermelho = zerado</span>
+          &nbsp;·&nbsp; <span style="color:#B45C00">Laranja = negativo</span>
+          &nbsp;·&nbsp; <span style="color:#98A0B3">— = não cadastrado nesta loja</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${lojaCards}</div>
         <div style="overflow-x:auto">
@@ -749,18 +730,18 @@ function filtrarFornec(busca) {
   const tbody = document.getElementById('tbody-rank-fornec');
   if (!tbody) return;
   tbody.innerHTML = filtrado.map((f,i) => `
-    <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #1e293b;${i%2===0?'background:#0f172a':''};cursor:pointer" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='${i%2===0?'#0f172a':''}'">
-      <td style="padding:7px 12px;color:#64748b">${i+1}</td>
+    <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #D8D9CF;${i%2===0?'background:#EAEBE3':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EAEBE3':''}'">
+      <td style="padding:7px 12px;color:#4E5A72">${i+1}</td>
       <td style="padding:7px 12px">
-        <div style="font-weight:600;color:#e2e8f0">${f.fornecedor||'N/I'}</div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px">Lista #${f.listaId||'?'}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
+        <div style="font-weight:600;color:#0E1626">${f.fornecedor||'N/I'}</div>
+        <div style="font-size:10px;color:#4E5A72;margin-top:2px">Lista #${f.listaId||'?'}${f.codFornec?' · Forn. #'+f.codFornec:''}</div>
       </td>
-      <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.rupturas>0?'var(--red)':'#475569'}">${f.rupturas||0}</td>
-      <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.urgencia>0?'var(--orange)':'#475569'}">${f.urgencia||0}</td>
-      <td style="padding:7px 12px;text-align:center;color:${f.em_risco>0?'#f59e0b':'#475569'}">${f.em_risco||0}</td>
-      <td style="padding:7px 12px;text-align:center;color:${f.excesso>0?'#8b5cf6':'#475569'}">${f.excesso||0}</td>
-      <td style="padding:7px 12px;color:#64748b;font-size:11px">${f.lojas||''}</td>
-    </tr>`).join('') || '<tr><td colspan="7" style="padding:16px;text-align:center;color:#64748b">Nenhum fornecedor encontrado.</td></tr>';
+      <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.rupturas>0?'var(--red)':'#98A0B3'}">${f.rupturas||0}</td>
+      <td style="padding:7px 12px;text-align:center;font-weight:700;color:${f.urgencia>0?'var(--orange)':'#98A0B3'}">${f.urgencia||0}</td>
+      <td style="padding:7px 12px;text-align:center;color:${f.em_risco>0?'#B45C00':'#98A0B3'}">${f.em_risco||0}</td>
+      <td style="padding:7px 12px;text-align:center;color:${f.excesso>0?'#0E1626':'#98A0B3'}">${f.excesso||0}</td>
+      <td style="padding:7px 12px;color:#4E5A72;font-size:11px">${f.lojas||''}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="padding:16px;text-align:center;color:#4E5A72">Nenhum fornecedor encontrado.</td></tr>';
 }
 </script>
 </body>

@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/design-system.css">
+<script src="/nav.js" defer></script>
 <title>Mercadológico — Econômico Relatórios</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,13 +12,13 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   :root{
-    --bg:#F7F7F5; --surface:#FFFFFF; --surface-2:#F1F2F0;
-    --border:#E6E7E3; --border-strong:#D9DAD5;
-    --ink:#16233F; --ink-2:#5B6373; --ink-3:#9AA0AC;
-    --brand:#FFC600; --brand-ink:#5C4600;
-    --green:#158A4A; --green-bg:#EAF7EF;
-    --red:#D6314A; --red-bg:#FCEBEE;
-    --font:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    --bg:#EAEBE3; --surface:#FFFFFF; --surface-2:#E2E3DA;
+    --border:#D8D9CF; --border-strong:#C6C8BB;
+    --ink:#0E1626; --ink-2:#4E5A72; --ink-3:#98A0B3;
+    --brand:#F5B800; --brand-ink:#6B4E00;
+    --green:#137A48; --green-bg:#E7F5EC;
+    --red:#C22F49; --red-bg:#FBEAED;
+    --font:'InterVar','Inter','Segoe UI',system-ui,-apple-system,sans-serif;
   }
   body { font-family:var(--font); background:var(--bg); color:var(--ink); min-height:100vh; display:flex; flex-direction:column; }
 
@@ -31,7 +33,7 @@
   .logo span { font-size:11px; color:var(--ink-3); display:block; }
   .nav-links { display:flex; gap:4px; flex-wrap:wrap; }
   .nav-links a { color:var(--ink-2); text-decoration:none; font-size:12px; padding:6px 10px; font-weight:600; border-bottom:2px solid transparent; transition:all .15s; }
-  .nav-links a:hover { color:var(--ink); border-bottom-color:#FFE38A; }
+  .nav-links a:hover { color:var(--ink); border-bottom-color:#EFD98F; }
 
   .layout { display:flex; flex:1; overflow:hidden; }
 
@@ -63,7 +65,7 @@
     cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:space-between;
   }
   .subgrupo-item:hover { background:var(--surface-2); color:var(--ink); }
-  .subgrupo-item.selecionado { background:#FFF6D8; color:var(--brand-ink); border-left:2px solid var(--brand); }
+  .subgrupo-item.selecionado { background:#FFF6D9; color:var(--brand-ink); border-left:2px solid var(--brand); }
   .subgrupo-cnt { font-size:10px; background:var(--surface-2); padding:1px 6px; border-radius:10px; color:var(--ink-3); }
 
   /* Conteúdo principal */
@@ -86,7 +88,7 @@
   }
   .btn-status.ativo { background:var(--green-bg); border-color:#B7E4C7; color:var(--green); }
   .btn-status.inativo { background:var(--red-bg); border-color:#F3C1CB; color:var(--red); }
-  .btn-status.todos { background:#FFF6D8; border-color:var(--brand); color:var(--brand-ink); }
+  .btn-status.todos { background:#FFF6D9; border-color:var(--brand); color:var(--brand-ink); }
 
   .resultado-info {
     display:flex; align-items:center; justify-content:space-between;
@@ -180,31 +182,16 @@
   }
 </style>
 </head>
-<body>
+<body class="ds">
 
 <header>
   <div class="logo">
-    <img src="/logo.png" class="logo-icon" alt="Econômico">
     <div>
       <h1>Mercadológico</h1>
       <span>Consulta por Grupo / Subgrupo</span>
     </div>
   </div>
-  <div class="nav-links">
-    <a href="/">Dashboard</a>
-    <a href="/consulta.html">🔍 Consulta Vendas</a>
-    <a href="/fornecedores.html">📋 Lista de Compra</a>
-    <a href="/pendencias.html">⚠️ Pendências</a>
-    <a href="/comparativos.html">📈 Comparativos</a>
-    <a href="/prevencao.html">🛡️ Prevenção</a>
-    <a href="/ruptura.html">📉 Rupturas</a>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px;font-size:12px;margin-left:8px">
-    <span style="color:var(--ink-3)" id="hdr-user">👤 ...</span>
-    <a href="/api/logout" style="color:var(--red);font-weight:700;text-decoration:none;border:1px solid var(--red-bg);padding:5px 10px;border-radius:6px;background:var(--red-bg)">🚪 Sair</a>
-  </div>
-</header>
-<script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('hdr-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
+  </header>
 
 <div class="layout">
 
@@ -476,13 +463,13 @@ function renderTabelaTodas(data) {
 
   const rHead = `<thead><tr style="background:var(--surface-2)">
     <th colspan="6" style="background:var(--green-bg);border-bottom:2px solid var(--green);color:var(--green);text-align:center;padding:6px">PREÇO</th>
-    <th colspan="6" style="background:#EAF7EF;border-bottom:2px solid var(--green);color:var(--green);text-align:center;padding:6px">CUSTO COMPRA</th>
-    <th colspan="6" style="background:#FFF6D8;border-bottom:2px solid var(--brand);color:var(--brand-ink);text-align:center;padding:6px">MARGEM %</th>
+    <th colspan="6" style="background:#E7F5EC;border-bottom:2px solid var(--green);color:var(--green);text-align:center;padding:6px">CUSTO COMPRA</th>
+    <th colspan="6" style="background:#FFF6D9;border-bottom:2px solid var(--brand);color:var(--brand-ink);text-align:center;padding:6px">MARGEM %</th>
     <th colspan="6" style="background:var(--surface-2);border-bottom:2px solid var(--ink-3);color:var(--ink-2);text-align:center;padding:6px">ESTOQUE</th>
   </tr><tr style="background:var(--surface-2)">
-    ${ls.map(n=>TH2('#EAF7EF','var(--green)',n)).join('')}
-    ${ls.map(n=>TH2('#EAF7EF','var(--green)',n)).join('')}
-    ${ls.map(n=>TH2('#FFF6D8','var(--brand-ink)',n)).join('')}
+    ${ls.map(n=>TH2('#E7F5EC','var(--green)',n)).join('')}
+    ${ls.map(n=>TH2('#E7F5EC','var(--green)',n)).join('')}
+    ${ls.map(n=>TH2('#FFF6D9','var(--brand-ink)',n)).join('')}
     ${ls.map(n=>TH2('var(--surface-2)','var(--ink-2)',n)).join('')}
   </tr></thead>`;
 

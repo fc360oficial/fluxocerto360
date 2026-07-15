@@ -4,45 +4,127 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login — Econômico Relatórios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#F7F7F5;color:#16233F;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:16px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px #00000055}
-.logo-wrap{text-align:center;margin-bottom:28px}
-.logo-wrap img{width:150px;}
-.titulo{font-size:20px;font-weight:700;color:#16233F;text-align:center;margin-bottom:4px}
-.subtitulo{font-size:12px;color:#5B6373;text-align:center;margin-bottom:32px}
+:root{
+  --bg:#F7F7F5;--surface:#FFFFFF;--surface-2:#F1F2F0;
+  --border:#E6E7E3;--border-strong:#D9DAD5;
+  --ink:#16233F;--ink-2:#5B6373;--ink-3:#9AA0AC;
+  --brand:#FFC600;--brand-ink:#5C4600;
+  --green:#158A4A;--red:#D6314A;--red-bg:#FCEBEE;
+  --font:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+html,body{height:100%;font-family:var(--font);color:var(--ink)}
+body{display:flex;min-height:100vh;background:var(--bg)}
+
+/* ── PAINEL VISUAL (esquerda) ── */
+.hero{
+  flex:1.15;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 90% 70% at 20% 0%,#1c2c4e 0%,#16233F 55%,#101a30 100%);
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:48px 56px;color:#fff;min-width:0;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle 420px at 88% 92%,rgba(255,198,0,.16) 0%,transparent 70%),
+             radial-gradient(circle 320px at 100% 0%,rgba(255,198,0,.10) 0%,transparent 65%);
+}
+.hero-top{position:relative;z-index:1;display:flex;align-items:center;gap:12px}
+.hero-top img{height:44px;filter:brightness(0) invert(1);opacity:.95}
+.hero-top span{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.65)}
+
+.hero-mid{position:relative;z-index:1;max-width:440px}
+.hero-mid h1{font-size:clamp(26px,3vw,34px);font-weight:800;line-height:1.2;letter-spacing:-.5px}
+.hero-mid h1 em{font-style:normal;color:var(--brand)}
+.hero-mid p{margin-top:14px;font-size:14px;line-height:1.6;color:rgba(255,255,255,.62)}
+
+.checklist{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;margin-top:8px}
+.check-item{display:flex;align-items:center;gap:12px;font-size:14.5px;font-weight:600;color:rgba(255,255,255,.92)}
+.check-ic{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,198,0,.14);border:1px solid rgba(255,198,0,.4);
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--brand);
+}
+
+.hero-bottom{position:relative;z-index:1;font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.5px}
+
+/* ── PAINEL DE LOGIN (direita) ── */
+.painel-login{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:40px 24px;background:var(--surface);min-width:320px;
+}
+.card{width:100%;max-width:380px}
+.card-eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--brand-ink);margin-bottom:10px}
+.titulo{font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.subtitulo{font-size:13px;color:var(--ink-3);margin-top:6px;margin-bottom:32px}
 .field{margin-bottom:16px}
-.field label{display:block;font-size:10px;font-weight:700;color:#5B6373;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.field input{width:100%;background:#F7F7F5;border:1px solid #E6E7E3;border-radius:8px;color:#16233F;padding:12px 14px;font-size:16px;outline:none;transition:border-color .15s}
-.field input:focus{border-color:#FFC600}
-.btn-login{width:100%;background:#FFC600;color:#5C4600;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .15s;letter-spacing:.3px}
-.btn-login:hover{background:#e0ae00}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.field input{width:100%;background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;color:var(--ink);padding:12px 14px;font-size:15px;outline:none;transition:border-color .15s;font-family:var(--font)}
+.field input:focus{border-color:var(--brand)}
+.btn-login{width:100%;background:var(--brand);color:var(--brand-ink);border:none;border-radius:9px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .15s,transform .1s;letter-spacing:.3px}
+.btn-login:hover{background:#F0BA00}
+.btn-login:active{transform:scale(.99)}
 .btn-login:disabled{opacity:.6;cursor:not-allowed}
-.erro{background:#FCEBEE;border:1px solid #F3C1CB;color:#D6314A;border-radius:8px;padding:10px 14px;font-size:12px;margin-top:14px;display:none;text-align:center}
-.rodape{text-align:center;margin-top:24px;font-size:11px;color:#9AA0AC}
+.erro{background:var(--red-bg);border:1px solid #F3C1CB;color:var(--red);border-radius:8px;padding:10px 14px;font-size:12px;margin-top:14px;display:none;text-align:center}
+.rodape{text-align:center;margin-top:28px;font-size:11px;color:var(--ink-3)}
+
+@media(max-width:860px){
+  body{flex-direction:column}
+  .hero{flex:none;padding:32px 28px;min-height:240px}
+  .hero-mid h1{font-size:22px}
+  .hero-mid p{display:none}
+  .checklist{flex-direction:row;flex-wrap:wrap;gap:10px 18px;margin-top:16px}
+  .check-item{font-size:12.5px}
+  .check-ic{width:18px;height:18px;font-size:10px}
+  .hero-bottom{display:none}
+  .painel-login{padding:32px 24px}
+}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo-wrap">
-    <img src="/logo.png" alt="Econômico Relatórios">
-  </div>
-  <div class="titulo">Relatórios BI</div>
-  <div class="subtitulo">Acesso restrito — faça login para continuar</div>
 
-  <div class="field">
-    <label>Usuário</label>
-    <input type="text" id="usuario" placeholder="seu usuário" autocomplete="username" autofocus>
+<div class="hero">
+  <div class="hero-top">
+    <img src="/logo.png" alt="Econômico">
+    <span>Econômico Relatórios</span>
   </div>
-  <div class="field">
-    <label>Senha</label>
-    <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password"
-           onkeydown="if(event.key==='Enter')login()">
+
+  <div class="hero-mid">
+    <h1>Sua rede de supermercados, <em>em tempo real</em>.</h1>
+    <p>Faturamento, compras, rupturas e prevenção de perdas em um único painel — atualizado direto do seu ERP.</p>
+    <div class="checklist">
+      <div class="check-item"><span class="check-ic">✓</span>Dashboard de Vendas em Tempo Real</div>
+      <div class="check-item"><span class="check-ic">✓</span>Gestão de Compras e Fornecedores</div>
+      <div class="check-item"><span class="check-ic">✓</span>Controle de Rupturas e Estoque</div>
+      <div class="check-item"><span class="check-ic">✓</span>Prevenção de Perdas por Loja</div>
+    </div>
   </div>
-  <button class="btn-login" id="btn" onclick="login()">Entrar</button>
-  <div class="erro" id="erro"></div>
-  <div class="rodape">Econômico Supermercados · Acesso interno</div>
+
+  <div class="hero-bottom">ECONÔMICO SUPERMERCADOS · PLATAFORMA INTERNA</div>
+</div>
+
+<div class="painel-login">
+  <div class="card">
+    <div class="card-eyebrow">Acesso Restrito</div>
+    <div class="titulo">Entrar na plataforma</div>
+    <div class="subtitulo">Use suas credenciais para acessar os relatórios</div>
+
+    <div class="field">
+      <label>Usuário</label>
+      <input type="text" id="usuario" placeholder="seu usuário" autocomplete="username" autofocus>
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button class="btn-login" id="btn" onclick="login()">Entrar</button>
+    <div class="erro" id="erro"></div>
+    <div class="rodape">Econômico Supermercados · Acesso interno</div>
+  </div>
 </div>
 
 <script>

@@ -13,30 +13,30 @@
 
 :root {
   /* Fundo */
-  --bg:           #08111F;
-  --bg2:          #0B1220;
+  --bg:           #F7F7F5;
+  --bg2:          #F1F2F0;
   /* Cards */
-  --card:         #121B2E;
-  --card2:        #172033;
+  --card:         #FFFFFF;
+  --card2:        #FFFFFF;
   /* Brand */
-  --brand:        #FACC15;
+  --brand:        #FFC600;
   --brand2:       #FFC72C;
   --brand-glow:   rgba(250,204,21,.18);
   --brand-dim:    rgba(250,204,21,.08);
   /* Semânticas */
-  --green:        #22C55E;
+  --green:        #158A4A;
   --green-bg:     rgba(34,197,94,.10);
   --green-glow:   rgba(34,197,94,.22);
-  --amber:        #F59E0B;
+  --amber:        #B45C00;
   --amber-bg:     rgba(245,158,11,.10);
-  --red:          #EF4444;
+  --red:          #D6314A;
   --red-bg:       rgba(239,68,68,.10);
   --red-glow:     rgba(239,68,68,.22);
-  --blue:         #3B82F6;
+  --blue:         #16233F;
   /* Texto */
   --text:         #FFFFFF;
-  --text2:        #94A3B8;
-  --text3:        #64748B;
+  --text2:        #5B6373;
+  --text3:        #5B6373;
   /* Bordas / raio / sombra */
   --border:       rgba(255,255,255,.06);
   --border-md:    rgba(255,255,255,.10);
@@ -75,7 +75,7 @@ header {
   border: 1px solid var(--border-md);
   background: rgba(255,255,255,.04); transition: all .2s ease;
 }
-.h-back:hover { color: var(--brand); border-color: rgba(250,204,21,.3); background: var(--brand-dim); }
+.h-back:hover { color:#5C4600; border-color: rgba(250,204,21,.3); background: var(--brand-dim); }
 .h-divider { width: 1px; height: 30px; background: var(--border-md); }
 .h-compradora { display: flex; align-items: center; gap: 14px; }
 .h-avatar {
@@ -127,12 +127,12 @@ main {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
   pointer-events: none;
 }
-.day-nome { font-size: 24px; font-weight: 900; color: var(--brand); letter-spacing: 2px; text-transform: uppercase; line-height: 1; }
+.day-nome { font-size: 24px; font-weight: 900; color:#5C4600; letter-spacing: 2px; text-transform: uppercase; line-height: 1; }
 .day-data { font-size: 12px; color: var(--text2); margin-top: 4px; font-weight: 500; }
 .day-semana-tag {
   display: inline-flex; align-items: center;
   background: var(--brand-dim); border: 1px solid rgba(250,204,21,.2);
-  color: var(--brand); font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+  color:#5C4600; font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
   text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-top: 7px; width: fit-content;
 }
 .day-prog { display: flex; align-items: center; gap: 8px; }
@@ -162,7 +162,7 @@ main {
 }
 .pb-label { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
 .pb-label > span:first-child { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-.pb-pct { font-size: 22px; font-weight: 900; color: var(--brand); line-height: 1; }
+.pb-pct { font-size: 22px; font-weight: 900; color:#5C4600; line-height: 1; }
 .pb-lbl-txt { text-transform: uppercase; letter-spacing: .8px; }
 .pb-track { height: 6px; background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden; position: relative; }
 .pb-fill {
@@ -222,7 +222,7 @@ main {
   text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
   display: flex; align-items: center; gap: 8px;
 }
-.cat-title-tag { background: var(--brand-dim); color: var(--brand); padding: 2px 8px; border-radius: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
+.cat-title-tag { background: var(--brand-dim); color:#5C4600; padding: 2px 8px; border-radius: 4px; font-size: 8px; font-weight: 800; letter-spacing: 1px; }
 .cat-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.05); }
 
 /* ══ FORNECEDOR ROW ══ */
@@ -243,7 +243,7 @@ main {
 .forn-cod { font-size: 10px; font-weight: 800; color: var(--text3); min-width: 38px; text-align: center;
   background: rgba(255,255,255,.07); border-radius: 4px; padding: 2px 6px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .forn-cod-label { font-size: 8px; color: var(--text3); opacity: .5; text-align: center; letter-spacing: .5px; }
-.forn-fornec { font-size: 10px; font-weight: 800; color: #93c5fd; min-width: 38px; text-align: center;
+.forn-fornec { font-size: 10px; font-weight: 800; color: #5B6373; min-width: 38px; text-align: center;
   background: rgba(59,130,246,.10); border-radius: 4px; padding: 2px 6px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .forn-nome { flex: 1; font-size: 15px; color: var(--text); font-weight: 600; word-break: break-word; }
 .forn-cat-tag { font-size: 9px; color: var(--text3); background: rgba(255,255,255,.05); padding: 2px 7px; border-radius: 4px; font-weight: 600; }
@@ -304,7 +304,7 @@ main {
   pointer-events: none;
 }
 .panel-pend .panel-header { background: rgba(59,130,246,.05); border-bottom: 1px solid rgba(59,130,246,.1); flex-shrink: 0; }
-.panel-pend .panel-title::before { background: #3b82f6; }
+.panel-pend .panel-title::before { background: #16233F; }
 .panel-pend .panel-body { flex: 1; overflow: hidden; position: relative; padding: 0; }
 .panel-pend .panel-body::before,
 .panel-pend .panel-body::after {
@@ -317,16 +317,16 @@ main {
 .pend-scroll-inner.animating { animation: scrollUp var(--dur, 20s) linear infinite; }
 @keyframes scrollUp { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
 .pend-date-badge {
-  font-size: 10px; font-weight: 800; color: #93c5fd;
+  font-size: 10px; font-weight: 800; color: #5B6373;
   background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.2);
   padding: 3px 10px; border-radius: 20px;
 }
 @keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:.6} }
 .pend-empty { text-align: center; padding: 40px 16px; }
 .pend-empty-icon { font-size: 40px; margin-bottom: 12px; }
-.pend-empty-txt { font-size: 14px; color: var(--brand); font-weight: 700; }
+.pend-empty-txt { font-size: 14px; color:#5C4600; font-weight: 700; }
 .pend-section-title {
-  font-size: 10px; font-weight: 900; color: #93c5fd;
+  font-size: 10px; font-weight: 900; color: #5B6373;
   text-transform: uppercase; letter-spacing: 2px;
   padding: 12px 6px 5px; border-bottom: 1px solid rgba(59,130,246,.2);
   margin-bottom: 4px; margin-top: 4px;
@@ -381,7 +381,7 @@ main {
 .rdot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pglow 2.5s ease-in-out infinite; box-shadow: 0 0 6px var(--green); }
 @keyframes pglow { 0%,100%{opacity:1} 50%{opacity:.35} }
 .fb-txt { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 8px; font-weight: 500; }
-.fb-auto { font-size: 11px; color: var(--brand); font-weight: 700; }
+.fb-auto { font-size: 11px; color:#5C4600; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -443,7 +443,7 @@ main {
     <!-- DIREITA: Histórico da semana -->
     <div class="panel panel-pend">
       <div class="panel-header">
-        <div class="panel-title" style="color:var(--brand)">📅 Histórico da Semana</div>
+        <div class="panel-title" style="color:#5C4600">📅 Histórico da Semana</div>
         <div class="pend-date-badge" id="pend-date-badge">—</div>
       </div>
       <div class="panel-body">
@@ -457,9 +457,9 @@ main {
 
 <div class="fixed-bar">
   <div class="fb-txt"><span class="rdot"></span> Sistema online — FC360 Relatórios</div>
-  <div class="fb-txt" id="fb-auto" style="display:none;color:var(--brand);font-weight:600">Próxima tela em <span id="auto-cd">30s</span></div>
+  <div class="fb-txt" id="fb-auto" style="display:none;color:#5C4600;font-weight:600">Próxima tela em <span id="auto-cd">30s</span></div>
 </div>
-<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}</style>
+<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#5B6373;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#5C4600;border-color:#FFC600}</style>
 <button class="btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia (use F11 para manter entre telas)">⛶</button>
 
 <script>
@@ -614,7 +614,7 @@ function fatimaSex() {
 
 const DADOS = {
   'FÁTIMA': {
-    cor: '#6366f1',
+    cor: '#16233F',
     cargo: 'Compradora de Alimentos',
     cronograma: {
       '1e3': {
@@ -635,7 +635,7 @@ const DADOS = {
   },
 
   'KELLY': {
-    cor: '#f43f5e',
+    cor: '#D6314A',
     cargo: 'Compradora de Frios & Laticínios',
     cronograma: {
       '1e3': {
@@ -764,7 +764,7 @@ const DADOS = {
   },
 
   'STHEPHANNY': {
-    cor: '#a855f7',
+    cor: '#16233F',
     cargo: 'Compradora de Perfumaria & Limpeza',
     cronograma: {
       '1e3': {
@@ -847,7 +847,7 @@ const DADOS = {
   },
 
   'CRISLANE': {
-    cor: '#14b8a6',
+    cor: '#158A4A',
     cargo: 'Compradora de Hortifruti & Padaria',
     cronograma: {
       '1e3': {
@@ -934,7 +934,7 @@ const DADOS = {
   },
 
   'PATRICIA': {
-    cor: '#f59e0b',
+    cor: '#B45C00',
     cargo: 'Compradora de Bebidas',
     cronograma: {
       '1e3': {
@@ -1321,7 +1321,7 @@ async function init() {
   }
   const nome = nomeRaw;
   if (!dados) {
-    document.body.innerHTML = '<div style="padding:40px;color:#ef4444;font-size:18px">Compradora não encontrada: ' + nomeRaw + '</div>';
+    document.body.innerHTML = '<div style="padding:40px;color:#D6314A;font-size:18px">Compradora não encontrada: ' + nomeRaw + '</div>';
     return;
   }
   _dados = dados;

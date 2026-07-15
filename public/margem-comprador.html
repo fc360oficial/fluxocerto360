@@ -7,23 +7,23 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#070d1a;--card:#0f172a;--border:#1e293b;--border2:#334155;
-  --brand:#FACC15;--green:#22c55e;--red:#ef4444;--orange:#f97316;--blue:#60a5fa;--purple:#a78bfa;
-  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --bg:#F1F2F0;--card:#F7F7F5;--border:#E6E7E3;--border2:#E6E7E3;
+  --brand:#FFC600;--green:#158A4A;--red:#D6314A;--orange:#B45C00;--blue:#16233F;--purple:#16233F;
+  --text:#16233F;--text2:#5B6373;--text3:#5B6373;
 }
 html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;display:flex;flex-direction:column}
 
 /* BRAND BAR */
-.brand-bar{height:36px;flex-shrink:0;background:#FACC15;display:flex;align-items:center;justify-content:center;position:relative;z-index:200}
-.b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
+.brand-bar{height:36px;flex-shrink:0;background:#FFC600;display:flex;align-items:center;justify-content:center;position:relative;z-index:200}
+.b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#F1F2F0}
 .b-right{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:10px}
 .b-slide{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(10,14,24,.5)}
-.b-todas{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#0a0e18;color:#FACC15;padding:2px 8px;border-radius:4px}
+.b-todas{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#F1F2F0;color:#5C4600;padding:2px 8px;border-radius:4px}
 .b-live{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(10,14,24,.45)}
-.b-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:bpulse 2s infinite}
+.b-live-dot{width:6px;height:6px;border-radius:50%;background:#158A4A;animation:bpulse 2s infinite}
 @keyframes bpulse{0%,100%{opacity:1}50%{opacity:.3}}
 .b-left{position:absolute;left:14px;top:50%;transform:translateY(-50%)}
-.b-btn-fs{background:rgba(10,14,24,.18);border:1px solid rgba(10,14,24,.25);border-radius:6px;color:#0a0e18;font-size:15px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.b-btn-fs{background:rgba(10,14,24,.18);border:1px solid rgba(10,14,24,.25);border-radius:6px;color:#F1F2F0;font-size:15px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
 .b-btn-fs:hover{background:rgba(10,14,24,.35)}
 
 /* HEADER */
@@ -36,7 +36,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .hk-v{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
 .hk-l{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
 .hk-dots{display:flex;gap:6px;align-items:center;padding:0 16px}
-.nav-dot{width:8px;height:8px;border-radius:50%;background:#334155;flex-shrink:0;transition:all .3s}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#E6E7E3;flex-shrink:0;transition:all .3s}
 .nav-dot.active{background:var(--brand)}
 @keyframes dot-grow{from{width:8px;border-radius:50%}to{width:24px;border-radius:4px}}
 
@@ -54,27 +54,27 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .forn-nome{font-weight:700;color:var(--text);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
 .forn-cod{font-size:9px;color:var(--text3);margin-top:1px}
 .rank{font-size:10px;color:var(--text3);font-weight:700;white-space:nowrap}
-.msv-great{color:#22c55e;font-weight:700}.msv-ok{color:#86efac;font-weight:700}
-.msv-warn{color:#FACC15;font-weight:700}.msv-bad{color:#ef4444;font-weight:700}
-.av-val{color:#f97316;font-weight:700}.av-zero{color:var(--text3)}
+.msv-great{color:#158A4A;font-weight:700}.msv-ok{color:#158A4A;font-weight:700}
+.msv-warn{color:#5C4600;font-weight:700}.msv-bad{color:#D6314A;font-weight:700}
+.av-val{color:#B45C00;font-weight:700}.av-zero{color:var(--text3)}
 
 /* LOADING */
 .loading{height:100%;display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text3);font-size:14px}
-.spin{width:22px;height:22px;border:2px solid #334155;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+.spin{width:22px;height:22px;border:2px solid #E6E7E3;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* FOOTER */
 .footer{height:40px;flex-shrink:0;background:#060d1c;border-top:1px solid rgba(250,204,21,.10);display:flex;align-items:center;padding:0 20px;gap:16px}
 .ft-next{font-size:12px;color:var(--text2);flex:1}
-.ft-next span{color:#FACC15;font-weight:800}
+.ft-next span{color:#5C4600;font-weight:800}
 .ft-close{display:flex;align-items:center;gap:5px;color:var(--text3);text-decoration:none;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);transition:all .2s;flex-shrink:0}
-.ft-close:hover{border-color:#ef4444;color:#ef4444}
-.btn-slides{position:fixed;bottom:58px;right:58px;width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);color:#94A3B8;font-size:20px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:.35;display:flex;align-items:center;justify-content:center;letter-spacing:-1px;font-weight:900;padding-bottom:2px}
-.btn-slides:hover{opacity:1;color:#FACC15;border-color:#FACC15}
+.ft-close:hover{border-color:#D6314A;color:#D6314A}
+.btn-slides{position:fixed;bottom:58px;right:58px;width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.5);color:#5B6373;font-size:20px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:.35;display:flex;align-items:center;justify-content:center;letter-spacing:-1px;font-weight:900;padding-bottom:2px}
+.btn-slides:hover{opacity:1;color:#5C4600;border-color:#FFC600}
 .slide-nav-menu{position:fixed;bottom:100px;right:58px;background:rgba(6,12,26,.97);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:6px;z-index:1000;display:none;flex-direction:column;gap:2px;backdrop-filter:blur(12px);min-width:210px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
 .slide-nav-menu.open{display:flex}
-.slide-nav-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:background .15s;font-size:13px;font-weight:600;color:#cbd5e1;border:none;background:none;width:100%;text-align:left}
-.slide-nav-opt:hover{background:rgba(250,204,21,.12);color:#FACC15}
+.slide-nav-opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:background .15s;font-size:13px;font-weight:600;color:#16233F;border:none;background:none;width:100%;text-align:left}
+.slide-nav-opt:hover{background:rgba(250,204,21,.12);color:#5C4600}
 .slide-nav-opt.active{color:#fff;background:rgba(255,255,255,.08)}
 </style>
 </head>
@@ -101,10 +101,10 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
     <div class="hdr-sub" id="hdr-sub">Venda · Margem · Avaria · Todas as Lojas</div>
   </div>
   <div class="hdr-kpis">
-    <div class="hk"><div class="hk-v" style="color:#60a5fa" id="kpi-venda">—</div><div class="hk-l">Venda Total</div></div>
+    <div class="hk"><div class="hk-v" style="color:#16233F" id="kpi-venda">—</div><div class="hk-l">Venda Total</div></div>
     <div class="hk"><div class="hk-v" id="kpi-msv">—</div><div class="hk-l">Margem S/V</div></div>
     <div class="hk"><div class="hk-v" id="kpi-msc">—</div><div class="hk-l">Margem S/C</div></div>
-    <div class="hk"><div class="hk-v" style="color:#f97316" id="kpi-av">—</div><div class="hk-l">Total Avarias</div></div>
+    <div class="hk"><div class="hk-v" style="color:#B45C00" id="kpi-av">—</div><div class="hk-l">Total Avarias</div></div>
   </div>
   <div class="hk-dots" id="nav-dots"></div>
 </div>
@@ -127,7 +127,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const ORDEM = ['FATIMA','KELLY','STHEPHANNY','CRISLANE','PATRICIA'];
 const CARGO = { FATIMA:'Mercearia Seca', KELLY:'Frios & Laticínios', STHEPHANNY:'Perecíveis', CRISLANE:'Hortifruti & Padaria', PATRICIA:'Bazar & Limpeza' };
-const CORES = { FATIMA:'#3b82f6', KELLY:'#10b981', STHEPHANNY:'#8b5cf6', CRISLANE:'#f43f5e', PATRICIA:'#f59e0b' };
+const CORES = { FATIMA:'#16233F', KELLY:'#158A4A', STHEPHANNY:'#16233F', CRISLANE:'#D6314A', PATRICIA:'#B45C00' };
 
 const params  = new URLSearchParams(location.search);
 let idxAtual  = parseInt(params.get('idx') || '0');
@@ -175,11 +175,11 @@ function renderTabela(fornecedores){
         <tr>
           <td class="rank r">${i+1}</td>
           <td><div class="forn-nome">${r.nome}</div><div class="forn-cod">Cód ${r.id}</div></td>
-          <td class="r" style="color:#60a5fa;font-weight:700">${fmt(r.venda)}</td>
+          <td class="r" style="color:#16233F;font-weight:700">${fmt(r.venda)}</td>
           <td class="r"><span class="${msvClass(r.msv)}">${pct(r.msv)}</span></td>
           <td class="r"><span class="${msvClass(r.msc)}">${pct(r.msc)}</span></td>
           <td class="r"><span class="${r.avaria>0?'av-val':'av-zero'}">${r.avaria>0?fmt(r.avaria):'—'}</span></td>
-          <td class="r" style="color:${r.avaria>0?'#f97316':'#475569'};font-size:10px">${r.avaria>0?pct(r.pct_av):'—'}</td>
+          <td class="r" style="color:${r.avaria>0?'#B45C00':'#9AA0AC'};font-size:10px">${r.avaria>0?pct(r.pct_av):'—'}</td>
         </tr>`).join('')}
       </tbody>
     </table>`;
@@ -188,7 +188,7 @@ function renderTabela(fornecedores){
 async function carregar(nome){
   nomeAtual = semAcento(nome);
   idxAtual  = ORDEM.indexOf(nomeAtual);
-  const cor = CORES[nomeAtual] || '#6366f1';
+  const cor = CORES[nomeAtual] || '#16233F';
 
   // Atualiza UI
   document.getElementById('avatar').textContent  = nomeAtual[0];
@@ -220,7 +220,7 @@ async function carregar(nome){
     iniciarScroll();
   } catch(e){
     document.getElementById('conteudo').className='loading';
-    document.getElementById('conteudo').innerHTML=`<span style="color:#ef4444">Erro: ${e.message}</span>`;
+    document.getElementById('conteudo').innerHTML=`<span style="color:#D6314A">Erro: ${e.message}</span>`;
   }
 }
 

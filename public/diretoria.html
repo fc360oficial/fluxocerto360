@@ -7,11 +7,11 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#08111F;--bg2:#0B1220;
-  --card:#121B2E;--card2:#172033;
-  --brand:#FACC15;--brand-glow:rgba(250,204,21,.20);--brand-dim:rgba(250,204,21,.08);
-  --green:#22C55E;--red:#EF4444;
-  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
+  --bg:#F7F7F5;--bg2:#F1F2F0;
+  --card:#FFFFFF;--card2:#FFFFFF;
+  --brand:#FFC600;--brand-glow:rgba(250,204,21,.20);--brand-dim:rgba(250,204,21,.08);
+  --green:#158A4A;--red:#D6314A;
+  --text:#FFFFFF;--text2:#5B6373;--text3:#5B6373;
   --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
   --r:20px;--r-sm:12px;
   --sh:0 8px 32px rgba(0,0,0,.35);
@@ -32,11 +32,11 @@ body::before{
 
 /* ── BARRA AMARELA ── */
 .brand-bar{
-  height:36px;flex-shrink:0;background:#FACC15;
+  height:36px;flex-shrink:0;background:#FFC600;
   display:flex;align-items:center;justify-content:center;
   position:relative;z-index:200;
 }
-.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
+.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#F1F2F0}
 .brand-bar .b-right{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
 
 /* ── HEADER AZUL ── */
@@ -48,9 +48,9 @@ header{
   box-shadow:0 4px 40px rgba(0,0,0,.55);
   padding:0 20px;display:flex;align-items:center;gap:16px;
 }
-.h-logo{height:32px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);flex-shrink:0}
+.h-logo{height:32px;flex-shrink:0}
 .h-brand{flex-shrink:0}
-.h-brand h1{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
+.h-brand h1{font-size:13px;font-weight:900;color:#5C4600;letter-spacing:2px;text-transform:uppercase;line-height:1}
 .h-brand p{font-size:8px;color:var(--text3);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
 .h-sep{width:1px;height:32px;background:var(--border-md);flex-shrink:0}
 .h-clock{display:none}
@@ -58,18 +58,18 @@ header{
   text-shadow:0 0 40px rgba(255,255,255,.15)}
 .clock-sub{display:flex;gap:12px;justify-content:center;margin-top:3px}
 .clock-date{font-size:10px;color:var(--text3)}
-.clock-semana{font-size:10px;color:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+.clock-semana{font-size:10px;color:#5C4600;font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
 .h-fill{flex:1}
 .h-title{text-align:right;flex-shrink:0}
-.h-title h2{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2.5px;text-transform:uppercase;line-height:1}
+.h-title h2{font-size:13px;font-weight:900;color:#5C4600;letter-spacing:2.5px;text-transform:uppercase;line-height:1}
 .h-title p{font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
 .h-close{
-  display:flex;align-items:center;gap:5px;color:#0a0e18;text-decoration:none;
+  display:flex;align-items:center;gap:5px;color:#F1F2F0;text-decoration:none;
   font-size:11px;font-weight:700;padding:5px 12px;
   border-radius:6px;border:1px solid rgba(0,0,0,.2);
   background:rgba(0,0,0,.08);transition:all .2s;flex-shrink:0;
 }
-.h-close:hover{background:rgba(239,68,68,.15);border-color:#EF4444;color:#EF4444}
+.h-close:hover{background:rgba(239,68,68,.15);border-color:#D6314A;color:#D6314A}
 
 /* ── TIMER BAR ── */
 .timer-bar-wrap{height:3px;background:rgba(250,204,21,.12);flex-shrink:0;position:relative;z-index:1}
@@ -94,7 +94,7 @@ header{
   border-color:rgba(250,204,21,.45);
   box-shadow:var(--sh),0 0 24px rgba(250,204,21,.12);
 }
-.kc-loja{font-size:9px;font-weight:900;color:var(--brand);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.kc-loja{font-size:9px;font-weight:900;color:#5C4600;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
 .kc-fat{font-size:26px;font-weight:900;color:#fff;line-height:1;letter-spacing:-0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kc-ant{font-size:11px;color:var(--text2);margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:2px}
@@ -104,7 +104,7 @@ header{
 .kc-kpi{flex:1}
 .kc-kpi-lbl{font-size:8px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
 .kc-kpi-val{font-size:14px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kc-kpi-val.msv{color:var(--brand)}
+.kc-kpi-val.msv{color:#5C4600}
 
 /* ── CHARTS ROW ── */
 .charts-row{
@@ -124,7 +124,7 @@ header{
 .chart-title{font-size:12px;font-weight:800;color:var(--text);flex:1}
 .chart-badge{
   font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;
-  background:rgba(250,204,21,.15);color:var(--brand);border:1px solid rgba(250,204,21,.3);
+  background:rgba(250,204,21,.15);color:#5C4600;border:1px solid rgba(250,204,21,.3);
 }
 .loja-indicator{
   display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0;
@@ -134,7 +134,7 @@ header{
   background:var(--border-md);transition:background .3s,transform .3s;flex-shrink:0;
 }
 .loja-dot.ativo{background:var(--brand);transform:scale(1.3)}
-.loja-nome{font-size:11px;font-weight:800;color:var(--brand);letter-spacing:1px}
+.loja-nome{font-size:11px;font-weight:800;color:#5C4600;letter-spacing:1px}
 .chart-wrap{flex:1;position:relative;min-height:0}
 .chart-wrap canvas{width:100%!important;height:100%!important}
 .loading-chart{display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;height:100%}
@@ -338,8 +338,8 @@ function renderTopVendidos(data) {
       plugins:{ legend:{display:false},
         tooltip:{callbacks:{label:ctx=>` ${fmtN(ctx.raw)} unidades`}} },
       scales:{
-        x:{grid:{color:'#1e293b'},ticks:{color:'#94a3b8',callback:v=>fmtN(v)}},
-        y:{grid:{display:false},ticks:{color:'#e2e8f0',font:{size:11}}}
+        x:{grid:{color:'#FFFFFF'},ticks:{color:'#5B6373',callback:v=>fmtN(v)}},
+        y:{grid:{display:false},ticks:{color:'#16233F',font:{size:11}}}
       }
     }
   });
@@ -366,8 +366,8 @@ function renderMercadologico(data) {
       plugins:{ legend:{display:false},
         tooltip:{callbacks:{label:ctx=>` R$ ${fmt(ctx.raw)}`}} },
       scales:{
-        x:{grid:{color:'#1e293b'},ticks:{color:'#94a3b8',callback:v=>'R$'+fmtN(v)}},
-        y:{grid:{display:false},ticks:{color:'#e2e8f0',font:{size:11}}}
+        x:{grid:{color:'#FFFFFF'},ticks:{color:'#5B6373',callback:v=>'R$'+fmtN(v)}},
+        y:{grid:{display:false},ticks:{color:'#16233F',font:{size:11}}}
       }
     }
   });
@@ -463,7 +463,7 @@ setInterval(() => {
 .btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
   border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
   transition:all .3s;z-index:999;backdrop-filter:blur(4px);opacity:0}
-.btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+.btn-fs-fixed:hover{opacity:1;color:#5C4600;border-color:#FFC600}
 </style>
 <button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 <script>

@@ -7,83 +7,83 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+body{font-family:'Segoe UI',sans-serif;background:#F7F7F5;color:#16233F;min-height:100vh;overflow-x:hidden}
 
 /* SIDEBAR */
-.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;z-index:50}
-.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #334155}
-.sidebar-logo h2{font-size:15px;color:#F9C200;font-weight:700;letter-spacing:0.5px}
-.sidebar-logo p{font-size:11px;color:#64748b;margin-top:2px}
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:220px;background:#FFFFFF;border-right:1px solid #E6E7E3;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #E6E7E3}
+.sidebar-logo h2{font-size:15px;color:#5C4600;font-weight:700;letter-spacing:0.5px}
+.sidebar-logo p{font-size:11px;color:#5B6373;margin-top:2px}
 .sidebar-nav{padding:10px 0;flex:1}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
-.nav-item:hover{background:#334155;color:#f1f5f9}
-.nav-item.active{background:#F9C20018;color:#F9C200;border-right:3px solid #F9C200}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#5B6373;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
+.nav-item:hover{background:#E6E7E3;color:#16233F}
+.nav-item.active{background:#FFC60018;color:#5C4600;border-right:3px solid #FFC600}
 .nav-item .ic{font-size:15px;width:20px;text-align:center}
 .nav-sub{padding-left:36px;font-size:12px}
-.nav-sub.active{background:#F9C20010;color:#F9C200;border-right:3px solid #F9C200}
+.nav-sub.active{background:#FFC60010;color:#5C4600;border-right:3px solid #FFC600}
 
 /* LAYOUT */
 .main{margin-left:220px;padding:24px}
 
 /* HEADER */
 .page-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
-.page-hdr h1{font-size:21px;font-weight:700;color:#f8fafc}
-.page-hdr p{font-size:12px;color:#64748b;margin-top:2px}
+.page-hdr h1{font-size:21px;font-weight:700;color:#16233F}
+.page-hdr p{font-size:12px;color:#5B6373;margin-top:2px}
 
 /* FILTROS */
-.filtros{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.filtros{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .fg{display:flex;flex-direction:column;gap:4px}
-.fg label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.fg select{background:#0f172a;border:1px solid #334155;border-radius:7px;color:#e2e8f0;padding:7px 11px;font-size:13px;outline:none;min-width:120px}
-.fg select:focus{border-color:#F9C200}
+.fg label{font-size:10px;color:#5B6373;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.fg select{background:#F7F7F5;border:1px solid #E6E7E3;border-radius:7px;color:#16233F;padding:7px 11px;font-size:13px;outline:none;min-width:120px}
+.fg select:focus{border-color:#FFC600}
 .btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end;white-space:nowrap}
-.btn-pri{background:#F9C200;color:#0f0f1a;font-weight:700}.btn-pri:hover{background:#e0ae00}
+.btn-pri{background:#FFC600;color:#5C4600;font-weight:700}.btn-pri:hover{background:#e0ae00}
 
 /* KPI CARDS */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.kpi{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px;position:relative;overflow:hidden}
+.kpi{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:10px;padding:14px 18px;position:relative;overflow:hidden}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.kpi.blue::before{background:#3b82f6}
-.kpi.green::before{background:#10b981}
-.kpi.amber::before{background:#f59e0b}
-.kpi.rose::before{background:#f43f5e}
-.kpi-l{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.kpi-v{font-size:22px;font-weight:700;color:#f1f5f9}
-.kpi-s{font-size:11px;margin-top:4px;color:#64748b}
-.up{color:#10b981}.dn{color:#ef4444}
+.kpi.blue::before{background:#16233F}
+.kpi.green::before{background:#158A4A}
+.kpi.amber::before{background:#B45C00}
+.kpi.rose::before{background:#D6314A}
+.kpi-l{font-size:10px;color:#5B6373;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-v{font-size:22px;font-weight:700;color:#16233F}
+.kpi-s{font-size:11px;margin-top:4px;color:#5B6373}
+.up{color:#158A4A}.dn{color:#D6314A}
 
 /* CHART CARD */
-.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px 20px;margin-bottom:20px}
+.card{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:12px;padding:18px 20px;margin-bottom:20px}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
-.card-hdr h2{font-size:14px;font-weight:700;color:#f1f5f9}
+.card-hdr h2{font-size:14px;font-weight:700;color:#16233F}
 .legenda{display:flex;gap:14px;align-items:center}
 .leg-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
-.leg-txt{font-size:11px;color:#94a3b8}
+.leg-txt{font-size:11px;color:#5B6373}
 .chart-wrap{position:relative;height:320px}
 
 /* TABELA */
-.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #334155}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #E6E7E3}
 table.dt{width:100%;border-collapse:collapse;font-size:12px}
-table.dt thead{background:#0f172a;position:sticky;top:0;z-index:1}
-table.dt th{padding:9px 12px;text-align:left;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid #334155}
+table.dt thead{background:#F7F7F5;position:sticky;top:0;z-index:1}
+table.dt th{padding:9px 12px;text-align:left;color:#5B6373;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid #E6E7E3}
 table.dt th.r{text-align:right}
-table.dt td{padding:8px 12px;border-bottom:1px solid #1e293b;color:#e2e8f0;vertical-align:middle}
+table.dt td{padding:8px 12px;border-bottom:1px solid #E6E7E3;color:#16233F;vertical-align:middle}
 table.dt td.r{text-align:right}
 table.dt tbody tr:hover{background:#ffffff06}
-.var-pos{color:#10b981;font-weight:700}
-.var-neg{color:#ef4444;font-weight:700}
-.var-zero{color:#64748b}
-.loading{text-align:center;padding:40px;color:#64748b;font-size:14px}
+.var-pos{color:#158A4A;font-weight:700}
+.var-neg{color:#D6314A;font-weight:700}
+.var-zero{color:#5B6373}
+.loading{text-align:center;padding:40px;color:#5B6373;font-size:14px}
 
 /* ABAS */
-.tabs{display:flex;gap:4px;border-bottom:1px solid #334155;margin-bottom:16px}
-.tab-btn{background:none;border:none;cursor:pointer;padding:8px 16px;font-size:13px;font-weight:600;color:#64748b;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
-.tab-btn:hover{color:#e2e8f0}
-.tab-btn.active{color:#F9C200;border-bottom-color:#F9C200}
+.tabs{display:flex;gap:4px;border-bottom:1px solid #E6E7E3;margin-bottom:16px}
+.tab-btn{background:none;border:none;cursor:pointer;padding:8px 16px;font-size:13px;font-weight:600;color:#5B6373;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:#16233F}
+.tab-btn.active{color:#5C4600;border-bottom-color:#FFC600}
 
 /* RESPONSIVE */
 @media(max-width:900px){
-  .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;width:100%;flex-direction:column;border-right:none;border-top:1px solid #334155}
+  .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;width:100%;flex-direction:column;border-right:none;border-top:1px solid #E6E7E3}
   .sidebar-logo{display:none}
   .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px}
   .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center;border-right:none!important}
@@ -92,7 +92,7 @@ table.dt tbody tr:hover{background:#ffffff06}
   .main{margin-left:0;margin-bottom:80px;padding:14px}
   .kpi-row{grid-template-columns:1fr 1fr}
   .chart-wrap{height:240px}
-  div[style*="border-top:1px solid #334155"]{display:none}
+  div[style*="border-top:1px solid #E6E7E3"]{display:none}
 }
 </style>
 </head>
@@ -100,7 +100,7 @@ table.dt tbody tr:hover{background:#ffffff06}
 
 <div class="sidebar">
   <div class="sidebar-logo">
-    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)">
+    <img src="/logo.png" alt="Econômico" style="width:160px;height:auto;display:block;">
   </div>
   <nav class="sidebar-nav">
     <a href="index.html"       class="nav-item"><span class="ic">📊</span> Dashboard</a>
@@ -112,9 +112,9 @@ table.dt tbody tr:hover{background:#ffffff06}
     <a href="prevencao.html"  class="nav-item"><span class="ic">🛡️</span> Prevenção</a>
     <a href="ruptura.html" class="nav-item"><span class="ic">🤖</span> Gestao de Rupturas</a>
   </nav>
-  <div style="padding:12px 16px;border-top:1px solid #334155;margin-top:auto">
-    <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="sidebar-user">👤 ...</div>
-    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#f87171;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #7f1d1d;background:#450a0a22;transition:background .15s" onmouseover="this.style.background='#450a0a'" onmouseout="this.style.background='#450a0a22'">🚪 Sair</a>
+  <div style="padding:12px 16px;border-top:1px solid #E6E7E3;margin-top:auto">
+    <div style="font-size:11px;color:#5B6373;margin-bottom:6px" id="sidebar-user">👤 ...</div>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:6px;color:#D6314A;font-size:12px;font-weight:600;text-decoration:none;padding:6px 8px;border-radius:6px;border:1px solid #F3C1CB;background:#FCEBEE22;transition:background .15s" onmouseover="this.style.background='#FCEBEE'" onmouseout="this.style.background='#FCEBEE22'">🚪 Sair</a>
   </div>
 </div>
 <script>fetch('/api/me').then(r=>r.json()).then(u=>{if(u.nome)document.getElementById('sidebar-user').textContent='👤 '+u.nome}).catch(()=>{})</script>
@@ -286,9 +286,9 @@ table.dt tbody tr:hover{background:#ffffff06}
 
     <!-- Tab: Margem s/ Venda -->
     <div id="tab-margem" style="display:none">
-      <p style="font-size:11px;color:#64748b;margin-bottom:14px">Margem Sobre Venda = (Venda − Custo) ÷ Venda × 100 &nbsp;·&nbsp; Fonte: campo Custo de zcupomitens</p>
+      <p style="font-size:11px;color:#5B6373;margin-bottom:14px">Margem Sobre Venda = (Venda − Custo) ÷ Venda × 100 &nbsp;·&nbsp; Fonte: campo Custo de zcupomitens</p>
 
-      <h3 style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Mês — 2025 vs 2026</h3>
+      <h3 style="font-size:12px;font-weight:700;color:#5B6373;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Mês — 2025 vs 2026</h3>
       <div class="table-wrap" style="margin-bottom:24px">
         <table class="dt">
           <thead>
@@ -305,7 +305,7 @@ table.dt tbody tr:hover{background:#ffffff06}
         </table>
       </div>
 
-      <h3 id="titulo-margem-loja" style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Loja — Mês Selecionado</h3>
+      <h3 id="titulo-margem-loja" style="font-size:12px;font-weight:700;color:#5B6373;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Loja — Mês Selecionado</h3>
       <div class="table-wrap">
         <table class="dt">
           <thead>
@@ -325,7 +325,7 @@ table.dt tbody tr:hover{background:#ffffff06}
 
     <!-- Tab: Compra x Venda -->
     <div id="tab-cv" style="display:none">
-      <p id="cv-subtitulo" style="font-size:11px;color:#64748b;margin-bottom:14px">
+      <p id="cv-subtitulo" style="font-size:11px;color:#5B6373;margin-bottom:14px">
         Venda = NFC-e (PDV) + NF-e saída &nbsp;·&nbsp; Compra = NF-e de entrada recebidas &nbsp;·&nbsp; C/V% = Compra ÷ Venda Total × 100
       </p>
       <div class="table-wrap">
@@ -336,8 +336,8 @@ table.dt tbody tr:hover{background:#ffffff06}
               <th class="r">Venda NFC-e</th>
               <th class="r">Venda NF-e</th>
               <th class="r">Venda Total</th>
-              <th class="r" style="color:#60a5fa">Compra c/ NF</th>
-              <th class="r" style="color:#60a5fa">C/V%</th>
+              <th class="r" style="color:#16233F">Compra c/ NF</th>
+              <th class="r" style="color:#16233F">C/V%</th>
             </tr>
           </thead>
           <tbody id="tbody-cv"><tr><td colspan="6" class="loading">Selecione a aba para carregar</td></tr></tbody>
@@ -351,8 +351,8 @@ table.dt tbody tr:hover{background:#ffffff06}
     <div class="card-hdr">
       <h2>Vendas por Dia — <span id="chart-titulo">...</span></h2>
       <div class="legenda">
-        <div style="display:flex;align-items:center;gap:6px"><div class="leg-dot" style="background:#3b82f6"></div><span class="leg-txt">2025</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div class="leg-dot" style="background:#F9C200"></div><span class="leg-txt">2026</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="leg-dot" style="background:#16233F"></div><span class="leg-txt">2025</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="leg-dot" style="background:#FFC600"></div><span class="leg-txt">2026</span></div>
       </div>
     </div>
     <div class="chart-wrap">
@@ -407,10 +407,10 @@ function renderizar(data) {
       .reduce((s, d) => s + d.v2025, 0);
     const varPeriodo = tot25Periodo > 0 ? (data.total2026 - tot25Periodo) / tot25Periodo * 100 : null;
     const varSpan = varPeriodo !== null
-      ? ` <span style="font-weight:700;color:${varPeriodo >= 0 ? '#10b981' : '#ef4444'}">${PCT(varPeriodo)}</span>`
+      ? ` <span style="font-weight:700;color:${varPeriodo >= 0 ? '#158A4A' : '#D6314A'}">${PCT(varPeriodo)}</span>`
       : '';
     document.getElementById('k-sub25').innerHTML =
-      `mês completo de ${MESES[mes]}<br><span style="color:#60a5fa;font-size:11px">até dia ${diaAtual}: ${BRL(tot25Periodo)}${varSpan}</span>`;
+      `mês completo de ${MESES[mes]}<br><span style="color:#16233F;font-size:11px">até dia ${diaAtual}: ${BRL(tot25Periodo)}${varSpan}</span>`;
   } else {
     document.getElementById('k-sub25').textContent = `mês de ${MESES[mes]}`;
   }
@@ -471,11 +471,11 @@ function renderizar(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1e293b',
-          borderColor: '#334155',
+          backgroundColor: '#FFFFFF',
+          borderColor: '#E6E7E3',
           borderWidth: 1,
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
+          titleColor: '#5B6373',
+          bodyColor: '#16233F',
           callbacks: {
             title: ctx => `Dia ${ctx[0].label}`,
             label: ctx => ` ${ctx.dataset.label}: ${BRL(ctx.raw)}`
@@ -485,12 +485,12 @@ function renderizar(data) {
       scales: {
         x: {
           grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#64748b', font: { size: 11 } }
+          ticks: { color: '#5B6373', font: { size: 11 } }
         },
         y: {
           grid: { color: 'rgba(255,255,255,0.05)' },
           ticks: {
-            color: '#64748b',
+            color: '#5B6373',
             font: { size: 11 },
             callback: v => 'R$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
           }
@@ -514,8 +514,8 @@ function renderizar(data) {
     tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td><strong>${String(d.dia).padStart(2,'0')}</strong></td>
-        <td class="r">${d.v2025 > 0 ? BRL(d.v2025) : '<span style="color:#334155">—</span>'}</td>
-        <td class="r">${d.v2026 > 0 ? BRL(d.v2026) : '<span style="color:#334155">—</span>'}</td>
+        <td class="r">${d.v2025 > 0 ? BRL(d.v2025) : '<span style="color:#E6E7E3">—</span>'}</td>
+        <td class="r">${d.v2026 > 0 ? BRL(d.v2026) : '<span style="color:#E6E7E3">—</span>'}</td>
         <td class="r">${varCell}</td>
         <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${d.v2025 > 0 || d.v2026 > 0 ? (dif >= 0 ? '+' : '') + BRL(dif) : ''}</td>
         <td class="r">${d.c2025 || ''}</td>
@@ -526,7 +526,7 @@ function renderizar(data) {
   // Totais
   const difTot = tot26 - tot25;
   tbody.insertAdjacentHTML('beforeend', `
-    <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+    <tr style="background:#F7F7F5;font-weight:700;border-top:2px solid #E6E7E3">
       <td>Total</td>
       <td class="r">${BRL(tot25)}</td>
       <td class="r">${BRL(tot26)}</td>
@@ -606,8 +606,8 @@ function carregarMensal() {
         tbody.insertAdjacentHTML('beforeend', `
           <tr>
             <td><strong>${m.nome}</strong></td>
-            <td class="r">${m.v2025 > 0 ? BRL(m.v2025) : '<span style="color:#334155">—</span>'}</td>
-            <td class="r">${m.v2026 > 0 ? BRL(m.v2026) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${m.v2025 > 0 ? BRL(m.v2025) : '<span style="color:#E6E7E3">—</span>'}</td>
+            <td class="r">${m.v2026 > 0 ? BRL(m.v2026) : '<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r">${varCell}</td>
             <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${m.v2025 > 0 || m.v2026 > 0 ? (dif >= 0 ? '+' : '') + BRL(dif) : ''}</td>
             <td class="r">${m.c2025 || ''}</td>
@@ -617,7 +617,7 @@ function carregarMensal() {
       }
       const difTot = data.total2026 - data.total2025;
       tbody.insertAdjacentHTML('beforeend', `
-        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+        <tr style="background:#F7F7F5;font-weight:700;border-top:2px solid #E6E7E3">
           <td>Total Ano</td>
           <td class="r">${BRL(data.total2025)}</td>
           <td class="r">${BRL(data.total2026)}</td>
@@ -634,11 +634,11 @@ function carregarMensal() {
 }
 
 function mercRow(item, dif, varCell, indent) {
-  const pad = indent ? 'padding-left:28px;color:#94a3b8;font-size:11px' : 'font-weight:700';
+  const pad = indent ? 'padding-left:28px;color:#5B6373;font-size:11px' : 'font-weight:700';
   return `<tr style="${indent ? 'background:#ffffff04' : ''}">
     <td style="${pad}">${indent ? '↳ ' : ''}${item.nome}</td>
-    <td class="r">${item.v2025>0 ? BRL(item.v2025) : '<span style="color:#334155">—</span>'}</td>
-    <td class="r">${item.v2026>0 ? BRL(item.v2026) : '<span style="color:#334155">—</span>'}</td>
+    <td class="r">${item.v2025>0 ? BRL(item.v2025) : '<span style="color:#E6E7E3">—</span>'}</td>
+    <td class="r">${item.v2026>0 ? BRL(item.v2026) : '<span style="color:#E6E7E3">—</span>'}</td>
     <td class="r">${varCell}</td>
     <td class="r ${dif>=0?'var-pos':'var-neg'}">${item.v2025>0||item.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
   </tr>`;
@@ -667,9 +667,9 @@ function carregarMerc() {
         // Linha do grupo — clicável para expandir subgrupos
         tbody.insertAdjacentHTML('beforeend', `
           <tr style="cursor:pointer;background:#1a2540" onclick="toggleSubs('${gId}')">
-            <td style="font-weight:700"><span id="ic-${gId}" style="color:#F9C200;margin-right:6px;font-size:10px">▶</span>${g.nome}</td>
-            <td class="r" style="font-weight:700">${g.v2025>0?BRL(g.v2025):'<span style="color:#334155">—</span>'}</td>
-            <td class="r" style="font-weight:700">${g.v2026>0?BRL(g.v2026):'<span style="color:#334155">—</span>'}</td>
+            <td style="font-weight:700"><span id="ic-${gId}" style="color:#5C4600;margin-right:6px;font-size:10px">▶</span>${g.nome}</td>
+            <td class="r" style="font-weight:700">${g.v2025>0?BRL(g.v2025):'<span style="color:#E6E7E3">—</span>'}</td>
+            <td class="r" style="font-weight:700">${g.v2026>0?BRL(g.v2026):'<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r">${varCell}</td>
             <td class="r ${dif>=0?'var-pos':'var-neg'}" style="font-weight:700">${g.v2025>0||g.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
           </tr>`);
@@ -685,9 +685,9 @@ function carregarMerc() {
           }
           tbody.insertAdjacentHTML('beforeend',
             `<tr class="sub-${gId}" style="display:none;background:#0d1829;cursor:pointer" onclick="toggleSubs('${sId}')">
-              <td style="padding-left:24px;font-size:12px;font-weight:600"><span id="ic-${sId}" style="color:#60a5fa;margin-right:5px;font-size:9px">▶</span>↳ ${s.nome}</td>
-              <td class="r" style="font-size:12px;font-weight:600">${s.v2025>0?BRL(s.v2025):'<span style="color:#334155">—</span>'}</td>
-              <td class="r" style="font-size:12px;font-weight:600">${s.v2026>0?BRL(s.v2026):'<span style="color:#334155">—</span>'}</td>
+              <td style="padding-left:24px;font-size:12px;font-weight:600"><span id="ic-${sId}" style="color:#16233F;margin-right:5px;font-size:9px">▶</span>↳ ${s.nome}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2025>0?BRL(s.v2025):'<span style="color:#E6E7E3">—</span>'}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2026>0?BRL(s.v2026):'<span style="color:#E6E7E3">—</span>'}</td>
               <td class="r">${svc}</td>
               <td class="r ${sd>=0?'var-pos':'var-neg'}" style="font-size:12px;font-weight:600">${s.v2025>0||s.v2026>0?(sd>=0?'+':'')+BRL(sd):''}</td>
             </tr>`);
@@ -701,9 +701,9 @@ function carregarMerc() {
             }
             tbody.insertAdjacentHTML('beforeend',
               `<tr class="sub-${gId} sub-${sId}" style="display:none;background:#080f1e">
-                <td style="padding-left:48px;color:#64748b;font-size:11px">· ${m.nome}</td>
-                <td class="r" style="font-size:11px;color:#94a3b8">${m.v2025>0?BRL(m.v2025):'<span style="color:#1e293b">—</span>'}</td>
-                <td class="r" style="font-size:11px;color:#94a3b8">${m.v2026>0?BRL(m.v2026):'<span style="color:#1e293b">—</span>'}</td>
+                <td style="padding-left:48px;color:#5B6373;font-size:11px">· ${m.nome}</td>
+                <td class="r" style="font-size:11px;color:#5B6373">${m.v2025>0?BRL(m.v2025):'<span style="color:#FFFFFF">—</span>'}</td>
+                <td class="r" style="font-size:11px;color:#5B6373">${m.v2026>0?BRL(m.v2026):'<span style="color:#FFFFFF">—</span>'}</td>
                 <td class="r">${mvc}</td>
                 <td class="r ${md>=0?'var-pos':'var-neg'}" style="font-size:11px">${m.v2025>0||m.v2026>0?(md>=0?'+':'')+BRL(md):''}</td>
               </tr>`);
@@ -712,7 +712,7 @@ function carregarMerc() {
       }
       const difTot = data.total2026 - data.total2025;
       tbody.insertAdjacentHTML('beforeend', `
-        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+        <tr style="background:#F7F7F5;font-weight:700;border-top:2px solid #E6E7E3">
           <td>Total</td>
           <td class="r">${BRL(data.total2025)}</td>
           <td class="r">${BRL(data.total2026)}</td>
@@ -761,8 +761,8 @@ function carregarLojas() {
         tbody.insertAdjacentHTML('beforeend', `
           <tr>
             <td><strong>Loja ${l.loja}</strong></td>
-            <td class="r">${l.v2025 > 0 ? BRL(l.v2025) : '<span style="color:#334155">—</span>'}</td>
-            <td class="r">${l.v2026 > 0 ? BRL(l.v2026) : '<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.v2025 > 0 ? BRL(l.v2025) : '<span style="color:#E6E7E3">—</span>'}</td>
+            <td class="r">${l.v2026 > 0 ? BRL(l.v2026) : '<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r">${varCell}</td>
             <td class="r ${dif>=0?'var-pos':'var-neg'}">${l.v2025>0||l.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
             <td class="r">${l.c2025||''}</td>
@@ -771,7 +771,7 @@ function carregarLojas() {
       }
       const difTot = data.total2026 - data.total2025;
       tbody.insertAdjacentHTML('beforeend', `
-        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+        <tr style="background:#F7F7F5;font-weight:700;border-top:2px solid #E6E7E3">
           <td>Total Rede</td>
           <td class="r">${BRL(data.total2025)}</td>
           <td class="r">${BRL(data.total2026)}</td>
@@ -835,20 +835,20 @@ function carregarMargem() {
       tbM.innerHTML = '';
       let tv25=0,tc25=0,tv26=0,tc26=0;
       const mesSel = parseInt(mes);
-      const diaLabel = data.diaHoje ? ` <span style="color:#94a3b8;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
+      const diaLabel = data.diaHoje ? ` <span style="color:#5B6373;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
       for (const m of data.por_mes) {
         tv25+=m.venda2025; tc25+=m.custo2025; tv26+=m.venda2026; tc26+=m.custo2026;
         const d = (m.msv2025!==null && m.msv2026!==null) ? +(m.msv2026-m.msv2025).toFixed(2) : null;
         const dc = d!==null ? (d>=0?'var-pos':'var-neg') : 'var-zero';
         const msvCls26 = m.msv2026!==null ? (m.msv2026>=20?'var-pos':m.msv2026>=12?'':'var-neg') : 'var-zero';
         const msvCls25 = m.msv2025!==null ? (m.msv2025>=20?'var-pos':m.msv2025>=12?'':'var-neg') : 'var-zero';
-        const destaque = m.mes===mesSel ? 'background:#F9C20012;' : '';
+        const destaque = m.mes===mesSel ? 'background:#FFC60012;' : '';
         tbM.insertAdjacentHTML('beforeend', `
           <tr style="${destaque}">
-            <td><strong>${m.nome}</strong>${m.parcial?diaLabel:''}${m.mes===mesSel?' <span style="color:#F9C200;font-size:10px">◀</span>':''}</td>
-            <td class="r">${m.venda2025>0?BRL(m.venda2025):'<span style="color:#334155">—</span>'}</td>
+            <td><strong>${m.nome}</strong>${m.parcial?diaLabel:''}${m.mes===mesSel?' <span style="color:#5C4600;font-size:10px">◀</span>':''}</td>
+            <td class="r">${m.venda2025>0?BRL(m.venda2025):'<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r ${msvCls25}">${m.msv2025!==null?m.msv2025.toFixed(2)+'%':'—'}</td>
-            <td class="r">${m.venda2026>0?BRL(m.venda2026):'<span style="color:#334155">—</span>'}</td>
+            <td class="r">${m.venda2026>0?BRL(m.venda2026):'<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r ${msvCls26}">${m.msv2026!==null?m.msv2026.toFixed(2)+'%':'—'}</td>
             <td class="r ${dc}">${d!==null?(d>=0?'+':'')+d.toFixed(2)+' pp':'—'}</td>
           </tr>`);
@@ -857,7 +857,7 @@ function carregarMargem() {
       const tmv26=tv26>0?+((tv26-tc26)/tv26*100).toFixed(2):null;
       const td=tmv25!==null&&tmv26!==null?+(tmv26-tmv25).toFixed(2):null;
       tbM.insertAdjacentHTML('beforeend', `
-        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+        <tr style="background:#F7F7F5;font-weight:700;border-top:2px solid #E6E7E3">
           <td>Total Ano</td>
           <td class="r">${BRL(tv25)}</td>
           <td class="r">${tmv25!==null?tmv25.toFixed(2)+'%':'—'}</td>
@@ -884,9 +884,9 @@ function carregarMargem() {
         tbL.insertAdjacentHTML('beforeend', `
           <tr>
             <td><strong>Loja ${l.loja}</strong></td>
-            <td class="r">${l.venda2025>0?BRL(l.venda2025):'<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.venda2025>0?BRL(l.venda2025):'<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r ${c25}">${l.msv2025!==null?l.msv2025.toFixed(2)+'%':'—'}</td>
-            <td class="r">${l.venda2026>0?BRL(l.venda2026):'<span style="color:#334155">—</span>'}</td>
+            <td class="r">${l.venda2026>0?BRL(l.venda2026):'<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r ${c26}">${l.msv2026!==null?l.msv2026.toFixed(2)+'%':'—'}</td>
             <td class="r ${dc}">${d!==null?(d>=0?'+':'')+d.toFixed(2)+' pp':'—'}</td>
           </tr>`);
@@ -894,7 +894,7 @@ function carregarMargem() {
       const rv25=t.msv2025,rv26=t.msv2026;
       const rd=rv25!==null&&rv26!==null?+(rv26-rv25).toFixed(2):null;
       tbL.insertAdjacentHTML('beforeend', `
-        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+        <tr style="background:#F7F7F5;font-weight:700;border-top:2px solid #E6E7E3">
           <td>Total Rede</td>
           <td class="r">${BRL(t.venda2025)}</td>
           <td class="r">${rv25!==null?rv25.toFixed(2)+'%':'—'}</td>
@@ -931,7 +931,7 @@ function carregarCV() {
       document.getElementById('k-med26').textContent = BRL(t.venda_total);
       document.getElementById('k-med-label').textContent = 'Venda Total';
 
-      const parcialLabel = data.parcial ? ` <span style="color:#94a3b8;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
+      const parcialLabel = data.parcial ? ` <span style="color:#5B6373;font-size:10px">(até dia ${data.diaHoje})</span>` : '';
       document.getElementById('cv-subtitulo').innerHTML =
         `Venda = NFC-e (PDV) + NF-e saída${parcialLabel} &nbsp;·&nbsp; Compra = NF-e de entrada recebidas &nbsp;·&nbsp; C/V% = Compra ÷ Venda Total × 100`;
 
@@ -941,22 +941,22 @@ function carregarCV() {
         const cvCls = l.cv !== null ? (l.cv <= 80 ? 'var-pos' : l.cv <= 95 ? '' : 'var-neg') : 'var-zero';
         tb.insertAdjacentHTML('beforeend', `
           <tr>
-            <td><strong>Loja ${l.loja}</strong><span style="color:#64748b;font-size:10px;margin-left:6px">${LOJAS[l.loja]||''}</span></td>
-            <td class="r">${l.venda_nfce > 0 ? BRL(l.venda_nfce) : '<span style="color:#334155">—</span>'}</td>
-            <td class="r">${l.venda_nfe  > 0 ? BRL(l.venda_nfe)  : '<span style="color:#334155">—</span>'}</td>
-            <td class="r">${l.venda_total > 0 ? BRL(l.venda_total) : '<span style="color:#334155">—</span>'}</td>
-            <td class="r" style="color:#93c5fd">${l.compra > 0 ? BRL(l.compra) : '<span style="color:#334155">—</span>'}</td>
+            <td><strong>Loja ${l.loja}</strong><span style="color:#5B6373;font-size:10px;margin-left:6px">${LOJAS[l.loja]||''}</span></td>
+            <td class="r">${l.venda_nfce > 0 ? BRL(l.venda_nfce) : '<span style="color:#E6E7E3">—</span>'}</td>
+            <td class="r">${l.venda_nfe  > 0 ? BRL(l.venda_nfe)  : '<span style="color:#E6E7E3">—</span>'}</td>
+            <td class="r">${l.venda_total > 0 ? BRL(l.venda_total) : '<span style="color:#E6E7E3">—</span>'}</td>
+            <td class="r" style="color:#5B6373">${l.compra > 0 ? BRL(l.compra) : '<span style="color:#E6E7E3">—</span>'}</td>
             <td class="r ${cvCls}" style="font-weight:700">${l.cv !== null ? l.cv.toFixed(1) + '%' : '—'}</td>
           </tr>`);
       }
       const totCvCls = t.cv !== null ? (t.cv <= 80 ? 'var-pos' : t.cv <= 95 ? '' : 'var-neg') : 'var-zero';
       tb.insertAdjacentHTML('beforeend', `
-        <tr style="background:#0f172a;font-weight:700;border-top:2px solid #334155">
+        <tr style="background:#F7F7F5;font-weight:700;border-top:2px solid #E6E7E3">
           <td>Total Rede</td>
           <td class="r">${BRL(t.venda_nfce)}</td>
           <td class="r">${BRL(t.venda_nfe)}</td>
           <td class="r">${BRL(t.venda_total)}</td>
-          <td class="r" style="color:#93c5fd">${BRL(t.compra)}</td>
+          <td class="r" style="color:#5B6373">${BRL(t.compra)}</td>
           <td class="r ${totCvCls}" style="font-weight:700">${t.cv !== null ? t.cv.toFixed(1) + '%' : '—'}</td>
         </tr>`);
     })

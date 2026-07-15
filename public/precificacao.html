@@ -6,9 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#08111F;--card:#121B2E;--border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
-  --text:#FFFFFF;--text2:#94A3B8;--text3:#64748B;
-  --red:#EF4444;--orange:#f97316;--green:#22C55E;--brand:#FACC15;
+  --bg:#F7F7F5;--card:#FFFFFF;--border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
+  --text:#FFFFFF;--text2:#5B6373;--text3:#5B6373;
+  --red:#D6314A;--orange:#B45C00;--green:#158A4A;--brand:#FFC600;
   --r:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -18,13 +18,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
 /* BARRA AMARELA */
 .brand-bar{
-  height:36px;flex-shrink:0;background:#FACC15;
+  height:36px;flex-shrink:0;background:#FFC600;
   display:flex;align-items:center;justify-content:center;
   position:relative;z-index:200;
 }
 .brand-bar .b-name{
   font-size:15px;font-weight:900;letter-spacing:.35em;
-  text-transform:uppercase;color:#0a0e18;
+  text-transform:uppercase;color:#F1F2F0;
 }
 .brand-bar .b-right{
   position:absolute;right:16px;top:50%;transform:translateY(-50%);
@@ -39,17 +39,17 @@ header{
   padding:0 20px;
   display:flex;align-items:center;gap:16px;flex-shrink:0;
 }
-.h-logo{height:32px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg);flex-shrink:0}
+.h-logo{height:32px;flex-shrink:0}
 .h-brand{flex-shrink:0}
-.h-brand h1{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:2px;text-transform:uppercase;line-height:1}
-.h-brand p{font-size:8px;color:#94A3B8;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.h-brand h1{font-size:13px;font-weight:900;color:#5C4600;letter-spacing:2px;text-transform:uppercase;line-height:1}
+.h-brand p{font-size:8px;color:#5B6373;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
 .h-sep{width:1px;height:32px;background:var(--border-md);flex-shrink:0}
 .h-clock{display:none}
 .clock-time{font-size:58px;font-weight:900;color:#fff;letter-spacing:4px;font-variant-numeric:tabular-nums;line-height:1;
   text-shadow:0 0 40px rgba(255,255,255,.15)}
 .clock-sub{display:flex;gap:12px;justify-content:center;margin-top:3px}
 .clock-date{font-size:10px;color:var(--text3)}
-.clock-semana{font-size:10px;color:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
+.clock-semana{font-size:10px;color:#5C4600;font-weight:700;text-transform:uppercase;letter-spacing:1.5px}
 
 /* STATS BAR */
 .stats{
@@ -87,7 +87,7 @@ header{
   background:rgba(255,198,0,.06);border-bottom:1px solid rgba(255,198,0,.12);
 }
 .col-loja{font-family:'Inter',sans-serif;font-size:14px;font-weight:800;
-  color:var(--brand);letter-spacing:2px;text-transform:uppercase}
+  color:#5C4600;letter-spacing:2px;text-transform:uppercase}
 .col-sub{font-size:9px;color:var(--text3);font-weight:600;margin-top:1px}
 .col-body{flex:1;overflow-y:hidden;padding:4px;min-height:0}
 
@@ -112,10 +112,10 @@ header{
   border-right:1px solid var(--border);
 }
 .mg-loja:last-child{border-right:none}
-.mg-loja-nome{font-size:9px;color:var(--brand);font-weight:700;
+.mg-loja-nome{font-size:9px;color:#5C4600;font-weight:700;
   text-transform:uppercase;letter-spacing:.5px}
 .mg-loja-val{font-family:'Inter',sans-serif;font-size:17px;font-weight:800;
-  font-variant-numeric:tabular-nums;line-height:1.1;color:var(--brand)}
+  font-variant-numeric:tabular-nums;line-height:1.1;color:#5C4600}
 
 .item{
   display:flex;align-items:center;gap:5px;
@@ -124,12 +124,12 @@ header{
 .item.neg{background:rgba(239,68,68,.10);border-left:3px solid var(--red)}
 .item.baixo{background:rgba(249,115,22,.08);border-left:3px solid var(--orange)}
 .item-info{flex:1;min-width:0}
-.item-desc{font-size:12px;font-weight:700;color:#cbd5e1;
+.item-desc{font-size:12px;font-weight:700;color:#16233F;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item-row2{display:flex;align-items:center;gap:8px;margin-top:1px}
-.item-cod{font-size:10px;color:#94a3b8;font-weight:600}
-.item-preco{font-size:10px;color:#86efac;font-weight:700}
-.item-custo{font-size:10px;color:#fca5a5;font-weight:700}
+.item-cod{font-size:10px;color:#5B6373;font-weight:600}
+.item-preco{font-size:10px;color:#158A4A;font-weight:700}
+.item-custo{font-size:10px;color:#D6314A;font-weight:700}
 .item-pct{font-size:13px;font-weight:900;min-width:48px;text-align:right;flex-shrink:0}
 .item.neg .item-pct{color:var(--red)}
 .item.baixo .item-pct{color:var(--orange)}
@@ -139,12 +139,12 @@ header{
 
 .loading{padding:24px 8px;text-align:center;color:var(--text3);font-size:10px}
 .h-close{
-  display:flex;align-items:center;gap:5px;color:#0a0e18;text-decoration:none;
+  display:flex;align-items:center;gap:5px;color:#F1F2F0;text-decoration:none;
   font-size:11px;font-weight:700;padding:5px 12px;
   border-radius:6px;border:1px solid rgba(0,0,0,.2);
   background:rgba(0,0,0,.08);transition:all .2s;flex-shrink:0;
 }
-.h-close:hover{background:rgba(239,68,68,.15);border-color:#EF4444;color:#EF4444}
+.h-close:hover{background:rgba(239,68,68,.15);border-color:#D6314A;color:#D6314A}
 
 /* ── TV MODE (iframe/supervisão) ── */
 body.tv{padding:0}
@@ -359,7 +359,7 @@ async function buscarDados() {
   } catch(e) {
     if (!ultimoData) {
       document.getElementById('grid').innerHTML =
-        `<div class="loading" style="color:#ef4444">Erro ao carregar dados (${e.message})<br><br>Verifique se o servidor está acessível.</div>`;
+        `<div class="loading" style="color:#D6314A">Erro ao carregar dados (${e.message})<br><br>Verifique se o servidor está acessível.</div>`;
     }
   }
 }
@@ -466,7 +466,7 @@ setInterval(agendarRefresh, 3 * 60 * 1000); // a cada 3 min busca dados sem inte
 .btn-fs-fixed{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
   border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
   transition:all .3s;z-index:999;backdrop-filter:blur(4px);opacity:0}
-.btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+.btn-fs-fixed:hover{opacity:1;color:#5C4600;border-color:#FFC600}
 </style>
 <button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 <script>

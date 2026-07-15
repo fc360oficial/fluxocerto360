@@ -5,71 +5,71 @@
 <title>Comparativo TV</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;background:#070d1a;color:#e2e8f0;font-family:'Segoe UI',sans-serif}
+html,body{width:100%;height:100%;overflow:hidden;background:#F1F2F0;color:#16233F;font-family:'Segoe UI',sans-serif}
 body{display:flex;flex-direction:column;padding:0}
 
 /* BARRA AMARELA */
 .brand-bar{
-  height:36px;flex-shrink:0;background:#FACC15;
+  height:36px;flex-shrink:0;background:#FFC600;
   display:flex;align-items:center;justify-content:center;position:relative;
 }
-.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#0a0e18}
+.brand-bar .b-name{font-size:15px;font-weight:900;letter-spacing:.35em;text-transform:uppercase;color:#F1F2F0}
 .brand-bar .b-right{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
 .h-close{
-  display:flex;align-items:center;gap:5px;color:#0a0e18;text-decoration:none;
+  display:flex;align-items:center;gap:5px;color:#F1F2F0;text-decoration:none;
   font-size:11px;font-weight:700;padding:5px 12px;
   border-radius:6px;border:1px solid rgba(0,0,0,.2);
   background:rgba(0,0,0,.08);transition:all .2s;
 }
-.h-close:hover{background:rgba(239,68,68,.15);border-color:#EF4444;color:#EF4444}
+.h-close:hover{background:rgba(239,68,68,.15);border-color:#D6314A;color:#D6314A}
 
 /* HEADER AZUL */
 .hdr{display:flex;align-items:center;justify-content:space-between;padding:0 16px;
-  background:linear-gradient(135deg,#0f1e3a,#0a1628);border-bottom:1px solid rgba(255,255,255,.1);height:52px;flex-shrink:0}
+  background:#FFFFFF;border-bottom:1px solid #E6E7E3;height:52px;flex-shrink:0}
 .hdr-left{display:flex;align-items:center;gap:10px}
-.hdr-left img{height:32px;width:auto;filter:brightness(0) invert(1) sepia(1) saturate(4) hue-rotate(-8deg)}
-.hdr-title{font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:.5px}
-.hdr-loja{font-size:14px;font-weight:800;color:#F9C200;letter-spacing:1px}
+.hdr-left img{height:32px;width:auto;}
+.hdr-title{font-size:10px;color:#5B6373;font-weight:600;letter-spacing:.5px}
+.hdr-loja{font-size:14px;font-weight:800;color:#16233F;letter-spacing:1px}
 .hdr-right{display:flex;align-items:center;gap:10px}
 .loja-dots{display:flex;gap:5px}
-.ldot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .3s}
-.ldot.ativo{background:#F9C200;transform:scale(1.35)}
-.mes-badge{font-size:10px;color:#64748b;font-weight:600;background:#1e293b;padding:3px 8px;border-radius:20px}
+.ldot{width:8px;height:8px;border-radius:50%;background:#E6E7E3;transition:all .3s}
+.ldot.ativo{background:#FFC600;transform:scale(1.35)}
+.mes-badge{font-size:10px;color:#5B6373;font-weight:600;background:#F1F2F0;padding:3px 8px;border-radius:20px}
 
 /* PROGRESS BAR */
-.prog-wrap{height:3px;background:#1e293b}
-.prog-bar{height:100%;background:linear-gradient(90deg,#3b82f6,#F9C200);width:0%}
+.prog-wrap{height:3px;background:#F1F2F0}
+.prog-bar{height:100%;background:linear-gradient(90deg,#16233F,#FFC600);width:0%}
 
 /* LAYOUT */
 .main{display:flex;flex-direction:column;flex:1;min-height:0;padding:6px 14px 10px;gap:6px}
 
 /* KPI ROW — horizontal no topo */
 .kpi-row{display:flex;gap:4px;flex-shrink:0}
-.kpi-card{flex:1;min-width:0;background:#0f1e3a;border:1px solid #1e3a6e;border-radius:8px;
+.kpi-card{flex:1;min-width:0;background:#FFFFFF;border:1px solid #E6E7E3;border-radius:8px;
   padding:6px 8px;position:relative;overflow:hidden}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi-card.blue::before{background:#3b82f6}
-.kpi-card.gold::before{background:#F9C200}
-.kpi-card.green::before{background:#10b981}
-.kpi-card.purple::before{background:#8b5cf6}
-.kc-label{font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kc-val{font-size:15px;font-weight:800;color:#f1f5f9;line-height:1.1;white-space:nowrap}
-.kc-sub{font-size:9px;color:#64748b;margin-top:2px;white-space:nowrap}
+.kpi-card.blue::before{background:#16233F}
+.kpi-card.gold::before{background:#FFC600}
+.kpi-card.green::before{background:#158A4A}
+.kpi-card.purple::before{background:#16233F}
+.kc-label{font-size:8px;color:#5B6373;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-val{font-size:15px;font-weight:800;color:#16233F;line-height:1.1;white-space:nowrap}
+.kc-sub{font-size:9px;color:#5B6373;margin-top:2px;white-space:nowrap}
 .kc-var{font-size:13px;font-weight:800;white-space:nowrap}
-.up{color:#10b981}.dn{color:#ef4444}
+.up{color:#158A4A}.dn{color:#D6314A}
 
 /* TABELAS ROW — 3 colunas, ocupam o restante */
 .tbl-row{display:grid;grid-template-columns:1fr 1fr 1fr;flex:1;gap:4px;min-height:0}
 
 /* CARD TABELA */
-.tbl-card{background:#0b1628;border:1px solid #1e293b;border-radius:8px;
+.tbl-card{background:#FFFFFF;border:1px solid #E6E7E3;border-radius:8px;
   display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.tbl-hdr{padding:5px 6px;background:#0f1e3a;border-bottom:1px solid #1e3a6e;
-  font-size:9px;font-weight:700;color:#F9C200;letter-spacing:.5px;flex-shrink:0}
+.tbl-hdr{padding:5px 6px;background:#F1F2F0;border-bottom:1px solid #E6E7E3;
+  font-size:9px;font-weight:700;color:#5C4600;letter-spacing:.5px;flex-shrink:0}
 
 /* HEADER DAS COLUNAS (fixo, fora do ticker) */
-.col-hdr{display:flex;padding:3px 4px;border-bottom:1px solid #1e3a6e;flex-shrink:0;
-  font-size:8px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.3px;background:#0b1628}
+.col-hdr{display:flex;padding:3px 4px;border-bottom:1px solid #E6E7E3;flex-shrink:0;
+  font-size:8px;font-weight:700;color:#9AA0AC;text-transform:uppercase;letter-spacing:.3px;background:#FFFFFF}
 .col-hdr span{flex:1}
 .col-hdr span:first-child{flex:0.5}
 .col-hdr span:last-child{flex:0.55}
@@ -80,26 +80,26 @@ body{display:flex;flex-direction:column;padding:0}
 .ticker-inner{will-change:transform}
 
 /* LINHAS */
-.tr-row{display:flex;padding:3px 4px;border-bottom:1px solid #0f172a;font-size:9px}
+.tr-row{display:flex;padding:3px 4px;border-bottom:1px solid #F7F7F5;font-size:9px}
 .tr-row:hover{background:#ffffff08}
 .tr-row span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tr-row span:first-child{flex:0.5}
 .tr-row span:last-child{flex:0.55}
 .tr-row .r{text-align:right}
-.tr-row.total{background:#0f1e3a;font-weight:700;border-top:1px solid #1e3a6e;margin-top:2px}
-.val25{color:#60a5fa}
-.val26{color:#F9C200;font-weight:700}
-.v-up{color:#10b981;font-weight:700}
-.v-dn{color:#ef4444;font-weight:700}
-.v-ze{color:#475569}
-.dia-num{color:#94a3b8}
+.tr-row.total{background:#FFFFFF;font-weight:700;border-top:1px solid #E6E7E3;margin-top:2px}
+.val25{color:#16233F}
+.val26{color:#5C4600;font-weight:700}
+.v-up{color:#158A4A;font-weight:700}
+.v-dn{color:#D6314A;font-weight:700}
+.v-ze{color:#9AA0AC}
+.dia-num{color:#5B6373}
 
 /* FULLSCREEN BTN — invisível por padrão, aparece no hover */
 .btn-fs{position:fixed;bottom:14px;right:16px;background:rgba(0,0,0,.5);
   border:1px solid rgba(255,255,255,.12);border-radius:8px;cursor:pointer;
   padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;transition:all .3s;z-index:99;
   opacity:0}
-.btn-fs:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+.btn-fs:hover{opacity:1;color:#5C4600;border-color:#FFC600}
 </style>
 </head>
 <body>
@@ -206,7 +206,7 @@ body{display:flex;flex-direction:column;padding:0}
   </div>
 </div>
 
-<style>.btn-fs{position:fixed;bottom:16px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}</style>
+<style>.btn-fs{position:fixed;bottom:16px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#5B6373;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#5C4600;border-color:#FFC600}</style>
 <button class="btn-fs" id="btn-fs" title="Tela cheia">⛶</button>
 
 <script>
@@ -230,7 +230,7 @@ function carregarLoja(n) {
   ['ti-dias','ti-mensal','ti-merc'].forEach(id => {
     const el = document.getElementById(id);
     el.style.animation = 'none';
-    el.innerHTML = '<div style="padding:20px;color:#334155;font-size:11px;text-align:center">Carregando…</div>';
+    el.innerHTML = '<div style="padding:20px;color:#E6E7E3;font-size:11px;text-align:center">Carregando…</div>';
   });
   ['k25','k26','k25p','kvar','kvarp'].forEach(id => document.getElementById(id).textContent = '…');
 
@@ -242,7 +242,7 @@ function carregarLoja(n) {
     .then(data => {
       if (data.error) {
         ['ti-dias','ti-mensal','ti-merc'].forEach(id => {
-          document.getElementById(id).innerHTML = `<div style="padding:12px;color:#ef4444;font-size:10px">Erro: ${data.error}</div>`;
+          document.getElementById(id).innerHTML = `<div style="padding:12px;color:#D6314A;font-size:10px">Erro: ${data.error}</div>`;
         });
         console.error('API erro:', data.error);
         return;
@@ -252,15 +252,15 @@ function carregarLoja(n) {
     .catch(err => {
       console.error('Fetch erro:', err);
       ['ti-dias','ti-mensal','ti-merc'].forEach(id => {
-        document.getElementById(id).innerHTML = `<div style="padding:12px;color:#ef4444;font-size:10px">Erro de conexão</div>`;
+        document.getElementById(id).innerHTML = `<div style="padding:12px;color:#D6314A;font-size:10px">Erro de conexão</div>`;
       });
     });
 }
 
 function renderRow(label, v25, v26, varPct, extraClass='') {
   const vClass = varPct===null?'v-ze':varPct>0?'v-up':'v-dn';
-  const s25 = v25>0 ? `<span class="r val25">${BRL(v25)}</span>` : `<span class="r" style="color:#1e293b">—</span>`;
-  const s26 = v26>0 ? `<span class="r val26">${BRL(v26)}</span>` : `<span class="r" style="color:#1e293b">—</span>`;
+  const s25 = v25>0 ? `<span class="r val25">${BRL(v25)}</span>` : `<span class="r" style="color:#9AA0AC">—</span>`;
+  const s26 = v26>0 ? `<span class="r val26">${BRL(v26)}</span>` : `<span class="r" style="color:#9AA0AC">—</span>`;
   return `<div class="tr-row ${extraClass}"><span>${label}</span>${s25}${s26}<span class="r ${vClass}">${varPct!==null?PCT(varPct):'—'}</span></div>`;
 }
 

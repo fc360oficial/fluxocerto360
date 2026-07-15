@@ -7,20 +7,20 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#070d1a;--card:#0f172a;--border:#1e293b;--border2:#334155;
-  --brand:#FACC15;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --bg:#F1F2F0;--card:#F7F7F5;--border:#E6E7E3;--border2:#E6E7E3;
+  --brand:#FFC600;--text:#16233F;--text2:#5B6373;--text3:#5B6373;
 }
 html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text)}
 
 /* HEADER */
 .hdr{height:64px;background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 24px;gap:14px}
-.hdr-icon{width:36px;height:36px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:18px}
+.hdr-icon{width:36px;height:36px;border-radius:10px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:18px}
 .hdr-titulo{font-size:17px;font-weight:900}
 .hdr-sub{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
-.btn-novo{margin-left:auto;background:#FACC15;color:#0a0e18;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.04em;transition:background .15s}
-.btn-novo:hover{background:#eab308}
+.btn-novo{margin-left:auto;background:#FFC600;color:#F1F2F0;border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.04em;transition:background .15s}
+.btn-novo:hover{background:#FFC600}
 .btn-voltar{background:none;border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:5px;transition:all .15s;flex-shrink:0}
-.btn-voltar:hover{border-color:#60a5fa;color:#60a5fa}
+.btn-voltar:hover{border-color:#16233F;color:#16233F}
 
 /* CONTENT */
 .content{padding:24px;max-width:900px;margin:0 auto}
@@ -38,19 +38,19 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 /* BADGES */
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-.badge-admin{background:rgba(250,204,21,.15);color:#FACC15;border:1px solid rgba(250,204,21,.3)}
-.badge-gerente{background:rgba(96,165,250,.12);color:#60a5fa;border:1px solid rgba(96,165,250,.25)}
-.badge-comprador{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,246,.25)}
-.badge-gerencial{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)}
+.badge-admin{background:rgba(250,204,21,.15);color:#5C4600;border:1px solid rgba(250,204,21,.3)}
+.badge-gerente{background:rgba(96,165,250,.12);color:#16233F;border:1px solid rgba(96,165,250,.25)}
+.badge-comprador{background:rgba(167,139,250,.12);color:#16233F;border:1px solid rgba(167,139,246,.25)}
+.badge-gerencial{background:rgba(34,197,94,.12);color:#158A4A;border:1px solid rgba(34,197,94,.25)}
 
-.comp-tag{font-size:10px;color:#a78bfa;font-weight:600;margin-top:2px}
+.comp-tag{font-size:10px;color:#16233F;font-weight:600;margin-top:2px}
 
 /* AÇÕES */
 .acoes{display:flex;gap:6px}
 .btn-acao{background:none;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;color:var(--text2)}
-.btn-edit:hover{border-color:#60a5fa;color:#60a5fa}
-.btn-del:hover{border-color:#ef4444;color:#ef4444}
-.btn-pwd:hover{border-color:#FACC15;color:#FACC15}
+.btn-edit:hover{border-color:#16233F;color:#16233F}
+.btn-del:hover{border-color:#D6314A;color:#D6314A}
+.btn-pwd:hover{border-color:#FFC600;color:#5C4600}
 
 /* EMPTY STATE */
 .empty{text-align:center;padding:48px 20px;color:var(--text3)}
@@ -59,22 +59,22 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .modal-overlay.open{display:flex}
-.modal{background:#0f172a;border:1px solid #334155;border-radius:16px;padding:28px;width:100%;max-width:440px;box-shadow:0 24px 64px #00000066}
+.modal{background:#F7F7F5;border:1px solid #E6E7E3;border-radius:16px;padding:28px;width:100%;max-width:440px;box-shadow:0 24px 64px #00000066}
 .modal-titulo{font-size:16px;font-weight:900;margin-bottom:20px;display:flex;align-items:center;gap:8px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.field input,.field select{width:100%;background:#070d1a;border:1px solid #334155;border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;transition:border-color .15s;font-family:inherit}
-.field input:focus,.field select:focus{border-color:#FACC15}
-.field select option{background:#0f172a}
+.field input,.field select{width:100%;background:#F1F2F0;border:1px solid #E6E7E3;border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;transition:border-color .15s;font-family:inherit}
+.field input:focus,.field select:focus{border-color:#FFC600}
+.field select option{background:#F7F7F5}
 .field-hint{font-size:10px;color:var(--text3);margin-top:4px}
 .modal-btns{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
 .btn-cancelar{background:none;border:1px solid var(--border2);color:var(--text2);border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
-.btn-cancelar:hover{border-color:#ef4444;color:#ef4444}
-.btn-salvar{background:#FACC15;color:#0a0e18;border:none;border-radius:8px;padding:9px 22px;font-size:12px;font-weight:800;cursor:pointer;transition:background .15s}
-.btn-salvar:hover{background:#eab308}
+.btn-cancelar:hover{border-color:#D6314A;color:#D6314A}
+.btn-salvar{background:#FFC600;color:#F1F2F0;border:none;border-radius:8px;padding:9px 22px;font-size:12px;font-weight:800;cursor:pointer;transition:background .15s}
+.btn-salvar:hover{background:#FFC600}
 .btn-salvar:disabled{opacity:.5;cursor:not-allowed}
-.msg-erro{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;border-radius:8px;padding:8px 12px;font-size:11px;margin-top:12px;display:none}
-.msg-ok{background:#052e16;border:1px solid #166534;color:#86efac;border-radius:8px;padding:8px 12px;font-size:11px;margin-top:12px;display:none}
+.msg-erro{background:#FCEBEE;border:1px solid #F3C1CB;color:#D6314A;border-radius:8px;padding:8px 12px;font-size:11px;margin-top:12px;display:none}
+.msg-ok{background:#EAF7EF;border:1px solid #158A4A;color:#158A4A;border-radius:8px;padding:8px 12px;font-size:11px;margin-top:12px;display:none}
 
 /* STATS */
 .stats{display:flex;gap:12px;margin-bottom:20px}
@@ -188,10 +188,10 @@ function renderStats() {
   const compradores = usuarios.filter(u => u.perfil === 'comprador').length;
   document.getElementById('stats').innerHTML = `
     <div class="stat"><div class="stat-v">${total}</div><div class="stat-l">Total</div></div>
-    <div class="stat"><div class="stat-v" style="color:#FACC15">${admins}</div><div class="stat-l">Admin</div></div>
-    <div class="stat"><div class="stat-v" style="color:#60a5fa">${gerentes}</div><div class="stat-l">Gerente</div></div>
-    <div class="stat"><div class="stat-v" style="color:#22c55e">${gerenciais}</div><div class="stat-l">Gerencial</div></div>
-    <div class="stat"><div class="stat-v" style="color:#a78bfa">${compradores}</div><div class="stat-l">Comprador</div></div>
+    <div class="stat"><div class="stat-v" style="color:#5C4600">${admins}</div><div class="stat-l">Admin</div></div>
+    <div class="stat"><div class="stat-v" style="color:#16233F">${gerentes}</div><div class="stat-l">Gerente</div></div>
+    <div class="stat"><div class="stat-v" style="color:#158A4A">${gerenciais}</div><div class="stat-l">Gerencial</div></div>
+    <div class="stat"><div class="stat-v" style="color:#16233F">${compradores}</div><div class="stat-l">Comprador</div></div>
   `;
 }
 
@@ -214,7 +214,7 @@ function renderTabela() {
       <td><div class="u-nome">${u.nome}</div></td>
       <td><div class="u-login">${u.usuario}</div></td>
       <td>${badgePerfil(u.perfil)}</td>
-      <td>${u.perfil==='comprador'&&u.comprador_nome ? `<div class="comp-tag">▸ ${u.comprador_nome}</div>` : u.perfil==='gerencial'&&u.loja_id ? `<div class="comp-tag" style="color:#22c55e">▸ Loja ${u.loja_id}</div>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+      <td>${u.perfil==='comprador'&&u.comprador_nome ? `<div class="comp-tag">▸ ${u.comprador_nome}</div>` : u.perfil==='gerencial'&&u.loja_id ? `<div class="comp-tag" style="color:#158A4A">▸ Loja ${u.loja_id}</div>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
       <td>
         <div class="acoes">
           <button class="btn-acao btn-edit" onclick="editarUsuario(${u.id})">✏ Editar</button>

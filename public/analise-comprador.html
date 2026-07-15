@@ -7,13 +7,13 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#08111F;--bg2:#0B1220;--card:#121B2E;
-  --brand:#FACC15;
-  --green:#22C55E;--green-bg:rgba(34,197,94,.12);
-  --amber:#F59E0B;--amber-bg:rgba(245,158,11,.12);
-  --red:#EF4444;--red-bg:rgba(239,68,68,.12);
-  --blue:#3B82F6;--purple:#8B5CF6;--purple-bg:rgba(139,92,246,.12);
-  --text:#FFF;--text2:#94A3B8;--text3:#64748B;
+  --bg:#F7F7F5;--bg2:#F1F2F0;--card:#FFFFFF;
+  --brand:#FFC600;
+  --green:#158A4A;--green-bg:rgba(34,197,94,.12);
+  --amber:#B45C00;--amber-bg:rgba(245,158,11,.12);
+  --red:#D6314A;--red-bg:rgba(239,68,68,.12);
+  --blue:#16233F;--purple:#16233F;--purple-bg:rgba(139,92,246,.12);
+  --text:#FFF;--text2:#5B6373;--text3:#5B6373;
   --border:rgba(255,255,255,.06);--border-md:rgba(255,255,255,.10);
   --r:14px;
 }
@@ -25,7 +25,7 @@ header{
   background:linear-gradient(180deg,rgba(23,32,51,.99),rgba(18,27,46,.96));
   border-bottom:1px solid var(--border-md);
 }
-.h-logo{height:38px;filter:brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(-8deg)}
+.h-logo{height:38px;}
 .h-sep{width:1px;height:30px;background:var(--border-md)}
 .h-avatar{
   width:38px;height:38px;border-radius:10px;flex-shrink:0;
@@ -40,7 +40,7 @@ header{
   font-size:12px;font-weight:600;padding:6px 14px;border-radius:10px;
   border:1px solid var(--border-md);background:rgba(255,255,255,.04);transition:all .2s;
 }
-.h-close:hover{border-color:rgba(239,68,68,.3);color:#ef4444;background:rgba(239,68,68,.06)}
+.h-close:hover{border-color:rgba(239,68,68,.3);color:#D6314A;background:rgba(239,68,68,.06)}
 .h-clock{display:none}
 .h-clock-sub{font-size:9px;color:var(--text2);text-align:right;margin-top:2px}
 
@@ -48,7 +48,7 @@ header{
 .loja-bar{
   flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;
 }
-.loja-bar-label{font-size:13px;font-weight:800;color:var(--brand);letter-spacing:.5px}
+.loja-bar-label{font-size:13px;font-weight:800;color:#5C4600;letter-spacing:.5px}
 .loja-dots-row{display:flex;gap:5px}
 .ldot{width:18px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);transition:background .3s}
 .ldot.done{background:rgba(250,204,21,.3)}
@@ -103,7 +103,7 @@ main{
 .chip-med {background:rgba(255,255,255,.06);color:var(--text2)}
 .chip-exc {background:var(--purple-bg);color:var(--purple)}
 .chip-sem {background:rgba(100,116,139,.12);color:var(--text3)}
-.chip-top {background:rgba(250,204,21,.12);color:var(--brand)}
+.chip-top {background:rgba(250,204,21,.12);color:#5C4600}
 .chip-queda{background:var(--red-bg);color:var(--red)}
 .chip-custo{background:var(--red-bg);color:var(--red)}
 
@@ -157,12 +157,12 @@ main{
 
 <main id="main-cols">
 </main>
-<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#94A3B8;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#FACC15;border-color:#FACC15}</style>
+<style>.btn-fs{position:fixed;bottom:50px;right:16px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(8,17,31,.85);color:#5B6373;font-size:18px;cursor:pointer;z-index:999;backdrop-filter:blur(4px);transition:all .3s;opacity:0}.btn-fs:hover{opacity:1;color:#5C4600;border-color:#FFC600}</style>
 <button class="btn-fs" onclick="if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{});" title="Tela cheia (use F11 para manter entre telas)">⛶</button>
 
 <script>
 const COR_COMPRADORES = {
-  FATIMA:'#6366f1',KELLY:'#f43f5e',STHEPHANNY:'#a855f7',CRISLANE:'#14b8a6',PATRICIA:'#f59e0b'
+  FATIMA:'#16233F',KELLY:'#D6314A',STHEPHANNY:'#16233F',CRISLANE:'#158A4A',PATRICIA:'#B45C00'
 };
 const CARGO_COMPRADORES = {
   FATIMA:'Compradora de Alimentos',KELLY:'Compradora de Frios & Laticínios',
@@ -212,7 +212,7 @@ function setupHeader() {
   document.getElementById('h-nome').textContent = NOME;
   document.getElementById('h-cargo').textContent = CARGO_COMPRADORES[NOME]||'Compradora';
   const av  = document.getElementById('h-avatar');
-  const cor = COR_COMPRADORES[NOME]||'#6366f1';
+  const cor = COR_COMPRADORES[NOME]||'#16233F';
   av.style.cssText = `background:${cor}22;border:2px solid ${cor};color:${cor}`;
   av.textContent = NOME[0];
 }

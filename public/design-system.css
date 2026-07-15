@@ -17,11 +17,11 @@
 /* ── TOKENS · MODO ESCRITÓRIO (claro) ── */
 :root{
   /* superfícies */
-  --pap:#FAFAF7;          /* fundo de página */
+  --pap:#EAEBE3;          /* fundo de página — dois degraus abaixo do card p/ dar profundidade */
   --crd:#FFFFFF;          /* cards e painéis */
-  --wsh:#F1F2ED;          /* wash: thead, hover, fundos suaves */
-  --ln:#E7E8E3;           /* borda padrão */
-  --ln2:#D9DAD2;          /* borda forte (inputs) */
+  --wsh:#E2E3DA;          /* wash: thead, hover, fundos suaves */
+  --ln:#D8D9CF;           /* borda padrão */
+  --ln2:#C6C8BB;          /* borda forte (inputs) */
 
   /* tinta */
   --ink:#0E1626;          /* texto principal / dados */
@@ -43,7 +43,7 @@
 
   /* forma */
   --r-sm:7px; --r:9px; --r-lg:13px;
-  --sh-sm:0 1px 2px rgba(14,22,38,.05);
+  --sh-sm:0 1px 3px rgba(14,22,38,.07);
   --sh-md:0 10px 32px -14px rgba(14,22,38,.18);
 
   --font:'InterVar',Inter,'Segoe UI Variable','Segoe UI',system-ui,-apple-system,sans-serif;
@@ -75,6 +75,11 @@
 
 /* ── BASE ── */
 .ds, .ds *, .ds *::before, .ds *::after{box-sizing:border-box}
+/* faixa de marca no topo da viewport (só modo escritório) */
+.ds:not(.ds-tv)::before{
+  content:'';position:fixed;top:0;left:0;right:0;height:4px;z-index:1000;
+  background:linear-gradient(90deg,#FFD34D,var(--am) 45%,#E8AC00);
+}
 .ds{
   font-family:var(--font);
   background:var(--pap);

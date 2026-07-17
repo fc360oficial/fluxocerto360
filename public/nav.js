@@ -117,13 +117,15 @@
     aside.id = 'dsnav';
     aside.innerHTML = html;
 
-    /* tema do menu — teste com ?nav=navy na URL; ?nav=claro volta.
-       A escolha fica salva no navegador (localStorage). */
+    /* tema do menu — NAVY é o padrão (desktop e mobile).
+       ?nav=claro na URL volta ao claro para testes; ?nav=navy restaura. */
     try {
       var qp = new URLSearchParams(location.search).get('nav');
       if (qp === 'navy' || qp === 'claro') localStorage.setItem('nav_tema', qp);
-      if (localStorage.getItem('nav_tema') === 'navy') aside.classList.add('navy');
-    } catch (e) {}
+      if (localStorage.getItem('nav_tema') !== 'claro') aside.classList.add('navy');
+    } catch (e) {
+      aside.classList.add('navy');
+    }
 
     document.body.insertAdjacentElement('afterbegin', aside);
     document.body.classList.add('dsnav-pad');

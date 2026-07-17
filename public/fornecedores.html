@@ -214,23 +214,23 @@ table.comp-t tr:hover td{background:#ffffff05}
     display:flex!important;align-items:center;gap:14px;
     margin-bottom:14px;padding-bottom:12px;border-bottom:3px solid #F5B800;
   }
-  .print-header img{height:36px;width:auto;filter:brightness(0)}
-  .print-header-txt h1{font-size:17px;font-weight:800;color:#EBEBE9;letter-spacing:-.3px}
-  .print-header-txt p{font-size:11px;color:#98A0B3;margin-top:2px}
+  .print-header img{height:36px;width:auto}
+  .print-header-txt h1{font-size:17px;font-weight:800;color:#0E1626;letter-spacing:-.3px}
+  .print-header-txt p{font-size:11px;color:#4E5A72;margin-top:2px}
   .drawer-body{overflow:visible!important;height:auto!important;max-height:none!important}
-  .d-kpis{background:#0E1626!important;border:1px solid #0E1626!important;border-radius:8px;margin-bottom:12px}
-  .d-kpi{background:#fff!important;border:1px solid #0E1626!important}
-  .d-kpi .dv{color:#EBEBE9!important}.d-kpi .dl{color:#4E5A72!important}
-  .d-section{border-bottom:1px solid #0E1626!important}
-  table.d-t{color:#EBEBE9!important;border-collapse:collapse}
-  table.d-t th{color:#98A0B3!important;background:#0E1626!important;border-bottom:1px solid #0E1626!important;border:1px solid #0E1626!important}
-  table.d-t td{border:1px solid #0E1626!important;color:#EBEBE9!important}
-  .d-t .cod{color:#4E5A72!important}.d-t .desc{color:#EBEBE9!important}
+  .d-kpis{background:#fff!important;border:1px solid #DADAD6!important;border-radius:8px;margin-bottom:12px}
+  .d-kpi{background:#fff!important;border:1px solid #DADAD6!important}
+  .d-kpi .dv{color:#0E1626!important}.d-kpi .dl{color:#4E5A72!important}
+  .d-section{border-bottom:1px solid #DADAD6!important}
+  table.d-t{color:#0E1626!important;border-collapse:collapse}
+  table.d-t th{color:#4E5A72!important;background:#F5F5F3!important;border-bottom:1px solid #DADAD6!important;border:1px solid #DADAD6!important}
+  table.d-t td{border:1px solid #DADAD6!important;color:#0E1626!important}
+  .d-t .cod{color:#4E5A72!important}.d-t .desc{color:#0E1626!important}
   .m-great{color:#137A48!important}.m-ok{color:#65a30d!important}.m-warn{color:#B45C00!important}.m-bad{color:#dc2626!important}
-  .loja-row{border-bottom:1px solid #0E1626!important}
-  .loja-label{color:#98A0B3!important}.loja-val{color:#1d4ed8!important}
-  .loja-bar-wrap{background:#0E1626!important}.loja-bar-fill{background:#0E1626!important}
-  .print-footer{display:block!important;margin-top:20px;padding-top:8px;border-top:1px solid #0E1626;font-size:10px;color:#4E5A72;text-align:right}
+  .loja-row{border-bottom:1px solid #DADAD6!important}
+  .loja-label{color:#4E5A72!important}.loja-val{color:#1d4ed8!important}
+  .loja-bar-wrap{background:#EBEBE9!important}.loja-bar-fill{background:#0E1626!important}
+  .print-footer{display:block!important;margin-top:20px;padding-top:8px;border-top:1px solid #DADAD6;font-size:10px;color:#4E5A72;text-align:right}
   .spinner,.empty{display:none!important}
   @page{margin:14mm 12mm;size:A4 portrait}
 }
@@ -1274,10 +1274,10 @@ function renderCompras(data) {
     const rows = c.fornecedores.map(function(f, fi) {
       const temLista = f.temLista || f.listas.length > 0;
       const listaTag = temLista
-        ? f.listas.map(function(lid){ return '<span style="display:inline-block;background:#0E1626;color:#0E1626;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:3px;cursor:pointer" onclick="abrirFornecedorPorId(' + f.id + ')">Lista #' + lid + '</span>'; }).join('')
+        ? f.listas.map(function(lid){ return '<span style="display:inline-block;background:#F1F2ED;color:#4E5A72;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:3px;cursor:pointer" onclick="abrirFornecedorPorId(' + f.id + ')">Lista #' + lid + '</span>'; }).join('')
         : '<span style="font-size:9px;color:#DADAD6">sem lista</span>';
       const alertaSem = (isSemComp && temLista)
-        ? '<span style="font-size:9px;background:#7c2d12;color:#C22F49;padding:1px 5px;border-radius:3px;margin-left:4px">tem lista</span>'
+        ? '<span style="font-size:9px;background:#FBEAED;color:#C22F49;padding:1px 5px;border-radius:3px;margin-left:4px">tem lista</span>'
         : '';
       const pctCompra = data.total > 0 ? (f.total/data.total*100).toFixed(1) : 0;
       const tdVenda = tv > 0
@@ -1360,24 +1360,24 @@ function imprimirCompras() {
       h1{font-size:16px;font-weight:800;margin-bottom:4px}
       p.sub{font-size:11px;color:#4E5A72;margin-bottom:16px}
       .kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
-      .kpi{border:1px solid #0E1626;border-radius:8px;padding:10px 14px;min-width:140px}
-      .kpi .v{font-size:18px;font-weight:800}
+      .kpi{border:1px solid #DADAD6;border-radius:8px;padding:10px 14px;min-width:140px}
+      .kpi .v{font-size:18px;font-weight:800;color:#0E1626}
       .kpi .l{font-size:10px;color:#4E5A72;margin-top:2px}
-      .comp-card{border:1px solid #0E1626;border-radius:8px;margin-bottom:10px;overflow:hidden}
-      .comp-card-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0E1626}
+      .comp-card{border:1px solid #DADAD6;border-radius:8px;margin-bottom:10px;overflow:hidden}
+      .comp-card-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F5F5F3}
       .comp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-      .comp-nome{font-size:13px;font-weight:700;flex:1}
-      .comp-total{font-size:14px;font-weight:800}
+      .comp-nome{font-size:13px;font-weight:700;flex:1;color:#0E1626}
+      .comp-total{font-size:14px;font-weight:800;color:#0E1626}
       .comp-pct{font-size:10px;color:#4E5A72;margin-left:3px}
       .comp-chev,.comp-bar-wrap{display:none}
-      .comp-body{display:block!important;border-top:1px solid #0E1626}
+      .comp-body{display:block!important;border-top:1px solid #DADAD6}
       table.comp-t{width:100%;border-collapse:collapse;font-size:11px}
-      table.comp-t th{padding:6px 12px;text-align:left;color:#98A0B3;font-size:9px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #0E1626;background:#0E1626}
+      table.comp-t th{padding:6px 12px;text-align:left;color:#4E5A72;font-size:9px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #DADAD6;background:#F5F5F3}
       table.comp-t th.r{text-align:right}
-      table.comp-t td{padding:6px 12px;border-bottom:1px solid #0E1626;color:#FFFFFF}
+      table.comp-t td{padding:6px 12px;border-bottom:1px solid #EBEBE9;color:#0E1626}
       table.comp-t td.r{text-align:right}
-      .comp-resumo{padding:8px 14px;display:flex;gap:16px;flex-wrap:wrap;background:#fafafa;border-bottom:1px solid #0E1626;font-size:10px;color:#4E5A72}
-      .comp-resumo span{color:#EBEBE9;font-weight:700}
+      .comp-resumo{padding:8px 14px;display:flex;gap:16px;flex-wrap:wrap;background:#fafafa;border-bottom:1px solid #DADAD6;font-size:10px;color:#4E5A72}
+      .comp-resumo span{color:#0E1626;font-weight:700}
       .link-lista{display:none}
       img.logo{height:36px;margin-bottom:4px}
       .header{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #F5B800}

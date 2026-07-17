@@ -165,8 +165,11 @@ app.delete('/api/admin/usuarios/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// Host do MySQL configurável via variável de ambiente DB_HOST — permite
+// apontar para o banco espelho de outro servidor sem editar código.
+// Se DB_HOST não estiver definida, usa o servidor atual (192.168.2.252).
 const dbConfig = {
-  host: '192.168.2.252',
+  host: process.env.DB_HOST || '192.168.2.252',
   port: 3306,
   user: 'root',
   password: '1900',

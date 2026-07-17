@@ -9,7 +9,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#EBEBE9;--card:#FFFFFF;--card2:#EBEBE9;--border:#DADAD6;
+  --bg:#EBEBE9;--card:#FFFFFF;--card2:#FFFFFF;--border:#DADAD6;
   --brand:#F5B800;--red:#C22F49;--green:#137A48;--orange:#B45C00;--yellow:#F5B800;
   --blue:#2C4A6B;--purple:#0E1626;--text:#0E1626;--text2:#4E5A72;--text3:#4E5A72;
 }
@@ -432,7 +432,7 @@ function renderTudo(d) {
     </tr></thead>
     <tbody id="tbody-rank-fornec">
     ${(d.ranking_fornec||[]).map((f,i) => `
-      <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #DADAD6;${i%2===0?'background:#EBEBE9':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EBEBE9':''}'">
+      <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #DADAD6;;cursor:pointer" onmouseover="this.style.background='#F5F5F3'" onmouseout="this.style.background=''">
         <td style="padding:7px 12px;color:#4E5A72">${i+1}</td>
         <td style="padding:7px 12px">
           <div style="font-weight:600;color:#0E1626">${f.fornecedor||'N/I'}</div>
@@ -730,7 +730,7 @@ function filtrarFornec(busca) {
   const tbody = document.getElementById('tbody-rank-fornec');
   if (!tbody) return;
   tbody.innerHTML = filtrado.map((f,i) => `
-    <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #DADAD6;${i%2===0?'background:#EBEBE9':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EBEBE9':''}'">
+    <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #DADAD6;;cursor:pointer" onmouseover="this.style.background='#F5F5F3'" onmouseout="this.style.background=''">
       <td style="padding:7px 12px;color:#4E5A72">${i+1}</td>
       <td style="padding:7px 12px">
         <div style="font-weight:600;color:#0E1626">${f.fornecedor||'N/I'}</div>

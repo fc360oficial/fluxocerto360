@@ -61,10 +61,27 @@
   +   '#dsnav .dn-brand img{height:26px}'
   +   '#dsnav .dn-brand span{display:none}'
   +   '#dsnav .dn-sec{display:none}'
-  +   '#dsnav .dn-rows{display:flex;overflow-x:auto;gap:2px;-webkit-overflow-scrolling:touch}'
+  +   '#dsnav .dn-rows{display:flex;overflow-x:auto;gap:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}'+'#dsnav .dn-rows::-webkit-scrollbar{display:none}'
   +   '#dsnav a.dn-item{padding:7px 10px;font-size:11px;flex-shrink:0}'
   +   '#dsnav .dn-foot{display:none}'
-  + '}';
+  + '}'
+  /* ── variante NAVY (teste: ?nav=navy · voltar: ?nav=claro) ── */
+  + '#dsnav.navy{background:#101B33;border-right-color:#1D2A46;border-bottom-color:#1D2A46}'
+  + '#dsnav.navy .dn-brand{border-bottom-color:rgba(255,255,255,.09)}'
+  + '#dsnav.navy .dn-brand img{filter:brightness(0) invert(1)}'
+  + '#dsnav.navy .dn-brand b{color:#FFFFFF}'
+  + '#dsnav.navy .dn-brand span{color:#8E9AB5}'
+  + '#dsnav.navy .dn-sec{color:#6E7B98}'
+  + '#dsnav.navy a.dn-item{color:#AEB8CE}'
+  + '#dsnav.navy a.dn-item svg{color:#8E9AB5}'
+  + '#dsnav.navy a.dn-item:hover{background:rgba(255,255,255,.07);color:#FFFFFF}'
+  + '#dsnav.navy a.dn-item:hover svg{color:#FFFFFF}'
+  + '#dsnav.navy a.dn-item.on{background:rgba(255,201,51,.16);color:#FFC933}'
+  + '#dsnav.navy a.dn-item.on svg{color:#FFC933}'
+  + '#dsnav.navy .dn-foot{border-top-color:rgba(255,255,255,.09)}'
+  + '#dsnav.navy .dn-ava{background:#FFC933;color:#5C4600}'
+  + '#dsnav.navy .dn-user b{color:#FFFFFF}'
+  + '#dsnav.navy .dn-user a{color:#FF8296}';
 
   function icon(id) {
     return '<svg><use href="/icons.svg#' + id + '"/></svg>';
@@ -99,6 +116,15 @@
     var aside = document.createElement('aside');
     aside.id = 'dsnav';
     aside.innerHTML = html;
+
+    /* tema do menu — teste com ?nav=navy na URL; ?nav=claro volta.
+       A escolha fica salva no navegador (localStorage). */
+    try {
+      var qp = new URLSearchParams(location.search).get('nav');
+      if (qp === 'navy' || qp === 'claro') localStorage.setItem('nav_tema', qp);
+      if (localStorage.getItem('nav_tema') === 'navy') aside.classList.add('navy');
+    } catch (e) {}
+
     document.body.insertAdjacentElement('afterbegin', aside);
     document.body.classList.add('dsnav-pad');
 

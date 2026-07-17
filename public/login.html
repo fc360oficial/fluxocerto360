@@ -62,8 +62,9 @@ body{display:flex;min-height:100vh;background:var(--bg)}
 .subtitulo{font-size:13px;color:var(--ink-3);margin-top:6px;margin-bottom:32px}
 .field{margin-bottom:16px}
 .field label{display:block;font-size:10px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.field input{width:100%;background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;color:var(--ink);padding:12px 14px;font-size:15px;outline:none;transition:border-color .15s;font-family:var(--font)}
-.field input:focus{border-color:var(--brand)}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;color:var(--ink);padding:12px 14px;font-size:15px;outline:none;transition:border-color .15s;font-family:var(--font)}
+.field input:focus,.field select:focus{border-color:var(--brand)}
+.field select{cursor:pointer;font-weight:600}
 .btn-login{width:100%;background:var(--brand);color:var(--brand-ink);border:none;border-radius:9px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .15s,transform .1s;letter-spacing:.3px}
 .btn-login:hover{background:#F0BA00}
 .btn-login:active{transform:scale(.99)}
@@ -121,6 +122,18 @@ body{display:flex;min-height:100vh;background:var(--bg)}
       <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password"
              onkeydown="if(event.key==='Enter')login()">
     </div>
+    <div class="field">
+      <label>Entrar em</label>
+      <select id="destino">
+        <option value="/index.html">Relatórios — Dashboard</option>
+        <option value="/gestao-gerencial.html">Gestão Gerencial</option>
+        <option value="/supervisao.html">Painéis TV — Todos Setores</option>
+        <option value="/diretoria.html">Painel TV — Diretoria</option>
+        <option value="/compras.html">Painel TV — Compras</option>
+        <option value="/precificacao.html">Painel TV — Precificação</option>
+        <option value="/admin-usuarios.html">Usuários (admin)</option>
+      </select>
+    </div>
     <button class="btn-login" id="btn" onclick="login()">Entrar</button>
     <div class="erro" id="erro"></div>
     <div class="rodape">Econômico Supermercados · Acesso interno</div>
@@ -145,7 +158,8 @@ async function login() {
     });
     const json = await r.json();
     if (r.ok) {
-      window.location.href = json.redirect || '/index.html';
+      const destino = document.getElementById('destino').value;
+      window.location.href = destino || json.redirect || '/index.html';
     } else {
       mostrarErro(json.error || 'Erro ao fazer login.');
       btn.disabled = false;

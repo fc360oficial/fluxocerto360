@@ -27,8 +27,10 @@
   +   'background:var(--crd,#FFFFFF);border-right:1px solid var(--ln,#DADAD6);'
   +   'display:flex;flex-direction:column;padding:14px 12px 12px;'
   +   "font-family:'InterVar','Segoe UI',system-ui,sans-serif;overflow-y:auto}"
-  + '#dsnav .dn-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 14px;'
-  +   'border-bottom:1px solid var(--ln,#DADAD6);margin-bottom:10px;text-decoration:none}'
+  + '#dsnav .dn-top{display:flex;align-items:center;gap:8px;padding:4px 8px 14px;'
+  +   'border-bottom:1px solid var(--ln,#DADAD6);margin-bottom:10px}'
+  + '#dsnav .dn-brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:1;min-width:0}'
+  + '#dsnav .dn-exit-mobile{display:none}'
   + '#dsnav .dn-brand img{height:38px;display:block}'
   + '#dsnav .dn-brand b{font-size:13.5px;color:var(--ink,#0E1626);letter-spacing:-.2px;line-height:1.1}'
   + '#dsnav .dn-brand span{display:block;font-size:9px;color:var(--ink3,#98A0B3);'
@@ -57,17 +59,21 @@
   +   'body.dsnav-pad{margin-left:0;padding-top:96px}'
   +   '#dsnav{width:100%;height:auto;bottom:auto;flex-direction:column;padding:6px 8px;'
   +     'border-right:none;border-bottom:1px solid var(--ln,#DADAD6)}'
-  +   '#dsnav .dn-brand{border-bottom:none;padding:2px 6px 4px;margin-bottom:0}'
+  +   '#dsnav .dn-top{border-bottom:none;padding:2px 6px 4px;margin-bottom:0}'
   +   '#dsnav .dn-brand img{height:26px}'
   +   '#dsnav .dn-brand span{display:none}'
   +   '#dsnav .dn-sec{display:none}'
   +   '#dsnav .dn-rows{display:flex;overflow-x:auto;gap:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}'+'#dsnav .dn-rows::-webkit-scrollbar{display:none}'
   +   '#dsnav a.dn-item{padding:7px 10px;font-size:11px;flex-shrink:0}'
   +   '#dsnav .dn-foot{display:none}'
+  +   '#dsnav .dn-exit-mobile{display:flex;align-items:center;gap:5px;flex-shrink:0;'
+  +     'color:var(--neg,#C22F49);font-size:11px;font-weight:700;text-decoration:none;'
+  +     'padding:6px 10px;border-radius:8px;background:var(--negw,#FBEAED)}'
+  +   '#dsnav .dn-exit-mobile svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.8;fill:none}'
   + '}'
   /* ── variante NAVY (teste: ?nav=navy · voltar: ?nav=claro) ── */
   + '#dsnav.navy{background:#101B33;border-right-color:#1D2A46;border-bottom-color:#1D2A46}'
-  + '#dsnav.navy .dn-brand{border-bottom-color:rgba(255,255,255,.09)}'
+  + '#dsnav.navy .dn-top{border-bottom-color:rgba(255,255,255,.09)}'
   + '#dsnav.navy .dn-brand img{filter:brightness(0) invert(1)}'
   + '#dsnav.navy .dn-brand b{color:#FFFFFF}'
   + '#dsnav.navy .dn-brand span{color:#8E9AB5}'
@@ -95,9 +101,12 @@
     var path = location.pathname.replace(/\/$/, '/index.html');
     if (path === '' || path === '/') path = '/index.html';
 
-    var html = '<a class="dn-brand" href="/index.html">'
+    var html = '<div class="dn-top">'
+      + '<a class="dn-brand" id="dn-brand" href="/index.html">'
       + '<img src="/logo.png" alt="Econômico">'
       + '<span style="min-width:0"><b>Econômico</b><span>Relatórios BI</span></span></a>'
+      + '<a class="dn-exit-mobile" href="/api/logout">' + icon('logout') + 'Sair</a>'
+      + '</div>'
       + '<div class="dn-rows">';
     ITENS.forEach(function (it) {
       var g = it.grupo ? ' data-grupo="' + it.grupo + '"' : '';
@@ -136,12 +145,16 @@
         var ini = u.nome.trim().split(/\s+/).map(function (p) { return p[0]; }).slice(0, 2).join('').toUpperCase();
         document.getElementById('dn-ava').textContent = ini;
       }
-      /* perfil gerencial usa só a Gestão Gerencial (via login) —
-         esconde os itens de navegação, mantém marca e sair */
+      /* perfil gerencial fica travado na própria Gestão Gerencial —
+         esconde os itens de navegação e desativa o clique na marca
+         (que levaria ao Dashboard, fora do alcance desse perfil) */
       if (u && u.perfil === 'gerencial') {
         aside.querySelectorAll('.dn-item,.dn-sec').forEach(function (el) {
           el.style.display = 'none';
         });
+        var brand = document.getElementById('dn-brand');
+        brand.removeAttribute('href');
+        brand.style.cursor = 'default';
       }
     }).catch(function () {});
   }

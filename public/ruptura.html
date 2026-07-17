@@ -9,7 +9,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#EAEBE3;--card:#FFFFFF;--card2:#EAEBE3;--border:#D8D9CF;
+  --bg:#EBEBE9;--card:#FFFFFF;--card2:#EBEBE9;--border:#DADAD6;
   --brand:#F5B800;--red:#C22F49;--green:#137A48;--orange:#B45C00;--yellow:#F5B800;
   --blue:#2C4A6B;--purple:#0E1626;--text:#0E1626;--text2:#4E5A72;--text3:#4E5A72;
 }
@@ -22,7 +22,7 @@ html,body{height:100%;font-family:'InterVar','Segoe UI',sans-serif;background:va
 .sidebar-logo img{height:70px;}
 .sidebar-nav{padding:8px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
-.nav-item:hover{background:#D8D9CF;color:#0E1626}
+.nav-item:hover{background:#DADAD6;color:#0E1626}
 .nav-item.active{background:#F5B80018;color:#6B4E00;border-right:3px solid var(--brand)}
 .nav-item .ic{font-size:15px;width:20px;text-align:center}
 .sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
@@ -34,7 +34,7 @@ html,body{height:100%;font-family:'InterVar','Segoe UI',sans-serif;background:va
 .page-hdr p{font-size:12px;color:var(--text3);margin-top:2px}
 .btn{border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
 .btn-brand{background:var(--brand);color:#6B4E00}.btn-brand:hover{background:#E5AC00}
-.btn-slate{background:#D8D9CF;color:#0E1626}.btn-slate:hover{background:#98A0B3}
+.btn-slate{background:#DADAD6;color:#0E1626}.btn-slate:hover{background:#98A0B3}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* KPI CARDS */
@@ -68,9 +68,9 @@ html,body{height:100%;font-family:'InterVar','Segoe UI',sans-serif;background:va
 /* TABLE */
 .tbl-wrap{overflow-x:auto}
 table.t{width:100%;border-collapse:collapse;font-size:12px}
-table.t thead{background:#EAEBE3}
+table.t thead{background:#EBEBE9}
 table.t th{padding:9px 12px;text-align:left;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--border)}
-table.t td{padding:8px 12px;border-bottom:1px solid #D8D9CF66;vertical-align:middle}
+table.t td{padding:8px 12px;border-bottom:1px solid #DADAD666;vertical-align:middle}
 table.t tr:hover{background:#ffffff05}
 table.t th.r,table.t td.r{text-align:right}
 table.t td.bold{font-weight:700}
@@ -89,8 +89,8 @@ table.t td.bold{font-weight:700}
 .prev-content.active{display:block}
 
 /* RESUMO */
-.resumo-box{padding:18px;background:#EAEBE3;border-radius:10px;margin:14px 18px;border-left:3px solid var(--brand);font-size:13px;line-height:1.6;color:var(--text)}
-.plano-item{display:flex;gap:12px;padding:10px 18px;border-bottom:1px solid #D8D9CF;align-items:flex-start}
+.resumo-box{padding:18px;background:#EBEBE9;border-radius:10px;margin:14px 18px;border-left:3px solid var(--brand);font-size:13px;line-height:1.6;color:var(--text)}
+.plano-item{display:flex;gap:12px;padding:10px 18px;border-bottom:1px solid #DADAD6;align-items:flex-start}
 .plano-item:last-child{border-bottom:none}
 .plano-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
 .plano-tipo-COMPRA{background:#F5B80022;color:#6B4E00}
@@ -109,7 +109,7 @@ table.t td.bold{font-weight:700}
 .loja-card .stat span{font-weight:700;color:var(--text)}
 
 /* ALERT */
-.alerta-item{display:flex;gap:10px;padding:10px 18px;border-bottom:1px solid #D8D9CF;align-items:flex-start;font-size:12px}
+.alerta-item{display:flex;gap:10px;padding:10px 18px;border-bottom:1px solid #DADAD6;align-items:flex-start;font-size:12px}
 .alerta-item:last-child{border-bottom:none}
 .alerta-ic{font-size:16px;flex-shrink:0}
 .alerta-msg{flex:1;line-height:1.4}
@@ -129,7 +129,7 @@ table.t td.bold{font-weight:700}
 
 /* LOADING */
 .loading{display:flex;align-items:center;justify-content:center;padding:48px;gap:12px;color:var(--text3);font-size:14px}
-.spin{width:20px;height:20px;border:2px solid #D8D9CF;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+.spin{width:20px;height:20px;border:2px solid #DADAD6;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
 
@@ -147,20 +147,20 @@ table.t td.bold{font-weight:700}
 /* MODAL FORNECEDOR */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .modal-overlay.open{display:flex}
-.modal-box{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:12px;width:100%;max-width:860px;margin:auto}
-.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #D8D9CF}
+.modal-box{background:#FFFFFF;border:1px solid #DADAD6;border-radius:12px;width:100%;max-width:860px;margin:auto}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DADAD6}
 .modal-hdr h3{font-size:15px;font-weight:700;color:#0E1626}
 .modal-close{background:none;border:none;color:#4E5A72;font-size:20px;cursor:pointer;padding:2px 8px;border-radius:4px}
-.modal-close:hover{background:#D8D9CF;color:#0E1626}
-.modal-tabs{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid #D8D9CF;flex-wrap:wrap}
-.modal-tab{padding:5px 14px;border-radius:6px;border:1px solid #D8D9CF;background:none;color:#4E5A72;font-size:12px;font-weight:600;cursor:pointer}
-.modal-tab.active{background:#D8D9CF;color:#0E1626}
+.modal-close:hover{background:#DADAD6;color:#0E1626}
+.modal-tabs{display:flex;gap:4px;padding:12px 16px;border-bottom:1px solid #DADAD6;flex-wrap:wrap}
+.modal-tab{padding:5px 14px;border-radius:6px;border:1px solid #DADAD6;background:none;color:#4E5A72;font-size:12px;font-weight:600;cursor:pointer}
+.modal-tab.active{background:#DADAD6;color:#0E1626}
 .modal-body{padding:12px 0;max-height:60vh;overflow-y:auto}
 .modal-empty{padding:24px;text-align:center;color:#4E5A72;font-size:13px}
 .modal-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.modal-tbl th{padding:8px 14px;background:#EAEBE3;color:#4E5A72;text-align:left;font-weight:600;position:sticky;top:0;z-index:1}
-.modal-tbl td{padding:7px 14px;border-bottom:1px solid #D8D9CF}
-.modal-tbl tr:hover td{background:#EAEBE3}
+.modal-tbl th{padding:8px 14px;background:#EBEBE9;color:#4E5A72;text-align:left;font-weight:600;position:sticky;top:0;z-index:1}
+.modal-tbl td{padding:7px 14px;border-bottom:1px solid #DADAD6}
+.modal-tbl tr:hover td{background:#EBEBE9}
 </style>
 </head>
 <body class="ds">
@@ -417,7 +417,7 @@ function renderTudo(d) {
   const rankFornecHtml = `
   <div style="padding:10px 14px 6px">
     <input id="busca-fornec" type="text" placeholder="🔍 Buscar fornecedor..." oninput="filtrarFornec(this.value)"
-      style="width:100%;max-width:360px;background:#FFFFFF;border:1px solid #D8D9CF;border-radius:6px;color:#0E1626;padding:7px 12px;font-size:13px;outline:none">
+      style="width:100%;max-width:360px;background:#FFFFFF;border:1px solid #DADAD6;border-radius:6px;color:#0E1626;padding:7px 12px;font-size:13px;outline:none">
   </div>
   <div style="overflow-x:auto">
   <table style="width:100%;border-collapse:collapse;font-size:12px" id="tbl-rank-fornec">
@@ -432,7 +432,7 @@ function renderTudo(d) {
     </tr></thead>
     <tbody id="tbody-rank-fornec">
     ${(d.ranking_fornec||[]).map((f,i) => `
-      <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #D8D9CF;${i%2===0?'background:#EAEBE3':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EAEBE3':''}'">
+      <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #DADAD6;${i%2===0?'background:#EBEBE9':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EBEBE9':''}'">
         <td style="padding:7px 12px;color:#4E5A72">${i+1}</td>
         <td style="padding:7px 12px">
           <div style="font-weight:600;color:#0E1626">${f.fornecedor||'N/I'}</div>
@@ -562,7 +562,7 @@ function imprimirModal() {
     table{width:100%;border-collapse:collapse;font-size:9px;margin-top:6px}
     thead tr{background:#0E1626}
     thead th{padding:7px 8px;text-align:left;color:#B45C00;font-weight:700;font-size:8px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
-    thead th:not(:first-child){border-left:1px solid #D8D9CF}
+    thead th:not(:first-child){border-left:1px solid #DADAD6}
     tbody tr:nth-child(even){background:#F7F8FA}
     tbody tr:hover{background:#FFFBEB}
     tbody td{padding:6px 8px;border-bottom:1px solid #E5E7EB;color:#0E1626}
@@ -675,7 +675,7 @@ async function renderModalLojas() {
     const lojaCards = Object.entries(d.lojas).map(([ln, lj]) => {
       const pct = lj.total > 0 ? Math.round(lj.comEstoque / lj.total * 100) : 0;
       const corBarra = pct >= 80 ? '#137A48' : pct >= 50 ? '#B45C00' : '#C22F49';
-      return `<div style="background:#EAEBE3;border:1px solid #D8D9CF;border-radius:8px;padding:14px 16px;min-width:140px;flex:1">
+      return `<div style="background:#EBEBE9;border:1px solid #DADAD6;border-radius:8px;padding:14px 16px;min-width:140px;flex:1">
         <div style="font-size:11px;font-weight:700;color:#B45C00;margin-bottom:6px">LOJA ${ln}</div>
         <div style="font-size:10px;color:#4E5A72;margin-bottom:8px">${lj.nome}</div>
         <div style="background:#FFFFFF;border-radius:4px;height:6px;margin-bottom:10px">
@@ -730,7 +730,7 @@ function filtrarFornec(busca) {
   const tbody = document.getElementById('tbody-rank-fornec');
   if (!tbody) return;
   tbody.innerHTML = filtrado.map((f,i) => `
-    <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #D8D9CF;${i%2===0?'background:#EAEBE3':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EAEBE3':''}'">
+    <tr onclick="abrirFornecedor(${f.listaId},this.dataset.nome)" data-nome="${(f.fornecedor||'N/I').replace(/"/g,'&quot;')}" style="border-bottom:1px solid #DADAD6;${i%2===0?'background:#EBEBE9':''};cursor:pointer" onmouseover="this.style.background='#FFFFFF'" onmouseout="this.style.background='${i%2===0?'#EBEBE9':''}'">
       <td style="padding:7px 12px;color:#4E5A72">${i+1}</td>
       <td style="padding:7px 12px">
         <div style="font-weight:600;color:#0E1626">${f.fornecedor||'N/I'}</div>

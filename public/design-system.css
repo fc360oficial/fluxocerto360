@@ -17,11 +17,11 @@
 /* ── TOKENS · MODO ESCRITÓRIO (claro) ── */
 :root{
   /* superfícies */
-  --pap:#EAEBE3;          /* fundo de página — dois degraus abaixo do card p/ dar profundidade */
+  --pap:#EBEBE9;          /* fundo de página — dois degraus abaixo do card p/ dar profundidade */
   --crd:#FFFFFF;          /* cards e painéis */
-  --wsh:#E2E3DA;          /* wash: thead, hover, fundos suaves */
-  --ln:#D8D9CF;           /* borda padrão */
-  --ln2:#C6C8BB;          /* borda forte (inputs) */
+  --wsh:#E4E4E1;          /* wash: thead, hover, fundos suaves */
+  --ln:#DADAD6;           /* borda padrão */
+  --ln2:#C9C9C4;          /* borda forte (inputs) */
 
   /* tinta */
   --ink:#0E1626;          /* texto principal / dados */

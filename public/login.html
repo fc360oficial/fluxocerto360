@@ -145,7 +145,7 @@ async function login() {
     });
     const json = await r.json();
     if (r.ok) {
-      window.location.href = json.redirect || '/hub.html';
+      window.location.href = json.redirect || '/index.html';
     } else {
       mostrarErro(json.error || 'Erro ao fazer login.');
       btn.disabled = false;

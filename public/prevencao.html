@@ -8,13 +8,13 @@
 <title>Prevenção de Perdas</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'InterVar','Segoe UI',sans-serif;background:#EAEBE3;color:#0E1626;min-height:100vh}
+body{font-family:'InterVar','Segoe UI',sans-serif;background:#EBEBE9;color:#0E1626;min-height:100vh}
 
-.sidebar{position:fixed;top:0;left:0;height:100vh;width:236px;background:#FFFFFF;border-right:1px solid #D8D9CF;display:flex;flex-direction:column;z-index:50}
-.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #D8D9CF}
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:236px;background:#FFFFFF;border-right:1px solid #DADAD6;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #DADAD6}
 .sidebar-nav{padding:10px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#4E5A72;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
-.nav-item:hover{background:#D8D9CF;color:#0E1626}
+.nav-item:hover{background:#DADAD6;color:#0E1626}
 .nav-item.active{background:#F5B80018;color:#6B4E00;border-right:3px solid #F5B800}
 .nav-item .ic{font-size:15px;width:20px;text-align:center}
 
@@ -23,30 +23,34 @@ body{font-family:'InterVar','Segoe UI',sans-serif;background:#EAEBE3;color:#0E16
 .page-hdr h1{font-size:21px;font-weight:700;color:#0E1626}
 .page-hdr p{font-size:12px;color:#4E5A72;margin-top:2px}
 
-.filtros{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.filtros{background:#FFFFFF;border:1px solid #DADAD6;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .fg{display:flex;flex-direction:column;gap:3px}
 .fg label{font-size:10px;color:#4E5A72;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.fg select,.fg input{background:#EAEBE3;border:1px solid #D8D9CF;border-radius:7px;color:#0E1626;padding:7px 11px;font-size:13px;outline:none;min-width:140px}
+.fg select,.fg input{background:#EBEBE9;border:1px solid #DADAD6;border-radius:7px;color:#0E1626;padding:7px 11px;font-size:13px;outline:none;min-width:140px}
 .fg select:focus,.fg input:focus{border-color:#F5B800}
 .btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end}
 .btn-blue{background:#F5B800;color:#6B4E00;font-weight:700}.btn-blue:hover{background:#E5AC00}
-.btn-slate{background:#D8D9CF;color:#0E1626}.btn-slate:hover{background:#98A0B3}
+.btn-slate{background:#DADAD6;color:#0E1626}.btn-slate:hover{background:#98A0B3}
 
 /* KPI CARDS */
 .kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.kpi{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:12px 16px;min-width:120px;flex:1}
+.kpi{background:#FFFFFF;border:1px solid #DADAD6;border-radius:10px;padding:12px 16px;min-width:120px;flex:1}
 .kpi .v{font-size:18px;font-weight:700}
 .kpi .l{font-size:10px;color:#4E5A72;margin-top:2px}
 
 /* SECTION TITLES */
-.sec-title{font-size:14px;font-weight:700;color:#0E1626;padding:10px 0 8px;border-bottom:2px solid #D8D9CF;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.sec-title{font-size:14px;font-weight:700;color:#0E1626;padding:10px 0 8px;border-bottom:2px solid #DADAD6;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+/* conteúdo dentro de card branco (padrão do design system) */
+#conteudo{background:#FFFFFF;border:1px solid #DADAD6;border-radius:13px;padding:18px 20px;box-shadow:0 1px 3px rgba(14,22,38,.07)}
+#conteudo .sec-title:first-child{margin-top:0}
+@media(max-width:768px){#conteudo{padding:12px}}
 
 /* TABLES */
 .table-wrap{overflow-x:auto;margin-bottom:12px}
 table.t{width:100%;border-collapse:collapse;font-size:12px}
-table.t thead{background:#EAEBE3}
-table.t th{padding:8px 12px;text-align:left;color:#4E5A72;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #D8D9CF}
-table.t td{padding:7px 12px;border-bottom:1px solid #D8D9CF44;vertical-align:middle}
+table.t thead{background:#EBEBE9}
+table.t th{padding:8px 12px;text-align:left;color:#4E5A72;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid #DADAD6}
+table.t td{padding:7px 12px;border-bottom:1px solid #DADAD644;vertical-align:middle}
 table.t tbody tr:hover{background:#ffffff06}
 table.t th.r,table.t td.r{text-align:right}
 .cod{color:#4E5A72;font-size:11px;font-family:monospace}
@@ -59,42 +63,42 @@ table.t th.r,table.t td.r{text-align:right}
 
 /* SETOR GRID */
 .setor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
-.setor-card{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:14px 16px;text-align:center}
+.setor-card{background:#FFFFFF;border:1px solid #DADAD6;border-radius:10px;padding:14px 16px;text-align:center}
 .setor-card .nome{font-size:11px;color:#4E5A72;font-weight:700;text-transform:uppercase;margin-bottom:6px}
 .setor-card .val{font-size:20px;font-weight:700;color:#B45C00}
 
 /* GRUPO ACCORDION */
-.grupo-bloco{margin-bottom:8px;border:1px solid #D8D9CF;border-radius:10px;overflow:hidden}
+.grupo-bloco{margin-bottom:8px;border:1px solid #DADAD6;border-radius:10px;overflow:hidden}
 .grupo-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFFFFF;cursor:pointer;user-select:none;transition:background .1s}
-.grupo-hdr:hover{background:#263249}
+.grupo-hdr:hover{background:#E4E4E1}
 .grupo-hdr-nome{font-size:13px;font-weight:700;color:#0E1626;flex:1}
 .grupo-badge{font-size:11px;font-weight:700;background:#B45C0022;color:#B45C00;border-radius:6px;padding:2px 8px}
-.grupo-badge-blue{background:#0c4a6e44;color:#7dd3fc}
+.grupo-badge-blue{background:#E9EEF6;color:#2E5E8C}
 .grupo-toggle{font-size:11px;color:#4E5A72;transition:transform .2s}
 .grupo-hdr.open .grupo-toggle{transform:rotate(180deg)}
-.grupo-body{display:none;background:#EAEBE322}
+.grupo-body{display:none;background:#EBEBE922}
 .grupo-body.open{display:block}
 
 /* MENSAL TABLE */
 .mensal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px}
-.mensal-card{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:8px;padding:10px 12px;text-align:center}
+.mensal-card{background:#FFFFFF;border:1px solid #DADAD6;border-radius:8px;padding:10px 12px;text-align:center}
 .mensal-card .mes-label{font-size:10px;color:#4E5A72;font-weight:700;text-transform:uppercase;margin-bottom:4px}
 .mensal-card .mes-val{font-size:16px;font-weight:700}
 .mensal-card .mes-sub{font-size:10px;color:#4E5A72;margin-top:2px}
 
 /* TOP 10 FORNECEDORES */
 .top10-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.top10-col{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:14px 16px}
+.top10-col{background:#FFFFFF;border:1px solid #DADAD6;border-radius:10px;padding:14px 16px}
 .top10-col h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .top10-col h3 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .top10-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .top10-rank{font-size:10px;font-weight:700;color:#4E5A72;width:16px;text-align:center;flex-shrink:0}
 .top10-info{flex:1;min-width:0}
 .top10-nome{font-size:11px;color:#0E1626;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-.top10-bar-bg{height:16px;background:#EAEBE3;border-radius:4px;overflow:hidden;position:relative}
+.top10-bar-bg{height:16px;background:#EBEBE9;border-radius:4px;overflow:hidden;position:relative}
 .top10-bar{height:100%;border-radius:4px;transition:width .5s ease}
 .top10-val{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;min-width:80px;text-align:right}
-.top10-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #D8D9CF}
+.top10-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #DADAD6}
 .top10-total span:first-child{font-size:11px;color:#4E5A72;font-weight:700;text-transform:uppercase}
 .top10-total span:last-child{font-size:14px;font-weight:700}
 
@@ -102,12 +106,12 @@ table.t th.r,table.t td.r{text-align:right}
   .top10-wrapper{grid-template-columns:1fr}
 }
 
-.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #D8D9CF;border-top-color:#B45C00;animation:spin .7s linear infinite;margin:30px auto}
+.spinner{width:22px;height:22px;border-radius:50%;border:2px solid #DADAD6;border-top-color:#B45C00;animation:spin .7s linear infinite;margin:30px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{padding:30px;text-align:center;color:#98A0B3;font-size:13px}
 
 @media(max-width:768px){
-  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #D8D9CF}
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:column;border-right:none;border-bottom:1px solid #DADAD6}
   .sidebar-logo{padding:8px 12px;border-bottom:none;display:flex;align-items:center}
   .sidebar-logo img{width:100px !important;height:auto !important}
   .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
@@ -135,7 +139,7 @@ table.t td.r input{font-family:'InterVar','Segoe UI',sans-serif}
 
 /* REDE KPIs */
 .rede-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
-.rede-kpi{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:14px 16px}
+.rede-kpi{background:#FFFFFF;border:1px solid #DADAD6;border-radius:10px;padding:14px 16px}
 .rede-kpi .rk-label{font-size:10px;color:#4E5A72;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .rede-kpi .rk-val{font-size:22px;font-weight:700;line-height:1.2}
 .rede-kpi .rk-sub{font-size:10px;color:#4E5A72;margin-top:4px}
@@ -148,7 +152,7 @@ table.t td.r input{font-family:'InterVar','Segoe UI',sans-serif}
 .bar-chart{padding:4px 0 12px}
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
 .bar-label{font-size:11px;font-weight:700;color:#0E1626;width:150px;flex-shrink:0;text-align:right}
-.bar-track{flex:1;height:20px;background:#EAEBE3;border-radius:4px;position:relative;overflow:visible}
+.bar-track{flex:1;height:20px;background:#EBEBE9;border-radius:4px;position:relative;overflow:visible}
 .bar-fill{height:100%;border-radius:4px;min-width:2px}
 .bar-meta-line{position:absolute;top:-4px;bottom:-4px;width:2px;background:#0E162655;border-left:2px dashed #ffffff44}
 .bar-meta-label{position:absolute;top:-16px;font-size:9px;color:#4E5A72;transform:translateX(-50%)}
@@ -375,7 +379,7 @@ function renderConsolidado(d) {
   }
   var redeW = maxPct > 0 ? +(redePct / maxPct * 100).toFixed(1) : 0;
   var redeC = redePct > 1 ? '#C22F49' : '#137A48';
-  html += '<div class="bar-row" style="margin-top:10px;border-top:1px solid #D8D9CF;padding-top:10px">';
+  html += '<div class="bar-row" style="margin-top:10px;border-top:1px solid #DADAD6;padding-top:10px">';
   html += '<div class="bar-label" style="color:#0E1626">REDE TOTAL</div>';
   html += '<div class="bar-track">';
   html += '<div class="bar-fill" id="bar-fill-rede" style="width:' + redeW + '%;box-shadow:inset 0 0 0 999px ' + redeC + ';border-color:' + redeC + '"></div>';
@@ -458,7 +462,7 @@ function renderConsolidado(d) {
   var totPct = tot.venda > 0 ? +(tot.avMes / tot.venda * 100).toFixed(2) : 0;
   var totCorFinal = tot.avFinal < 0 ? 'pos' : 'neg';
 
-  html += '<tr style="border-top:2px solid #98A0B3;background:#EAEBE3">';
+  html += '<tr style="border-top:2px solid #98A0B3;background:#EBEBE9">';
   html += '<td class="bold" style="color:#0E1626;padding-left:16px">TOTAL</td>';
   html += '<td class="r bold">' + fmtN(tot.venda) + '</td>';
   html += '<td class="r bold warn">' + fmtN(tot.avBruta) + '</td>';
@@ -598,7 +602,7 @@ function renderConsolidado(d) {
       h += '</div>';
     }
     h += '</div>';
-    h += '<div style="background:#2d0d0d;border:1px solid #F3C1CB;border-radius:10px;padding:12px 16px">';
+    h += '<div style="background:#FBEAED;border:1px solid #F3C1CB;border-radius:10px;padding:12px 16px">';
     h += '<div style="font-size:11px;font-weight:700;color:#C22F49;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">▲ Pioraram este mês</div>';
     if (pio.length === 0) { h += '<div style="color:#98A0B3;font-size:12px">Nenhuma loja</div>'; }
     for (var pi3 = 0; pi3 < pio.length; pi3++) {
@@ -734,7 +738,7 @@ function renderTudo(d) {
   html += '<tr><td class="bold warn">EM ABERTO</td><td class="r bold warn">' + fmt(r.aberto) + '</td><td style="color:#4E5A72">Produtos na loja (mês)</td></tr>';
   html += '<tr><td class="bold info">EM TRÂMITE</td><td class="r bold info">' + fmt(r.tramite) + '</td><td style="color:#4E5A72">Produtos descartados (mês)</td></tr>';
   html += '<tr><td class="bold neg">AVARIAS FINAL</td><td class="r bold neg" id="pendencias-final">' + fmt(r.avariasFinal) + '</td><td style="color:#4E5A72">Notas emitidas líquidas (mês)</td></tr>';
-  html += '<tr style="border-top:2px solid #D8D9CF"><td class="bold" style="color:#0E1626">TOTAL AVARIA MÊS</td><td class="r bold neg" id="pendencias-total">' + fmt(r.aberto + r.tramite + r.avariasFinal) + '</td><td style="color:#4E5A72;font-size:11px" id="pendencias-pct">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '% s/ venda</td></tr>';
+  html += '<tr style="border-top:2px solid #DADAD6"><td class="bold" style="color:#0E1626">TOTAL AVARIA MÊS</td><td class="r bold neg" id="pendencias-total">' + fmt(r.aberto + r.tramite + r.avariasFinal) + '</td><td style="color:#4E5A72;font-size:11px" id="pendencias-pct">' + fmtN(r.valorVenda > 0 ? ((r.aberto + r.tramite + r.avariasFinal) / r.valorVenda * 100) : 0) + '% s/ venda</td></tr>';
   html += '</tbody></table></div>';
 
   // ── TOTAL GERAL (SEM FILTRO DE MÊS) ──

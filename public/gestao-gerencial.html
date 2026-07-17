@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/design-system.css">
+<script src="/nav.js" defer></script>
 <title>Gestão Gerencial — Econômico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,17 +12,17 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F7F7F5;--bg2:#F1F2F0;
+  --bg:#EBEBE9;--bg2:#E4E4E1;
   --card:#FFFFFF;--card2:#FFFFFF;
-  --brand:#FFC600;--brand-ink:#5C4600;
-  --green:#158A4A;--green-bg:#EAF7EF;
-  --red:#D6314A;--red-bg:#FCEBEE;
+  --brand:#F5B800;--brand-ink:#6B4E00;
+  --green:#137A48;--green-bg:#E7F5EC;
+  --red:#C22F49;--red-bg:#FBEAED;
   --amber:#B45C00;--amber-bg:#FBEDDD;
   --blue:#2C4A6B;--blue-bg:#E9EEF3;
-  --text:#16233F;--text2:#5B6373;--text3:#9AA0AC;
-  --border:#E6E7E3;--border-md:#D9DAD5;
+  --text:#0E1626;--text2:#4E5A72;--text3:#98A0B3;
+  --border:#DADAD6;--border-md:#C9C9C4;
   --r:14px;
-  --font:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font:'InterVar','Inter','Segoe UI',system-ui,-apple-system,sans-serif;
 }
 html,body{min-height:100%;font-family:var(--font);background:var(--bg);color:var(--text)}
 body{display:flex;flex-direction:column}
@@ -58,7 +60,7 @@ header{
 .f-btn{background:var(--brand);color:var(--brand-ink);border:none;border-radius:7px;
   font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
   padding:7px 14px;cursor:pointer;transition:background .2s;white-space:nowrap}
-.f-btn:hover{background:#F0BA00}
+.f-btn:hover{background:#E5AC00}
 .f-btn:disabled{opacity:.5;cursor:not-allowed}
 .f-info{margin-left:auto;font-size:10px;color:var(--text3)}
 
@@ -137,10 +139,10 @@ tbody td:first-child{text-align:left;color:var(--text);font-weight:600;max-width
 }
 </style>
 </head>
-<body>
+<body class="ds">
 
 <header>
-  <a class="h-back" href="/hub.html">← Início</a>
+  <a class="h-back" href="/index.html">← Início</a>
   <div class="h-div"></div>
   <img src="/logo.png" alt="Econômico" style="height:32px;flex-shrink:0">
   <div class="h-div"></div>
@@ -410,7 +412,7 @@ function renderTicket(d){
     const dc=t.dif_pct!==null&&t.dif_pct>=0?'tp':'tn';
     const pt=t.dif_pct!==null?(t.dif_pct>=0?'+':'')+t.dif_pct+'%':'—';
     const atual=t.mes===d.meta_info.mes;
-    tb.innerHTML+=`<tr${atual?' style="background:var(--brand-soft,#FFF6D8)"':''}>
+    tb.innerHTML+=`<tr${atual?' style="background:var(--brand-soft,#FFF6D9)"':''}>
       <td>${MA[t.mes]}${atual?' <span style="font-size:9px;color:var(--brand-ink)">●</span>':''}</td>
       <td class="bl">${t.cupons.toLocaleString('pt-BR')}</td>
       <td>${(t.cupons_ant||0).toLocaleString('pt-BR')}</td>
@@ -439,7 +441,7 @@ function renderVendaLojas(d){
       const dif=t.venda_ant>0?+((t.venda-t.venda_ant)/t.venda_ant*100).toFixed(1):0;
       const dc=dif>=0?'tp':'tn';
       const atual=t.mes===d.meta_info.mes;
-      tb.innerHTML+=`<tr${atual?' style="background:var(--brand-soft,#FFF6D8)"':''}>
+      tb.innerHTML+=`<tr${atual?' style="background:var(--brand-soft,#FFF6D9)"':''}>
         <td>${MA[t.mes]}${atual?'<span style="font-size:9px;color:var(--brand-ink);margin-left:4px">●</span>':''}</td>
         <td>${R(t.venda||0)}</td><td>${R(t.venda_ant||0)}</td>
         <td class="${dc}">${dif>=0?'+':''}${dif}%</td>

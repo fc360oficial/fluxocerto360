@@ -75,7 +75,7 @@ app.use((req, res, next) => {
     if ((req.path === '/admin-usuarios.html' || req.path.startsWith('/api/admin/')) &&
         req.session.user.perfil !== 'admin') {
       if (req.path.startsWith('/api/')) return res.status(403).json({ error: 'Sem permissão' });
-      return res.redirect('/hub.html');
+      return res.redirect('/index.html');
     }
     return next();
   }
@@ -100,7 +100,7 @@ app.post('/api/login', async (req, res) => {
   if (!ok) return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
   const perfil = user.perfil || 'gerente';
   req.session.user = { id: user.id, nome: user.nome, usuario: user.usuario, perfil, comprador_nome: user.comprador_nome || null, loja_id: user.loja_id || null };
-  let redirect = '/hub.html';
+  let redirect = '/index.html';
   res.json({ ok: true, nome: user.nome, redirect });
 });
 

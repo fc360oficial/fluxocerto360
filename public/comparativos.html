@@ -9,16 +9,16 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'InterVar','Segoe UI',sans-serif;background:#EAEBE3;color:#0E1626;min-height:100vh;overflow-x:hidden}
+body{font-family:'InterVar','Segoe UI',sans-serif;background:#EBEBE9;color:#0E1626;min-height:100vh;overflow-x:hidden}
 
 /* SIDEBAR */
-.sidebar{position:fixed;top:0;left:0;height:100vh;width:236px;background:#FFFFFF;border-right:1px solid #D8D9CF;display:flex;flex-direction:column;z-index:50}
-.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #D8D9CF}
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:236px;background:#FFFFFF;border-right:1px solid #DADAD6;display:flex;flex-direction:column;z-index:50}
+.sidebar-logo{padding:22px 20px 14px;border-bottom:1px solid #DADAD6}
 .sidebar-logo h2{font-size:15px;color:#6B4E00;font-weight:700;letter-spacing:0.5px}
 .sidebar-logo p{font-size:11px;color:#4E5A72;margin-top:2px}
 .sidebar-nav{padding:10px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#4E5A72;text-decoration:none;font-size:13px;font-weight:500;transition:all .15s}
-.nav-item:hover{background:#D8D9CF;color:#0E1626}
+.nav-item:hover{background:#DADAD6;color:#0E1626}
 .nav-item.active{background:#F5B80018;color:#6B4E00;border-right:3px solid #F5B800}
 .nav-item .ic{font-size:15px;width:20px;text-align:center}
 .nav-sub{padding-left:36px;font-size:12px}
@@ -33,17 +33,17 @@ body{font-family:'InterVar','Segoe UI',sans-serif;background:#EAEBE3;color:#0E16
 .page-hdr p{font-size:12px;color:#4E5A72;margin-top:2px}
 
 /* FILTROS */
-.filtros{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.filtros{background:#FFFFFF;border:1px solid #DADAD6;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .fg{display:flex;flex-direction:column;gap:4px}
 .fg label{font-size:10px;color:#4E5A72;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.fg select{background:#EAEBE3;border:1px solid #D8D9CF;border-radius:7px;color:#0E1626;padding:7px 11px;font-size:13px;outline:none;min-width:120px}
+.fg select{background:#EBEBE9;border:1px solid #DADAD6;border-radius:7px;color:#0E1626;padding:7px 11px;font-size:13px;outline:none;min-width:120px}
 .fg select:focus{border-color:#F5B800}
 .btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end;white-space:nowrap}
 .btn-pri{background:#F5B800;color:#6B4E00;font-weight:700}.btn-pri:hover{background:#E5AC00}
 
 /* KPI CARDS */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.kpi{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:10px;padding:14px 18px;position:relative;overflow:hidden}
+.kpi{background:#FFFFFF;border:1px solid #DADAD6;border-radius:10px;padding:14px 18px;position:relative;overflow:hidden}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
 .kpi.blue::before{background:#0E1626}
 .kpi.green::before{background:#137A48}
@@ -55,7 +55,7 @@ body{font-family:'InterVar','Segoe UI',sans-serif;background:#EAEBE3;color:#0E16
 .up{color:#137A48}.dn{color:#C22F49}
 
 /* CHART CARD */
-.card{background:#FFFFFF;border:1px solid #D8D9CF;border-radius:12px;padding:18px 20px;margin-bottom:20px}
+.card{background:#FFFFFF;border:1px solid #DADAD6;border-radius:12px;padding:18px 20px;margin-bottom:20px}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
 .card-hdr h2{font-size:14px;font-weight:700;color:#0E1626}
 .legenda{display:flex;gap:14px;align-items:center}
@@ -64,12 +64,12 @@ body{font-family:'InterVar','Segoe UI',sans-serif;background:#EAEBE3;color:#0E16
 .chart-wrap{position:relative;height:320px}
 
 /* TABELA */
-.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #D8D9CF}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #DADAD6}
 table.dt{width:100%;border-collapse:collapse;font-size:12px}
-table.dt thead{background:#EAEBE3;position:sticky;top:0;z-index:1}
-table.dt th{padding:9px 12px;text-align:left;color:#4E5A72;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid #D8D9CF}
+table.dt thead{background:#EBEBE9;position:sticky;top:0;z-index:1}
+table.dt th{padding:9px 12px;text-align:left;color:#4E5A72;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid #DADAD6}
 table.dt th.r{text-align:right}
-table.dt td{padding:8px 12px;border-bottom:1px solid #D8D9CF;color:#0E1626;vertical-align:middle}
+table.dt td{padding:8px 12px;border-bottom:1px solid #DADAD6;color:#0E1626;vertical-align:middle}
 table.dt td.r{text-align:right}
 table.dt tbody tr:hover{background:#ffffff06}
 .var-pos{color:#137A48;font-weight:700}
@@ -78,14 +78,14 @@ table.dt tbody tr:hover{background:#ffffff06}
 .loading{text-align:center;padding:40px;color:#4E5A72;font-size:14px}
 
 /* ABAS */
-.tabs{display:flex;gap:4px;border-bottom:1px solid #D8D9CF;margin-bottom:16px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid #DADAD6;margin-bottom:16px}
 .tab-btn{background:none;border:none;cursor:pointer;padding:8px 16px;font-size:13px;font-weight:600;color:#4E5A72;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
 .tab-btn:hover{color:#0E1626}
 .tab-btn.active{color:#6B4E00;border-bottom-color:#F5B800}
 
 /* RESPONSIVE */
 @media(max-width:900px){
-  .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;width:100%;flex-direction:column;border-right:none;border-top:1px solid #D8D9CF}
+  .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;width:100%;flex-direction:column;border-right:none;border-top:1px solid #DADAD6}
   .sidebar-logo{display:none}
   .sidebar-nav{padding:5px 8px 8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px}
   .nav-item{padding:7px 6px;font-size:10px;border-radius:6px;gap:4px;justify-content:center;text-align:center;border-right:none!important}
@@ -94,7 +94,7 @@ table.dt tbody tr:hover{background:#ffffff06}
   .main{margin-left:0;margin-bottom:80px;padding:14px}
   .kpi-row{grid-template-columns:1fr 1fr}
   .chart-wrap{height:240px}
-  div[style*="border-top:1px solid #D8D9CF"]{display:none}
+  div[style*="border-top:1px solid #DADAD6"]{display:none}
 }
 </style>
 </head>
@@ -453,7 +453,7 @@ function renderizar(data) {
         legend: { display: false },
         tooltip: {
           backgroundColor: '#FFFFFF',
-          borderColor: '#D8D9CF',
+          borderColor: '#DADAD6',
           borderWidth: 1,
           titleColor: '#4E5A72',
           bodyColor: '#0E1626',
@@ -495,8 +495,8 @@ function renderizar(data) {
     tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td><strong>${String(d.dia).padStart(2,'0')}</strong></td>
-        <td class="r">${d.v2025 > 0 ? BRL(d.v2025) : '<span style="color:#D8D9CF">—</span>'}</td>
-        <td class="r">${d.v2026 > 0 ? BRL(d.v2026) : '<span style="color:#D8D9CF">—</span>'}</td>
+        <td class="r">${d.v2025 > 0 ? BRL(d.v2025) : '<span style="color:#DADAD6">—</span>'}</td>
+        <td class="r">${d.v2026 > 0 ? BRL(d.v2026) : '<span style="color:#DADAD6">—</span>'}</td>
         <td class="r">${varCell}</td>
         <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${d.v2025 > 0 || d.v2026 > 0 ? (dif >= 0 ? '+' : '') + BRL(dif) : ''}</td>
         <td class="r">${d.c2025 || ''}</td>
@@ -507,7 +507,7 @@ function renderizar(data) {
   // Totais
   const difTot = tot26 - tot25;
   tbody.insertAdjacentHTML('beforeend', `
-    <tr style="background:#EAEBE3;font-weight:700;border-top:2px solid #D8D9CF">
+    <tr style="background:#EBEBE9;font-weight:700;border-top:2px solid #DADAD6">
       <td>Total</td>
       <td class="r">${BRL(tot25)}</td>
       <td class="r">${BRL(tot26)}</td>
@@ -587,8 +587,8 @@ function carregarMensal() {
         tbody.insertAdjacentHTML('beforeend', `
           <tr>
             <td><strong>${m.nome}</strong></td>
-            <td class="r">${m.v2025 > 0 ? BRL(m.v2025) : '<span style="color:#D8D9CF">—</span>'}</td>
-            <td class="r">${m.v2026 > 0 ? BRL(m.v2026) : '<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r">${m.v2025 > 0 ? BRL(m.v2025) : '<span style="color:#DADAD6">—</span>'}</td>
+            <td class="r">${m.v2026 > 0 ? BRL(m.v2026) : '<span style="color:#DADAD6">—</span>'}</td>
             <td class="r">${varCell}</td>
             <td class="r ${dif >= 0 ? 'var-pos' : 'var-neg'}">${m.v2025 > 0 || m.v2026 > 0 ? (dif >= 0 ? '+' : '') + BRL(dif) : ''}</td>
             <td class="r">${m.c2025 || ''}</td>
@@ -598,7 +598,7 @@ function carregarMensal() {
       }
       const difTot = data.total2026 - data.total2025;
       tbody.insertAdjacentHTML('beforeend', `
-        <tr style="background:#EAEBE3;font-weight:700;border-top:2px solid #D8D9CF">
+        <tr style="background:#EBEBE9;font-weight:700;border-top:2px solid #DADAD6">
           <td>Total Ano</td>
           <td class="r">${BRL(data.total2025)}</td>
           <td class="r">${BRL(data.total2026)}</td>
@@ -618,8 +618,8 @@ function mercRow(item, dif, varCell, indent) {
   const pad = indent ? 'padding-left:28px;color:#4E5A72;font-size:11px' : 'font-weight:700';
   return `<tr style="${indent ? 'background:#ffffff04' : ''}">
     <td style="${pad}">${indent ? '↳ ' : ''}${item.nome}</td>
-    <td class="r">${item.v2025>0 ? BRL(item.v2025) : '<span style="color:#D8D9CF">—</span>'}</td>
-    <td class="r">${item.v2026>0 ? BRL(item.v2026) : '<span style="color:#D8D9CF">—</span>'}</td>
+    <td class="r">${item.v2025>0 ? BRL(item.v2025) : '<span style="color:#DADAD6">—</span>'}</td>
+    <td class="r">${item.v2026>0 ? BRL(item.v2026) : '<span style="color:#DADAD6">—</span>'}</td>
     <td class="r">${varCell}</td>
     <td class="r ${dif>=0?'var-pos':'var-neg'}">${item.v2025>0||item.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
   </tr>`;
@@ -647,10 +647,10 @@ function carregarMerc() {
         }
         // Linha do grupo — clicável para expandir subgrupos
         tbody.insertAdjacentHTML('beforeend', `
-          <tr style="cursor:pointer;background:#1a2540" onclick="toggleSubs('${gId}')">
+          <tr style="cursor:pointer;background:#E9E9E7" onclick="toggleSubs('${gId}')">
             <td style="font-weight:700"><span id="ic-${gId}" style="color:#6B4E00;margin-right:6px;font-size:10px">▶</span>${g.nome}</td>
-            <td class="r" style="font-weight:700">${g.v2025>0?BRL(g.v2025):'<span style="color:#D8D9CF">—</span>'}</td>
-            <td class="r" style="font-weight:700">${g.v2026>0?BRL(g.v2026):'<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r" style="font-weight:700">${g.v2025>0?BRL(g.v2025):'<span style="color:#DADAD6">—</span>'}</td>
+            <td class="r" style="font-weight:700">${g.v2026>0?BRL(g.v2026):'<span style="color:#DADAD6">—</span>'}</td>
             <td class="r">${varCell}</td>
             <td class="r ${dif>=0?'var-pos':'var-neg'}" style="font-weight:700">${g.v2025>0||g.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
           </tr>`);
@@ -665,10 +665,10 @@ function carregarMerc() {
             svc = `<span class="${sc}">${PCT(s.var)}</span>`;
           }
           tbody.insertAdjacentHTML('beforeend',
-            `<tr class="sub-${gId}" style="display:none;background:#0d1829;cursor:pointer" onclick="toggleSubs('${sId}')">
+            `<tr class="sub-${gId}" style="display:none;background:#F3F3F1;cursor:pointer" onclick="toggleSubs('${sId}')">
               <td style="padding-left:24px;font-size:12px;font-weight:600"><span id="ic-${sId}" style="color:#0E1626;margin-right:5px;font-size:9px">▶</span>↳ ${s.nome}</td>
-              <td class="r" style="font-size:12px;font-weight:600">${s.v2025>0?BRL(s.v2025):'<span style="color:#D8D9CF">—</span>'}</td>
-              <td class="r" style="font-size:12px;font-weight:600">${s.v2026>0?BRL(s.v2026):'<span style="color:#D8D9CF">—</span>'}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2025>0?BRL(s.v2025):'<span style="color:#DADAD6">—</span>'}</td>
+              <td class="r" style="font-size:12px;font-weight:600">${s.v2026>0?BRL(s.v2026):'<span style="color:#DADAD6">—</span>'}</td>
               <td class="r">${svc}</td>
               <td class="r ${sd>=0?'var-pos':'var-neg'}" style="font-size:12px;font-weight:600">${s.v2025>0||s.v2026>0?(sd>=0?'+':'')+BRL(sd):''}</td>
             </tr>`);
@@ -681,10 +681,10 @@ function carregarMerc() {
               mvc = `<span class="${mc}">${PCT(m.var)}</span>`;
             }
             tbody.insertAdjacentHTML('beforeend',
-              `<tr class="sub-${gId} sub-${sId}" style="display:none;background:#080f1e">
+              `<tr class="sub-${gId} sub-${sId}" style="display:none;background:#FAFAF9">
                 <td style="padding-left:48px;color:#4E5A72;font-size:11px">· ${m.nome}</td>
-                <td class="r" style="font-size:11px;color:#4E5A72">${m.v2025>0?BRL(m.v2025):'<span style="color:#FFFFFF">—</span>'}</td>
-                <td class="r" style="font-size:11px;color:#4E5A72">${m.v2026>0?BRL(m.v2026):'<span style="color:#FFFFFF">—</span>'}</td>
+                <td class="r" style="font-size:11px;color:#4E5A72">${m.v2025>0?BRL(m.v2025):'<span style="color:#98A0B3">—</span>'}</td>
+                <td class="r" style="font-size:11px;color:#4E5A72">${m.v2026>0?BRL(m.v2026):'<span style="color:#98A0B3">—</span>'}</td>
                 <td class="r">${mvc}</td>
                 <td class="r ${md>=0?'var-pos':'var-neg'}" style="font-size:11px">${m.v2025>0||m.v2026>0?(md>=0?'+':'')+BRL(md):''}</td>
               </tr>`);
@@ -693,7 +693,7 @@ function carregarMerc() {
       }
       const difTot = data.total2026 - data.total2025;
       tbody.insertAdjacentHTML('beforeend', `
-        <tr style="background:#EAEBE3;font-weight:700;border-top:2px solid #D8D9CF">
+        <tr style="background:#EBEBE9;font-weight:700;border-top:2px solid #DADAD6">
           <td>Total</td>
           <td class="r">${BRL(data.total2025)}</td>
           <td class="r">${BRL(data.total2026)}</td>
@@ -742,8 +742,8 @@ function carregarLojas() {
         tbody.insertAdjacentHTML('beforeend', `
           <tr>
             <td><strong>Loja ${l.loja}</strong></td>
-            <td class="r">${l.v2025 > 0 ? BRL(l.v2025) : '<span style="color:#D8D9CF">—</span>'}</td>
-            <td class="r">${l.v2026 > 0 ? BRL(l.v2026) : '<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r">${l.v2025 > 0 ? BRL(l.v2025) : '<span style="color:#DADAD6">—</span>'}</td>
+            <td class="r">${l.v2026 > 0 ? BRL(l.v2026) : '<span style="color:#DADAD6">—</span>'}</td>
             <td class="r">${varCell}</td>
             <td class="r ${dif>=0?'var-pos':'var-neg'}">${l.v2025>0||l.v2026>0?(dif>=0?'+':'')+BRL(dif):''}</td>
             <td class="r">${l.c2025||''}</td>
@@ -752,7 +752,7 @@ function carregarLojas() {
       }
       const difTot = data.total2026 - data.total2025;
       tbody.insertAdjacentHTML('beforeend', `
-        <tr style="background:#EAEBE3;font-weight:700;border-top:2px solid #D8D9CF">
+        <tr style="background:#EBEBE9;font-weight:700;border-top:2px solid #DADAD6">
           <td>Total Rede</td>
           <td class="r">${BRL(data.total2025)}</td>
           <td class="r">${BRL(data.total2026)}</td>
@@ -827,9 +827,9 @@ function carregarMargem() {
         tbM.insertAdjacentHTML('beforeend', `
           <tr style="${destaque}">
             <td><strong>${m.nome}</strong>${m.parcial?diaLabel:''}${m.mes===mesSel?' <span style="color:#6B4E00;font-size:10px">◀</span>':''}</td>
-            <td class="r">${m.venda2025>0?BRL(m.venda2025):'<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r">${m.venda2025>0?BRL(m.venda2025):'<span style="color:#DADAD6">—</span>'}</td>
             <td class="r ${msvCls25}">${m.msv2025!==null?m.msv2025.toFixed(2)+'%':'—'}</td>
-            <td class="r">${m.venda2026>0?BRL(m.venda2026):'<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r">${m.venda2026>0?BRL(m.venda2026):'<span style="color:#DADAD6">—</span>'}</td>
             <td class="r ${msvCls26}">${m.msv2026!==null?m.msv2026.toFixed(2)+'%':'—'}</td>
             <td class="r ${dc}">${d!==null?(d>=0?'+':'')+d.toFixed(2)+' pp':'—'}</td>
           </tr>`);
@@ -838,7 +838,7 @@ function carregarMargem() {
       const tmv26=tv26>0?+((tv26-tc26)/tv26*100).toFixed(2):null;
       const td=tmv25!==null&&tmv26!==null?+(tmv26-tmv25).toFixed(2):null;
       tbM.insertAdjacentHTML('beforeend', `
-        <tr style="background:#EAEBE3;font-weight:700;border-top:2px solid #D8D9CF">
+        <tr style="background:#EBEBE9;font-weight:700;border-top:2px solid #DADAD6">
           <td>Total Ano</td>
           <td class="r">${BRL(tv25)}</td>
           <td class="r">${tmv25!==null?tmv25.toFixed(2)+'%':'—'}</td>
@@ -865,9 +865,9 @@ function carregarMargem() {
         tbL.insertAdjacentHTML('beforeend', `
           <tr>
             <td><strong>Loja ${l.loja}</strong></td>
-            <td class="r">${l.venda2025>0?BRL(l.venda2025):'<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r">${l.venda2025>0?BRL(l.venda2025):'<span style="color:#DADAD6">—</span>'}</td>
             <td class="r ${c25}">${l.msv2025!==null?l.msv2025.toFixed(2)+'%':'—'}</td>
-            <td class="r">${l.venda2026>0?BRL(l.venda2026):'<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r">${l.venda2026>0?BRL(l.venda2026):'<span style="color:#DADAD6">—</span>'}</td>
             <td class="r ${c26}">${l.msv2026!==null?l.msv2026.toFixed(2)+'%':'—'}</td>
             <td class="r ${dc}">${d!==null?(d>=0?'+':'')+d.toFixed(2)+' pp':'—'}</td>
           </tr>`);
@@ -875,7 +875,7 @@ function carregarMargem() {
       const rv25=t.msv2025,rv26=t.msv2026;
       const rd=rv25!==null&&rv26!==null?+(rv26-rv25).toFixed(2):null;
       tbL.insertAdjacentHTML('beforeend', `
-        <tr style="background:#EAEBE3;font-weight:700;border-top:2px solid #D8D9CF">
+        <tr style="background:#EBEBE9;font-weight:700;border-top:2px solid #DADAD6">
           <td>Total Rede</td>
           <td class="r">${BRL(t.venda2025)}</td>
           <td class="r">${rv25!==null?rv25.toFixed(2)+'%':'—'}</td>
@@ -923,16 +923,16 @@ function carregarCV() {
         tb.insertAdjacentHTML('beforeend', `
           <tr>
             <td><strong>Loja ${l.loja}</strong><span style="color:#4E5A72;font-size:10px;margin-left:6px">${LOJAS[l.loja]||''}</span></td>
-            <td class="r">${l.venda_nfce > 0 ? BRL(l.venda_nfce) : '<span style="color:#D8D9CF">—</span>'}</td>
-            <td class="r">${l.venda_nfe  > 0 ? BRL(l.venda_nfe)  : '<span style="color:#D8D9CF">—</span>'}</td>
-            <td class="r">${l.venda_total > 0 ? BRL(l.venda_total) : '<span style="color:#D8D9CF">—</span>'}</td>
-            <td class="r" style="color:#4E5A72">${l.compra > 0 ? BRL(l.compra) : '<span style="color:#D8D9CF">—</span>'}</td>
+            <td class="r">${l.venda_nfce > 0 ? BRL(l.venda_nfce) : '<span style="color:#DADAD6">—</span>'}</td>
+            <td class="r">${l.venda_nfe  > 0 ? BRL(l.venda_nfe)  : '<span style="color:#DADAD6">—</span>'}</td>
+            <td class="r">${l.venda_total > 0 ? BRL(l.venda_total) : '<span style="color:#DADAD6">—</span>'}</td>
+            <td class="r" style="color:#4E5A72">${l.compra > 0 ? BRL(l.compra) : '<span style="color:#DADAD6">—</span>'}</td>
             <td class="r ${cvCls}" style="font-weight:700">${l.cv !== null ? l.cv.toFixed(1) + '%' : '—'}</td>
           </tr>`);
       }
       const totCvCls = t.cv !== null ? (t.cv <= 80 ? 'var-pos' : t.cv <= 95 ? '' : 'var-neg') : 'var-zero';
       tb.insertAdjacentHTML('beforeend', `
-        <tr style="background:#EAEBE3;font-weight:700;border-top:2px solid #D8D9CF">
+        <tr style="background:#EBEBE9;font-weight:700;border-top:2px solid #DADAD6">
           <td>Total Rede</td>
           <td class="r">${BRL(t.venda_nfce)}</td>
           <td class="r">${BRL(t.venda_nfe)}</td>

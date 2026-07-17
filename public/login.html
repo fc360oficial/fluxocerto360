@@ -158,7 +158,17 @@ async function login() {
     });
     const json = await r.json();
     if (r.ok) {
-      const destino = document.getElementById('destino').value;
+      const selDestino = document.getElementById('destino');
+      const destino = selDestino.value;
+      // Perfil gerencial só pode acessar a própria Gestão Gerencial —
+      // qualquer outro destino escolhido é bloqueado aqui, antes de navegar.
+      if (json.perfil === 'gerencial' && destino !== '/gestao-gerencial.html') {
+        mostrarErro('Você só está liberado a acessar Gestão Gerencial. Por favor, selecione abaixo.');
+        selDestino.value = '/gestao-gerencial.html';
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        return;
+      }
       window.location.href = destino || json.redirect || '/index.html';
     } else {
       mostrarErro(json.error || 'Erro ao fazer login.');

@@ -101,7 +101,7 @@ app.post('/api/login', async (req, res) => {
   const perfil = user.perfil || 'gerente';
   req.session.user = { id: user.id, nome: user.nome, usuario: user.usuario, perfil, comprador_nome: user.comprador_nome || null, loja_id: user.loja_id || null };
   let redirect = '/index.html';
-  res.json({ ok: true, nome: user.nome, redirect });
+  res.json({ ok: true, nome: user.nome, perfil, redirect });
 });
 
 app.get('/api/logout', (req, res) => {

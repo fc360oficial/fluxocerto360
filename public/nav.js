@@ -15,12 +15,19 @@
     { href: '/consulta.html',     ic: 'search',    txt: 'Consulta de Vendas' },
     { href: '/itens.html',        ic: 'list',      txt: 'Mercadológico' },
     { href: '/comparativos.html', ic: 'chart',     txt: 'Comparativos' },
-    { href: '/gestao-gerencial.html', ic: 'store', txt: 'Gestão Gerencial' },
+    { href: '/gestao-gerencial.html', ic: 'store', txt: 'Gestão Gerencial', grupo: 'gerencial' },
     { sec: 'Operação' },
     { href: '/fornecedores.html', ic: 'bag',       txt: 'Lista de Compra' },
     { href: '/pendencias.html',   ic: 'alert',     txt: 'Pendências' },
     { href: '/prevencao.html',    ic: 'shield',    txt: 'Prevenção' },
-    { href: '/ruptura.html',      ic: 'trend',     txt: 'Gestão de Rupturas' }
+    { href: '/ruptura.html',      ic: 'trend',     txt: 'Gestão de Rupturas' },
+    { sec: 'Painéis TV', grupo: 'tv' },
+    { href: '/supervisao.html',   ic: 'tv',        txt: 'Todos Setores',  grupo: 'tv', blank: true },
+    { href: '/diretoria.html',    ic: 'tv',        txt: 'Diretoria',      grupo: 'tv', blank: true },
+    { href: '/compras.html',      ic: 'tv',        txt: 'Compras',        grupo: 'tv', blank: true },
+    { href: '/precificacao.html', ic: 'tv',        txt: 'Precificação',   grupo: 'tv', blank: true },
+    { sec: 'Administração', grupo: 'admin' },
+    { href: '/admin-usuarios.html', ic: 'users',   txt: 'Usuários',       grupo: 'admin' }
   ];
 
   var css = ''
@@ -84,9 +91,12 @@
       + '<span style="min-width:0"><b>Econômico</b><span>Relatórios BI</span></span></a>'
       + '<div class="dn-rows">';
     ITENS.forEach(function (it) {
-      if (it.sec) { html += '<div class="dn-sec">' + it.sec + '</div>'; return; }
+      var g = it.grupo ? ' data-grupo="' + it.grupo + '"' : '';
+      var esconder = it.grupo === 'admin' ? ' style="display:none"' : '';
+      if (it.sec) { html += '<div class="dn-sec"' + g + esconder + '>' + it.sec + '</div>'; return; }
       var on = path === it.href ? ' on' : '';
-      html += '<a class="dn-item' + on + '" href="' + it.href + '">' + icon(it.ic) + it.txt + '</a>';
+      var alvo = it.blank ? ' target="_blank" rel="noopener"' : '';
+      html += '<a class="dn-item' + on + '"' + g + esconder + ' href="' + it.href + '"' + alvo + '>' + icon(it.ic) + it.txt + '</a>';
     });
     html += '</div>'
       + '<div class="dn-foot">'
@@ -105,6 +115,20 @@
         document.getElementById('dn-nome').textContent = u.nome;
         var ini = u.nome.trim().split(/\s+/).map(function (p) { return p[0]; }).slice(0, 2).join('').toUpperCase();
         document.getElementById('dn-ava').textContent = ini;
+      }
+      /* mesmas regras de perfil do hub antigo */
+      var mostrar = function (sel, v) {
+        aside.querySelectorAll(sel).forEach(function (el) { el.style.display = v ? '' : 'none'; });
+      };
+      if (u && u.perfil === 'admin') {
+        mostrar('[data-grupo="admin"]', true);
+      } else if (u && u.perfil === 'gerencial') {
+        aside.querySelectorAll('.dn-item,.dn-sec').forEach(function (el) {
+          if (el.getAttribute('data-grupo') !== 'gerencial') el.style.display = 'none';
+        });
+      } else if (u && u.perfil === 'comprador') {
+        mostrar('[data-grupo="tv"]', false);
+        mostrar('[data-grupo="gerencial"]', false);
       }
     }).catch(function () {});
   }

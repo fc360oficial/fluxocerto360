@@ -20,14 +20,7 @@
     { href: '/fornecedores.html', ic: 'bag',       txt: 'Lista de Compra' },
     { href: '/pendencias.html',   ic: 'alert',     txt: 'Pendências' },
     { href: '/prevencao.html',    ic: 'shield',    txt: 'Prevenção' },
-    { href: '/ruptura.html',      ic: 'trend',     txt: 'Gestão de Rupturas' },
-    { sec: 'Painéis TV', grupo: 'tv' },
-    { href: '/supervisao.html',   ic: 'tv',        txt: 'Todos Setores',  grupo: 'tv', blank: true },
-    { href: '/diretoria.html',    ic: 'tv',        txt: 'Diretoria',      grupo: 'tv', blank: true },
-    { href: '/compras.html',      ic: 'tv',        txt: 'Compras',        grupo: 'tv', blank: true },
-    { href: '/precificacao.html', ic: 'tv',        txt: 'Precificação',   grupo: 'tv', blank: true },
-    { sec: 'Administração', grupo: 'admin' },
-    { href: '/admin-usuarios.html', ic: 'users',   txt: 'Usuários',       grupo: 'admin' }
+    { href: '/ruptura.html',      ic: 'trend',     txt: 'Gestão de Rupturas' }
   ];
 
   var css = ''
@@ -117,18 +110,12 @@
         document.getElementById('dn-ava').textContent = ini;
       }
       /* mesmas regras de perfil do hub antigo */
-      var mostrar = function (sel, v) {
-        aside.querySelectorAll(sel).forEach(function (el) { el.style.display = v ? '' : 'none'; });
-      };
-      if (u && u.perfil === 'admin') {
-        mostrar('[data-grupo="admin"]', true);
-      } else if (u && u.perfil === 'gerencial') {
+      if (u && u.perfil === 'gerencial') {
         aside.querySelectorAll('.dn-item,.dn-sec').forEach(function (el) {
           if (el.getAttribute('data-grupo') !== 'gerencial') el.style.display = 'none';
         });
       } else if (u && u.perfil === 'comprador') {
-        mostrar('[data-grupo="tv"]', false);
-        mostrar('[data-grupo="gerencial"]', false);
+        aside.querySelectorAll('[data-grupo="gerencial"]').forEach(function (el) { el.style.display = 'none'; });
       }
     }).catch(function () {});
   }

@@ -15,7 +15,6 @@
     { href: '/consulta.html',     ic: 'search',    txt: 'Consulta de Vendas' },
     { href: '/itens.html',        ic: 'list',      txt: 'Mercadológico' },
     { href: '/comparativos.html', ic: 'chart',     txt: 'Comparativos' },
-    { href: '/gestao-gerencial.html', ic: 'store', txt: 'Gestão Gerencial', grupo: 'gerencial' },
     { sec: 'Operação' },
     { href: '/fornecedores.html', ic: 'bag',       txt: 'Lista de Compra' },
     { href: '/pendencias.html',   ic: 'alert',     txt: 'Pendências' },
@@ -109,13 +108,12 @@
         var ini = u.nome.trim().split(/\s+/).map(function (p) { return p[0]; }).slice(0, 2).join('').toUpperCase();
         document.getElementById('dn-ava').textContent = ini;
       }
-      /* mesmas regras de perfil do hub antigo */
+      /* perfil gerencial usa só a Gestão Gerencial (via login) —
+         esconde os itens de navegação, mantém marca e sair */
       if (u && u.perfil === 'gerencial') {
         aside.querySelectorAll('.dn-item,.dn-sec').forEach(function (el) {
-          if (el.getAttribute('data-grupo') !== 'gerencial') el.style.display = 'none';
+          el.style.display = 'none';
         });
-      } else if (u && u.perfil === 'comprador') {
-        aside.querySelectorAll('[data-grupo="gerencial"]').forEach(function (el) { el.style.display = 'none'; });
       }
     }).catch(function () {});
   }

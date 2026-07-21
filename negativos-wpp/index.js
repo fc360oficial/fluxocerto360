@@ -13,6 +13,7 @@ const GRUPO_NOME = 'CENTRAL ( Aux ) PREVENÇÃO DE PERDAS';
 const LOGO_PATH  = path.join(__dirname, '..', 'public', 'logo.png');
 const logger     = pino({ level:'info' });
 const NOMES_LOJA = { 1:'CAHU', 2:'MURIBECA', 3:'PONTE', 4:'ATACAREJO', 5:'PORTA LARGA', 6:'JARDIM JORDAO' };
+const NUMERO_BOT = '5581991665457'; // pareamento por código, alternativa ao QR
 
 let sock = null;
 
@@ -66,16 +67,17 @@ function gerarPDFLoja(itens, ln, hoje) {
     sis:  { x: ML + 448, w: CW - 360 - 88 },
   };
 
-  // Paleta — white report, navy text, amber accent
+  // Paleta "Executive Ink" — a mesma dos relatórios estratégicos (navy + âmbar só como acento pontual)
   const COR = {
     branco:   '#FFFFFF',
-    navy:     '#1E2952',
-    navySec:  '#4A5568',
-    cinza:    '#F7F8FA',
-    cinzaMd:  '#EDF0F3',
-    borda:    '#DDE1E9',
-    laranja:  '#F59E0B',
-    laranjaL: '#FFFBEB',
+    navy:     '#0E1626',
+    navySec:  '#4E5A72',
+    navyTer:  '#98A0B3',
+    cinza:    '#F4F4F2',
+    cinzaMd:  '#E4E4E1',
+    borda:    '#DADAD6',
+    laranja:  '#F5B800',
+    laranjaL: '#FFF6D9',
     vermelho: '#E53E3E',
     verde:    '#38A169',
   };
@@ -148,10 +150,10 @@ function gerarPDFLoja(itens, ln, hoje) {
     ln_(0, y, PW, y, COR.borda, 0.5);
     ln_(0, y+COL_H, PW, y+COL_H, COR.borda, 0.5);
 
-    txt('CÓDIGO',       C.cod.x,  y, C.cod.w,  COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7, align:'left' });
-    txt('DESCRIÇÃO',    C.desc.x, y, C.desc.w, COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7 });
-    txt('ESTOQUE/LOJA', C.est.x,  y, C.est.w,  COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7, align:'center' });
-    txt('SISTEMA',      C.sis.x,  y, C.sis.w,  COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7, align:'center' });
+    txt('CÓDIGO',       C.cod.x,  y, C.cod.w,  COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7, align:'left' });
+    txt('DESCRIÇÃO',    C.desc.x, y, C.desc.w, COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7 });
+    txt('ESTOQUE/LOJA', C.est.x,  y, C.est.w,  COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7, align:'center' });
+    txt('SISTEMA',      C.sis.x,  y, C.sis.w,  COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7, align:'center' });
 
     // Divisores verticais cabeçalho
     ln_(C.desc.x, y, C.desc.x, y+COL_H, COR.borda);
@@ -180,8 +182,9 @@ function gerarPDFLoja(itens, ln, hoje) {
   for (const [nomeGrupo, subGrupos] of Object.entries(arvore)) {
     if (y > 788) { doc.addPage(); doc.rect(0,0,PW,PH).fill(COR.branco); y = retomarCabecalho(); }
 
-    // Cabeçalho do GRUPO — fundo laranja sólido, texto navy
-    doc.rect(0, y, PW, GRP_H).fill(COR.laranja);
+    // Cabeçalho do GRUPO — fundo neutro, texto navy, acento âmbar à esquerda
+    doc.rect(0, y, PW, GRP_H).fill(COR.cinzaMd);
+    doc.rect(0, y, 3, GRP_H).fill(COR.laranja);
     doc.fillColor(COR.navy).fontSize(8).font('Helvetica-Bold')
        .text(nomeGrupo, ML + 6, y + (GRP_H - 8) / 2, { width: CW - 6, lineBreak: false });
     y += GRP_H;
@@ -189,10 +192,10 @@ function gerarPDFLoja(itens, ln, hoje) {
     for (const [nomeSub, produtos] of Object.entries(subGrupos)) {
       if (y > 790) { doc.addPage(); doc.rect(0,0,PW,PH).fill(COR.branco); y = retomarCabecalho(); }
 
-      // Sub-cabeçalho — fundo laranja claro, texto navy, indentado
-      doc.rect(0, y, PW, SUB_H).fill(COR.laranjaL);
-      ln_(0, y+SUB_H, PW, y+SUB_H, COR.laranja, 0.4);
-      doc.fillColor(COR.laranja).fontSize(7).font('Helvetica-Bold')
+      // Sub-cabeçalho — fundo branco, texto navy secundário, indentado
+      doc.rect(0, y, PW, SUB_H).fill(COR.branco);
+      ln_(0, y+SUB_H, PW, y+SUB_H, COR.borda, 0.4);
+      doc.fillColor(COR.navyTer).fontSize(7).font('Helvetica-Bold')
          .text('▸', ML + 10, y + (SUB_H - 7) / 2, { width: 10, lineBreak: false });
       doc.fillColor(COR.navySec).fontSize(7).font('Helvetica-Bold')
          .text(nomeSub, ML + 22, y + (SUB_H - 7) / 2, { width: CW - 22, lineBreak: false });
@@ -242,10 +245,10 @@ function gerarPDFLoja(itens, ln, hoje) {
     doc.rect(0, yy, PW, COL_H).fill(COR.cinzaMd);
     ln_(0, yy, PW, yy, COR.borda, 0.5);
     ln_(0, yy+COL_H, PW, yy+COL_H, COR.borda, 0.5);
-    txt('CÓDIGO',       C.cod.x,  yy, C.cod.w,  COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7 });
-    txt('DESCRIÇÃO',    C.desc.x, yy, C.desc.w, COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7 });
-    txt('ESTOQUE/LOJA', C.est.x,  yy, C.est.w,  COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7, align:'center' });
-    txt('SISTEMA',      C.sis.x,  yy, C.sis.w,  COL_H, { cor:COR.laranja, font:'Helvetica-Bold', size:7, align:'center' });
+    txt('CÓDIGO',       C.cod.x,  yy, C.cod.w,  COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7 });
+    txt('DESCRIÇÃO',    C.desc.x, yy, C.desc.w, COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7 });
+    txt('ESTOQUE/LOJA', C.est.x,  yy, C.est.w,  COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7, align:'center' });
+    txt('SISTEMA',      C.sis.x,  yy, C.sis.w,  COL_H, { cor:COR.navySec, font:'Helvetica-Bold', size:7, align:'center' });
     ln_(C.desc.x, yy, C.desc.x, yy+COL_H, COR.borda);
     ln_(C.est.x,  yy, C.est.x,  yy+COL_H, COR.borda);
     ln_(C.sis.x,  yy, C.sis.x,  yy+COL_H, COR.borda);
@@ -264,6 +267,17 @@ async function conectar() {
 
   sock = makeWASocket({ version, auth:state, logger:pino({level:'silent'}), printQRInTerminal:false, keepAliveIntervalMs:15000 });
   sock.ev.on('creds.update', saveCreds);
+
+  if (!state.creds.registered) {
+    setTimeout(async () => {
+      try {
+        const codigo = await sock.requestPairingCode(NUMERO_BOT);
+        logger.info(`Código de pareamento: ${codigo}  (WhatsApp > Conectar dispositivo > Conectar com número de telefone)`);
+      } catch (err) {
+        logger.error({ err }, 'Erro ao solicitar código de pareamento');
+      }
+    }, 3000);
+  }
 
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Timeout conexão WA')), 120000);

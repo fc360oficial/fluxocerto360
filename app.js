@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '216';
+  var BUILD = '217';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -4694,7 +4694,7 @@ function _renderDashEquipe() {
 function updateDash() {
   var isAdmin = S.role==='admin';
   var isGer = S.role==='gerencia';
-  var isAdmOrGer = isAdmin||isGer;
+  var isAdmOrGer = isAdmin||isGer||S.role==='supervisor';
 
   var agora = new Date();
   var hojeStr = agora.toLocaleDateString('pt-BR');

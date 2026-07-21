@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '218';
+  var BUILD = '219';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -817,7 +817,7 @@ function abrirPendentes() {
   var todos = isManager ? getCustomCLs() : getChecklistsObrigatoriosHoje();
   var hoje = new Date().toLocaleDateString('pt-BR');
   var resultados = getResultados();
-  var resultadosHoje = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hoje) === 0; });
+  var resultadosHoje = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hoje) === 0 && !r.resetado; });
   var pendencias = getPendencias();
   var lista = document.getElementById('pendentes-lista');
   if (!lista) return;
@@ -4713,8 +4713,8 @@ function updateDash() {
   var ontemStr = ontemDate.toLocaleDateString('pt-BR');
 
   var resultados = getResultados();
-  var resultadosHoje = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hojeStr)===0; });
-  var resultadosOntem = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(ontemStr)===0; });
+  var resultadosHoje = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hojeStr)===0 && !r.resetado; });
+  var resultadosOntem = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(ontemStr)===0 && !r.resetado; });
 
   // ── Header ──
   var lojaNome = (S.currentUser && S.currentUser.loja) ? S.currentUser.loja : 'Fluxo Certo 360';
@@ -6018,11 +6018,11 @@ function exportarRelatorioSupervisor() {
 
   // ── Dados base ──────────────────────────────────────────────────────────────
   var todosResultados = getResultados();
-  var resultadosHoje  = todosResultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hojeStr)===0; });
+  var resultadosHoje  = todosResultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hojeStr)===0 && !r.resetado; });
 
   var ontemDate = new Date(agora); ontemDate.setDate(ontemDate.getDate()-1);
   var ontemStr  = ontemDate.toLocaleDateString('pt-BR');
-  var resultadosOntem = todosResultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(ontemStr)===0; });
+  var resultadosOntem = todosResultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(ontemStr)===0 && !r.resetado; });
 
   var todosUsers = getUsers().filter(function(u){ return u.id!=='admin' && u.ativo; });
   var todasPend  = getPendencias();

@@ -64,7 +64,9 @@ app.use((req, res, next) => {
     '/comparativo-tv.html', '/api/comparativo-tv',
     '/prevencao.html', '/api/pendencias/prevencao', '/api/pendencias/prevencao-consolidado', '/api/pendencias/prevencao-bonif',
     '/api/ruptura/debug-comprador',
-    '/api/_diag/tabelas-central'];
+    '/api/_diag/tabelas-central',
+    '/ruptura-painel.html', '/api/ruptura', '/api/ruptura/comprador-listas',
+    '/margem-comprador.html', '/api/margem-tv/comprador'];
   if (publico.includes(req.path)) return next();
   // Pré-aquecimento interno (somente localhost)
   if (req.headers['x-internal-warmup'] === 'fc360warmup2026' && req.socket.remoteAddress === '::1') return next();

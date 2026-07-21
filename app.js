@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
 (function() {
-  var BUILD = '217';
+  var BUILD = '218';
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;
   var vLogin = document.getElementById('login-versao');
@@ -2846,6 +2846,17 @@ function confirmarEnviar(assinatura) {
     reprovado:reprovado, assinatura:assinatura||null
   };
   var lista = getAllResultados();
+  // Se já existe envio hoje do mesmo checklist pelo mesmo operador, marca o anterior como resetado
+  var _hojeReenv = new Date().toLocaleDateString('pt-BR');
+  var _opAtual = S.currentUser ? S.currentUser.nome : '--';
+  lista = lista.map(function(r) {
+    if (r.checklistId === clId && (r.dataHora||'').indexOf(_hojeReenv) === 0
+        && r.operador === _opAtual && !r.resetado) {
+      db.collection('resultados').doc(r.id).update({ resetado: true }).catch(function(){});
+      return Object.assign({}, r, { resetado: true });
+    }
+    return r;
+  });
   // Salva sem assinatura no cache local (base64 enorme estoura localStorage)
   var resParaCache = Object.assign({}, res, {assinatura: null});
   lista.push(resParaCache);

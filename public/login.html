@@ -192,7 +192,9 @@ function mostrarErro(msg) {
 (function () {
   // Navegadores de Smart TV às vezes reportam largura "de compatibilidade" (~900-1024px)
   // mesmo em telas grandes — nesse caso a largura sozinha não distingue TV de tablet.
-  const ehTV = /tizen|webos|smarttv|smart-tv|googletv|hbbtv|netcast|viera|aftb|aftm|crkey|bravia/i.test(navigator.userAgent);
+  // Fire TV usa códigos de aparelho com prefixo "AFT" (ex: AFTMM, AFTKA) — diferente
+  // dos tablets Fire, que usam prefixo "KF" e devem continuar escondendo as opções de TV.
+  const ehTV = /tizen|webos|smarttv|smart-tv|googletv|hbbtv|netcast|viera|aft[a-z0-9]{1,4}\)|crkey|bravia/i.test(navigator.userAgent);
   if (ehTV) return;
   const ehTelaPequena = window.matchMedia('(max-width: 1024px)').matches;
   if (!ehTelaPequena) return;

@@ -155,7 +155,8 @@ body.tv .chart-panel{padding:10px 14px}
 
 </style>
 <script>
-if(new URLSearchParams(location.search).has('tv'))
+if(new URLSearchParams(location.search).has('tv')
+  || /tizen|webos|smarttv|smart-tv|googletv|hbbtv|netcast|viera|aft[a-z0-9]{1,4}\)|crkey|bravia/i.test(navigator.userAgent))
   document.documentElement.classList.add('tv-root');
 </script>
 </head>

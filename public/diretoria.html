@@ -465,6 +465,8 @@ setInterval(() => {
   border-radius:8px;cursor:pointer;padding:6px 10px;color:rgba(255,255,255,.4);font-size:16px;
   transition:all .3s;z-index:999;backdrop-filter:blur(4px);opacity:0}
 .btn-fs-fixed:hover{opacity:1;color:#F9C200;border-color:#F9C200}
+/* Controle remoto de TV não gera hover — deixa sempre visível nesse modo */
+body.tv .btn-fs-fixed{opacity:.7}
 </style>
 <button class="btn-fs-fixed" id="btn-fs" title="Tela cheia (F11)">⛶</button>
 <script>

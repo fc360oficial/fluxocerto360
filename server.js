@@ -66,7 +66,8 @@ app.use((req, res, next) => {
     '/api/ruptura/debug-comprador',
     '/api/_diag/tabelas-central',
     '/ruptura-painel.html', '/api/ruptura', '/api/ruptura/comprador-listas',
-    '/margem-comprador.html', '/api/margem-tv/comprador'];
+    '/margem-comprador.html', '/api/margem-tv/comprador',
+    '/painel-diretoria.html'];
   if (publico.includes(req.path)) return next();
   // Pré-aquecimento interno (somente localhost)
   if (req.headers['x-internal-warmup'] === 'fc360warmup2026' && req.socket.remoteAddress === '::1') return next();

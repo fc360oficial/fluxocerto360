@@ -1112,10 +1112,11 @@ function updateCountdown() {
   countdown--;
   document.getElementById('countdown').textContent = countdown+'s';
   if (countdown<=0) {
+    // Avisa supervisão (se estiver em iframe) — só ela decide trocar de painel
     try { window.parent.postMessage({ type: 'comprasCycleComplete' }, '*'); } catch(_) {}
-    if (window.parent === window) {
-      location.href='/ruptura-painel.html';
-    }
+    // Standalone (TV dedicada só ao Compras): reinicia a contagem, nunca sai da página
+    countdown = 60;
+    atualizarStatusReal();
   }
 }
 

@@ -260,11 +260,14 @@ function proximaCol(idx, sessao) {
   if (sessao !== _carSessao) return; // callback de sessão antiga, ignorar
   const proximo = (idx + 1) % colBodies.length;
   if (proximo === 0) {
-    currentIdx = idx; // mantém na última loja — watchdog não reinicia
+    currentIdx = idx; // mantém na última loja até decidir o próximo passo
+    // Avisa supervisão/painel pai (se estiver em iframe) — só ele decide trocar de painel
     try { window.parent.postMessage({ type: 'carouselCycleComplete' }, '*'); } catch(_) {}
-    const _np = new URLSearchParams(window.location.search).get('next');
-    if (_np && window.parent === window) { window.location.href = '/' + _np + '.html'; return; }
-    pararCarrossel(); return; // ciclo completo — para, não volta pra loja 1
+    if (window.parent !== window) { pararCarrossel(); return; } // em iframe: o pai decide
+    // Standalone (TV dedicada só à Precificação): volta pra loja 1, nunca sai da página
+    pararCarrossel();
+    _carTimeout = setTimeout(() => iniciarCarrossel(0, 0, sessao), 1800);
+    return;
   }
   currentIdx = proximo;
   if (refreshPending) { refreshPending = false; aplicarRefresh(); return; }

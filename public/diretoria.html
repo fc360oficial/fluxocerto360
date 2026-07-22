@@ -393,13 +393,9 @@ function trocarLoja(loja) {
   lojaTimer = setTimeout(() => {
     const proxima = loja + 1;
     if (proxima > 6) {
-      // Avisa supervisão (se estiver em iframe)
+      // Avisa supervisão (se estiver em iframe) — só ela decide trocar de painel
       try { window.parent.postMessage({ type: 'diretoriaCycleComplete' }, '*'); } catch(_) {}
-      // Standalone: vai pra comparativo-tv → precificação → volta
-      if (window.parent === window) {
-        window.location.href = '/comparativo-tv.html?next=precificacao';
-        return;
-      }
+      // Standalone (TV dedicada só ao Diretoria): volta pra loja 1, nunca sai da página
       setTimeout(() => trocarLoja(1), 2000);
     } else {
       trocarLoja(proxima);

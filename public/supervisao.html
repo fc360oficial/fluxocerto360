@@ -39,13 +39,13 @@ iframe.visivel{opacity:1;pointer-events:auto}
 </head>
 <body>
 
-<iframe id="fr-diretoria" title="Diretoria"></iframe>
-<iframe id="fr-precif"   title="Precificação"></iframe>
-<iframe id="fr-compras"  title="Compras Geral"></iframe>
-<iframe id="fr-ruptura"  title="Rupturas Compras"></iframe>
-<iframe id="fr-margem"   title="Margem Compradores"></iframe>
-<iframe id="fr-mensal"   title="Mensal Compradores"></iframe>
-<iframe id="fr-comptvs"  title="Comparativo TV"></iframe>
+<iframe id="fr-diretoria" title="Diretoria"       allow="fullscreen" allowfullscreen></iframe>
+<iframe id="fr-precif"   title="Precificação"    allow="fullscreen" allowfullscreen></iframe>
+<iframe id="fr-compras"  title="Compras Geral"   allow="fullscreen" allowfullscreen></iframe>
+<iframe id="fr-ruptura"  title="Rupturas Compras" allow="fullscreen" allowfullscreen></iframe>
+<iframe id="fr-margem"   title="Margem Compradores" allow="fullscreen" allowfullscreen></iframe>
+<iframe id="fr-mensal"   title="Mensal Compradores" allow="fullscreen" allowfullscreen></iframe>
+<iframe id="fr-comptvs"  title="Comparativo TV"  allow="fullscreen" allowfullscreen></iframe>
 
 <div class="controles">
   <!-- rotação ativa: Diretoria → Comparativo TV → Precificação → Compras → Rupturas → Margem → Mensal -->
@@ -95,12 +95,26 @@ function mostrar(iframe, dot, nome) {
   todosDots.forEach(d => d.classList.remove('ativo'));
   iframe.classList.add('visivel');
   dot.classList.add('ativo');
+  setTimeout(reforcarTelaCheia, 200);
 }
 
 // força reload mesmo que a src seja igual
 function carregarIframe(iframe, url) {
   iframe.src = 'about:blank';
   setTimeout(() => { iframe.src = url; }, 30);
+}
+
+// Alguns navegadores (Fire TV/Silk) saem da tela cheia sozinhos quando o
+// iframe navega, mesmo com allowfullscreen. Se estava em tela cheia antes
+// da troca de painel, tenta voltar automaticamente depois.
+let queriaTelaCheia = false;
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) queriaTelaCheia = true;
+});
+function reforcarTelaCheia() {
+  if (queriaTelaCheia && !document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
 }
 
 // ── Rotação automática ──

@@ -9,6 +9,11 @@ const { exec } = require('child_process');
 const app = express();
 app.use(express.json());
 
+// Versão do processo — muda a cada deploy/restart, usada pra avisar o
+// usuário que o app foi atualizado (ver /api/versao).
+const APP_VERSAO = String(Date.now());
+app.get('/api/versao', (req, res) => res.json({ versao: APP_VERSAO }));
+
 // ── CACHE EM MEMÓRIA ─────────────────────────────────────
 const _cache = new Map();
 function withCache(ttlMin) {
@@ -49,7 +54,7 @@ app.use(session({
 
 // Middleware de autenticação (antes do static)
 app.use((req, res, next) => {
-  const publico = ['/login.html', '/api/login', '/api/logout', '/logo.png', '/deploy',
+  const publico = ['/login.html', '/api/login', '/api/logout', '/logo.png', '/deploy', '/api/versao',
     '/relatorio-cronograma.html',
     '/precificacao.html', '/compras.html', '/comprador.html', '/supervisao.html',
     '/api/precificacao/margens-criticas', '/api/compras/pedidos-hoje',

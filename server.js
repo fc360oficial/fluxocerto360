@@ -3658,7 +3658,9 @@ setInterval(() => {}, 30000);
 
 const server = app.listen(3003, '0.0.0.0', () => {
   console.log('✓ Dashboard rodando em http://localhost:3003');
-  console.log('✓ Rede local: http://192.168.2.252:3003');
+  const ipLocal = Object.values(require('os').networkInterfaces())
+    .flat().find(i => i.family === 'IPv4' && !i.internal)?.address;
+  if (ipLocal) console.log(`✓ Rede local: http://${ipLocal}:3003`);
   setTimeout(() => {
     const http = require('http');
     http.get('http://127.0.0.1:3003/api/ruptura', res => {

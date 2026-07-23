@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login — Econômico Relatórios</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0E1626">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -200,6 +205,9 @@ function mostrarErro(msg) {
   if (!ehTelaPequena) return;
   document.querySelectorAll('#destino option[data-tv="1"]').forEach(op => op.remove());
 })();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function () {});
+}
 </script>
 </body>
 </html>

@@ -9,6 +9,17 @@
 (function () {
   'use strict';
 
+  // PWA — permite "Instalar app" no celular/desktop
+  if (!document.querySelector('link[rel="manifest"]')) {
+    var linkManifest = document.createElement('link');
+    linkManifest.rel = 'manifest';
+    linkManifest.href = '/manifest.json';
+    document.head.appendChild(linkManifest);
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  }
+
   var ITENS = [
     { sec: 'Análise' },
     { href: '/index.html',        ic: 'dashboard', txt: 'Dashboard' },

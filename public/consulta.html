@@ -528,19 +528,34 @@ function renderCardsMovel(data) {
   document.getElementById('tabela-container').innerHTML = html;
 }
 
+let modoViewLoja = 'qtd'; // 'qtd' ou 'valor' — alterna a coluna POR LOJA
+
+function trocarViewLoja(modo) {
+  modoViewLoja = modo;
+  renderTabelaTodas(dadosAtuais);
+}
+
 function renderTabelaTodas(data) {
   const ls = [1,2,3,4,5,6];
   const n = v => v > 0 ? new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}).format(v) : '—';
-  const c = v => v > 0 ? `<span style="color:var(--ink)">${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v)}</span>` : '—';
+  const cCurta = v => v > 0 ? new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v) : '—';
+  const porLoja = item => modoViewLoja === 'valor' ? item.valor_lojas : item.lojas;
+  const fmtLoja = modoViewLoja === 'valor' ? cCurta : n;
 
   let html = `
+    <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:8px">
+      <button onclick="trocarViewLoja('qtd')" class="btn-toggle-view ${modoViewLoja==='qtd'?'ativo':''}"
+        style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border-strong);background:${modoViewLoja==='qtd'?'var(--brand)':'var(--card)'};color:${modoViewLoja==='qtd'?'#1a1200':'var(--ink-2)'}">Quantidade</button>
+      <button onclick="trocarViewLoja('valor')" class="btn-toggle-view ${modoViewLoja==='valor'?'ativo':''}"
+        style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border-strong);background:${modoViewLoja==='valor'?'var(--brand)':'var(--card)'};color:${modoViewLoja==='valor'?'#1a1200':'var(--ink-2)'}">Faturamento (R$)</button>
+    </div>
     <div style="overflow-x:auto">
     <table style="font-size:12px">
       <thead>
         <tr>
           <th rowspan="2" style="width:32px">#</th>
           <th rowspan="2">Produto</th>
-          <th colspan="6" style="text-align:center;background:var(--navy-bg);color:var(--ink-2);border-bottom:2px solid var(--ink)">QTD POR LOJA</th>
+          <th colspan="6" style="text-align:center;background:var(--navy-bg);color:var(--ink-2);border-bottom:2px solid var(--ink)">${modoViewLoja==='valor'?'FATURAMENTO':'QTD'} POR LOJA</th>
           <th rowspan="2" class="right" style="color:var(--green)">TOTAL QTD</th>
           <th rowspan="2" class="right" style="color:var(--green)">TOTAL R$</th>
         </tr>
@@ -554,20 +569,21 @@ function renderTabelaTodas(data) {
   data.forEach((item, i) => {
     const rank = i + 1;
     const rankIcon = rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank;
+    const vals = porLoja(item);
     html += `<tr>
       <td class="rank ${rank<=3?'top3':''}">${rankIcon}</td>
       <td class="produto" style="white-space:normal;min-width:180px">${item.produto}</td>
-      ${ls.map(ln => `<td class="right" style="color:${item.lojas[ln]>0?'var(--ink)':'var(--ink-3)'}">${n(item.lojas[ln])}</td>`).join('')}
+      ${ls.map(ln => `<td class="right" style="color:${vals[ln]>0?'var(--ink)':'var(--ink-3)'}">${fmtLoja(vals[ln])}</td>`).join('')}
       <td class="right valor-azul"><strong>${n(item.total_qtd)}</strong></td>
       <td class="right valor-verde">${fmt(item.total_valor)}</td>
     </tr>`;
   });
 
   // Linha de totais
-  const totQtdLoja = ls.map(ln => data.reduce((s,r) => s + (r.lojas[ln]||0), 0));
+  const totLoja = ls.map(ln => data.reduce((s,r) => s + (porLoja(r)[ln]||0), 0));
   html += `<tr style="background:var(--surface-2);font-weight:700;border-top:2px solid var(--border-strong)">
     <td colspan="2" style="color:var(--ink-2);padding:10px 16px">TOTAL</td>
-    ${totQtdLoja.map(v=>`<td class="right" style="color:var(--brand-ink)">${n(v)}</td>`).join('')}
+    ${totLoja.map(v=>`<td class="right" style="color:var(--brand-ink)">${fmtLoja(v)}</td>`).join('')}
     <td class="right" style="color:var(--brand-ink)">${n(data.reduce((s,r)=>s+r.total_qtd,0))}</td>
     <td class="right" style="color:var(--brand-ink)">${fmt(data.reduce((s,r)=>s+r.total_valor,0))}</td>
   </tr>`;

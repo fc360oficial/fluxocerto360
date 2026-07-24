@@ -259,6 +259,66 @@ function gerarPDFLoja(itens, ln, hoje) {
   return new Promise(resolve => doc.on('end', () => resolve({ buffer:Buffer.concat(chunks), total:itens.length })));
 }
 
+// ── Bot de perguntas (Econômico Assistente) ─────────────────────────────────────
+
+function parsePreco(v) { return v && v !== '0' ? parseFloat(String(v).replace(',', '.')) : 0; }
+
+// Extrai o termo de busca removendo palavras comuns da pergunta de custo
+function extrairTermoCusto(texto) {
+  return texto
+    .replace(/qual|quanto|é|eh|o|a|de|da|do|custo|preço|preco|\?/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function responderPergunta(jid, texto) {
+  const t = texto.toLowerCase();
+  if (!t.includes('custo')) return; // por enquanto só reconhece pergunta de custo
+
+  const termo = extrairTermoCusto(texto);
+  if (!termo) {
+    await sock.sendMessage(jid, { text: 'Me diga o nome do produto que você quer saber o custo. Ex: "custo coca 2l"' });
+    return;
+  }
+
+  const conn = await mysql.createConnection(DB);
+  try {
+    const [rows] = await conn.query(`
+      SELECT i.CodigoBarra, TRIM(i.Descricao) as Descricao,
+        cj1.Custo as c1, cj2.Custo as c2, cj3.Custo as c3,
+        cj4.Custo as c4, cj5.Custo as c5, cj6.Custo as c6
+      FROM central.itens i
+      LEFT JOIN central.custoloja1 cj1 ON cj1.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.custoloja2 cj2 ON cj2.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.custoloja3 cj3 ON cj3.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.custoloja4 cj4 ON cj4.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.custoloja5 cj5 ON cj5.CodigoBarra = i.CodigoBarra
+      LEFT JOIN central.custoloja6 cj6 ON cj6.CodigoBarra = i.CodigoBarra
+      WHERE i.Descricao LIKE ? AND i.CodDesativado = 0
+      LIMIT 8
+    `, ['%' + termo + '%']);
+
+    if (!rows.length) {
+      await sock.sendMessage(jid, { text: `Não encontrei nenhum produto com "${termo}" no cadastro.` });
+      return;
+    }
+
+    let resp = `Encontrei ${rows.length} item(ns) de "${termo}" no cadastro:\n\n`;
+    for (const r of rows) {
+      const custos = [1,2,3,4,5,6].map(n => parsePreco(r['c'+n])).filter(v => v > 0);
+      resp += `• ${r.CodigoBarra} — ${r.Descricao}\n`;
+      if (!custos.length) { resp += `  Sem custo cadastrado\n\n`; continue; }
+      const min = Math.min(...custos), max = Math.max(...custos);
+      resp += min === max
+        ? `  Custo: R$ ${min.toFixed(2)}\n\n`
+        : `  Custo: R$ ${min.toFixed(2)} até R$ ${max.toFixed(2)} (varia por loja)\n\n`;
+    }
+    await sock.sendMessage(jid, { text: resp.trim() });
+  } finally {
+    await conn.end();
+  }
+}
+
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
 
 async function conectar() {
@@ -267,6 +327,17 @@ async function conectar() {
 
   sock = makeWASocket({ version, auth:state, logger:pino({level:'silent'}), printQRInTerminal:false, keepAliveIntervalMs:15000 });
   sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    if (type !== 'notify') return;
+    for (const msg of messages) {
+      if (msg.key.fromMe) continue;
+      if (msg.key.remoteJid.endsWith('@g.us')) continue; // ignora mensagens de grupo
+      const texto = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+      if (!texto.trim()) continue;
+      try { await responderPergunta(msg.key.remoteJid, texto); }
+      catch (err) { logger.error({ err }, 'Erro ao responder pergunta'); }
+    }
+  });
 
   if (!state.creds.registered) {
     setTimeout(async () => {

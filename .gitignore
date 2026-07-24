@@ -5,3 +5,4 @@ secrets.*
 credentials.*
 serviceAccountKey*.json
 usuarios.json
+negativos-wpp/pendentes.json

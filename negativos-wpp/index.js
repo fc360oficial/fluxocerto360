@@ -261,6 +261,17 @@ function gerarPDFLoja(itens, ln, hoje) {
 
 // ── Bot de perguntas (Econômico Assistente) ─────────────────────────────────────
 
+const PENDENTES_PATH = path.join(__dirname, 'pendentes.json');
+
+function carregarPendentes() {
+  try { return JSON.parse(fs.readFileSync(PENDENTES_PATH, 'utf8')); }
+  catch (_) { return []; }
+}
+function salvarPendentes(lista) {
+  fs.writeFileSync(PENDENTES_PATH, JSON.stringify(lista, null, 2));
+}
+function jidBase(jid) { return (jid || '').split('@')[0].split(':')[0]; }
+
 function parsePreco(v) { return v && v !== '0' ? parseFloat(String(v).replace(',', '.')) : 0; }
 
 // Extrai o termo de busca removendo palavras comuns da pergunta de custo
@@ -271,10 +282,7 @@ function extrairTermoCusto(texto) {
     .trim();
 }
 
-async function responderPergunta(jid, texto) {
-  const t = texto.toLowerCase();
-  if (!t.includes('custo')) return; // por enquanto só reconhece pergunta de custo
-
+async function responderCusto(jid, texto) {
   const termo = extrairTermoCusto(texto);
   if (!termo) {
     await sock.sendMessage(jid, { text: 'Me diga o nome do produto que você quer saber o custo. Ex: "custo coca 2l"' });
@@ -319,6 +327,53 @@ async function responderPergunta(jid, texto) {
   }
 }
 
+async function responderPergunta(jid, texto) {
+  const meuNumero = jidBase(sock.user.id);
+  const remetente = jidBase(jid);
+  const ehEuMesmo = remetente === meuNumero;
+
+  // Comandos de administrador — só valem vindo do "Mensagens para você mesmo"
+  if (ehEuMesmo) {
+    const mResp = texto.match(/^responder\s+(\d+)\s+([\s\S]+)/i);
+    if (mResp) {
+      const id = parseInt(mResp[1]);
+      const resposta = mResp[2].trim();
+      const pendentes = carregarPendentes();
+      const item = pendentes.find(p => p.id === id && !p.respondida);
+      if (!item) { await sock.sendMessage(jid, { text: `Não encontrei a pendência #${id} (ou já foi respondida).` }); return; }
+      await sock.sendMessage(item.jid, { text: resposta });
+      item.respondida = true;
+      salvarPendentes(pendentes);
+      await sock.sendMessage(jid, { text: `Respondido! Pendência #${id} encerrada.` });
+      return;
+    }
+    if (/^pendentes\s*$/i.test(texto.trim())) {
+      const abertas = carregarPendentes().filter(p => !p.respondida);
+      const lista = abertas.length
+        ? abertas.map(p => `#${p.id} — "${p.texto}"`).join('\n')
+        : 'Nenhuma pendência no momento.';
+      await sock.sendMessage(jid, { text: lista });
+      return;
+    }
+  }
+
+  const t = texto.toLowerCase();
+  if (t.includes('custo')) { await responderCusto(jid, texto); return; }
+
+  // Não reconhecido — vira pendência (ignora se veio de si mesmo, ex: teste)
+  if (ehEuMesmo) return;
+  const pendentes = carregarPendentes();
+  const novoId = pendentes.reduce((max, p) => Math.max(max, p.id), 0) + 1;
+  pendentes.push({ id: novoId, jid, texto, data: new Date().toISOString(), respondida: false });
+  salvarPendentes(pendentes);
+  await sock.sendMessage(jid, { text: 'Ainda não sei responder isso, mas já anotei — te aviso assim que tiver a resposta.' });
+  try {
+    await sock.sendMessage(sock.user.id, {
+      text: `Nova pergunta pendente #${novoId} de ${remetente}:\n"${texto}"\n\nPra responder: responder ${novoId} <sua resposta>`
+    });
+  } catch (_) {}
+}
+
 // ── WhatsApp ──────────────────────────────────────────────────────────────────
 
 async function conectar() {
@@ -330,8 +385,12 @@ async function conectar() {
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
     for (const msg of messages) {
-      if (msg.key.fromMe) continue;
       if (msg.key.remoteJid.endsWith('@g.us')) continue; // ignora mensagens de grupo
+      // Ignora mensagens enviadas por mim para outra pessoa (ex: as próprias
+      // respostas do bot), mas permite "Mensagens para você mesmo" — é por lá
+      // que os comandos de administrador (responder/pendentes) chegam.
+      const ehParaMimMesmo = msg.key.remoteJid.split('@')[0].split(':')[0] === sock.user.id.split('@')[0].split(':')[0];
+      if (msg.key.fromMe && !ehParaMimMesmo) continue;
       const texto = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
       if (!texto.trim()) continue;
       try { await responderPergunta(msg.key.remoteJid, texto); }

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '326';
+var BUILD = '327';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -12811,7 +12811,7 @@ function iniciarScanEAN(inputId) {
   overlay.id = 'ean-scan-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:4000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
   overlay.innerHTML =
-    '<video id="ean-scan-video" style="width:100%;max-width:480px;border-radius:10px;background:#111" autoplay playsinline muted></video>'+
+    '<video id="ean-scan-video" style="width:100%;max-width:480px;aspect-ratio:5/2;object-fit:cover;border-radius:10px;background:#111" autoplay playsinline muted></video>'+
     '<div style="color:#fff;font-size:13px;margin:14px 0">Aponte para o código de barras do produto</div>'+
     '<button onclick="pararScanEAN()" style="padding:10px 24px;background:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">✕ Cancelar</button>';
   document.body.appendChild(overlay);

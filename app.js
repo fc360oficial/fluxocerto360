@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '325';
+var BUILD = '326';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -11,10 +11,8 @@ var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; /
   if (localStorage.getItem('fc360_build') !== BUILD) {
     localStorage.setItem('fc360_build', BUILD);
     // Não limpa eco_last_page aqui: o operador quer continuar na mesma tela
-    // depois que o app atualiza sozinho, não voltar pra capa. eco_pos_atualizacao
-    // avisa o bloco mobile (que normalmente sempre força a capa) pra abrir
-    // essa exceção só desta vez.
-    try { sessionStorage.setItem('eco_pos_atualizacao', '1'); } catch (e) {}
+    // depois que o app atualiza sozinho, não voltar pra capa (ver bloco
+    // mobile mais abaixo, que agora sempre restaura a última tela).
     if ('caches' in window) {
       caches.keys().then(function(keys) {
         return Promise.all(keys.map(function(k) { return caches.delete(k); }));
@@ -230,9 +228,7 @@ function forcarAtualizacao() {
   }
   Promise.all(limpar).then(function() {
     // Não limpa eco_last_page aqui: continua na mesma tela depois de forçar
-    // a atualização, não volta pra capa. eco_pos_atualizacao é a mesma flag
-    // usada pela checagem automática de BUILD, no topo do arquivo.
-    try { sessionStorage.setItem('eco_pos_atualizacao', '1'); } catch (e) {}
+    // a atualização, não volta pra capa (ver bloco mobile mais abaixo).
     localStorage.removeItem('inv_detalhe_state');
     var base = window.location.href.split('?')[0];
     window.location.replace(base + '?bust=' + Date.now());
@@ -1549,20 +1545,16 @@ function finalizarLogin(found) {
       renderPainelClientes();
       return;
     }
-    // Mobile: a capa de módulos é sempre a tela inicial (não retoma lastPage)
-    // — EXCETO logo depois de uma atualização de versão (eco_pos_atualizacao,
-    // setado antes do reload em forcarAtualizacao() e na checagem de BUILD no
-    // topo do arquivo), onde o operador quer continuar exatamente onde estava
-    // (ex.: reabrir Etiquetas sozinho pra reconexão automática da impressora
-    // disparar). Navegar entre módulos usa nav() normalmente; "Início" na
-    // sidebar volta pra capa.
+    // Mobile: restaura a última tela visitada (eco_last_page) em qualquer
+    // carregamento — refresh nativo (puxar pra baixo), atualização de versão,
+    // ou reabrir o app. Sem isso, todo refresh jogava o operador de volta pra
+    // capa e desconectava a impressora sem reconectar sozinho em lugar
+    // nenhum (a reconexão automática só dispara ao entrar em Etiquetas).
+    // "Início" na sidebar continua sendo o jeito de voltar pra capa de propósito.
     if (window.innerWidth <= 768) {
-      if (sessionStorage.getItem('eco_pos_atualizacao')) {
-        sessionStorage.removeItem('eco_pos_atualizacao');
-        if (lastPage) {
-          nav(lastPage, document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]'));
-          return;
-        }
+      if (lastPage) {
+        nav(lastPage, document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]'));
+        return;
       }
       nav('capa', document.getElementById('nav-capa'));
       return;
@@ -4604,7 +4596,7 @@ function parearImpressora() {
 function _etcTentarReconectarAutomatico() {
   if (_etcWriteChar) return;
   if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') {
-    console.warn('[etiquetas] getDevices() indisponível neste navegador — reconexão automática não é suportada aqui.');
+    showToast('⚠️ Este navegador não suporta reconexão automática — conecte a impressora manualmente.');
     return;
   }
   var idSalvo;
@@ -4613,7 +4605,7 @@ function _etcTentarReconectarAutomatico() {
   navigator.bluetooth.getDevices().then(function(devices) {
     var device = devices.filter(function(d) { return d.id === idSalvo; })[0];
     if (!device) {
-      console.warn('[etiquetas] Dispositivo salvo (' + idSalvo + ') não está mais entre os permitidos — reconecte manualmente.');
+      showToast('⚠️ Impressora salva não está mais disponível — conecte manualmente.');
       return;
     }
     return _etcConectarNoDispositivo(device);

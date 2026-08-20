@@ -1,6 +1,6 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '321';
-var ETIQUETAS_API_URL = 'https://therapeutic-girlfriend-indicate-logic.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
+var BUILD = '322';
+var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
   if (vEl) vEl.textContent = 'v' + BUILD;

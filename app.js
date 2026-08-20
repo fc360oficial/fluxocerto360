@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '322';
+var BUILD = '323';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -10,7 +10,8 @@ var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; /
   if (vLogin) vLogin.textContent = 'v' + BUILD;
   if (localStorage.getItem('fc360_build') !== BUILD) {
     localStorage.setItem('fc360_build', BUILD);
-    sessionStorage.removeItem('eco_last_page');
+    // Não limpa eco_last_page aqui: o operador quer continuar na mesma tela
+    // depois que o app atualiza sozinho, não voltar pra capa.
     if ('caches' in window) {
       caches.keys().then(function(keys) {
         return Promise.all(keys.map(function(k) { return caches.delete(k); }));
@@ -225,7 +226,8 @@ function forcarAtualizacao() {
     }));
   }
   Promise.all(limpar).then(function() {
-    sessionStorage.removeItem('eco_last_page');
+    // Não limpa eco_last_page aqui: continua na mesma tela depois de forçar
+    // a atualização, não volta pra capa.
     localStorage.removeItem('inv_detalhe_state');
     var base = window.location.href.split('?')[0];
     window.location.replace(base + '?bust=' + Date.now());
@@ -1892,6 +1894,7 @@ function nav(page, el) {
   }
   if (page === 'etiquetas-coleta') {
     abrirEtcHub('hub');
+    _etcTentarReconectarAutomatico();
   }
   if (page==='plano') {
     loadPlanosFromFirebase(function(){
@@ -4534,15 +4537,14 @@ function abrirEtcPreview(produto, qtd) {
   renderEtcPreview(produto, qtd);
 }
 
-function parearImpressora() {
-  var CANDIDATOS = ['49535343-fe7d-4ae5-8fa9-9fafd205e455'];
-  navigator.bluetooth.requestDevice({
-    acceptAllDevices: true,
-    optionalServices: CANDIDATOS
-  }).then(function(d) {
-    _etcDevice = d;
-    return d.gatt.connect();
-  }).then(function(server) {
+var CANDIDATOS_IMPRESSORA = ['49535343-fe7d-4ae5-8fa9-9fafd205e455'];
+
+// Conecta no GATT de um BluetoothDevice já obtido (via requestDevice, no
+// pareamento manual, ou via getDevices, na reconexão automática) e resolve
+// a característica de escrita. Reaproveitado pelos dois fluxos abaixo.
+function _etcConectarNoDispositivo(d) {
+  _etcDevice = d;
+  return d.gatt.connect().then(function(server) {
     _etcGattServer = server;
     return server.getPrimaryServices();
   }).then(function(services) {
@@ -4550,21 +4552,49 @@ function parearImpressora() {
   }).then(function(chars) {
     _etcWriteChar = chars.filter(function(c){ return c.properties.write || c.properties.writeWithoutResponse; })[0];
     if (!_etcWriteChar) throw new Error('Nenhuma característica de escrita encontrada.');
+    // Guarda o id do dispositivo pra _etcTentarReconectarAutomatico tentar
+    // reconectar sozinho da próxima vez que o app abrir, sem seletor.
+    try { localStorage.setItem('etc_impressora_id', d.id); } catch (e) {}
     // Sem escrita em #etc-status-conexao aqui: _etcAtualizarStatusUI() logo
     // abaixo re-renderiza renderEtcImpressora(), que recria esse container
     // vazio e já mostra "Conectada: <nome>" no corpo do card — qualquer
     // texto escrito antes disso nunca chega a aparecer.
     _etcAtualizarStatusUI();
-    _etcDevice.addEventListener('gattserverdisconnected', function() {
+    d.addEventListener('gattserverdisconnected', function() {
       _etcWriteChar = null;
       _etcModoImprimirTudo = false;
       _etcAtualizarStatusUI();
       if (_etcCurrentView === 'lote' && _loteAtualFila.length) renderFilaLote();
     });
-  }).catch(function(e) {
+  });
+}
+
+function parearImpressora() {
+  navigator.bluetooth.requestDevice({
+    acceptAllDevices: true,
+    optionalServices: CANDIDATOS_IMPRESSORA
+  }).then(_etcConectarNoDispositivo).catch(function(e) {
     var status = document.getElementById('etc-status-conexao');
     if (status) status.textContent = '❌ Erro: ' + e.message;
   });
+}
+
+// Tenta reconectar sozinho, sem abrir o seletor do navegador, num
+// dispositivo já pareado numa sessão anterior — usa a Permissions API do
+// Web Bluetooth (getDevices), disponível só em Chrome/Android recente. Onde
+// não tem suporte, ou não há dispositivo salvo, falha em silêncio: o
+// operador sempre pode conectar manualmente pela aba Impressora.
+function _etcTentarReconectarAutomatico() {
+  if (_etcWriteChar) return;
+  if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') return;
+  var idSalvo;
+  try { idSalvo = localStorage.getItem('etc_impressora_id'); } catch (e) { return; }
+  if (!idSalvo) return;
+  navigator.bluetooth.getDevices().then(function(devices) {
+    var device = devices.filter(function(d) { return d.id === idSalvo; })[0];
+    if (!device) return;
+    return _etcConectarNoDispositivo(device);
+  }).catch(function() {});
 }
 
 // Re-renderiza a view atual quando o estado da impressora muda (conectou,

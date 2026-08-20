@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '323';
+var BUILD = '324';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -4586,15 +4586,24 @@ function parearImpressora() {
 // operador sempre pode conectar manualmente pela aba Impressora.
 function _etcTentarReconectarAutomatico() {
   if (_etcWriteChar) return;
-  if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') return;
+  if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') {
+    console.warn('[etiquetas] getDevices() indisponível neste navegador — reconexão automática não é suportada aqui.');
+    return;
+  }
   var idSalvo;
   try { idSalvo = localStorage.getItem('etc_impressora_id'); } catch (e) { return; }
   if (!idSalvo) return;
   navigator.bluetooth.getDevices().then(function(devices) {
     var device = devices.filter(function(d) { return d.id === idSalvo; })[0];
-    if (!device) return;
+    if (!device) {
+      console.warn('[etiquetas] Dispositivo salvo (' + idSalvo + ') não está mais entre os permitidos — reconecte manualmente.');
+      return;
+    }
     return _etcConectarNoDispositivo(device);
-  }).catch(function() {});
+  }).catch(function(e) {
+    console.warn('[etiquetas] Reconexão automática falhou: ' + e.message);
+    showToast('⚠️ Não consegui reconectar sozinho na impressora (' + e.message + '). Conecte manualmente.');
+  });
 }
 
 // Re-renderiza a view atual quando o estado da impressora muda (conectou,

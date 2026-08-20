@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '324';
+var BUILD = '325';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -11,7 +11,10 @@ var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; /
   if (localStorage.getItem('fc360_build') !== BUILD) {
     localStorage.setItem('fc360_build', BUILD);
     // Não limpa eco_last_page aqui: o operador quer continuar na mesma tela
-    // depois que o app atualiza sozinho, não voltar pra capa.
+    // depois que o app atualiza sozinho, não voltar pra capa. eco_pos_atualizacao
+    // avisa o bloco mobile (que normalmente sempre força a capa) pra abrir
+    // essa exceção só desta vez.
+    try { sessionStorage.setItem('eco_pos_atualizacao', '1'); } catch (e) {}
     if ('caches' in window) {
       caches.keys().then(function(keys) {
         return Promise.all(keys.map(function(k) { return caches.delete(k); }));
@@ -227,7 +230,9 @@ function forcarAtualizacao() {
   }
   Promise.all(limpar).then(function() {
     // Não limpa eco_last_page aqui: continua na mesma tela depois de forçar
-    // a atualização, não volta pra capa.
+    // a atualização, não volta pra capa. eco_pos_atualizacao é a mesma flag
+    // usada pela checagem automática de BUILD, no topo do arquivo.
+    try { sessionStorage.setItem('eco_pos_atualizacao', '1'); } catch (e) {}
     localStorage.removeItem('inv_detalhe_state');
     var base = window.location.href.split('?')[0];
     window.location.replace(base + '?bust=' + Date.now());
@@ -1544,9 +1549,21 @@ function finalizarLogin(found) {
       renderPainelClientes();
       return;
     }
-    // Mobile: a capa de módulos é sempre a tela inicial (não retoma lastPage) —
-    // navegar entre módulos usa nav() normalmente; "Início" na sidebar volta pra cá.
+    // Mobile: a capa de módulos é sempre a tela inicial (não retoma lastPage)
+    // — EXCETO logo depois de uma atualização de versão (eco_pos_atualizacao,
+    // setado antes do reload em forcarAtualizacao() e na checagem de BUILD no
+    // topo do arquivo), onde o operador quer continuar exatamente onde estava
+    // (ex.: reabrir Etiquetas sozinho pra reconexão automática da impressora
+    // disparar). Navegar entre módulos usa nav() normalmente; "Início" na
+    // sidebar volta pra capa.
     if (window.innerWidth <= 768) {
+      if (sessionStorage.getItem('eco_pos_atualizacao')) {
+        sessionStorage.removeItem('eco_pos_atualizacao');
+        if (lastPage) {
+          nav(lastPage, document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]'));
+          return;
+        }
+      }
       nav('capa', document.getElementById('nav-capa'));
       return;
     }

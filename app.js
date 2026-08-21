@@ -4952,13 +4952,15 @@ function renderEtcHistoricoLote() {
       if (!listWrap) return;
       var docsLote = snap.docs.filter(function(d) { return d.data().origem === 'lote'; });
       if (!docsLote.length) { listWrap.innerHTML = '<div class="empty">Nenhum lote impresso ainda.</div>'; return; }
-      // Agrupa por loteId (lotes da retaguarda) — lotes mockados (loteId
-      // null) não têm um identificador comum entre etiquetas da mesma
-      // sessão, então cada doc vira sua própria linha nesse caso.
+      // Agrupa por loteId (lotes da retaguarda) ou, na ausência dele, por
+      // loteSessaoId (lotes mockados/mobile — todas as etiquetas da mesma
+      // sessão de _etcGerarLoteMock compartilham o mesmo valor). Docs
+      // legados sem nenhum dos dois (de antes desta correção) caem pra
+      // d.id e viram sua própria linha, como sempre.
       var grupos = {}; var ordem = [];
       docsLote.forEach(function(d) {
         var l = d.data();
-        var chave = l.loteId || d.id;
+        var chave = l.loteId || l.loteSessaoId || d.id;
         if (!grupos[chave]) { grupos[chave] = {timestamp: l.timestamp, qtdEtiquetas: 0, produtos: {}, operador: l.operadorNome}; ordem.push(chave); }
         grupos[chave].qtdEtiquetas++;
         grupos[chave].produtos[l.nomeProduto] = true;
@@ -5250,6 +5252,7 @@ function _etcGerarLoteMock() {
     // abrirLoteParaImpressao anterior permanecem intactos e consistentes,
     // em vez de virar um id nulo com fila de um lote real (ver Fix C).
     _loteAtualId = null;
+    _loteSessaoId = 'm' + Date.now();
     _loteAtualFila = [];
     resolvidos.forEach(function(r) {
       if (!r.produto) return;
@@ -5264,12 +5267,25 @@ function _etcGerarLoteMock() {
 }
 
 var _loteAtualId = null, _loteAtualFila = [];
+// Id de sessão minerado no cliente (client-minted) pra lotes montados no
+// fluxo mobile (_etcGerarLoteMock, sem documento etiquetas_lote na
+// retaguarda) — permite ao Histórico agrupar as etiquetas da mesma sessão
+// numa única linha. loteId continua sendo a fonte da verdade pros lotes
+// reais da retaguarda; este campo fica null nesse caso (ver abrirLoteParaImpressao).
+var _loteSessaoId = null;
+// true enquanto a tela de erro de desconexão (renderEtcFilaInterrompida)
+// está aberta — permite a _etcAtualizarStatusUI saber quando é seguro
+// redesenhá-la ao vivo (reconectar deve reabilitar "Tentar novamente").
+var _etcFilaInterrompidaAtiva = false;
 var _etcModoImprimirTudo = false; // true durante o loop automático de "Imprimir tudo"
 var _etcFilaTotal = 0; // tamanho da fila no início desta impressão, pro contador "X de Y" e a barra de progresso
 var _etcFilaImpressasCount = 0; // quantas etiquetas desta fila já foram impressas com sucesso — zerado toda vez que uma fila nova começa
 
 function abrirLoteParaImpressao(loteId) {
   _loteAtualId = loteId;
+  // Lote real da retaguarda: nunca deve carregar um _loteSessaoId de um lote
+  // mockado (mobile) anterior — ver Finding 1 da revisão final.
+  _loteSessaoId = null;
   var wrap = document.getElementById('etc-view-lote');
   wrap.innerHTML = '<div class="empty">Resolvendo preços...</div>';
   db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_lote').doc(loteId).get()
@@ -5392,6 +5408,7 @@ function imprimirProximoDaFila() {
       precoImpresso: produto.preco,
       origem: 'lote',
       loteId: _loteAtualId,
+      loteSessaoId: _loteSessaoId,
       operadorId: S.currentUser ? S.currentUser.id : null,
       operadorNome: S.currentUser ? S.currentUser.nome : '-',
       timestamp: firebase.firestore.FieldValue.serverTimestamp()

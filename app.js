@@ -4549,6 +4549,13 @@ var PrinterManager = {
 
   _setState: function(novo) {
     this._state = novo;
+    // Sincroniza os globais legados (_etcDevice/_etcGattServer/_etcWriteChar)
+    // enquanto telas ainda não migradas (Avulsa/Lote/Impressora/Hub, Tasks
+    // 4-6) continuam lendo-os diretamente — remove-se quando a última
+    // leitura direta for migrada (ver Task 6).
+    _etcDevice = this._device;
+    _etcGattServer = this._gattServer;
+    _etcWriteChar = (novo === this.ESTADOS.CONECTADO || novo === this.ESTADOS.IMPRIMINDO) ? this._writeChar : null;
     this._log('Estado: ' + novo);
     if (this._uiListener) this._uiListener();
   },
@@ -4581,6 +4588,119 @@ var PrinterManager = {
     }
     return {emoji: '🔴', texto: 'Desconectada', pillCls: 'etc-pill-off', nome: nome};
   }
+  ,
+  _erro: function(motivo, detalhe) {
+    var e = new Error(detalhe || motivo);
+    e.motivo = motivo;
+    return e;
+  },
+
+  // Conecta no GATT de um BluetoothDevice já obtido (via requestDevice, no
+  // pareamento manual, ou via getDevices, na reconexão automática) e resolve
+  // a característica de escrita — corpo idêntico ao antigo
+  // _etcConectarNoDispositivo, só movido pra dentro do PrinterManager.
+  _connectToDevice: function(d) {
+    var self = this;
+    self._device = d;
+    self._setState(self.ESTADOS.CONECTANDO);
+    self._log('Dispositivo selecionado: ' + (d.name || '(sem nome)'));
+    return d.gatt.connect().then(function(server) {
+      self._gattServer = server;
+      self._log('GATT conectado');
+      return server.getPrimaryServices();
+    }).then(function(services) {
+      return services[0].getCharacteristics();
+    }).then(function(chars) {
+      self._writeChar = chars.filter(function(c){ return c.properties.write || c.properties.writeWithoutResponse; })[0];
+      if (!self._writeChar) throw new Error('Nenhuma característica de escrita encontrada.');
+      try { localStorage.setItem('etc_impressora_id', d.id); } catch (e) {}
+      self._setState(self.ESTADOS.CONECTADO);
+      self._log('Pronta pra imprimir: ' + (d.name || d.id));
+      d.addEventListener('gattserverdisconnected', function() {
+        self._log('Desconectada (gattserverdisconnected)');
+        self._writeChar = null;
+        self._gattServer = null;
+        _etcModoImprimirTudo = false;
+        self._setState(self.ESTADOS.DESCONECTADO);
+        if (_etcCurrentView === 'lote' && _loteAtualFila.length) renderEtcFilaInterrompida();
+      });
+    }).catch(function(e) {
+      self._logError('Falha ao conectar no dispositivo', e);
+      self._setState(self.ESTADOS.ERRO);
+      throw e;
+    });
+  },
+
+  // Abre o seletor nativo do Chrome — único caminho manual (Nível 3 da spec,
+  // "CONECTAR IMPRESSORA"). Corpo idêntico ao antigo parearImpressora.
+  connect: function() {
+    var self = this;
+    self._log('Abrindo seletor de pareamento manual');
+    return navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: CANDIDATOS_IMPRESSORA
+    }).then(function(d) { return self._connectToDevice(d); }).catch(function(e) {
+      self._logError('Pareamento manual falhou/cancelado', e);
+      var status = document.getElementById('etc-status-conexao');
+      if (status) status.textContent = '❌ Erro: ' + e.message;
+    });
+  },
+
+  // Garante que _writeChar está pronta antes de imprimir — 3 níveis (spec do
+  // Tiago, 2026-08-21): (1) já conectada → resolve na hora, sem abrir nada;
+  // (2) getDevices() encontra o dispositivo salvo → reconecta sozinho, sem
+  // interação; (3) getDevices() não existe/não encontra → rejeita com um
+  // motivo tipado, pra tela mostrar "Conectar Impressora" (nunca fica
+  // tentando de novo sozinho).
+  _ensureConnected: function() {
+    var self = this;
+    if (self._state === self.ESTADOS.CONECTADO && self._writeChar) {
+      return Promise.resolve();
+    }
+    if (self._state === self.ESTADOS.RECONECTANDO || self._state === self.ESTADOS.CONECTANDO) {
+      return Promise.reject(self._erro('JA_RECONECTANDO', 'Reconexão já em andamento.'));
+    }
+    if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') {
+      self._setState(self.ESTADOS.ERRO);
+      return Promise.reject(self._erro('SEM_SUPORTE', 'Este navegador não suporta reconexão automática.'));
+    }
+    var idSalvo;
+    try { idSalvo = localStorage.getItem('etc_impressora_id'); } catch (e) { idSalvo = null; }
+    if (!idSalvo) {
+      self._setState(self.ESTADOS.ERRO);
+      return Promise.reject(self._erro('SEM_DISPOSITIVO_SALVO', 'Nenhuma impressora pareada anteriormente.'));
+    }
+    self._setState(self.ESTADOS.RECONECTANDO);
+    self._log('Tentando reconexão automática (getDevices)');
+    return navigator.bluetooth.getDevices().then(function(devices) {
+      var device = devices.filter(function(d) { return d.id === idSalvo; })[0];
+      if (!device) {
+        self._logError('getDevices() não encontrou a impressora salva', null);
+        self._setState(self.ESTADOS.ERRO);
+        throw self._erro('DISPOSITIVO_NAO_ENCONTRADO', 'Impressora salva não está mais disponível.');
+      }
+      return self._connectToDevice(device);
+    }).catch(function(e) {
+      if (e && e.motivo) throw e;
+      self._logError('Falha na reconexão automática (getDevices)', e);
+      self._setState(self.ESTADOS.ERRO);
+      throw self._erro('RECONEXAO_FALHOU', e && e.message);
+    });
+  },
+
+  // Chamada ao entrar no módulo Etiquetas — tenta recuperar uma impressora já
+  // autorizada antes, sem interação do operador (Nível 2). Nunca abre o
+  // seletor manual sozinha; falha em silêncio no console (não mostra toast a
+  // cada entrada no módulo — o pill "🔴 Desconectada" já comunica isso
+  // passivamente, decisão registrada no spec) — o operador sempre pode
+  // conectar manualmente pela aba Impressora.
+  init: function() {
+    var self = this;
+    if (self._state === self.ESTADOS.CONECTADO) return;
+    self._ensureConnected().catch(function(e) {
+      self._log('init(): reconexão automática não disponível (' + (e && e.motivo) + ') — aguardando ação manual.');
+    });
+  }
 };
 
 // ── Etiquetas: coleta (mobile) — pareamento Bluetooth + impressão ──
@@ -4610,76 +4730,8 @@ function abrirEtcHub(view) {
 
 var CANDIDATOS_IMPRESSORA = ['49535343-fe7d-4ae5-8fa9-9fafd205e455'];
 
-// Conecta no GATT de um BluetoothDevice já obtido (via requestDevice, no
-// pareamento manual, ou via getDevices, na reconexão automática) e resolve
-// a característica de escrita. Reaproveitado pelos dois fluxos abaixo.
-function _etcConectarNoDispositivo(d) {
-  _etcDevice = d;
-  return d.gatt.connect().then(function(server) {
-    _etcGattServer = server;
-    return server.getPrimaryServices();
-  }).then(function(services) {
-    return services[0].getCharacteristics();
-  }).then(function(chars) {
-    _etcWriteChar = chars.filter(function(c){ return c.properties.write || c.properties.writeWithoutResponse; })[0];
-    if (!_etcWriteChar) throw new Error('Nenhuma característica de escrita encontrada.');
-    // Guarda o id do dispositivo pra _etcTentarReconectarAutomatico tentar
-    // reconectar sozinho da próxima vez que o app abrir, sem seletor.
-    try { localStorage.setItem('etc_impressora_id', d.id); } catch (e) {}
-    // Sem escrita em #etc-status-conexao aqui: _etcAtualizarStatusUI() logo
-    // abaixo re-renderiza renderEtcImpressora(), que recria esse container
-    // vazio e já mostra "Conectada: <nome>" no corpo do card — qualquer
-    // texto escrito antes disso nunca chega a aparecer.
-    _etcAtualizarStatusUI();
-    d.addEventListener('gattserverdisconnected', function() {
-      _etcWriteChar = null;
-      _etcModoImprimirTudo = false;
-      _etcAtualizarStatusUI();
-      // Desconexão no meio de uma fila de lote: tela dedicada (seção 10 da
-      // spec) em vez do redraw genérico de renderFilaLote — a fila em si já
-      // preserva corretamente o que resta (imprimirProximoDaFila só usa
-      // .shift() depois de confirmar sucesso, nunca reimprime o que já saiu).
-      if (_etcCurrentView === 'lote' && _loteAtualFila.length) renderEtcFilaInterrompida();
-    });
-  });
-}
-
-function parearImpressora() {
-  navigator.bluetooth.requestDevice({
-    acceptAllDevices: true,
-    optionalServices: CANDIDATOS_IMPRESSORA
-  }).then(_etcConectarNoDispositivo).catch(function(e) {
-    var status = document.getElementById('etc-status-conexao');
-    if (status) status.textContent = '❌ Erro: ' + e.message;
-  });
-}
-
-// Tenta reconectar sozinho, sem abrir o seletor do navegador, num
-// dispositivo já pareado numa sessão anterior — usa a Permissions API do
-// Web Bluetooth (getDevices), disponível só em Chrome/Android recente. Onde
-// não tem suporte, ou não há dispositivo salvo, falha em silêncio: o
-// operador sempre pode conectar manualmente pela aba Impressora.
-function _etcTentarReconectarAutomatico() {
-  if (_etcWriteChar) return;
-  if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') {
-    showToast('⚠️ Este navegador não suporta reconexão automática — conecte a impressora manualmente.');
-    return;
-  }
-  var idSalvo;
-  try { idSalvo = localStorage.getItem('etc_impressora_id'); } catch (e) { return; }
-  if (!idSalvo) return;
-  navigator.bluetooth.getDevices().then(function(devices) {
-    var device = devices.filter(function(d) { return d.id === idSalvo; })[0];
-    if (!device) {
-      showToast('⚠️ Impressora salva não está mais disponível — conecte manualmente.');
-      return;
-    }
-    return _etcConectarNoDispositivo(device);
-  }).catch(function(e) {
-    console.warn('[etiquetas] Reconexão automática falhou: ' + e.message);
-    showToast('⚠️ Não consegui reconectar sozinho na impressora (' + e.message + '). Conecte manualmente.');
-  });
-}
+function parearImpressora() { return PrinterManager.connect(); }
+function _etcTentarReconectarAutomatico() { return PrinterManager.init(); }
 
 // Re-renderiza a view atual quando o estado da impressora muda (conectou,
 // desconectou) — cada view decide sozinha o que fazer com _etcWriteChar

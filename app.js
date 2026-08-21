@@ -4667,6 +4667,10 @@ function _etcAtualizarStatusUI() {
         btnRevisao.title = _etcWriteChar ? '' : 'Conecte a impressora primeiro';
       }
     }
+    // Tela de Histórico aberta: não há nada relacionado à impressora nessa
+    // tela pra atualizar ao vivo, e redesenhar do zero perderia a navegação
+    // do operador pela lista.
+    else if (_etcHistoricoAberto) { /* no-op — status da impressora não aparece na tela de Histórico, não precisa atualizar nada ao vivo */ }
     // Caso restante (tela de lotes pendentes): seguro redesenhar — Revisão e
     // a tela de erro de desconexão já são tratadas pelos branches acima.
     else renderEtcLotes();
@@ -4938,6 +4942,13 @@ function renderEtcLotes() {
   _etcMontandoLote = false;
   _etcFilaInterrompidaAtiva = false;
   _etcRevisandoLote = false;
+  _etcHistoricoAberto = false;
+  // Descarta qualquer fila de impressão abandonada de um lote anterior (ex.:
+  // operador abriu um lote da retaguarda e voltou sem imprimir) — sem isso
+  // ela sobrevive na memória e pode ser confundida com o lote em andamento
+  // se a impressora desconectar mais tarde (ver Finding 2 da revisão final).
+  _loteAtualId = null;
+  _loteAtualFila = [];
   var wrap = document.getElementById('etc-view-lote');
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
@@ -4967,8 +4978,10 @@ function renderEtcLotes() {
 // usado em renderEtcHub (orderBy sem where, filtra em JS) — evita precisar
 // de um índice composto novo no Firestore (ver Global Constraints).
 function renderEtcHistoricoLote() {
+  _etcMontandoLote = false;
   _etcFilaInterrompidaAtiva = false;
   _etcRevisandoLote = false;
+  _etcHistoricoAberto = true;
   var wrap = document.getElementById('etc-view-lote');
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcLotes()">← Lotes pendentes</button></div>' +
@@ -5049,6 +5062,7 @@ function renderEtcMontarLote() {
   _etcMontandoLote = true;
   _etcFilaInterrompidaAtiva = false;
   _etcRevisandoLote = false;
+  _etcHistoricoAberto = false;
   var wrap = document.getElementById('etc-view-lote');
   var temCamera = typeof ZXing !== 'undefined';
   wrap.innerHTML =
@@ -5238,6 +5252,7 @@ function renderEtcRevisaoLote() {
   _etcMontandoLote = false;
   _etcFilaInterrompidaAtiva = false;
   _etcRevisandoLote = true;
+  _etcHistoricoAberto = false;
   var itens = Object.keys(_etcLoteSelecionados).map(function(k) { return _etcLoteSelecionados[k]; });
   if (!itens.length) { renderEtcMontarLote(); return; }
   var nProdutos = itens.length;
@@ -5321,6 +5336,10 @@ var _etcFilaInterrompidaAtiva = false;
 // impressora ao vivo sem redesenhar a tela inteira (que perderia a revisão
 // em andamento e navegaria o operador pra fora dela).
 var _etcRevisandoLote = false;
+// true enquanto a tela de Histórico está aberta — evita que
+// _etcAtualizarStatusUI troque a tela ao vivo quando o status da
+// impressora muda.
+var _etcHistoricoAberto = false;
 var _etcModoImprimirTudo = false; // true durante o loop automático de "Imprimir tudo"
 var _etcFilaTotal = 0; // tamanho da fila no início desta impressão, pro contador "X de Y" e a barra de progresso
 var _etcFilaImpressasCount = 0; // quantas etiquetas desta fila já foram impressas com sucesso — zerado toda vez que uma fila nova começa
@@ -5361,6 +5380,7 @@ function renderFilaLote() {
   _etcMontandoLote = false;
   _etcFilaInterrompidaAtiva = false;
   _etcRevisandoLote = false;
+  _etcHistoricoAberto = false;
   var wrap = document.getElementById('etc-view-lote');
   if (!_loteAtualFila.length) {
     wrap.innerHTML = '<div class="empty">Fila vazia ou todos os produtos falharam ao resolver.</div><button class="btn btn-s btn-sm" onclick="renderEtcLotes()">Voltar</button>';
@@ -5386,7 +5406,10 @@ function renderFilaLote() {
 // remove um item antes de confirmar que ele saiu fisicamente) — "Tentar
 // novamente" só continua de onde parou, nunca reimprime o que já saiu.
 function renderEtcFilaInterrompida() {
+  _etcMontandoLote = false;
   _etcFilaInterrompidaAtiva = true;
+  _etcRevisandoLote = false;
+  _etcHistoricoAberto = false;
   var wrap = document.getElementById('etc-view-lote');
   var impressas = _etcFilaImpressasCount;
   var total = _etcFilaTotal || (impressas + _loteAtualFila.length);

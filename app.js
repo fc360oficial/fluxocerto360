@@ -5386,7 +5386,6 @@ function imprimirProximoDaFila() {
 function imprimirTudoDaFila() {
   if (!_loteAtualFila.length || _etcImprimindo) return;
   _etcModoImprimirTudo = true;
-  _etcFilaTotal = _loteAtualFila.length;
   imprimirProximoDaFila();
 }
 

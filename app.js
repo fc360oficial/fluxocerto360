@@ -4562,7 +4562,11 @@ function _etcConectarNoDispositivo(d) {
       _etcWriteChar = null;
       _etcModoImprimirTudo = false;
       _etcAtualizarStatusUI();
-      if (_etcCurrentView === 'lote' && _loteAtualFila.length) renderFilaLote();
+      // Desconexão no meio de uma fila de lote: tela dedicada (seção 10 da
+      // spec) em vez do redraw genérico de renderFilaLote — a fila em si já
+      // preserva corretamente o que resta (imprimirProximoDaFila só usa
+      // .shift() depois de confirmar sucesso, nunca reimprime o que já saiu).
+      if (_etcCurrentView === 'lote' && _loteAtualFila.length) renderEtcFilaInterrompida();
     });
   });
 }
@@ -5271,6 +5275,26 @@ function renderFilaLote() {
     '<div id="etc-fila-progresso" style="margin-top:10px;font-size:12.5px;color:var(--t3)"></div>' +
     '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t2)">🖨 ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') +
       '<span class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '">' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span></div>';
+}
+
+// Tela dedicada de desconexão no meio da impressão (seção 10 da spec).
+// _loteAtualFila já contém só o que resta (imprimirProximoDaFila nunca
+// remove um item antes de confirmar que ele saiu fisicamente) — "Tentar
+// novamente" só continua de onde parou, nunca reimprime o que já saiu.
+function renderEtcFilaInterrompida() {
+  var wrap = document.getElementById('etc-view-lote');
+  var impressas = _etcFilaImpressasCount;
+  var total = _etcFilaTotal || (impressas + _loteAtualFila.length);
+  wrap.innerHTML =
+    '<div class="card" style="padding:22px;text-align:center">' +
+      '<div style="font-size:15px;font-weight:700;color:var(--r);margin-bottom:10px">⚠ Impressão interrompida</div>' +
+      '<div style="font-size:13px;color:var(--t2);margin-bottom:4px">A impressora ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') + ' foi desconectada.</div>' +
+      '<div style="font-size:13px;color:var(--t3);margin-bottom:18px">' + impressas + ' de ' + total + ' etiquetas foram impressas.</div>' +
+      '<div class="btn-row" style="justify-content:center">' +
+        '<button class="btn btn-p" onclick="imprimirTudoDaFila()">Tentar novamente</button>' +
+        '<button class="btn btn-s" onclick="parearImpressora()">Conectar impressora</button>' +
+      '</div>' +
+    '</div>';
 }
 
 // Avança a fila (item já foi fisicamente impresso, o log pode ou não ter sido gravado)

@@ -4999,7 +4999,7 @@ function renderEtcAvulsa() {
   var seqChecked = _etcAvulsaSequencialAtivo() ? 'checked' : '';
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
-    (!_etcWriteChar ? '<div class="etc-aviso"><span>Conecte a impressora antes de imprimir.</span><a onclick="abrirEtcHub(\'impressora\')">Ir para Impressora</a></div>' : '') +
+    (!PrinterManager.isReady() ? '<div class="etc-aviso"><span>Conecte a impressora antes de imprimir.</span><a onclick="abrirEtcHub(\'impressora\')">Ir para Impressora</a></div>' : '') +
     '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:var(--t2);cursor:pointer">' +
       '<input type="checkbox" id="etc-avulsa-sequencial" ' + seqChecked + ' onchange="_etcAlternarSequencial(this.checked)"> Modo sequencial (imprime assim que ler o produto)' +
     '</label>' +
@@ -5064,10 +5064,11 @@ function _etcRenderAvulsaCard(produto) {
   // Marca só aparece quando o código bate com o catálogo mockado (Task 7) —
   // a etiquetas-api real não retorna esse campo ainda. Nunca inventar.
   var mock = ETC_MOCK_PRODUTOS.filter(function(p) { return p.codigoBarras === produto.codigoBarras; })[0];
-  var statusImpressora = _etcWriteChar
-    ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--gray2);margin-top:6px;font-size:12.5px;color:var(--t2)">🖨 ' + _escHtml(_etcDevice ? _etcDevice.name : 'Impressora') + '<span class="etc-pill etc-pill-on" style="margin-left:auto">● Conectada</span></div>'
-    : '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--gray2);margin-top:6px;font-size:12.5px;color:var(--t2)">⚠ Impressora desconectada<a onclick="abrirEtcHub(\'impressora\')" style="margin-left:auto;color:var(--am);font-weight:700;text-decoration:underline;cursor:pointer">Conectar impressora</a></div>';
-  var disabledAttr = _etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"';
+  var status = PrinterManager.getStatusDisplay();
+  var statusImpressora = PrinterManager.isReady()
+    ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--gray2);margin-top:6px;font-size:12.5px;color:var(--t2)">🖨 ' + _escHtml(status.nome) + '<span class="etc-pill ' + status.pillCls + '" style="margin-left:auto">' + status.emoji + ' ' + status.texto + '</span></div>'
+    : '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--gray2);margin-top:6px;font-size:12.5px;color:var(--t2)">' + status.emoji + ' Impressora ' + status.texto.toLowerCase() + '<a onclick="abrirEtcHub(\'impressora\')" style="margin-left:auto;color:var(--am);font-weight:700;text-decoration:underline;cursor:pointer">Conectar impressora</a></div>';
+  var disabledAttr = PrinterManager.podeTentarImprimir() ? '' : 'disabled title="Conecte a impressora primeiro"';
   preview.innerHTML =
     '<div class="card" style="padding:16px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">' +
@@ -5081,7 +5082,7 @@ function _etcRenderAvulsaCard(produto) {
       statusImpressora +
       '<button class="btn btn-p" style="width:100%" ' + disabledAttr + ' onclick="_etcImprimirAvulsa(' + produtoJson + ')">🖨 Imprimir Etiqueta</button>' +
     '</div>';
-  if (_etcWriteChar && _etcAvulsaSequencialAtivo() && !_etcImprimindo) {
+  if (_etcAvulsaSequencialAtivo() && !_etcImprimindo) {
     _etcImprimirAvulsa(produto);
   }
 }
@@ -5090,11 +5091,9 @@ function _etcRenderAvulsaCard(produto) {
 // limpa o card e devolve o foco pro input — pronto pro próximo bip (é o que
 // viabiliza o modo sequencial, e agiliza mesmo no modo manual).
 function _etcImprimirAvulsa(produto) {
-  if (_etcImprimindo) return;
-  _etcImprimindo = true;
   var btn = document.querySelector('#etc-avulsa-preview .btn-p');
   if (btn) btn.disabled = true;
-  imprimirEtiquetaBluetooth(produto).then(function() {
+  PrinterManager.printLabel(produto).then(function() {
     return db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_log').add({
       codigoBarras: produto.codigoBarras,
       nomeProduto: produto.nome,
@@ -5108,15 +5107,13 @@ function _etcImprimirAvulsa(produto) {
       showToast('⚠️ Etiqueta impressa, mas houve erro ao registrar o log: ' + e.message);
     });
   }).then(function() {
-    _etcImprimindo = false;
-    showToast('✓ Etiqueta enviada para ' + (_etcDevice ? _etcDevice.name : 'a impressora'));
+    showToast('✓ Etiqueta enviada para ' + (PrinterManager.getDeviceName() || 'a impressora'));
     _etcAvulsaProdutoAtual = null;
     var preview = document.getElementById('etc-avulsa-preview');
     if (preview) preview.innerHTML = '';
     var input = document.getElementById('etc-input-codigo');
     if (input) { input.value = ''; input.focus(); }
   }).catch(function(e) {
-    _etcImprimindo = false;
     showToast('❌ Erro ao imprimir: ' + e.message);
     if (btn) btn.disabled = false;
   });

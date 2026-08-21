@@ -4549,13 +4549,6 @@ var PrinterManager = {
 
   _setState: function(novo) {
     this._state = novo;
-    // Sincroniza os globais legados (_etcDevice/_etcGattServer/_etcWriteChar)
-    // enquanto telas ainda não migradas (Avulsa/Lote/Impressora/Hub, Tasks
-    // 4-6) continuam lendo-os diretamente — remove-se quando a última
-    // leitura direta for migrada (ver Task 6).
-    _etcDevice = this._device;
-    _etcGattServer = this._gattServer;
-    _etcWriteChar = (novo === this.ESTADOS.CONECTADO || novo === this.ESTADOS.IMPRIMINDO) ? this._writeChar : null;
     this._log('Estado: ' + novo);
     if (this._uiListener) this._uiListener();
   },
@@ -4773,7 +4766,6 @@ var PrinterManager = {
 };
 
 // ── Etiquetas: coleta (mobile) — pareamento Bluetooth + impressão ──
-var _etcDevice = null, _etcGattServer = null, _etcWriteChar = null;
 // Trava contra impressão duplicada: um duplo-toque no botão de imprimir
 // (plausível em coletor com lag de UI) dispararia duas chamadas concorrentes
 // de imprimirEtiquetaBluetooth e imprimiria a etiqueta física duas vezes.
@@ -4878,11 +4870,13 @@ PrinterManager.setUIListener(_etcAtualizarStatusUI);
 
 function renderEtcImpressora() {
   var wrap = document.getElementById('etc-view-impressora');
+  var st = PrinterManager.getStatusDisplay();
+  var mensagem = PrinterManager.isReady() ? ('Conectada: ' + _escHtml(st.nome)) : (st.texto === 'Conectando...' || st.texto === 'Reconectando...' ? st.emoji + ' ' + st.texto : 'Conecte na impressora pra poder imprimir.');
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
     '<div class="card" style="padding:20px;text-align:center">' +
-      '<p style="margin-bottom:12px;color:var(--t3);font-size:13px">' + (_etcWriteChar ? ('Conectada: ' + _escHtml(_etcDevice ? _etcDevice.name : '')) : 'Conecte na impressora pra poder imprimir.') + '</p>' +
-      '<button class="btn btn-p" onclick="parearImpressora()">' + (_etcWriteChar ? 'Conectar em outra impressora' : 'Conectar na impressora') + '</button>' +
+      '<p style="margin-bottom:12px;color:var(--t3);font-size:13px">' + mensagem + '</p>' +
+      '<button class="btn btn-p" onclick="PrinterManager.connect()">' + (PrinterManager.isReady() ? 'Conectar em outra impressora' : 'Conectar na impressora') + '</button>' +
       '<div id="etc-status-conexao" style="margin-top:10px;font-size:13px"></div>' +
     '</div>' +
     '<p style="margin-top:14px;font-size:12px;color:var(--t3);text-align:center">Mantenha a impressora ligada e próxima ao dispositivo para garantir a conexão.</p>';
@@ -4890,8 +4884,9 @@ function renderEtcImpressora() {
 
 function renderEtcHub() {
   var wrap = document.getElementById('etc-view-hub');
-  var statusImpressora = _etcWriteChar ? '● Conectada' : '○ Desconectada';
-  var statusCls = _etcWriteChar ? 'etc-pill-on' : 'etc-pill-off';
+  var stHub = PrinterManager.getStatusDisplay();
+  var statusImpressora = stHub.emoji + ' ' + stHub.texto;
+  var statusCls = stHub.pillCls;
   wrap.innerHTML =
     '<div class="etc-hub-grid">' +
       '<div class="etc-hub-card" onclick="abrirEtcHub(\'avulsa\')">' +

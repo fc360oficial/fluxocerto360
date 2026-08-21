@@ -5209,6 +5209,8 @@ function _etcGerarLoteMock() {
       if (!r.produto) return;
       for (var i = 0; i < r.item.qtd; i++) _loteAtualFila.push(r.produto);
     });
+    _etcFilaTotal = _loteAtualFila.length;
+    _etcFilaImpressasCount = 0;
     renderFilaLote();
   }).catch(function(e) {
     wrap.innerHTML = '<div class="empty">Erro ao carregar: ' + _escHtml(e.message) + '</div><button class="btn btn-s btn-sm" onclick="renderEtcLotes()">Voltar</button>';
@@ -5217,7 +5219,8 @@ function _etcGerarLoteMock() {
 
 var _loteAtualId = null, _loteAtualFila = [];
 var _etcModoImprimirTudo = false; // true durante o loop automático de "Imprimir tudo"
-var _etcFilaTotal = 0; // tamanho da fila no início do "Imprimir tudo", pro contador "X de Y"
+var _etcFilaTotal = 0; // tamanho da fila no início desta impressão, pro contador "X de Y" e a barra de progresso
+var _etcFilaImpressasCount = 0; // quantas etiquetas desta fila já foram impressas com sucesso — zerado toda vez que uma fila nova começa
 
 function abrirLoteParaImpressao(loteId) {
   _loteAtualId = loteId;
@@ -5240,6 +5243,8 @@ function abrirLoteParaImpressao(loteId) {
         if (!r.produto) return;
         for (var i = 0; i < r.item.qtdEtiquetas; i++) _loteAtualFila.push(r.produto);
       });
+      _etcFilaTotal = _loteAtualFila.length;
+      _etcFilaImpressasCount = 0;
       renderFilaLote();
     }).catch(function(e) {
       wrap.innerHTML = '<div class="empty">Erro ao carregar: ' + _escHtml(e.message) + '</div>';
@@ -5254,13 +5259,18 @@ function renderFilaLote() {
     return;
   }
   var disabledAttr = _etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"';
+  var pct = _etcFilaTotal ? Math.round((_etcFilaImpressasCount / _etcFilaTotal) * 100) : 0;
   wrap.innerHTML = '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcLotes()">← Lotes pendentes</button></div>' +
-    '<div style="margin-bottom:10px">Restam ' + _loteAtualFila.length + ' etiquetas.</div>' +
+    '<div style="font-weight:700;font-size:14px;margin-bottom:6px">Imprimindo etiquetas...</div>' +
+    '<div class="pbar"><div class="pfill" id="etc-fila-progresso-fill" style="width:' + pct + '%;background:var(--dk2)"></div></div>' +
+    '<div style="margin:8px 0 14px;font-size:12.5px;color:var(--t3)">' + _etcFilaImpressasCount + ' de ' + _etcFilaTotal + ' etiquetas</div>' +
     '<div class="btn-row">' +
       '<button class="btn btn-p" style="flex:1" ' + disabledAttr + ' onclick="imprimirProximoDaFila()">Imprimir próxima</button>' +
       '<button class="btn btn-s" style="flex:1" ' + disabledAttr + ' onclick="imprimirTudoDaFila()">Imprimir tudo</button>' +
     '</div>' +
-    '<div id="etc-fila-progresso" style="margin-top:10px;font-size:12.5px;color:var(--t3)"></div>';
+    '<div id="etc-fila-progresso" style="margin-top:10px;font-size:12.5px;color:var(--t3)"></div>' +
+    '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t2)">🖨 ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') +
+      '<span class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '">' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span></div>';
 }
 
 // Avança a fila (item já foi fisicamente impresso, o log pode ou não ter sido gravado)
@@ -5271,13 +5281,13 @@ function _avancarFilaLoteAposImpressao() {
     if (!_loteAtualId) {
       // Lote mockado (montado na Coleta via _etcGerarLoteMock, Task 7) —
       // não existe documento etiquetas_lote pra atualizar.
-      showToast('✅ Lote concluído!');
+      showToast('✓ Lote impresso com sucesso — ' + _etcFilaImpressasCount + ' etiquetas impressas');
       renderEtcLotes();
       return Promise.resolve();
     }
     return db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_lote').doc(_loteAtualId)
       .update({status: 'concluido'}).then(function() {
-        showToast('✅ Lote concluído!');
+        showToast('✓ Lote impresso com sucesso — ' + _etcFilaImpressasCount + ' etiquetas impressas');
         renderEtcLotes();
       }).catch(function(e) {
         // A fila já terminou de imprimir; só a atualização do status do lote falhou.
@@ -5321,6 +5331,7 @@ function imprimirProximoDaFila() {
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     }).then(function() {
       // Impressão e log OK: avança a fila normalmente.
+      _etcFilaImpressasCount++;
       return _avancarFilaLoteAposImpressao();
     }, function(e) {
       // A etiqueta já saiu da impressora — não reimprimir. Avança a fila mesmo
@@ -5333,6 +5344,7 @@ function imprimirProximoDaFila() {
       // enganoso ("erro ao registrar o log: undefined") e uma segunda chamada a
       // _avancarFilaLoteAposImpressao() reprocessando a fila já vazia.
       showToast('⚠️ Etiqueta impressa, mas houve erro ao registrar o log: ' + e.message);
+      _etcFilaImpressasCount++;
       return _avancarFilaLoteAposImpressao().then(function() {
         throw { _loggedAlready: true };
       });

@@ -4842,8 +4842,9 @@ function _etcAtualizarStatusUI() {
     else if (_etcMontandoLote) {
       var pill = document.getElementById('etc-lote-status-impressora');
       if (pill) {
-        pill.className = 'etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off');
-        pill.textContent = '🖨 ' + (_etcWriteChar ? '● Conectada' : '○ Desconectada');
+        var st = PrinterManager.getStatusDisplay();
+        pill.className = 'etc-pill ' + st.pillCls;
+        pill.textContent = '🖨 ' + st.emoji + ' ' + st.texto;
       }
     }
     // Revisão do lote em andamento: mesmo raciocínio do construtor acima —
@@ -4852,13 +4853,14 @@ function _etcAtualizarStatusUI() {
     else if (_etcRevisandoLote) {
       var pillRevisao = document.getElementById('etc-revisao-status-impressora');
       if (pillRevisao) {
-        pillRevisao.className = 'etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off');
-        pillRevisao.textContent = (_etcWriteChar ? '● Conectada' : '○ Desconectada');
+        var stRevisao = PrinterManager.getStatusDisplay();
+        pillRevisao.className = 'etc-pill ' + stRevisao.pillCls;
+        pillRevisao.textContent = stRevisao.emoji + ' ' + stRevisao.texto;
       }
       var btnRevisao = document.getElementById('etc-revisao-imprimir-btn');
       if (btnRevisao) {
-        btnRevisao.disabled = !_etcWriteChar;
-        btnRevisao.title = _etcWriteChar ? '' : 'Conecte a impressora primeiro';
+        btnRevisao.disabled = !PrinterManager.podeTentarImprimir();
+        btnRevisao.title = PrinterManager.podeTentarImprimir() ? '' : 'Conecte a impressora primeiro';
       }
     }
     // Tela de Histórico aberta: não há nada relacionado à impressora nessa
@@ -5137,7 +5139,7 @@ function renderEtcLotes() {
   var wrap = document.getElementById('etc-view-lote');
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
-    (!_etcWriteChar ? '<div class="etc-aviso"><span>Conecte a impressora antes de imprimir.</span><a onclick="abrirEtcHub(\'impressora\')">Ir para Impressora</a></div>' : '') +
+    (!PrinterManager.isReady() ? '<div class="etc-aviso"><span>Conecte a impressora antes de imprimir.</span><a onclick="abrirEtcHub(\'impressora\')">Ir para Impressora</a></div>' : '') +
     '<button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="_etcIniciarNovoLote()">+ Montar novo lote</button>' +
     '<div style="text-align:right;margin-bottom:16px"><span style="font-size:12px;color:var(--t2);font-weight:700;cursor:pointer;text-decoration:underline" onclick="renderEtcHistoricoLote()">Histórico ›</span></div>' +
     '<div id="etc-lotes-pendentes"><div class="empty">Carregando lotes pendentes...</div></div>';
@@ -5276,7 +5278,7 @@ function renderEtcMontarLote() {
     '<div class="etc-sticky-bar" style="flex-direction:column;align-items:stretch;gap:8px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<span id="etc-lote-contagem" style="font-size:12.5px;color:var(--t3)">0 produtos selecionados · 0 etiquetas</span>' +
-        '<span id="etc-lote-status-impressora" class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '">🖨 ' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span>' +
+        '<span id="etc-lote-status-impressora" class="etc-pill ' + PrinterManager.getStatusDisplay().pillCls + '">🖨 ' + PrinterManager.getStatusDisplay().emoji + ' ' + PrinterManager.getStatusDisplay().texto + '</span>' +
       '</div>' +
       '<button class="btn btn-p" id="etc-lote-gerar-btn" disabled style="width:100%" onclick="renderEtcRevisaoLote()">REVISAR LOTE</button>' +
     '</div>';
@@ -5454,13 +5456,13 @@ function renderEtcRevisaoLote() {
         '</div>';
       }).join('') +
       '<div style="display:flex;align-items:center;gap:8px;padding-top:12px;font-size:13px;color:var(--t2)">' +
-        '🖨 ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') +
-        '<span id="etc-revisao-status-impressora" class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '" style="margin-left:auto">' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span>' +
+        '🖨 ' + _escHtml(PrinterManager.getStatusDisplay().nome) +
+        '<span id="etc-revisao-status-impressora" class="etc-pill ' + PrinterManager.getStatusDisplay().pillCls + '" style="margin-left:auto">' + PrinterManager.getStatusDisplay().emoji + ' ' + PrinterManager.getStatusDisplay().texto + '</span>' +
       '</div>' +
     '</div>' +
     '<div class="btn-row">' +
       '<button class="btn btn-s" style="flex:1" onclick="renderEtcMontarLote()">Voltar e Editar</button>' +
-      '<button class="btn btn-p" id="etc-revisao-imprimir-btn" style="flex:1" ' + (_etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="_etcGerarLoteMock()">🖨 Imprimir Lote</button>' +
+      '<button class="btn btn-p" id="etc-revisao-imprimir-btn" style="flex:1" ' + (PrinterManager.podeTentarImprimir() ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="_etcGerarLoteMock()">🖨 Imprimir Lote</button>' +
     '</div>';
 }
 
@@ -5571,7 +5573,7 @@ function renderFilaLote() {
     wrap.innerHTML = '<div class="empty">Fila vazia ou todos os produtos falharam ao resolver.</div><button class="btn btn-s btn-sm" onclick="renderEtcLotes()">Voltar</button>';
     return;
   }
-  var disabledAttr = _etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"';
+  var disabledAttr = PrinterManager.podeTentarImprimir() ? '' : 'disabled title="Conecte a impressora primeiro"';
   var pct = _etcFilaTotal ? Math.round((_etcFilaImpressasCount / _etcFilaTotal) * 100) : 0;
   wrap.innerHTML = '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcLotes()">← Lotes pendentes</button></div>' +
     '<div style="font-weight:700;font-size:14px;margin-bottom:6px">Imprimindo etiquetas...</div>' +
@@ -5582,8 +5584,8 @@ function renderFilaLote() {
       '<button class="btn btn-s" style="flex:1" ' + disabledAttr + ' onclick="imprimirTudoDaFila()">Imprimir tudo</button>' +
     '</div>' +
     '<div id="etc-fila-progresso" style="margin-top:10px;font-size:12.5px;color:var(--t3)"></div>' +
-    '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t2)">🖨 ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') +
-      '<span class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '">' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span></div>';
+    '<div style="margin-top:6px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t2)">🖨 ' + _escHtml(PrinterManager.getStatusDisplay().nome) +
+      '<span class="etc-pill ' + PrinterManager.getStatusDisplay().pillCls + '">' + PrinterManager.getStatusDisplay().emoji + ' ' + PrinterManager.getStatusDisplay().texto + '</span></div>';
 }
 
 // Tela dedicada de desconexão no meio da impressão (seção 10 da spec).
@@ -5602,11 +5604,11 @@ function renderEtcFilaInterrompida() {
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcLotes()">← Lotes pendentes</button></div>' +
     '<div class="card" style="padding:22px;text-align:center">' +
       '<div style="font-size:15px;font-weight:700;color:var(--r);margin-bottom:10px">⚠ Impressão interrompida</div>' +
-      '<div style="font-size:13px;color:var(--t2);margin-bottom:4px">A impressora ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') + ' foi desconectada.</div>' +
+      '<div style="font-size:13px;color:var(--t2);margin-bottom:4px">A impressora ' + _escHtml(PrinterManager.getStatusDisplay().nome) + ' foi desconectada.</div>' +
       '<div style="font-size:13px;color:var(--t3);margin-bottom:18px">' + impressas + ' de ' + total + ' etiquetas foram impressas.</div>' +
       '<div class="btn-row" style="justify-content:center">' +
-        '<button class="btn btn-p" onclick="parearImpressora()">Conectar impressora</button>' +
-        '<button class="btn btn-s" ' + (_etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="imprimirTudoDaFila()">Tentar novamente</button>' +
+        '<button class="btn btn-p" onclick="PrinterManager.connect()">Conectar impressora</button>' +
+        '<button class="btn btn-s" ' + (PrinterManager.podeTentarImprimir() ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="imprimirTudoDaFila()">Tentar novamente</button>' +
       '</div>' +
     '</div>';
 }
@@ -5648,7 +5650,6 @@ function _avancarFilaLoteAposImpressao() {
 function imprimirProximoDaFila() {
   if (!_loteAtualFila.length) { _etcModoImprimirTudo = false; return; }
   if (_etcImprimindo) return;
-  _etcImprimindo = true;
   var btns = document.querySelectorAll('#etc-view-lote .btn-row .btn');
   btns.forEach(function(b){ b.disabled = true; });
   if (_etcModoImprimirTudo) {
@@ -5657,7 +5658,7 @@ function imprimirProximoDaFila() {
   }
   var produto = _loteAtualFila[0];
   var erroReal = false;
-  imprimirEtiquetaBluetooth(produto).then(function() {
+  PrinterManager.printLabel(produto).then(function() {
     return db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_log').add({
       codigoBarras: produto.codigoBarras,
       nomeProduto: produto.nome,
@@ -5694,8 +5695,8 @@ function imprimirProximoDaFila() {
     showToast('❌ Erro ao imprimir: ' + e.message + ' (fila mantida, tente de novo)');
   }).then(function() {
     // Roda sempre (sucesso ou erro tratado acima) — equivalente a um "finally"
-    // nesta cadeia baseada em .then()/.catch() sem async/await.
-    _etcImprimindo = false;
+    // nesta cadeia baseada em .then()/.catch() sem async/await. _etcImprimindo
+    // já foi zerado por PrinterManager.printLabel() antes deste .then rodar.
     if (erroReal) {
       // Erro real de impressão: para o loop (se houver) e reabilita os
       // botões — como _avancarFilaLoteAposImpressao() não rodou, a fila

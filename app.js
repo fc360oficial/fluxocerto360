@@ -4738,6 +4738,7 @@ var PrinterManager = {
     }).then(function() {
       self._setState(self.ESTADOS.CONECTADO);
     }).catch(function(e) {
+      self._logError('Falha ao imprimir', e);
       if (self._state !== self.ESTADOS.ERRO) self._setState(self.ESTADOS.ERRO);
       throw self._mapErroAmigavel(e);
     }).then(function(r) {

@@ -4916,7 +4916,8 @@ function renderEtcLotes() {
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
     (!_etcWriteChar ? '<div class="etc-aviso"><span>Conecte a impressora antes de imprimir.</span><a onclick="abrirEtcHub(\'impressora\')">Ir para Impressora</a></div>' : '') +
-    '<button class="btn btn-p" style="width:100%;margin-bottom:16px" onclick="_etcIniciarNovoLote()">+ Montar novo lote</button>' +
+    '<button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="_etcIniciarNovoLote()">+ Montar novo lote</button>' +
+    '<div style="text-align:right;margin-bottom:16px"><span style="font-size:12px;color:var(--t2);font-weight:700;cursor:pointer;text-decoration:underline" onclick="renderEtcHistoricoLote()">Histórico ›</span></div>' +
     '<div id="etc-lotes-pendentes"><div class="empty">Carregando lotes pendentes...</div></div>';
   db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_lote')
     .where('status', '==', 'pendente').get().then(function(snap) {
@@ -4932,6 +4933,47 @@ function renderEtcLotes() {
       }).join('');
     }).catch(function(e) {
       var listWrap = document.getElementById('etc-lotes-pendentes');
+      if (listWrap) listWrap.innerHTML = '<div class="empty">Erro ao carregar: ' + _escHtml(e.message) + '</div>';
+    });
+}
+
+// Histórico de lotes impressos (seção 13 da spec). Mesmo padrão de query já
+// usado em renderEtcHub (orderBy sem where, filtra em JS) — evita precisar
+// de um índice composto novo no Firestore (ver Global Constraints).
+function renderEtcHistoricoLote() {
+  var wrap = document.getElementById('etc-view-lote');
+  wrap.innerHTML =
+    '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcLotes()">← Lotes pendentes</button></div>' +
+    '<div style="font-weight:700;font-size:15px;margin-bottom:12px">Histórico de lotes impressos</div>' +
+    '<div id="etc-lote-historico-list"><div class="empty">Carregando...</div></div>';
+  db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_log')
+    .orderBy('timestamp', 'desc').limit(200).get().then(function(snap) {
+      var listWrap = document.getElementById('etc-lote-historico-list');
+      if (!listWrap) return;
+      var docsLote = snap.docs.filter(function(d) { return d.data().origem === 'lote'; });
+      if (!docsLote.length) { listWrap.innerHTML = '<div class="empty">Nenhum lote impresso ainda.</div>'; return; }
+      // Agrupa por loteId (lotes da retaguarda) — lotes mockados (loteId
+      // null) não têm um identificador comum entre etiquetas da mesma
+      // sessão, então cada doc vira sua própria linha nesse caso.
+      var grupos = {}; var ordem = [];
+      docsLote.forEach(function(d) {
+        var l = d.data();
+        var chave = l.loteId || d.id;
+        if (!grupos[chave]) { grupos[chave] = {timestamp: l.timestamp, qtdEtiquetas: 0, produtos: {}, operador: l.operadorNome}; ordem.push(chave); }
+        grupos[chave].qtdEtiquetas++;
+        grupos[chave].produtos[l.nomeProduto] = true;
+      });
+      listWrap.innerHTML = ordem.map(function(chave) {
+        var g = grupos[chave];
+        var quando = g.timestamp ? _etcFormatarRelativo(g.timestamp.toDate()) : '-';
+        var nProdutos = Object.keys(g.produtos).length;
+        return '<div class="etc-hub-recent-item">' +
+          '<div><div class="etc-hub-recent-name">' + quando + '</div><div class="etc-hub-recent-meta">' + nProdutos + (nProdutos === 1 ? ' produto' : ' produtos') + ' · ' + _escHtml(g.operador || '-') + '</div></div>' +
+          '<div style="text-align:right"><div class="etc-hub-recent-qtd">' + g.qtdEtiquetas + '</div><span class="etc-pill etc-pill-on" style="font-size:9.5px">✓ Impresso</span></div>' +
+        '</div>';
+      }).join('');
+    }).catch(function(e) {
+      var listWrap = document.getElementById('etc-lote-historico-list');
       if (listWrap) listWrap.innerHTML = '<div class="empty">Erro ao carregar: ' + _escHtml(e.message) + '</div>';
     });
 }

@@ -4701,6 +4701,74 @@ var PrinterManager = {
       self._log('init(): reconexão automática não disponível (' + (e && e.motivo) + ') — aguardando ação manual.');
     });
   }
+  ,
+  // Escreve o comando TSPL de fato — corpo idêntico ao antigo
+  // imprimirEtiquetaBluetooth, só movido pra dentro do PrinterManager.
+  _writeToDevice: function(produto) {
+    var self = this;
+    if (!self._writeChar) return Promise.reject(self._erro('NAO_CONECTADA', 'Impressora não conectada.'));
+    return etiquetasLayoutDoc().get().then(function(doc) {
+      var layout = doc.exists ? doc.data() : null;
+      var tspl = montarComandoTSPL(produto, layout);
+      var bytes = new TextEncoder().encode(tspl);
+      self._log('Enviando etiqueta: ' + produto.nome);
+      return self._writeChar.writeValue(bytes);
+    }).then(function() {
+      self._log('Impressão concluída: ' + produto.nome);
+    });
+  },
+
+  // Ponto de entrada único de impressão, usado por Avulsa, Avulsa
+  // Sequencial, Lote (via imprimirProximoDaFila) e Consulta — spec do
+  // Tiago, itens 6/7. _etcImprimindo (global já existente, usado por todo o
+  // módulo desde antes deste refactor) é o único cadeado contra escrita
+  // concorrente — não criar um segundo lock aqui. "Fila", no sentido do
+  // item 7, continua sendo o array próprio do Lote (_loteAtualFila); este
+  // método garante só que nenhuma escrita física roda em paralelo com
+  // outra, de qualquer tela (ver spec, seção "Decisões de design").
+  printLabel: function(produto) {
+    var self = this;
+    if (_etcImprimindo) {
+      return Promise.reject(self._mapErroAmigavel(self._erro('OCUPADA')));
+    }
+    _etcImprimindo = true;
+    return self._ensureConnected().then(function() {
+      self._setState(self.ESTADOS.IMPRIMINDO);
+      return self._writeToDevice(produto);
+    }).then(function() {
+      self._setState(self.ESTADOS.CONECTADO);
+    }).catch(function(e) {
+      if (self._state !== self.ESTADOS.ERRO) self._setState(self.ESTADOS.ERRO);
+      throw self._mapErroAmigavel(e);
+    }).then(function(r) {
+      _etcImprimindo = false;
+      return r;
+    }, function(e) {
+      _etcImprimindo = false;
+      throw e;
+    });
+  },
+
+  // Traduz motivos internos (Nível 1/2/3, GATT, DOMException) pra mensagens
+  // que fazem sentido pro operador — nunca mostrar UUID/GATT/characteristic/
+  // DOMException na tela (spec, item 14). Detalhe técnico completo já foi
+  // pro console via _logError antes de chegar aqui.
+  _mapErroAmigavel: function(e) {
+    var motivo = e && e.motivo;
+    var textos = {
+      SEM_SUPORTE: 'Não foi possível reconectar automaticamente. Conecte a impressora manualmente.',
+      SEM_DISPOSITIVO_SALVO: 'Nenhuma impressora pareada ainda. Conecte a impressora.',
+      DISPOSITIVO_NAO_ENCONTRADO: 'Não foi possível encontrar a Urovo K329. Conecte a impressora.',
+      RECONEXAO_FALHOU: 'Não foi possível reconectar à impressora.',
+      NAO_CONECTADA: 'Impressora não conectada.',
+      OCUPADA: 'Aguarde a impressão em andamento terminar.',
+      JA_RECONECTANDO: 'Reconectando à impressora, aguarde.'
+    };
+    var msg = (motivo && textos[motivo]) || 'Não foi possível imprimir a etiqueta.';
+    var err = new Error(msg);
+    err.motivo = motivo || 'DESCONHECIDO';
+    return err;
+  }
 };
 
 // ── Etiquetas: coleta (mobile) — pareamento Bluetooth + impressão ──
@@ -4906,15 +4974,7 @@ function montarComandoTSPL(produto, layout) {
   return linhas.join('\r\n') + '\r\n';
 }
 
-function imprimirEtiquetaBluetooth(produto) {
-  if (!_etcWriteChar) return Promise.reject(new Error('Impressora não conectada.'));
-  return etiquetasLayoutDoc().get().then(function(doc) {
-    var layout = doc.exists ? doc.data() : null;
-    var tspl = montarComandoTSPL(produto, layout);
-    var bytes = new TextEncoder().encode(tspl);
-    return _etcWriteChar.writeValue(bytes);
-  });
-}
+function imprimirEtiquetaBluetooth(produto) { return PrinterManager._writeToDevice(produto); }
 
 // ── Etiquetas: Etiqueta Avulsa (mobile) — bipar → imprimir direto, sempre 1 etiqueta ──
 // Produto atualmente carregado no card da Avulsa (null = tela em branco,

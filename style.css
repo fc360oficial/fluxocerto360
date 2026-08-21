@@ -113,7 +113,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#eef1f5;color:var(--t
 .etc-check-item-body{flex:1;min-width:0}
 .etc-check-item-name{font-size:13.5px;font-weight:600;color:var(--t)}
 .etc-check-item-meta{font-size:11.5px;color:var(--t3)}
-.etc-check-item-qtd{width:50px;padding:6px;border:1.5px solid var(--gray2);border-radius:6px;text-align:center;font-size:13px}
 .etc-sticky-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--gray2);padding:12px 0 0;margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .etc-bipar-card{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:10px;cursor:pointer}
 .etc-bipar-icon{width:56px;height:56px;border-radius:50%;background:var(--gray);color:var(--dk2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:26px}

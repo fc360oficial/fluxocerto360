@@ -5096,9 +5096,9 @@ function renderEtcMontarLote() {
     var valor = input.value.trim();
     var match = ETC_MOCK_PRODUTOS.filter(function(p) { return p.codigoBarras === valor; })[0];
     if (match) {
+      input.value = '';
       _etcAdicionarProdutoAoLote(match);
       showToast('+ ' + match.nome + ' adicionado ao lote');
-      input.value = '';
     }
     _etcRenderListaLote();
   });
@@ -5134,6 +5134,7 @@ function _etcProdutosFiltrados() {
 function _etcRenderListaLote() {
   var filtrados = _etcProdutosFiltrados();
   var lista = document.getElementById('etc-lote-lista');
+  if (!lista) return; // debounce de busca (250ms) pode disparar depois do operador já ter saído da tela
   if (!filtrados.length) { lista.innerHTML = '<div class="empty">Nenhum produto encontrado.</div>'; return; }
   lista.innerHTML = filtrados.map(function(p) {
     var sel = _etcLoteSelecionados[p.codigoBarras];

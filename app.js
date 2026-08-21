@@ -4627,11 +4627,21 @@ function _etcAtualizarStatusUI() {
   else if (_etcCurrentView === 'lote') {
     // Fila de impressão ativa: já tratada à parte (ver linha dedicada no
     // handler gattserverdisconnected de parearImpressora) — não mexe aqui.
-    // Construtor "Montar novo lote" em andamento: não tem UI dependente da
-    // impressora, então redesenhar só jogaria a seleção do operador fora.
-    // Só o caso restante (tela de lotes pendentes) é seguro redesenhar —
-    // ela sim mostra o aviso "Conecte a impressora antes de imprimir".
-    if (!_loteAtualFila.length && !_etcMontandoLote) renderEtcLotes();
+    if (_loteAtualFila.length) { /* no-op */ }
+    // Construtor "Montar novo lote" em andamento: redesenhar do zero jogaria
+    // a seleção do operador fora, mas o pill de status da impressora
+    // (Task 2) precisa acompanhar conectou/desconectou — atualiza só ele,
+    // via DOM direto, sem tocar no resto da tela.
+    else if (_etcMontandoLote) {
+      var pill = document.getElementById('etc-lote-status-impressora');
+      if (pill) {
+        pill.className = 'etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off');
+        pill.textContent = '🖨 ' + (_etcWriteChar ? '● Conectada' : '○ Desconectada');
+      }
+    }
+    // Caso restante (tela de lotes pendentes ou revisão): seguro redesenhar —
+    // mostra o aviso "Conecte a impressora antes de imprimir" atualizado.
+    else renderEtcLotes();
   }
   else if (_etcCurrentView === 'impressora') renderEtcImpressora();
 }

@@ -5015,6 +5015,7 @@ function renderEtcMontarLote() {
     _etcRenderListaLote();
   });
   _etcRenderListaLote();
+  _etcAtualizarBarraLote();
 }
 
 // Filtro central: busca + Departamento/Setor/Marca/Ativos. Único lugar que

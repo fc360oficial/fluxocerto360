@@ -4629,9 +4629,18 @@ function _etcAtualizarStatusUI() {
     else renderEtcAvulsa();
   }
   else if (_etcCurrentView === 'lote') {
-    // Fila de impressão ativa: já tratada à parte (ver linha dedicada no
-    // handler gattserverdisconnected de parearImpressora) — não mexe aqui.
-    if (_loteAtualFila.length) { /* no-op */ }
+    if (_etcFilaInterrompidaAtiva) {
+      // A tela de erro de desconexão está aberta — redesenhar é seguro (ela não
+      // guarda nenhuma seleção do operador, só lê _loteAtualFila/_etcWriteChar)
+      // e é o único jeito de reabilitar "Tentar novamente" depois que o
+      // operador reconecta sem sair da tela.
+      renderEtcFilaInterrompida();
+    }
+    // Fila de impressão ativa (renderFilaLote): um disconnect aqui sempre
+    // desvia pra renderEtcFilaInterrompida (ver handler gattserverdisconnected
+    // de parearImpressora, tratado pelo branch acima), então esta tela nunca
+    // fica parada aqui já desconectada — não mexe.
+    else if (_loteAtualFila.length) { /* no-op */ }
     // Construtor "Montar novo lote" em andamento: redesenhar do zero jogaria
     // a seleção do operador fora, mas o pill de status da impressora
     // (Task 2) precisa acompanhar conectou/desconectou — atualiza só ele,
@@ -4643,8 +4652,23 @@ function _etcAtualizarStatusUI() {
         pill.textContent = '🖨 ' + (_etcWriteChar ? '● Conectada' : '○ Desconectada');
       }
     }
-    // Caso restante (tela de lotes pendentes ou revisão): seguro redesenhar —
-    // mostra o aviso "Conecte a impressora antes de imprimir" atualizado.
+    // Revisão do lote em andamento: mesmo raciocínio do construtor acima —
+    // redesenhar do zero navegaria o operador pra fora da tela de revisão.
+    // Atualiza só o pill e o disabled/title do botão de imprimir, ao vivo.
+    else if (_etcRevisandoLote) {
+      var pillRevisao = document.getElementById('etc-revisao-status-impressora');
+      if (pillRevisao) {
+        pillRevisao.className = 'etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off');
+        pillRevisao.textContent = (_etcWriteChar ? '● Conectada' : '○ Desconectada');
+      }
+      var btnRevisao = document.getElementById('etc-revisao-imprimir-btn');
+      if (btnRevisao) {
+        btnRevisao.disabled = !_etcWriteChar;
+        btnRevisao.title = _etcWriteChar ? '' : 'Conecte a impressora primeiro';
+      }
+    }
+    // Caso restante (tela de lotes pendentes): seguro redesenhar — Revisão e
+    // a tela de erro de desconexão já são tratadas pelos branches acima.
     else renderEtcLotes();
   }
   else if (_etcCurrentView === 'impressora') renderEtcImpressora();
@@ -4912,6 +4936,8 @@ function _etcImprimirAvulsa(produto) {
 // nesta rodada) — os dois convivem, nenhum substitui o outro.
 function renderEtcLotes() {
   _etcMontandoLote = false;
+  _etcFilaInterrompidaAtiva = false;
+  _etcRevisandoLote = false;
   var wrap = document.getElementById('etc-view-lote');
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
@@ -4941,6 +4967,8 @@ function renderEtcLotes() {
 // usado em renderEtcHub (orderBy sem where, filtra em JS) — evita precisar
 // de um índice composto novo no Firestore (ver Global Constraints).
 function renderEtcHistoricoLote() {
+  _etcFilaInterrompidaAtiva = false;
+  _etcRevisandoLote = false;
   var wrap = document.getElementById('etc-view-lote');
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcLotes()">← Lotes pendentes</button></div>' +
@@ -5019,6 +5047,8 @@ function _etcIniciarNovoLote() {
 
 function renderEtcMontarLote() {
   _etcMontandoLote = true;
+  _etcFilaInterrompidaAtiva = false;
+  _etcRevisandoLote = false;
   var wrap = document.getElementById('etc-view-lote');
   var temCamera = typeof ZXing !== 'undefined';
   wrap.innerHTML =
@@ -5199,6 +5229,14 @@ function _etcAtualizarBarraLote() {
 // de fato. "Voltar e Editar" volta pra renderEtcMontarLote() SEM resetar
 // _etcLoteSelecionados (só _etcIniciarNovoLote, Task 2, reseta).
 function renderEtcRevisaoLote() {
+  // _etcMontandoLote precisa ser zerado aqui — sem isso ele fica true (deixado
+  // por renderEtcMontarLote) enquanto o operador está na Revisão, e o branch
+  // "else if (_etcMontandoLote)" de _etcAtualizarStatusUI (que vem antes do
+  // branch "else if (_etcRevisandoLote)" na cadeia) intercepta o disconnect
+  // silenciosamente, reproduzindo o bug original (ver Finding 3 da revisão final).
+  _etcMontandoLote = false;
+  _etcFilaInterrompidaAtiva = false;
+  _etcRevisandoLote = true;
   var itens = Object.keys(_etcLoteSelecionados).map(function(k) { return _etcLoteSelecionados[k]; });
   if (!itens.length) { renderEtcMontarLote(); return; }
   var nProdutos = itens.length;
@@ -5216,12 +5254,12 @@ function renderEtcRevisaoLote() {
       }).join('') +
       '<div style="display:flex;align-items:center;gap:8px;padding-top:12px;font-size:13px;color:var(--t2)">' +
         '🖨 ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') +
-        '<span class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '" style="margin-left:auto">' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span>' +
+        '<span id="etc-revisao-status-impressora" class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '" style="margin-left:auto">' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span>' +
       '</div>' +
     '</div>' +
     '<div class="btn-row">' +
       '<button class="btn btn-s" style="flex:1" onclick="renderEtcMontarLote()">Voltar e Editar</button>' +
-      '<button class="btn btn-p" style="flex:1" ' + (_etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="_etcGerarLoteMock()">🖨 Imprimir Lote</button>' +
+      '<button class="btn btn-p" id="etc-revisao-imprimir-btn" style="flex:1" ' + (_etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="_etcGerarLoteMock()">🖨 Imprimir Lote</button>' +
     '</div>';
 }
 
@@ -5277,6 +5315,11 @@ var _loteSessaoId = null;
 // está aberta — permite a _etcAtualizarStatusUI saber quando é seguro
 // redesenhá-la ao vivo (reconectar deve reabilitar "Tentar novamente").
 var _etcFilaInterrompidaAtiva = false;
+// true enquanto a tela de Revisão do lote (renderEtcRevisaoLote) está
+// aberta — permite a _etcAtualizarStatusUI atualizar o pill/botão de
+// impressora ao vivo sem redesenhar a tela inteira (que perderia a revisão
+// em andamento e navegaria o operador pra fora dela).
+var _etcRevisandoLote = false;
 var _etcModoImprimirTudo = false; // true durante o loop automático de "Imprimir tudo"
 var _etcFilaTotal = 0; // tamanho da fila no início desta impressão, pro contador "X de Y" e a barra de progresso
 var _etcFilaImpressasCount = 0; // quantas etiquetas desta fila já foram impressas com sucesso — zerado toda vez que uma fila nova começa
@@ -5315,6 +5358,8 @@ function abrirLoteParaImpressao(loteId) {
 
 function renderFilaLote() {
   _etcMontandoLote = false;
+  _etcFilaInterrompidaAtiva = false;
+  _etcRevisandoLote = false;
   var wrap = document.getElementById('etc-view-lote');
   if (!_loteAtualFila.length) {
     wrap.innerHTML = '<div class="empty">Fila vazia ou todos os produtos falharam ao resolver.</div><button class="btn btn-s btn-sm" onclick="renderEtcLotes()">Voltar</button>';
@@ -5340,17 +5385,19 @@ function renderFilaLote() {
 // remove um item antes de confirmar que ele saiu fisicamente) — "Tentar
 // novamente" só continua de onde parou, nunca reimprime o que já saiu.
 function renderEtcFilaInterrompida() {
+  _etcFilaInterrompidaAtiva = true;
   var wrap = document.getElementById('etc-view-lote');
   var impressas = _etcFilaImpressasCount;
   var total = _etcFilaTotal || (impressas + _loteAtualFila.length);
   wrap.innerHTML =
+    '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcLotes()">← Lotes pendentes</button></div>' +
     '<div class="card" style="padding:22px;text-align:center">' +
       '<div style="font-size:15px;font-weight:700;color:var(--r);margin-bottom:10px">⚠ Impressão interrompida</div>' +
       '<div style="font-size:13px;color:var(--t2);margin-bottom:4px">A impressora ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') + ' foi desconectada.</div>' +
       '<div style="font-size:13px;color:var(--t3);margin-bottom:18px">' + impressas + ' de ' + total + ' etiquetas foram impressas.</div>' +
       '<div class="btn-row" style="justify-content:center">' +
-        '<button class="btn btn-p" onclick="imprimirTudoDaFila()">Tentar novamente</button>' +
-        '<button class="btn btn-s" onclick="parearImpressora()">Conectar impressora</button>' +
+        '<button class="btn btn-p" onclick="parearImpressora()">Conectar impressora</button>' +
+        '<button class="btn btn-s" ' + (_etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="imprimirTudoDaFila()">Tentar novamente</button>' +
       '</div>' +
     '</div>';
 }

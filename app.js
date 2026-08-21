@@ -5147,6 +5147,36 @@ function _etcAtualizarBarraLote() {
   if (btn) btn.disabled = nProdutos === 0;
 }
 
+// Etapa de revisão (seção 8 da spec): mostra a lista final antes de imprimir
+// de fato. "Voltar e Editar" volta pra renderEtcMontarLote() SEM resetar
+// _etcLoteSelecionados (só _etcIniciarNovoLote, Task 2, reseta).
+function renderEtcRevisaoLote() {
+  var itens = Object.keys(_etcLoteSelecionados).map(function(k) { return _etcLoteSelecionados[k]; });
+  if (!itens.length) { renderEtcMontarLote(); return; }
+  var nProdutos = itens.length;
+  var nEtiquetas = itens.reduce(function(s, it) { return s + it.qtd; }, 0);
+  var wrap = document.getElementById('etc-view-lote');
+  wrap.innerHTML =
+    '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="renderEtcMontarLote()">← Voltar e Editar</button></div>' +
+    '<div class="card" style="padding:18px;margin-bottom:16px">' +
+      '<div style="font-weight:700;font-size:15px;margin-bottom:2px">Revisão do lote</div>' +
+      '<div style="font-size:12.5px;color:var(--t3);margin-bottom:14px">' + nProdutos + (nProdutos === 1 ? ' produto' : ' produtos') + ' · ' + nEtiquetas + (nEtiquetas === 1 ? ' etiqueta' : ' etiquetas') + '</div>' +
+      itens.map(function(it) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray2);font-size:13.5px">' +
+          '<span>' + _escHtml(it.produto.nome) + '</span><span style="font-weight:700">' + it.qtd + '</span>' +
+        '</div>';
+      }).join('') +
+      '<div style="display:flex;align-items:center;gap:8px;padding-top:12px;font-size:13px;color:var(--t2)">' +
+        '🖨 ' + (_etcDevice ? _escHtml(_etcDevice.name) : 'Urovo K329') +
+        '<span class="etc-pill ' + (_etcWriteChar ? 'etc-pill-on' : 'etc-pill-off') + '" style="margin-left:auto">' + (_etcWriteChar ? '● Conectada' : '○ Desconectada') + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="btn-row">' +
+      '<button class="btn btn-s" style="flex:1" onclick="renderEtcMontarLote()">Voltar e Editar</button>' +
+      '<button class="btn btn-p" style="flex:1" ' + (_etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="_etcGerarLoteMock()">🖨 Imprimir Lote</button>' +
+    '</div>';
+}
+
 // Monta a fila de impressão direto da seleção mockada, sem gravar um
 // documento etiquetas_lote — fluxo mobile paralelo ao de retaguarda (que
 // continua gravando o documento normalmente via abrirLoteParaImpressao).

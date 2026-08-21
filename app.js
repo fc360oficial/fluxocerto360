@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '327';
+var BUILD = '328';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -4517,13 +4517,11 @@ var _etcDevice = null, _etcGattServer = null, _etcWriteChar = null;
 // de imprimirEtiquetaBluetooth e imprimiria a etiqueta física duas vezes.
 var _etcImprimindo = false;
 
-var _etcCurrentView = 'hub'; // hub | avulsa | preview | lote | consulta | impressora
-var _etcPreviewProduto = null, _etcPreviewQtd = 1; // estado da tela de preview (Task 6)
+var _etcCurrentView = 'hub'; // hub | avulsa | lote | consulta | impressora
 
-var ETC_HUB_VIEWS = ['hub', 'avulsa', 'preview', 'lote', 'consulta', 'impressora'];
+var ETC_HUB_VIEWS = ['hub', 'avulsa', 'lote', 'consulta', 'impressora'];
 
-// Navega entre o hub e as sub-telas com destino fixo (sem parâmetros). A
-// tela de preview usa abrirEtcPreview (precisa de produto+qtd) em vez desta.
+// Navega entre o hub e as sub-telas.
 function abrirEtcHub(view) {
   _etcCurrentView = view;
   ETC_HUB_VIEWS.forEach(function(v) {
@@ -4535,15 +4533,6 @@ function abrirEtcHub(view) {
   if (view === 'lote') renderEtcLotes();
   if (view === 'consulta') renderEtcConsulta();
   if (view === 'impressora') renderEtcImpressora();
-}
-
-function abrirEtcPreview(produto, qtd) {
-  _etcCurrentView = 'preview';
-  ETC_HUB_VIEWS.forEach(function(v) {
-    var el = document.getElementById('etc-view-' + v);
-    if (el) el.style.display = (v === 'preview') ? 'block' : 'none';
-  });
-  renderEtcPreview(produto, qtd);
 }
 
 var CANDIDATOS_IMPRESSORA = ['49535343-fe7d-4ae5-8fa9-9fafd205e455'];
@@ -4645,7 +4634,6 @@ function _etcAtualizarStatusUI() {
     if (!_loteAtualFila.length && !_etcMontandoLote) renderEtcLotes();
   }
   else if (_etcCurrentView === 'impressora') renderEtcImpressora();
-  else if (_etcCurrentView === 'preview' && _etcPreviewProduto) renderEtcPreview(_etcPreviewProduto, _etcPreviewQtd);
 }
 
 function renderEtcImpressora() {
@@ -4759,13 +4747,18 @@ function imprimirEtiquetaBluetooth(produto) {
   });
 }
 
-// ── Etiquetas: Etiqueta Avulsa (mobile) — scan, prévia, quantidade ──
-var _etcAvulsaQtd = 1;
+// ── Etiquetas: Etiqueta Avulsa (mobile) — bipar → imprimir direto, sempre 1 etiqueta ──
 // Produto atualmente carregado no card da Avulsa (null = tela em branco,
 // aguardando bipagem). Usado por _etcAtualizarStatusUI pra re-renderizar só
 // o card em vez da tela inteira quando o status da impressora muda, sem
 // descartar o produto escaneado.
 var _etcAvulsaProdutoAtual = null;
+// Modo sequencial: imprime assim que o produto é encontrado, sem esperar
+// toque no botão. Persiste entre sessões (localStorage) — é preferência do
+// operador, não estado de uma bipagem específica.
+function _etcAvulsaSequencialAtivo() {
+  try { return localStorage.getItem('etc_avulsa_sequencial') === '1'; } catch (e) { return false; }
+}
 
 function renderEtcAvulsa() {
   _etcAvulsaProdutoAtual = null;
@@ -4773,9 +4766,13 @@ function renderEtcAvulsa() {
   // Reaproveita iniciarScanEAN (já resolve leitura de câmera via ZXing no
   // coletor real). Não usar BarcodeDetector nativo (ver Global Constraints).
   var temCamera = typeof ZXing !== 'undefined';
+  var seqChecked = _etcAvulsaSequencialAtivo() ? 'checked' : '';
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
     (!_etcWriteChar ? '<div class="etc-aviso"><span>Conecte a impressora antes de imprimir.</span><a onclick="abrirEtcHub(\'impressora\')">Ir para Impressora</a></div>' : '') +
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:var(--t2);cursor:pointer">' +
+      '<input type="checkbox" id="etc-avulsa-sequencial" ' + seqChecked + ' onchange="_etcAlternarSequencial(this.checked)"> Modo sequencial (imprime assim que ler o produto)' +
+    '</label>' +
     '<div class="card etc-bipar-card"' + (temCamera ? ' onclick="iniciarScanEAN(\'etc-input-codigo\')"' : ' style="opacity:.5;cursor:default"') + '>' +
       '<div class="etc-bipar-icon">📷</div>' +
       '<div><div class="etc-bipar-title">Bipar produto</div><div class="etc-bipar-desc">Aponte a câmera para o código de barras do produto</div></div>' +
@@ -4801,9 +4798,12 @@ function renderEtcAvulsa() {
   });
 }
 
+function _etcAlternarSequencial(ativo) {
+  try { localStorage.setItem('etc_avulsa_sequencial', ativo ? '1' : '0'); } catch (e) {}
+}
+
 function buscarProdutoAvulsa(codigo) {
   if (!codigo) return;
-  _etcAvulsaQtd = 1;
   _etcAvulsaProdutoAtual = null;
   var preview = document.getElementById('etc-avulsa-preview');
   preview.innerHTML = '<div class="empty">Buscando...</div>';
@@ -4822,9 +4822,11 @@ function buscarProdutoAvulsa(codigo) {
   });
 }
 
-// Card do produto com stepper de quantidade — chamada de novo a cada +/-
-// (re-render simples, sem estado por-elemento; o projeto já usa esse padrão
-// em outras telas do módulo).
+// Card do produto: nome, status Ativo, marca (se disponível), código, preço
+// e status da impressora — sempre 1 etiqueta, sem quantidade (spec do
+// Tiago: quantidade só existe em Etiquetas em Lote). Em modo sequencial,
+// com impressora conectada, imprime sozinho assim que o card renderiza —
+// sem esperar toque no botão.
 function _etcRenderAvulsaCard(produto) {
   _etcAvulsaProdutoAtual = produto;
   var preview = document.getElementById('etc-avulsa-preview');
@@ -4832,6 +4834,10 @@ function _etcRenderAvulsaCard(produto) {
   // Marca só aparece quando o código bate com o catálogo mockado (Task 7) —
   // a etiquetas-api real não retorna esse campo ainda. Nunca inventar.
   var mock = ETC_MOCK_PRODUTOS.filter(function(p) { return p.codigoBarras === produto.codigoBarras; })[0];
+  var statusImpressora = _etcWriteChar
+    ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--gray2);margin-top:6px;font-size:12.5px;color:var(--t2)">🖨 ' + _escHtml(_etcDevice ? _etcDevice.name : 'Impressora') + '<span class="etc-pill etc-pill-on" style="margin-left:auto">● Conectada</span></div>'
+    : '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--gray2);margin-top:6px;font-size:12.5px;color:var(--t2)">⚠ Impressora desconectada<a onclick="abrirEtcHub(\'impressora\')" style="margin-left:auto;color:var(--am);font-weight:700;text-decoration:underline;cursor:pointer">Conectar impressora</a></div>';
+  var disabledAttr = _etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"';
   preview.innerHTML =
     '<div class="card" style="padding:16px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">' +
@@ -4841,104 +4847,49 @@ function _etcRenderAvulsaCard(produto) {
       (mock ? '<div style="font-size:12px;color:var(--t3);margin-bottom:2px">Marca: ' + _escHtml(mock.marca) + '</div>' : '') +
       '<div style="font-size:11.5px;color:var(--t3);margin-bottom:10px">Código: ' + _escHtml(produto.codigoBarras) + '</div>' +
       '<div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px">Preço atual</div>' +
-      '<div style="font-size:22px;color:var(--dk2);font-weight:800;margin-bottom:4px">R$ ' + produto.preco.toFixed(2) + '</div>' +
-      '<div class="etc-stepper">' +
-        '<button onclick="_etcAvulsaQtd=Math.max(1,_etcAvulsaQtd-1);_etcRenderAvulsaCard(' + produtoJson + ')">−</button>' +
-        '<div class="etc-stepper-val">' + _etcAvulsaQtd + '</div>' +
-        '<button onclick="_etcAvulsaQtd++;_etcRenderAvulsaCard(' + produtoJson + ')">+</button>' +
-      '</div>' +
-      '<button class="btn btn-p" style="width:100%" onclick="abrirEtcPreview(' + produtoJson + ', _etcAvulsaQtd)">Ver Etiqueta</button>' +
+      '<div style="font-size:22px;color:var(--dk2);font-weight:800">R$ ' + produto.preco.toFixed(2) + '</div>' +
+      statusImpressora +
+      '<button class="btn btn-p" style="width:100%" ' + disabledAttr + ' onclick="_etcImprimirAvulsa(' + produtoJson + ')">🖨 Imprimir Etiqueta</button>' +
     '</div>';
-}
-
-// ── Etiquetas: preview antes de imprimir (mobile) ──
-function renderEtcPreview(produto, qtd) {
-  _etcPreviewProduto = produto;
-  _etcPreviewQtd = qtd;
-  var wrap = document.getElementById('etc-view-preview');
-  var disabledAttr = _etcWriteChar ? '' : 'disabled title="Conecte a impressora primeiro"';
-  wrap.innerHTML =
-    '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="_etcVoltarDaPreview()">← Voltar</button></div>' +
-    '<div class="etc-preview-label">' +
-      '<div class="etc-preview-label-nome">' + _escHtml(produto.nome) + '</div>' +
-      '<div class="etc-preview-label-preco">R$ ' + produto.preco.toFixed(2) + '</div>' +
-      '<svg id="etc-preview-barcode-svg"></svg>' +
-      '<div style="font-size:11px;color:var(--t3);margin-top:6px">' + new Date().toLocaleDateString('pt-BR') + '</div>' +
-    '</div>' +
-    (!_etcWriteChar
-      ? '<div class="etc-aviso"><span>Conecte a impressora antes de imprimir.</span><a onclick="abrirEtcHub(\'impressora\')">Ir para Impressora</a></div>'
-      : '<div style="text-align:center;font-size:12.5px;color:var(--t3);margin-bottom:6px">Impressora: ' + _escHtml(_etcDevice ? _etcDevice.name : '') + '</div>') +
-    '<div class="etc-stepper">' +
-      '<button onclick="renderEtcPreview(_etcPreviewProduto, Math.max(1,_etcPreviewQtd-1))">−</button>' +
-      '<div class="etc-stepper-val">' + qtd + '</div>' +
-      '<button onclick="renderEtcPreview(_etcPreviewProduto, _etcPreviewQtd+1)">+</button>' +
-    '</div>' +
-    '<button class="btn btn-p" style="width:100%" ' + disabledAttr + ' onclick="confirmarImpressaoAvulsa(_etcPreviewProduto, _etcPreviewQtd)">Imprimir Agora</button>' +
-    '<div id="etc-preview-progresso" style="text-align:center;margin-top:8px;font-size:12.5px;color:var(--t3)"></div>';
-  try {
-    if (typeof JsBarcode !== 'undefined') {
-      JsBarcode('#etc-preview-barcode-svg', produto.codigoBarras, {format:'CODE128', width:2, height:44, displayValue:true, fontSize:12, margin:4});
-    }
-  } catch (e) {
-    console.error('[etiquetas] erro ao renderizar barcode de preview:', e.message);
+  if (_etcWriteChar && _etcAvulsaSequencialAtivo() && !_etcImprimindo) {
+    _etcImprimirAvulsa(produto);
   }
 }
 
-// "← Voltar" do preview pra Avulsa. abrirEtcHub('avulsa') sozinho chama
-// renderEtcAvulsa(), que reconstrói a tela do zero com o card de produto
-// vazio — perderia o produto escaneado. Aqui religa o card com o produto
-// (ainda em _etcPreviewProduto) e a quantidade que estava no preview
-// (_etcPreviewQtd, que pode ter sido alterada ali independente do stepper
-// da própria Avulsa), sincronizando _etcAvulsaQtd antes de re-renderizar.
-function _etcVoltarDaPreview() {
-  var produto = _etcPreviewProduto, qtd = _etcPreviewQtd;
-  abrirEtcHub('avulsa');
-  _etcAvulsaQtd = qtd;
-  _etcRenderAvulsaCard(produto);
-}
-
-// Imprime qtdTotal cópias em sequência, com ~300ms de intervalo (mesmo
-// padrão de imprimirTudoDaFila, pra não sobrecarregar o buffer do K329).
-// Para no primeiro erro real, mantendo o contador do que já saiu.
-function confirmarImpressaoAvulsa(produto, qtdTotal) {
+// Imprime 1 etiqueta direto, sem tela intermediária. Sucesso: toast rápido,
+// limpa o card e devolve o foco pro input — pronto pro próximo bip (é o que
+// viabiliza o modo sequencial, e agiliza mesmo no modo manual).
+function _etcImprimirAvulsa(produto) {
   if (_etcImprimindo) return;
   _etcImprimindo = true;
-  var impressas = 0;
-  var btn = document.querySelector('#etc-view-preview .btn-p');
+  var btn = document.querySelector('#etc-avulsa-preview .btn-p');
   if (btn) btn.disabled = true;
-
-  function imprimirUma() {
-    imprimirEtiquetaBluetooth(produto).then(function() {
-      return db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_log').add({
-        codigoBarras: produto.codigoBarras,
-        nomeProduto: produto.nome,
-        precoImpresso: produto.preco,
-        origem: 'pontual',
-        loteId: null,
-        operadorId: S.currentUser ? S.currentUser.id : null,
-        operadorNome: S.currentUser ? S.currentUser.nome : '-',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch(function(e) {
-        showToast('⚠️ Etiqueta impressa, mas houve erro ao registrar o log: ' + e.message);
-      });
-    }).then(function() {
-      impressas++;
-      var progresso = document.getElementById('etc-preview-progresso');
-      if (progresso && qtdTotal > 1) progresso.textContent = 'Impressas ' + impressas + ' de ' + qtdTotal + '...';
-      if (impressas < qtdTotal) {
-        setTimeout(imprimirUma, 300);
-      } else {
-        _etcImprimindo = false;
-        showToast('✅ ' + (qtdTotal > 1 ? (qtdTotal + ' etiquetas impressas!') : 'Etiqueta impressa!'));
-        abrirEtcHub('hub');
-      }
+  imprimirEtiquetaBluetooth(produto).then(function() {
+    return db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_log').add({
+      codigoBarras: produto.codigoBarras,
+      nomeProduto: produto.nome,
+      precoImpresso: produto.preco,
+      origem: 'pontual',
+      loteId: null,
+      operadorId: S.currentUser ? S.currentUser.id : null,
+      operadorNome: S.currentUser ? S.currentUser.nome : '-',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
     }).catch(function(e) {
-      _etcImprimindo = false;
-      showToast('❌ Erro ao imprimir (' + impressas + ' de ' + qtdTotal + ' já impressas): ' + e.message);
-      if (btn) btn.disabled = false;
+      showToast('⚠️ Etiqueta impressa, mas houve erro ao registrar o log: ' + e.message);
     });
-  }
-  imprimirUma();
+  }).then(function() {
+    _etcImprimindo = false;
+    showToast('✓ Etiqueta enviada para ' + (_etcDevice ? _etcDevice.name : 'a impressora'));
+    _etcAvulsaProdutoAtual = null;
+    var preview = document.getElementById('etc-avulsa-preview');
+    if (preview) preview.innerHTML = '';
+    var input = document.getElementById('etc-input-codigo');
+    if (input) { input.value = ''; input.focus(); }
+  }).catch(function(e) {
+    _etcImprimindo = false;
+    showToast('❌ Erro ao imprimir: ' + e.message);
+    if (btn) btn.disabled = false;
+  });
 }
 
 // ── Etiquetas: fluxo de lote (mobile) — resolver preços, fila, conclusão ──
@@ -5219,7 +5170,7 @@ function imprimirProximoDaFila() {
       return _avancarFilaLoteAposImpressao();
     }, function(e) {
       // A etiqueta já saiu da impressora — não reimprimir. Avança a fila mesmo
-      // com o log falhando, só avisando o operador (mesmo padrão de confirmarImpressaoAvulsa).
+      // com o log falhando, só avisando o operador (mesmo padrão de _etcImprimirAvulsa).
       // Usa o 2º argumento de .then() (em vez de um .catch() encadeado) para que
       // este handler só reaja a falhas do próprio etiquetas_log.add() — um
       // .catch() encadeado depois do .then() acima também capturaria o marcador

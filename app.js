@@ -4510,6 +4510,79 @@ function renderEtiquetasHistorico() {
     });
 }
 
+// ── PrinterManager: camada central de conexão/impressão Bluetooth ──────────
+// Única fonte de verdade do estado da impressora Urovo K329. Não troca a
+// tecnologia (Web Bluetooth, GATT, comando TSPL) nem o protocolo — só
+// absorve o que já existia espalhado (_etcConectarNoDispositivo,
+// parearImpressora, _etcTentarReconectarAutomatico, imprimirEtiquetaBluetooth)
+// numa camada só, com log e reconexão em 3 níveis (spec do Tiago, 2026-08-21,
+// ver docs/superpowers/specs/2026-08-21-printer-manager-design.md).
+//
+// LIMITAÇÃO CONHECIDA (Web Bluetooth + PWA + Android): a conexão GATT exige
+// a página em primeiro plano. Quando o Chrome congela o Fluxo em segundo
+// plano ou a tela do Android bloqueia, a conexão cai — isso é comportamento
+// da própria plataforma, não do PrinterManager, e não é resolvido aqui
+// (fora de escopo, decisão explícita do Tiago). O cenário coberto é o
+// operador com o Fluxo aberto em primeiro plano durante a operação de loja.
+var PrinterManager = {
+  ESTADOS: {
+    DESCONECTADO: 'disconnected',
+    CONECTANDO: 'connecting',
+    CONECTADO: 'connected',
+    IMPRIMINDO: 'printing',
+    RECONECTANDO: 'reconnecting',
+    ERRO: 'error'
+  },
+  _state: 'disconnected',
+  _device: null,
+  _gattServer: null,
+  _writeChar: null,
+  _uiListener: null,
+
+  _log: function(msg) { console.log('[PrinterManager] ' + msg); },
+  _logError: function(msg, err) { console.error('[PrinterManager] ' + msg, err); },
+
+  // Único ponto de redraw da UI (Task 1, wiring no fim deste arquivo) —
+  // reaproveita _etcAtualizarStatusUI() tal como está, não cria um segundo
+  // mecanismo de notificação.
+  setUIListener: function(cb) { this._uiListener = cb; },
+
+  _setState: function(novo) {
+    this._state = novo;
+    this._log('Estado: ' + novo);
+    if (this._uiListener) this._uiListener();
+  },
+
+  getState: function() { return this._state; },
+
+  // "Pronta pra imprimir agora, sem tentar nada" — usado por telas que só
+  // querem saber se podem pular direto pro Nível 1 (ex.: mostrar o pill).
+  isReady: function() { return this._state === this.ESTADOS.CONECTADO || this._state === this.ESTADOS.IMPRIMINDO; },
+
+  // Controla se um botão de imprimir/conectar deve ficar clicável — falso
+  // durante estados transitórios (já tentando algo) e no erro (Nível 3 já
+  // esgotado, precisa de ação manual explícita via connect()).
+  podeTentarImprimir: function() {
+    return this._state === this.ESTADOS.DESCONECTADO || this._state === this.ESTADOS.CONECTADO;
+  },
+
+  getDeviceName: function() { return this._device ? this._device.name : null; },
+
+  // Texto/cor padronizados do pill (🟢/🟡/🔴, spec item 3) — único lugar que
+  // decide isso, todas as 6 telas devem chamar aqui em vez de montar o pill
+  // na mão.
+  getStatusDisplay: function() {
+    var nome = this._device ? this._device.name : 'Urovo K329';
+    if (this._state === this.ESTADOS.CONECTADO || this._state === this.ESTADOS.IMPRIMINDO) {
+      return {emoji: '🟢', texto: 'Conectada', pillCls: 'etc-pill-on', nome: nome};
+    }
+    if (this._state === this.ESTADOS.CONECTANDO || this._state === this.ESTADOS.RECONECTANDO) {
+      return {emoji: '🟡', texto: (this._state === this.ESTADOS.RECONECTANDO ? 'Reconectando...' : 'Conectando...'), pillCls: 'etc-pill-warn', nome: nome};
+    }
+    return {emoji: '🔴', texto: 'Desconectada', pillCls: 'etc-pill-off', nome: nome};
+  }
+};
+
 // ── Etiquetas: coleta (mobile) — pareamento Bluetooth + impressão ──
 var _etcDevice = null, _etcGattServer = null, _etcWriteChar = null;
 // Trava contra impressão duplicada: um duplo-toque no botão de imprimir
@@ -4677,6 +4750,8 @@ function _etcAtualizarStatusUI() {
   }
   else if (_etcCurrentView === 'impressora') renderEtcImpressora();
 }
+
+PrinterManager.setUIListener(_etcAtualizarStatusUI);
 
 function renderEtcImpressora() {
   var wrap = document.getElementById('etc-view-impressora');

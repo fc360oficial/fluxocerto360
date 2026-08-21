@@ -79,6 +79,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#eef1f5;color:var(--t
 .etc-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
 .etc-pill-on{background:var(--g3);color:var(--g)}
 .etc-pill-off{background:var(--gray);color:var(--t3)}
+.etc-pill-warn{background:var(--am2);color:var(--am)}
 .etc-body{flex:1;overflow-y:auto;padding:16px}
 .etc-aviso{background:var(--am2);color:var(--am);font-size:12.5px;padding:10px 14px;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .etc-aviso a{color:var(--am);font-weight:700;text-decoration:underline;cursor:pointer}

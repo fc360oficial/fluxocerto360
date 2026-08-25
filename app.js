@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '336';
+var BUILD = '337';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1440,70 +1440,8 @@ function finalizarLogin(found) {
   // Mostrar tela de carregamento
   document.getElementById('app').style.opacity='0.6';
 
-  function _migracaoRecalcFotos() {
-    if (localStorage.getItem('fc360_migr_foto_v186')) return;
-    Promise.all([
-      db.collection('checklists').get(),
-      db.collection('resultados').get()
-    ]).then(function(snaps) {
-      var clSnap = snaps[0];
-      var resSnap = snaps[1];
-      var myClient = (S.currentUser && S.currentUser.clienteId) || '';
-      var cls = clSnap.docs.map(function(d){ return d.data(); });
-      var batch = db.batch();
-      var alterados = 0;
-      resSnap.docs.forEach(function(doc) {
-        var r = doc.data();
-        if ((r.clienteId || 'economico') !== myClient) return;
-        if (!r.itens || !r.itens.length) return;
-        var clDef = cls.find(function(c){ return c.id === r.checklistId; });
-        var novoFeitos = 0;
-        var novoTotal = 0;
-        r.itens.forEach(function(item, idx) {
-          if (item.emPlano) return;
-          novoTotal++;
-          if (!item.feito) return;
-          var fotoConfig = 'none';
-          if (clDef && clDef.itens && clDef.itens[idx]) {
-            var cfgFoto = clDef.itens[idx].foto;
-            fotoConfig = (cfgFoto && cfgFoto !== 'none' && cfgFoto !== false) ? cfgFoto : 'none';
-          }
-          if (fotoConfig === 'none') { novoFeitos++; return; }
-          if (fotoConfig === 'multiplas') {
-            var multi = item.fotosMulti || [];
-            var qtd = clDef.itens[idx].fotoQtd || 2;
-            if (multi.length >= qtd) novoFeitos++;
-            return;
-          }
-          var temDepois = !!(item.fotoDepois);
-          if (fotoConfig === 'antes_depois') {
-            if (!!(item.fotoAntes) && temDepois) novoFeitos++;
-          } else {
-            if (temDepois) novoFeitos++;
-          }
-        });
-        var novoPct = novoTotal ? Math.round(novoFeitos / novoTotal * 100) : 0;
-        if (novoPct !== r.pct || novoFeitos !== r.feitos) {
-          alterados++;
-          batch.update(doc.ref, { feitos: novoFeitos, pct: novoPct });
-        }
-      });
-      if (alterados > 0) {
-        batch.commit().then(function() {
-          showToast('Corrigido! ' + alterados + ' resultado(s) recalculado(s)');
-          localStorage.setItem('fc360_migr_foto_v186', '1');
-        });
-      } else {
-        showToast('Checklists: ' + cls.length + ' | Nenhum resultado precisou de correção');
-        localStorage.setItem('fc360_migr_foto_v186', '1');
-      }
-    });
-  }
-
   function iniciarApp() {
     limparContagensAntigas();
-    limparPlanosAntigos();
-    _migracaoRecalcFotos();
     // Load inv and perdas for this user/day
     loadInvFromFirebase(function(){
       loadPerdasFromFirebase(function(){
@@ -1527,8 +1465,12 @@ function finalizarLogin(found) {
       initDashCharts();
       loadResultadosFromFirebase(function(){ updateDash(); });
     }
-    // buildCLTabs só após planilhas diárias carregadas para que _planilhaTemplates esteja populado
+    // buildCLTabs só após planilhas diárias carregadas para que _planilhaTemplates esteja populado.
+    // limparPlanosAntigos() roda aqui dentro (não antes, não em fetch próprio)
+    // pra reusar este único load de planos e nunca decidir o que limpar em
+    // cima de cache local desatualizado (ver comentário na função).
     loadPlanosFromFirebase(function() {
+      limparPlanosAntigos();
       loadPlanilhasDiarias(function() {
         buildCLTabs();
         renderAlertaPlanos();
@@ -3158,34 +3100,34 @@ function salvarQuantidade(clId, itemIdx, codigo, val) {
   updateCLProg(cl);
 }
 
-// Roda no boot (iniciarApp), ANTES de qualquer loadPlanosFromFirebase() desta
-// sessão — nesse momento getPlanos() só devolve o que sobrou no localStorage
-// de sessões anteriores, que pode estar desatualizado (ex.: um plano
-// resolvido em outro dispositivo enquanto este ficou fechado). Bug real
-// encontrado 2026-08-25: essa função chamava savePlanos(novaLista), que
-// reescreve TODOS os planos restantes no Firestore via .set() (não merge) —
-// se a lista local estivesse velha, isso revertia silenciosamente pra
-// Firestore o status antigo (ex.: 'aberto') de planos já resolvidos por
-// outra pessoa, com o prazo/data de criação originais intactos (parecendo
-// "vencido há semanas" do nada). Fix: busca do Firebase primeiro, só decide
-// o que limpar com dado fresco — nunca escreve de volta o que não mudou.
+// IMPORTANTE: só pode ser chamada depois de um loadPlanosFromFirebase() já
+// ter completado nesta sessão (iniciarApp chama dentro do callback dele, não
+// antes) — getPlanos() precisa refletir o estado real do Firebase, não um
+// cache local velho. Bug real encontrado 2026-08-25: antes rodava ANTES de
+// qualquer load, direto em cima do localStorage de sessões antigas, e
+// reescrevia TODOS os planos restantes no Firestore via savePlanos()/.set()
+// (não merge) só pra deletar os resolvidos há +30 dias — se o cache local
+// estivesse velho, isso revertia silenciosamente pra Firestore o status
+// antigo (ex.: 'aberto') de planos já resolvidos por outra pessoa, com
+// prazo/data de criação originais intactos (parecia "vencido há semanas"
+// do nada). Fix: nunca busca sozinha (evita duplicar o fetch de
+// loadPlanosFromFirebase que iniciarApp já faz) e nunca escreve de volta o
+// que não mudou — só os deletes explícitos abaixo.
 function limparPlanosAntigos() {
-  loadPlanosFromFirebase(function() {
-    var limite = Date.now() - 30 * 24 * 3600000;
-    var lista = getPlanos();
-    var removidos = lista.filter(function(p) {
-      if (p.status !== 'resolvido') return false;
-      if (!p.resolvidoTimestamp) return false;
-      return new Date(p.resolvidoTimestamp).getTime() < limite;
-    });
-    if (!removidos.length) return;
-    var novaLista = lista.filter(function(p) {
-      return !removidos.some(function(r){ return r.id === p.id; });
-    });
-    _planosCache = novaLista;
-    try { localStorage.setItem(PLANO_KEY, JSON.stringify(novaLista)); } catch(e) {}
-    removidos.forEach(function(p){ db.collection('planos').doc(p.id).delete().catch(function(){}); });
+  var limite = Date.now() - 30 * 24 * 3600000;
+  var lista = getPlanos();
+  var removidos = lista.filter(function(p) {
+    if (p.status !== 'resolvido') return false;
+    if (!p.resolvidoTimestamp) return false;
+    return new Date(p.resolvidoTimestamp).getTime() < limite;
   });
+  if (!removidos.length) return;
+  var novaLista = lista.filter(function(p) {
+    return !removidos.some(function(r){ return r.id === p.id; });
+  });
+  _planosCache = novaLista;
+  try { localStorage.setItem(PLANO_KEY, JSON.stringify(novaLista)); } catch(e) {}
+  removidos.forEach(function(p){ db.collection('planos').doc(p.id).delete().catch(function(){}); });
 }
 
 function limparContagensAntigas() {

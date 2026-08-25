@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '333';
+var BUILD = '334';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -9560,10 +9560,28 @@ function _renderClientesLista() {
   _atualizarVersaoClientes();
 }
 
+// fetch com timeout — sem isso, um cliente publicado fora do ar ou lento
+// trava esperando resposta indefinidamente, e como todo mundo aqui busca do
+// mesmo domínio (fc360oficial.github.io), os outros clientes ficam
+// enfileirados atrás dele (limite de conexões simultâneas por origem do
+// navegador). Painel de Clientes ficava "demorando pra abrir" por causa disso.
+function _fetchComTimeout(url, ms) {
+  if (typeof AbortController === 'undefined') return fetch(url);
+  var ctrl = new AbortController();
+  var timer = setTimeout(function(){ ctrl.abort(); }, ms);
+  return fetch(url, {signal: ctrl.signal}).then(function(r) {
+    clearTimeout(timer);
+    return r;
+  }, function(e) {
+    clearTimeout(timer);
+    throw e;
+  });
+}
+
 function _atualizarVersaoClientes() {
   // Busca versão do base primeiro
   var ts = Date.now();
-  var basePromise = fetch('https://fc360oficial.github.io/fluxocerto360/version.json?t='+ts)
+  var basePromise = _fetchComTimeout('https://fc360oficial.github.io/fluxocerto360/version.json?t='+ts, 5000)
     .then(function(r){ return r.json(); })
     .catch(function(){ return {build: BUILD}; });
 
@@ -9602,7 +9620,7 @@ function _atualizarVersaoClientes() {
           return;
         }
         var url = 'https://fc360oficial.github.io/'+repo+'/version.json?t='+ts;
-        fetch(url).then(function(r){
+        _fetchComTimeout(url, 5000).then(function(r){
           if (!r.ok) throw new Error(r.status);
           return r.json();
         }).then(function(data) {

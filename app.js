@@ -4654,13 +4654,13 @@ var PrinterManager = {
       return Promise.reject(self._erro('JA_RECONECTANDO', 'Reconexão já em andamento.'));
     }
     if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') {
-      self._setState(self.ESTADOS.ERRO);
+      self._setState(self.ESTADOS.DESCONECTADO);
       return Promise.reject(self._erro('SEM_SUPORTE', 'Este navegador não suporta reconexão automática.'));
     }
     var idSalvo;
     try { idSalvo = localStorage.getItem('etc_impressora_id'); } catch (e) { idSalvo = null; }
     if (!idSalvo) {
-      self._setState(self.ESTADOS.ERRO);
+      self._setState(self.ESTADOS.DESCONECTADO);
       return Promise.reject(self._erro('SEM_DISPOSITIVO_SALVO', 'Nenhuma impressora pareada anteriormente.'));
     }
     self._setState(self.ESTADOS.RECONECTANDO);
@@ -4732,7 +4732,17 @@ var PrinterManager = {
       self._setState(self.ESTADOS.CONECTADO);
     }).catch(function(e) {
       self._logError('Falha ao imprimir', e);
-      if (self._state !== self.ESTADOS.ERRO) self._setState(self.ESTADOS.ERRO);
+      // Só escala pra ERRO quando a conexão realmente caiu (_writeChar nulo —
+      // o handler de gattserverdisconnected já teria feito essa transição
+      // sozinho). Uma falha pontual de escrita ou do Firestore com o GATT
+      // ainda vivo não pode travar o resto da fila em ERRO — mantém CONECTADO
+      // pra permitir retry imediato sem reimprimir o que já saiu (revisão
+      // final da branch, Critical #1).
+      if (!self._writeChar) {
+        if (self._state !== self.ESTADOS.ERRO && self._state !== self.ESTADOS.DESCONECTADO) self._setState(self.ESTADOS.ERRO);
+      } else if (self._state === self.ESTADOS.IMPRIMINDO) {
+        self._setState(self.ESTADOS.CONECTADO);
+      }
       throw self._mapErroAmigavel(e);
     }).then(function(r) {
       _etcImprimindo = false;

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '332';
+var BUILD = '333';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1538,21 +1538,31 @@ function finalizarLogin(found) {
     var dEl = document.getElementById('cl-data-hoje');
     if (dEl) dEl.textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     document.getElementById('app').style.opacity='1';
-    var lastPage = sessionStorage.getItem('eco_last_page') || localStorage.getItem('eco_last_page');
+    // sessionStorage sozinho já distingue "refresh/atualização" (mesma sessão,
+    // sobrevive) de "abrir o app do zero" (sessão nova, sessionStorage vazio)
+    // — é essa distinção que decide entre restaurar a tela ou mostrar a capa.
+    // O fallback pro localStorage genérico foi removido (2026-08-25): fazia
+    // toda reabertura do app restaurar a última tela, inclusive abrindo do
+    // zero, e o Tiago quer capa nesse caso. Única exceção: eco_forcar_restauracao,
+    // setado só pelo beforeunload de Inventário (mais abaixo neste arquivo) pra
+    // não perder uma contagem em andamento se o app fechar de repente.
+    var lastPage = sessionStorage.getItem('eco_last_page') || localStorage.getItem('eco_forcar_restauracao');
     // Super Admin: vai direto para painel de clientes
     if (S.role === 'superadmin') {
       nav('clientes', document.getElementById('nav-clientes'));
       renderPainelClientes();
       return;
     }
-    // Mobile: restaura a última tela visitada (eco_last_page) em qualquer
-    // carregamento — refresh nativo (puxar pra baixo), atualização de versão,
-    // ou reabrir o app. Sem isso, todo refresh jogava o operador de volta pra
-    // capa e desconectava a impressora sem reconectar sozinho em lugar
-    // nenhum (a reconexão automática só dispara ao entrar em Etiquetas).
-    // "Início" na sidebar continua sendo o jeito de voltar pra capa de propósito.
+    // Mobile: restaura a última tela visitada dentro da mesma sessão — refresh
+    // nativo (puxar pra baixo) ou atualização de versão. Sem isso, todo refresh
+    // jogava o operador de volta pra capa e desconectava a impressora sem
+    // reconectar sozinho em lugar nenhum (a reconexão automática só dispara ao
+    // entrar em Etiquetas). Abrir o app do zero (sessão nova) sempre mostra a
+    // capa, exceto a exceção de Inventário acima. "Início" na sidebar continua
+    // sendo o jeito de voltar pra capa de propósito a qualquer momento.
     if (window.innerWidth <= 768) {
       if (lastPage) {
+        try { localStorage.removeItem('eco_forcar_restauracao'); } catch (e) {}
         nav(lastPage, document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]'));
         return;
       }
@@ -1848,7 +1858,6 @@ function nav(page, el) {
   _etcModoImprimirTudo = false;
   _atualizarBadgeNotificacoes();
   sessionStorage.setItem('eco_last_page', page);
-  localStorage.setItem('eco_last_page', page); // fallback para PWA fechado/reaberto
   if (page !== 'inv') localStorage.removeItem('inv_detalhe_state');
   // Close sidebar on mobile when navigating
   if (window.innerWidth <= 768) {
@@ -14957,7 +14966,7 @@ window.addEventListener('beforeunload', function() {
       if (_m) _tab = _m[1];
     }
     localStorage.setItem('inv_detalhe_state', JSON.stringify({invId:_invAtivo.id, tab:_tab}));
-    localStorage.setItem('eco_last_page', 'inv');
+    localStorage.setItem('eco_forcar_restauracao', 'inv');
   }
 });
 

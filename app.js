@@ -4572,7 +4572,7 @@ var PrinterManager = {
   // decide isso, todas as 6 telas devem chamar aqui em vez de montar o pill
   // na mão.
   getStatusDisplay: function() {
-    var nome = this._device ? this._device.name : 'Urovo K329';
+    var nome = (this._device && this._device.name) || 'Urovo K329';
     if (this._state === this.ESTADOS.CONECTADO || this._state === this.ESTADOS.IMPRIMINDO) {
       return {emoji: '🟢', texto: 'Conectada', pillCls: 'etc-pill-on', nome: nome};
     }
@@ -4609,14 +4609,22 @@ var PrinterManager = {
       try { localStorage.setItem('etc_impressora_id', d.id); } catch (e) {}
       self._setState(self.ESTADOS.CONECTADO);
       self._log('Pronta pra imprimir: ' + (d.name || d.id));
-      d.addEventListener('gattserverdisconnected', function() {
-        self._log('Desconectada (gattserverdisconnected)');
-        self._writeChar = null;
-        self._gattServer = null;
-        _etcModoImprimirTudo = false;
-        self._setState(self.ESTADOS.DESCONECTADO);
-        if (_etcCurrentView === 'lote' && _loteAtualFila.length) renderEtcFilaInterrompida();
-      });
+      // O mesmo objeto BluetoothDevice é reaproveitado entre reconexões (Web
+      // Bluetooth devolve a mesma instância pro mesmo dispositivo já
+      // autorizado) — sem esta guarda, cada reconexão empilharia mais um
+      // listener, disparando renderEtcFilaInterrompida() N vezes numa única
+      // desconexão real (revisão final da branch, Minor #10).
+      if (!d._printerManagerDisconnectBound) {
+        d._printerManagerDisconnectBound = true;
+        d.addEventListener('gattserverdisconnected', function() {
+          self._log('Desconectada (gattserverdisconnected)');
+          self._writeChar = null;
+          self._gattServer = null;
+          _etcModoImprimirTudo = false;
+          self._setState(self.ESTADOS.DESCONECTADO);
+          if (_etcCurrentView === 'lote' && _loteAtualFila.length) renderEtcFilaInterrompida();
+        });
+      }
     }).catch(function(e) {
       self._logError('Falha ao conectar no dispositivo', e);
       self._setState(self.ESTADOS.ERRO);
@@ -4884,7 +4892,9 @@ PrinterManager.setUIListener(_etcAtualizarStatusUI);
 function renderEtcImpressora() {
   var wrap = document.getElementById('etc-view-impressora');
   var st = PrinterManager.getStatusDisplay();
-  var mensagem = PrinterManager.isReady() ? ('Conectada: ' + _escHtml(st.nome)) : (st.texto === 'Conectando...' || st.texto === 'Reconectando...' ? st.emoji + ' ' + st.texto : 'Conecte na impressora pra poder imprimir.');
+  var estadoAtual = PrinterManager.getState();
+  var transitorio = estadoAtual === PrinterManager.ESTADOS.CONECTANDO || estadoAtual === PrinterManager.ESTADOS.RECONECTANDO;
+  var mensagem = PrinterManager.isReady() ? ('Conectada: ' + _escHtml(st.nome)) : (transitorio ? st.emoji + ' ' + st.texto : st.emoji + ' Conecte na impressora pra poder imprimir.');
   wrap.innerHTML =
     '<div class="etc-sub-topbar"><button class="etc-topbar-back" onclick="abrirEtcHub(\'hub\')">← Etiquetas e Consulta</button></div>' +
     '<div class="card" style="padding:20px;text-align:center">' +

@@ -4634,8 +4634,10 @@ var PrinterManager = {
       optionalServices: CANDIDATOS_IMPRESSORA
     }).then(function(d) { return self._connectToDevice(d); }).catch(function(e) {
       self._logError('Pareamento manual falhou/cancelado', e);
+      // Operador cancelou o seletor do Chrome — não é um erro, não mostra nada.
+      if (e && e.name === 'NotFoundError') return;
       var status = document.getElementById('etc-status-conexao');
-      if (status) status.textContent = '❌ Erro: ' + e.message;
+      if (status) status.textContent = '❌ ' + self._mapErroAmigavel(self._erro('SELECAO_FALHOU')).message;
     });
   },
 
@@ -4766,7 +4768,8 @@ var PrinterManager = {
       RECONEXAO_FALHOU: 'Não foi possível reconectar à impressora.',
       NAO_CONECTADA: 'Impressora não conectada.',
       OCUPADA: 'Aguarde a impressão em andamento terminar.',
-      JA_RECONECTANDO: 'Reconectando à impressora, aguarde.'
+      JA_RECONECTANDO: 'Reconectando à impressora, aguarde.',
+      SELECAO_FALHOU: 'Não foi possível conectar à impressora selecionada.'
     };
     var msg = (motivo && textos[motivo]) || 'Não foi possível imprimir a etiqueta.';
     var err = new Error(msg);

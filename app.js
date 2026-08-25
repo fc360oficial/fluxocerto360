@@ -4931,7 +4931,7 @@ function renderEtcHub() {
       '</div>' +
       '<div class="etc-hub-card" onclick="abrirEtcHub(\'consulta\')">' +
         '<div class="etc-hub-card-icon">🔍</div>' +
-        '<div class="etc-hub-card-body"><div class="etc-hub-card-title">Consulta de Preços</div><div class="etc-hub-card-desc">Consulte informações e preços dos produtos</div></div>' +
+        '<div class="etc-hub-card-body"><div class="etc-hub-card-title">Consulta de Preços e Estoque</div><div class="etc-hub-card-desc">Consulte preço e estoque atual dos produtos</div></div>' +
       '</div>' +
       '<div class="etc-hub-card" onclick="abrirEtcHub(\'impressora\')">' +
         '<div class="etc-hub-card-icon">🔌</div>' +
@@ -5260,12 +5260,6 @@ var _etcLoteSelecionados = {}; // codigoBarras -> {produto, qtd}
 // o status da impressora muda (ver renderEtcMontarLote/renderEtcLotes/renderFilaLote).
 var _etcMontandoLote = false;
 
-function _etcFiltrosUnicos(campo) {
-  var vistos = {}, out = [];
-  ETC_MOCK_PRODUTOS.forEach(function(p) { if (!vistos[p[campo]]) { vistos[p[campo]] = true; out.push(p[campo]); } });
-  return out.sort();
-}
-
 // Reseta a seleção e entra no construtor "Montar novo lote" — só este ponto
 // de entrada zera _etcLoteSelecionados. renderEtcMontarLote() sozinha NUNCA
 // zera (é chamada de volta pela Revisão, Task 4, "Voltar e Editar" — zerar
@@ -5274,6 +5268,14 @@ function _etcIniciarNovoLote() {
   _etcLoteSelecionados = {};
   renderEtcMontarLote();
 }
+
+// Último resultado da busca real no ERP (via etiquetas-api /produtos/buscar,
+// .254→.252) — substitui o catálogo mockado que esta tela usava antes
+// (ETC_MOCK_PRODUTOS continua existindo só pra enriquecer marca/estoque-
+// anterior em Avulsa/Consulta quando o código bate com os 6 itens de
+// exemplo, ver essas duas telas). Sem filtro de Departamento/Setor/Marca —
+// sem coluna confirmada no banco pra isso (ver etiquetas-api.js).
+var _etcLoteResultadosBusca = [];
 
 function renderEtcMontarLote() {
   _etcMontandoLote = true;
@@ -5291,15 +5293,7 @@ function renderEtcMontarLote() {
       '<div class="etc-bipar-icon">📷</div>' +
       '<div><div class="etc-bipar-title">Bipar produto</div><div class="etc-bipar-desc">Aponte a câmera para o código de barras do produto</div></div>' +
     '</div>' +
-    '<input id="etc-lote-busca" placeholder="🔎 Buscar por código ou nome do produto" style="width:100%;padding:12px;font-size:14px;margin-bottom:10px">' +
-    '<div class="etc-filter-row">' +
-      '<select id="etc-lote-filtro-depto" onchange="_etcRenderListaLote()"><option value="">Departamento</option>' + _etcFiltrosUnicos('departamento').map(function(v){return '<option value="'+_escHtml(v)+'">'+_escHtml(v)+'</option>';}).join('') + '</select>' +
-      '<select id="etc-lote-filtro-setor" onchange="_etcRenderListaLote()"><option value="">Setor</option>' + _etcFiltrosUnicos('setor').map(function(v){return '<option value="'+_escHtml(v)+'">'+_escHtml(v)+'</option>';}).join('') + '</select>' +
-      '<select id="etc-lote-filtro-marca" onchange="_etcRenderListaLote()"><option value="">Marca</option>' + _etcFiltrosUnicos('marca').map(function(v){return '<option value="'+_escHtml(v)+'">'+_escHtml(v)+'</option>';}).join('') + '</select>' +
-    '</div>' +
-    '<label style="display:flex;align-items:center;gap:8px;margin:2px 0 10px;font-size:12.5px;color:var(--t2);cursor:pointer">' +
-      '<input type="checkbox" id="etc-lote-filtro-ativos" checked onchange="_etcRenderListaLote()"> Somente produtos ativos' +
-    '</label>' +
+    '<input id="etc-lote-busca" placeholder="🔎 Buscar por código ou nome do produto (mín. 2 letras)" style="width:100%;padding:12px;font-size:14px;margin-bottom:10px">' +
     '<div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px">' +
       '<span style="color:var(--g);font-weight:700;cursor:pointer;text-decoration:underline" onclick="_etcSelecionarTodosLote()">Selecionar todos</span>' +
       '<span style="color:var(--t3);font-weight:700;cursor:pointer;text-decoration:underline" onclick="_etcLimparSelecaoLote()">Limpar seleção</span>' +
@@ -5316,50 +5310,66 @@ function renderEtcMontarLote() {
   var timer = null;
   input.addEventListener('input', function() {
     clearTimeout(timer);
-    timer = setTimeout(function() { _etcRenderListaLote(); }, 250);
+    timer = setTimeout(function() { _etcBuscarProdutosLote(input.value.trim()); }, 250);
   });
-  // Bipagem (iniciarScanEAN) e Enter manual disparam o mesmo caminho: se o
-  // texto bate um código EXATO do catálogo, adiciona/incrementa direto no
-  // lote (seção 5 da spec) — texto parcial só filtra a lista abaixo.
+  // Bipagem (iniciarScanEAN) e Enter manual disparam o mesmo caminho: busca
+  // EXATA no ERP (mesma rota que Avulsa/Consulta já usam) e adiciona direto
+  // no lote se achar (seção 5 da spec) — sem match exato, cai pra busca por
+  // substring (_etcBuscarProdutosLote, mesma rota do "input" acima).
   input.addEventListener('keydown', function(e) {
     if (e.key !== 'Enter') return;
     clearTimeout(timer);
     var valor = input.value.trim();
-    var match = ETC_MOCK_PRODUTOS.filter(function(p) { return p.codigoBarras === valor; })[0];
-    if (match) {
+    if (!valor) return;
+    firebase.auth().currentUser.getIdToken().then(function(token) {
+      return fetch(ETIQUETAS_API_URL + '/produto/' + encodeURIComponent(valor), {
+        headers: {Authorization: 'Bearer ' + token}
+      });
+    }).then(function(resp) { return resp.ok ? resp.json() : null; }).then(function(produto) {
+      if (!produto) { _etcBuscarProdutosLote(valor); return; }
       input.value = '';
-      _etcAdicionarProdutoAoLote(match);
-      showToast('+ ' + match.nome + ' adicionado ao lote');
-    }
-    _etcRenderListaLote();
+      _etcAdicionarProdutoAoLote(produto);
+      showToast('+ ' + produto.nome + ' adicionado ao lote');
+      _etcLoteResultadosBusca = [];
+      _etcRenderListaLote();
+    });
   });
-  _etcRenderListaLote();
+  if (_etcLoteResultadosBusca.length) _etcRenderListaLote();
+  else document.getElementById('etc-lote-lista').innerHTML = '<div class="empty">Digite pra buscar produtos...</div>';
   _etcAtualizarBarraLote();
 }
 
-// Filtro central: busca + Departamento/Setor/Marca/Ativos. Único lugar que
-// decide "quais produtos do catálogo aparecem agora" — reaproveitado por
+// Busca por substring no ERP real (nome ou código, via etiquetas-api). Único
+// lugar que decide "quais produtos aparecem agora" — reaproveitado por
 // _etcRenderListaLote (pra desenhar a lista) e _etcSelecionarTodosLote (pra
 // saber o que marcar em massa), garantindo que os dois nunca divirjam.
-function _etcProdutosFiltrados() {
-  var buscaEl = document.getElementById('etc-lote-busca');
-  var deptoEl = document.getElementById('etc-lote-filtro-depto');
-  var setorEl = document.getElementById('etc-lote-filtro-setor');
-  var marcaEl = document.getElementById('etc-lote-filtro-marca');
-  var ativosEl = document.getElementById('etc-lote-filtro-ativos');
-  var busca = (buscaEl ? buscaEl.value : '').toLowerCase();
-  var depto = deptoEl ? deptoEl.value : '';
-  var setor = setorEl ? setorEl.value : '';
-  var marca = marcaEl ? marcaEl.value : '';
-  var somenteAtivos = ativosEl ? ativosEl.checked : true;
-  return ETC_MOCK_PRODUTOS.filter(function(p) {
-    if (busca && p.nome.toLowerCase().indexOf(busca) === -1 && p.codigoBarras.indexOf(busca) === -1) return false;
-    if (depto && p.departamento !== depto) return false;
-    if (setor && p.setor !== setor) return false;
-    if (marca && p.marca !== marca) return false;
-    if (somenteAtivos && p.ativo === false) return false;
-    return true;
+function _etcBuscarProdutosLote(termo) {
+  var lista = document.getElementById('etc-lote-lista');
+  if (!lista) return; // debounce pode disparar depois do operador já ter saído da tela
+  if (!termo || termo.length < 2) {
+    _etcLoteResultadosBusca = [];
+    lista.innerHTML = '<div class="empty">Digite pra buscar produtos...</div>';
+    return;
+  }
+  lista.innerHTML = '<div class="empty">Buscando...</div>';
+  firebase.auth().currentUser.getIdToken().then(function(token) {
+    return fetch(ETIQUETAS_API_URL + '/produtos/buscar?q=' + encodeURIComponent(termo), {
+      headers: {Authorization: 'Bearer ' + token}
+    });
+  }).then(function(resp) {
+    if (!resp.ok) throw new Error('Erro ao consultar o ERP.');
+    return resp.json();
+  }).then(function(produtos) {
+    _etcLoteResultadosBusca = produtos;
+    _etcRenderListaLote();
+  }).catch(function(e) {
+    var listaAtual = document.getElementById('etc-lote-lista');
+    if (listaAtual) listaAtual.innerHTML = '<div class="empty">' + _escHtml(e.message) + '</div>';
   });
+}
+
+function _etcProdutosFiltrados() {
+  return _etcLoteResultadosBusca;
 }
 
 function _etcRenderListaLote() {
@@ -5805,13 +5815,18 @@ function buscarProdutoConsulta(codigo) {
     return resp.json();
   }).then(function(produto) {
     var mock = ETC_MOCK_PRODUTOS.filter(function(p) { return p.codigoBarras === produto.codigoBarras; })[0];
+    // Estoque: prioriza o valor real da API (etiquetas-api, coluna ainda não
+    // confirmada em supermercado.itens — ver comentário em etiquetas-api.js);
+    // só cai pro mock quando a API não devolveu o campo (produto.estoque
+    // undefined), nunca sobrescreve um valor real com o de mentira.
+    var estoqueTxt = produto.estoque != null ? (produto.estoque + ' un.') : (mock ? (mock.estoque + ' un.') : '—');
     preview.innerHTML =
       '<div class="card" style="padding:16px">' +
         '<div style="font-weight:700;margin-bottom:4px">' + _escHtml(produto.nome) + '</div>' +
         (mock ? '<div style="font-size:11.5px;color:var(--t3);margin-bottom:8px">' + _escHtml(mock.marca) + ' · ' + _escHtml(mock.departamento) + '</div>' : '') +
         '<div style="font-size:20px;color:var(--dk2);font-weight:800;margin-bottom:10px">R$ ' + produto.preco.toFixed(2) + '</div>' +
         '<div style="display:flex;gap:16px;font-size:12.5px;color:var(--t2)">' +
-          '<div>Estoque: ' + (mock ? (mock.estoque + ' un.') : '—') + '</div>' +
+          '<div>Estoque: ' + estoqueTxt + '</div>' +
           '<div>Preço anterior: ' + (mock && mock.precoAnterior ? ('R$ ' + mock.precoAnterior.toFixed(2)) : '—') + '</div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;padding-top:10px;margin-top:10px;border-top:1px solid var(--gray2);font-size:12px;color:var(--t2)">' +
@@ -11202,7 +11217,7 @@ function loadBipagensByInv(invId, cb) {
 // Normaliza EAN pra comparação: tira zeros a esquerda. Um leitor de codigo
 // de barras fisico as vezes le um EAN-13 que comeca com 0 como se fosse o
 // UPC-A de 12 digitos correspondente (mesmo codigo, sem o zero) — sem essa
-// normalizacao, "0041333001005" no catalogo nunca bate com "41333001005"
+// normalizacao, "0041334001005" no catalogo nunca bate com "41334001005"
 // bipado, e o produto aparece como "nao esta na base" mesmo estando cadastrado.
 function _normEan(s) {
   s = (s||'').trim();
@@ -13132,7 +13147,7 @@ function _renderSelecaoEndereco(inv, bipCount) {
   var ends=inv.enderecos||[],filaMap=inv.fila||{};
   // Modo Só Setores: mostra botões de setor diretamente (sem scanner/input)
   if (inv.modoOrganizacao === 'setores') {
-    var _scol=['#3b5bdb|#e8f0ff|#1a3c9c','#b38600|#fff8e1|#b38600','#1a7a4a|#e8f5ee|#1a5c34','#c0392b|#fdecea|#c0392b','#5b21b6|#ede9fe|#5b21b6','#666|#f0f0f0|#333'];
+    var _scol=['#3b5bdb|#e8f0ff|#1a3c9c','#b38600|#fff8e1|#b38600','#1a7a4a|#e8f5ee|#1a5c34','#c0392b|#fdecea|#c0392b','#5b21b6|#ede9fe|#5b21b6','#666|#f0f0f0|#334'];
     var _sico={'ESTOQUE':'📦','LOJA':'🏪','DEPOSITO':'🏭','FREEZER':'❄️','FARMACIA':'💊','ACOUGUE':'🥩','PADARIA':'🍞','HORTIFRUTI':'🥦','BEBIDAS':'🍺','COZINHA':'🍽️','FRIOS':'🧊'};
     var safeInvId=inv.id.replace(/'/g,"\\'");
     var btns=ends.map(function(s,i){
@@ -13243,7 +13258,7 @@ function _mostrarSetorPicker(invId, endereco) {
   // Popula botões de setor dinamicamente
   var inv=(S.invsCache||[]).find(function(i){ return i.id===invId; });
   var setores=(inv&&inv.setores&&inv.setores.length)?inv.setores:['ESTOQUE','LOJA'];
-  var _setorColors=['#3b5bdb|#e8f0ff|#1a3c9c','#b38600|#fff8e1|#b38600','#1a7a4a|#e8f5ee|#1a5c34','#c0392b|#fdecea|#c0392b','#5b21b6|#ede9fe|#5b21b6','#666|#f0f0f0|#333'];
+  var _setorColors=['#3b5bdb|#e8f0ff|#1a3c9c','#b38600|#fff8e1|#b38600','#1a7a4a|#e8f5ee|#1a5c34','#c0392b|#fdecea|#c0392b','#5b21b6|#ede9fe|#5b21b6','#666|#f0f0f0|#334'];
   var _setorIcons={'ESTOQUE':'📦','LOJA':'🏪','DEPOSITO':'🏭','FREEZER':'❄','FARMACIA':'💊','ACOUGUE':'🥩','PADARIA':'🍞','HORTIFRUTI':'🥦','BEBIDAS':'🍺'};
   var btnsEl=document.getElementById('setor-picker-btns');
   if(btnsEl){

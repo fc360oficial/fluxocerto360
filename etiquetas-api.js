@@ -83,14 +83,58 @@ app.get('/produto/:codigoBarras', verificarToken, async function(req, res) {
       [req.params.codigoBarras]
     );
     if (!rows.length) return res.status(404).json({ error: 'Produto não encontrado' });
-    res.json({
+    var produto = {
       codigoBarras: rows[0].CodigoBarra,
       nome: rows[0].Descricao,
       preco: Number(rows[0].preco),
       unidade: rows[0].unvenda
-    });
+    };
+    // Estoque: coluna NÃO confirmada em supermercado.itens (só existe
+    // comprovada na base legada central.itens/estoquen1-6, que tem preço
+    // zerado e por isso não é usada pra mais nada aqui). Tentativa isolada
+    // do resto da resposta — se a coluna não existir, loga e segue sem
+    // travar a consulta de preço/nome, que já é comprovada em produção.
+    try {
+      var [estRows] = await conn.query(
+        'SELECT Estoque FROM supermercado.itens WHERE CodigoBarra = ? LIMIT 1',
+        [req.params.codigoBarras]
+      );
+      if (estRows.length && estRows[0].Estoque != null) produto.estoque = Number(estRows[0].Estoque);
+    } catch (eEst) {
+      console.error('[etiquetas-api] coluna de estoque indisponível em supermercado.itens (esperado até confirmar ao vivo):', eEst.code || eEst.message);
+    }
+    res.json(produto);
   } catch (e) {
     console.error('[etiquetas-api] erro MySQL:', e.code || e.message);
+    res.status(503).json({ error: 'Erro ao consultar o ERP' });
+  } finally {
+    if (conn) await conn.end().catch(function(){});
+  }
+});
+
+// Busca por nome ou código (substring) — usada pela tela de Etiquetas em
+// Lote pra montar o lote com produtos reais em vez do catálogo mockado
+// (ETC_MOCK_PRODUTOS no app.js, mantido só pra Avulsa/Consulta enriquecerem
+// marca/estoque-anterior quando o código bate com os 6 itens de exemplo).
+// Sem filtro de Departamento/Setor/Marca — sem coluna confirmada pra isso.
+app.get('/produtos/buscar', verificarToken, async function(req, res) {
+  var termo = (req.query.q || '').trim();
+  if (!termo || termo.length < 2) return res.json([]);
+  var conn;
+  try {
+    conn = await mysql.createConnection(dbConfig);
+    var like = '%' + termo + '%';
+    var [rows] = await conn.query(
+      'SELECT CodigoBarra, Descricao, preco, unvenda FROM supermercado.itens ' +
+      'WHERE CodDesativado = 0 AND (Descricao LIKE ? OR CodigoBarra LIKE ?) ' +
+      'ORDER BY Descricao LIMIT 30',
+      [like, like]
+    );
+    res.json(rows.map(function(r) {
+      return { codigoBarras: r.CodigoBarra, nome: r.Descricao, preco: Number(r.preco), unidade: r.unvenda };
+    }));
+  } catch (e) {
+    console.error('[etiquetas-api] erro MySQL (busca):', e.code || e.message);
     res.status(503).json({ error: 'Erro ao consultar o ERP' });
   } finally {
     if (conn) await conn.end().catch(function(){});

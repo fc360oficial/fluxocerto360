@@ -5054,7 +5054,7 @@ function buscarProdutoAvulsa(codigo) {
     if (!resp.ok) throw new Error('Erro ao consultar o ERP.');
     return resp.json();
   }).then(function(produto) {
-    _etcRenderAvulsaCard(produto);
+    _etcRenderAvulsaCard(produto, true);
   }).catch(function(e) {
     preview.innerHTML = '<div class="empty">' + _escHtml(e.message) + '</div>';
   });
@@ -5065,7 +5065,7 @@ function buscarProdutoAvulsa(codigo) {
 // Tiago: quantidade só existe em Etiquetas em Lote). Em modo sequencial,
 // com impressora conectada, imprime sozinho assim que o card renderiza —
 // sem esperar toque no botão.
-function _etcRenderAvulsaCard(produto) {
+function _etcRenderAvulsaCard(produto, viaBipagem) {
   _etcAvulsaProdutoAtual = produto;
   var preview = document.getElementById('etc-avulsa-preview');
   var produtoJson = _escHtml(JSON.stringify(produto));
@@ -5090,7 +5090,12 @@ function _etcRenderAvulsaCard(produto) {
       statusImpressora +
       '<button class="btn btn-p" style="width:100%" ' + disabledAttr + ' onclick="_etcImprimirAvulsa(' + produtoJson + ')">🖨 Imprimir Etiqueta</button>' +
     '</div>';
-  if (_etcAvulsaSequencialAtivo() && !_etcImprimindo) {
+  // Só dispara sozinho quando esta renderização veio de uma bipagem nova
+  // (buscarProdutoAvulsa passa viaBipagem=true) — uma mudança de status da
+  // impressora também chama esta função pra atualizar o pill (via
+  // _etcAtualizarStatusUI), e não pode reimprimir um produto que já estava
+  // na tela por conta própria (revisão final da branch, Important #5).
+  if (viaBipagem && _etcAvulsaSequencialAtivo() && !_etcImprimindo) {
     _etcImprimirAvulsa(produto);
   }
 }

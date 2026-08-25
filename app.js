@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '335';
+var BUILD = '336';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -3158,20 +3158,34 @@ function salvarQuantidade(clId, itemIdx, codigo, val) {
   updateCLProg(cl);
 }
 
+// Roda no boot (iniciarApp), ANTES de qualquer loadPlanosFromFirebase() desta
+// sessão — nesse momento getPlanos() só devolve o que sobrou no localStorage
+// de sessões anteriores, que pode estar desatualizado (ex.: um plano
+// resolvido em outro dispositivo enquanto este ficou fechado). Bug real
+// encontrado 2026-08-25: essa função chamava savePlanos(novaLista), que
+// reescreve TODOS os planos restantes no Firestore via .set() (não merge) —
+// se a lista local estivesse velha, isso revertia silenciosamente pra
+// Firestore o status antigo (ex.: 'aberto') de planos já resolvidos por
+// outra pessoa, com o prazo/data de criação originais intactos (parecendo
+// "vencido há semanas" do nada). Fix: busca do Firebase primeiro, só decide
+// o que limpar com dado fresco — nunca escreve de volta o que não mudou.
 function limparPlanosAntigos() {
-  var limite = Date.now() - 30 * 24 * 3600000;
-  var lista = getPlanos();
-  var removidos = lista.filter(function(p) {
-    if (p.status !== 'resolvido') return false;
-    if (!p.resolvidoTimestamp) return false;
-    return new Date(p.resolvidoTimestamp).getTime() < limite;
+  loadPlanosFromFirebase(function() {
+    var limite = Date.now() - 30 * 24 * 3600000;
+    var lista = getPlanos();
+    var removidos = lista.filter(function(p) {
+      if (p.status !== 'resolvido') return false;
+      if (!p.resolvidoTimestamp) return false;
+      return new Date(p.resolvidoTimestamp).getTime() < limite;
+    });
+    if (!removidos.length) return;
+    var novaLista = lista.filter(function(p) {
+      return !removidos.some(function(r){ return r.id === p.id; });
+    });
+    _planosCache = novaLista;
+    try { localStorage.setItem(PLANO_KEY, JSON.stringify(novaLista)); } catch(e) {}
+    removidos.forEach(function(p){ db.collection('planos').doc(p.id).delete().catch(function(){}); });
   });
-  if (!removidos.length) return;
-  var novaLista = lista.filter(function(p) {
-    return !removidos.some(function(r){ return r.id === p.id; });
-  });
-  savePlanos(novaLista);
-  removidos.forEach(function(p){ db.collection('planos').doc(p.id).delete().catch(function(){}); });
 }
 
 function limparContagensAntigas() {
@@ -8666,12 +8680,24 @@ function getPlanos() {
   try { _planosCache = JSON.parse(localStorage.getItem(PLANO_KEY)||'[]'); } catch(e){ _planosCache = []; }
   return _planosCache;
 }
+// Só atualiza o cache local (memória + localStorage) — NUNCA escreve no
+// Firestore aqui. Bug real (2026-08-25): antes esta função reescrevia TODOS
+// os planos da lista no Firestore via .set() sempre que qualquer UM mudava;
+// se o cache local estivesse desatualizado (device que ficou dias sem
+// recarregar), isso revertia silenciosamente status de planos alheios já
+// resolvidos por outra pessoa. Quem chama savePlanos() e realmente mudou um
+// plano específico deve gravar SÓ aquele doc via _gravarPlanoNoFirestore.
 function savePlanos(list) {
   var myClient = (S.currentUser && S.currentUser.clienteId) || '';
   list = list.map(function(p){ return p.clienteId ? p : Object.assign({}, p, {clienteId: myClient}); });
   _planosCache = list;
   try { localStorage.setItem(PLANO_KEY, JSON.stringify(list)); } catch(e) {}
-  list.forEach(function(p){ db.collection('planos').doc(p.id).set(p).catch(function(){}); });
+}
+
+// Grava SÓ este plano no Firestore (merge, nunca a lista inteira — ver
+// savePlanos acima pro porquê).
+function _gravarPlanoNoFirestore(plano) {
+  if (db && plano) db.collection('planos').doc(plano.id).set(plano, {merge:true}).catch(function(){});
 }
 function loadPlanosFromFirebase(cb) {
   db.collection('planos').get().then(function(snap){
@@ -8726,13 +8752,20 @@ function salvarPlano() {
   var prazoHoras = parseInt((document.getElementById('plano-prazo-horas')||{}).value||'72');
   var prazoFim = new Date(Date.now() + prazoHoras * 3600000).toISOString();
   var mensagem = (document.getElementById('plano-mensagem')||{}).value || '';
+  var planoSalvo = null;
   if (editingPlanoId) {
-    list = list.map(function(p){ return p.id===editingPlanoId ? Object.assign({},p,{desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim()}) : p; });
+    list = list.map(function(p){
+      if (p.id!==editingPlanoId) return p;
+      planoSalvo = Object.assign({},p,{desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim()});
+      return planoSalvo;
+    });
   } else {
     var quem = S.currentUser ? S.currentUser.nome : '—';
-    list.push({id:genId(),desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),status:'aberto',loja:loja,criadoEm:now,criadoTimestamp:new Date().toISOString(),criadoPor:quem,prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim(),prorrogacoes:[],historico:[{acao:'criado',para:'aberto',por:quem,em:now}]});
+    planoSalvo = {id:genId(),desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),status:'aberto',loja:loja,criadoEm:now,criadoTimestamp:new Date().toISOString(),criadoPor:quem,prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim(),prorrogacoes:[],historico:[{acao:'criado',para:'aberto',por:quem,em:now}],clienteId:(S.currentUser && S.currentUser.clienteId)||''};
+    list.push(planoSalvo);
   }
   savePlanos(list);
+  _gravarPlanoNoFirestore(planoSalvo);
   fecharModalPlano();
   renderPlanos(planoFiltroAtual);
   atualizarBadgePlano();
@@ -9021,7 +9054,7 @@ function renderPlanos(filtro) {
       +'<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
       +(p.status==='aberto'?'<button class="btn btn-s btn-sm" onclick="atualizarStatusPlano(\''+p.id+'\',\'andamento\')">Iniciar</button>':'')
       +(p.status==='andamento'?'<button class="btn btn-p btn-sm" onclick="atualizarStatusPlano(\''+p.id+'\',\'resolvido\')">Resolver</button>':'')
-      +(p.status==='resolvido'?'<button class="btn btn-s btn-sm" onclick="atualizarStatusPlano(\''+p.id+'\',\'aberto\')">Reabrir</button>':'')
+      +(p.status==='resolvido' && isAdmin?'<button class="btn btn-s btn-sm" onclick="atualizarStatusPlano(\''+p.id+'\',\'aberto\')">Reabrir</button>':'')
       +(isAdmin && p.status!=='resolvido'?'<button class="btn btn-s btn-sm" style="font-size:11px;color:#b45309;border-color:#fde68a;background:#fffbeb" onclick="prorrogarAdmin(\''+p.id+'\')">⏱ +Prazo</button>':'')
       +'</div>'
       +'</div>'
@@ -9058,8 +9091,10 @@ function criarPlanoAuto(checklistNome, itemTexto, justificativa, setor, prazoHor
   var prazoFim = new Date(Date.now() + prazoHoras * 3600000).toISOString();
   var quemAuto = S.currentUser ? S.currentUser.nome : '—';
   var nowAuto = new Date().toLocaleString('pt-BR');
-  list.push({id:genId(),desc:desc,responsavel:'',prazo:'',origem:checklistNome,obs:justificativa||'',status:'aberto',loja:loja,setor:setor||'',criadoEm:nowAuto,criadoTimestamp:new Date().toISOString(),criadoPor:quemAuto,prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:'',prorrogacoes:[],historico:[{acao:'criado',para:'aberto',por:quemAuto,em:nowAuto}]});
+  var novoPlano = {id:genId(),desc:desc,responsavel:'',prazo:'',origem:checklistNome,obs:justificativa||'',status:'aberto',loja:loja,setor:setor||'',criadoEm:nowAuto,criadoTimestamp:new Date().toISOString(),criadoPor:quemAuto,prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:'',prorrogacoes:[],historico:[{acao:'criado',para:'aberto',por:quemAuto,em:nowAuto}],clienteId:(S.currentUser && S.currentUser.clienteId)||''};
+  list.push(novoPlano);
   savePlanos(list);
+  _gravarPlanoNoFirestore(novoPlano);
   atualizarBadgePlano();
 }
 

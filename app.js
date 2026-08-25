@@ -4781,7 +4781,7 @@ var PrinterManager = {
 // ── Etiquetas: coleta (mobile) — pareamento Bluetooth + impressão ──
 // Trava contra impressão duplicada: um duplo-toque no botão de imprimir
 // (plausível em coletor com lag de UI) dispararia duas chamadas concorrentes
-// de imprimirEtiquetaBluetooth e imprimiria a etiqueta física duas vezes.
+// de PrinterManager.printLabel e imprimiria a etiqueta física duas vezes.
 var _etcImprimindo = false;
 
 var _etcCurrentView = 'hub'; // hub | avulsa | lote | consulta | impressora
@@ -4804,25 +4804,25 @@ function abrirEtcHub(view) {
 
 var CANDIDATOS_IMPRESSORA = ['49535343-fe7d-4ae5-8fa9-9fafd205e455'];
 
-function parearImpressora() { return PrinterManager.connect(); }
 function _etcTentarReconectarAutomatico() { return PrinterManager.init(); }
 
 // Re-renderiza a view atual quando o estado da impressora muda (conectou,
-// desconectou) — cada view decide sozinha o que fazer com _etcWriteChar
-// (desabilitar botão, mostrar aviso, etc.), esta função só dispara o redraw.
+// desconectou) — cada view decide sozinha o que fazer com o estado do
+// PrinterManager (desabilitar botão, mostrar aviso, etc.), esta função só
+// dispara o redraw.
 //
 // avulsa e lote recebem tratamento especial: um redraw cego (chamar
 // renderEtcAvulsa()/renderEtcLotes() direto) reconstrói a tela do zero e
 // descarta estado em memória que não sobrevive a um re-render completo — o
 // card de produto escaneado na Avulsa, ou a seleção em andamento no
 // construtor "Montar novo lote". Nenhuma dessas duas telas de conteúdo
-// (card da Avulsa, construtor do Lote) de fato exibe UI dependente de
-// _etcWriteChar, então é seguro pular o redraw cego nesses casos.
+// (card da Avulsa, construtor do Lote) de fato exibe UI dependente do
+// PrinterManager, então é seguro pular o redraw cego nesses casos.
 function _etcAtualizarStatusUI() {
   if (_etcCurrentView === 'hub') renderEtcHub();
   else if (_etcCurrentView === 'avulsa') {
-    // Produto carregado: re-renderiza só o card (não depende de _etcWriteChar
-    // e preserva o produto/quantidade). Sem produto: tela em branco, redraw
+    // Produto carregado: re-renderiza só o card (não depende do estado do
+    // PrinterManager e preserva o produto/quantidade). Sem produto: tela em branco, redraw
     // completo é seguro (só recria input vazio + aviso de impressora).
     if (_etcAvulsaProdutoAtual) _etcRenderAvulsaCard(_etcAvulsaProdutoAtual);
     else renderEtcAvulsa();
@@ -4830,15 +4830,15 @@ function _etcAtualizarStatusUI() {
   else if (_etcCurrentView === 'lote') {
     if (_etcFilaInterrompidaAtiva) {
       // A tela de erro de desconexão está aberta — redesenhar é seguro (ela não
-      // guarda nenhuma seleção do operador, só lê _loteAtualFila/_etcWriteChar)
+      // guarda nenhuma seleção do operador, só lê _loteAtualFila/PrinterManager)
       // e é o único jeito de reabilitar "Tentar novamente" depois que o
       // operador reconecta sem sair da tela.
       renderEtcFilaInterrompida();
     }
     // Fila de impressão ativa (renderFilaLote): um disconnect aqui sempre
     // desvia pra renderEtcFilaInterrompida (ver handler gattserverdisconnected
-    // de parearImpressora, tratado pelo branch acima), então esta tela nunca
-    // fica parada aqui já desconectada — não mexe.
+    // do PrinterManager, em _connectToDevice, tratado pelo branch acima), então
+    // esta tela nunca fica parada aqui já desconectada — não mexe.
     else if (_loteAtualFila.length) { /* no-op */ }
     // Construtor "Montar novo lote" em andamento: redesenhar do zero jogaria
     // a seleção do operador fora, mas o pill de status da impressora
@@ -4984,8 +4984,6 @@ function montarComandoTSPL(produto, layout) {
   linhas.push('PRINT 1,1');
   return linhas.join('\r\n') + '\r\n';
 }
-
-function imprimirEtiquetaBluetooth(produto) { return PrinterManager._writeToDevice(produto); }
 
 // ── Etiquetas: Etiqueta Avulsa (mobile) — bipar → imprimir direto, sempre 1 etiqueta ──
 // Produto atualmente carregado no card da Avulsa (null = tela em branco,
@@ -5233,7 +5231,7 @@ var ETC_MOCK_PRODUTOS = [
 
 var _etcLoteSelecionados = {}; // codigoBarras -> {produto, qtd}
 // true enquanto o construtor "Montar novo lote" (busca/filtro/checkbox) está
-// na tela. Essa tela não tem nenhuma UI dependente de _etcWriteChar — usado
+// na tela. Essa tela não tem nenhuma UI dependente do PrinterManager — usado
 // por _etcAtualizarStatusUI pra não descartar a seleção em andamento quando
 // o status da impressora muda (ver renderEtcMontarLote/renderEtcLotes/renderFilaLote).
 var _etcMontandoLote = false;

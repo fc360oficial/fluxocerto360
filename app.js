@@ -5779,9 +5779,43 @@ function buscarProdutoConsulta(codigo) {
           '<div>Estoque: ' + (mock ? (mock.estoque + ' un.') : '—') + '</div>' +
           '<div>Preço anterior: ' + (mock && mock.precoAnterior ? ('R$ ' + mock.precoAnterior.toFixed(2)) : '—') + '</div>' +
         '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;padding-top:10px;margin-top:10px;border-top:1px solid var(--gray2);font-size:12px;color:var(--t2)">' +
+          '🖨 ' + _escHtml(PrinterManager.getStatusDisplay().nome) +
+          '<span class="etc-pill ' + PrinterManager.getStatusDisplay().pillCls + '" style="margin-left:auto">' + PrinterManager.getStatusDisplay().emoji + ' ' + PrinterManager.getStatusDisplay().texto + '</span>' +
+        '</div>' +
+        '<button class="btn btn-p" style="width:100%;margin-top:10px" ' + (PrinterManager.podeTentarImprimir() ? '' : 'disabled title="Conecte a impressora primeiro"') + ' onclick="_etcImprimirConsulta(' + _escHtml(JSON.stringify(produto)) + ')">🖨 Imprimir Etiqueta</button>' +
       '</div>';
   }).catch(function(e) {
     preview.innerHTML = '<div class="empty">' + _escHtml(e.message) + '</div>';
+  });
+}
+
+// Imprime 1 etiqueta a partir da Consulta de Produto (funcionalidade nova,
+// item 12 da spec do Tiago 2026-08-21 — antes a Consulta era só
+// visualização). Mesmo PrinterManager que Avulsa/Lote, sem implementação
+// Bluetooth própria.
+function _etcImprimirConsulta(produto) {
+  var btn = document.querySelector('#etc-consulta-preview .btn-p');
+  if (btn) btn.disabled = true;
+  PrinterManager.printLabel(produto).then(function() {
+    return db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_log').add({
+      codigoBarras: produto.codigoBarras,
+      nomeProduto: produto.nome,
+      precoImpresso: produto.preco,
+      origem: 'pontual',
+      loteId: null,
+      operadorId: S.currentUser ? S.currentUser.id : null,
+      operadorNome: S.currentUser ? S.currentUser.nome : '-',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function(e) {
+      showToast('⚠️ Etiqueta impressa, mas houve erro ao registrar o log: ' + e.message);
+    });
+  }).then(function() {
+    showToast('✓ Etiqueta enviada para ' + (PrinterManager.getDeviceName() || 'a impressora'));
+    if (btn) btn.disabled = false;
+  }).catch(function(e) {
+    showToast('❌ Erro ao imprimir: ' + e.message);
+    if (btn) btn.disabled = false;
   });
 }
 

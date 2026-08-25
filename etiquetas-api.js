@@ -51,7 +51,9 @@ async function verificarToken(req, res, next) {
       .where('email', '==', (decoded.email || '').toLowerCase())
       .limit(1).get();
     if (snap.empty) return res.status(403).json({ error: 'Usuário não encontrado' });
-    req.clienteId = snap.docs[0].data().clienteId;
+    const dadosUsuario = snap.docs[0].data();
+    req.clienteId = dadosUsuario.clienteId;
+    req.userLoja = dadosUsuario.loja || '';
     if (req.clienteId !== 'economico') {
       return res.status(403).json({ error: 'Módulo não habilitado para este cliente' });
     }
@@ -59,6 +61,20 @@ async function verificarToken(req, res, next) {
   } catch (e) {
     res.status(401).json({ error: 'Token inválido: ' + e.message });
   }
+}
+
+// Mapeamento loja (campo `loja` do usuário no Firestore, texto livre) ->
+// número da loja nas tabelas de estoque do ERP (central.estoquen1..6).
+// Confirmado com o Tiago (2026-08-25): não existe tabela no ERP que faça
+// essa ligação (central.loja está desatualizada, só "LOJA 1"/"LOJA 2" de
+// 2018) — o mapeamento é fixo aqui.
+const LOJA_NUMERO = {
+  cahu: 1, muribeca: 2, ponte: 3, atacarejo: 4, 'porta larga': 5, 'jardim jordao': 6
+};
+var DIACRITICOS_RE = new RegExp('[̀-ͯ]', 'g');
+function _normalizarLoja(nome) {
+  return (nome || '').normalize('NFD').replace(DIACRITICOS_RE, '')
+    .trim().toLowerCase();
 }
 
 app.get('/health', (req, res) => res.json({ ok: true }));
@@ -89,19 +105,26 @@ app.get('/produto/:codigoBarras', verificarToken, async function(req, res) {
       preco: Number(rows[0].preco),
       unidade: rows[0].unvenda
     };
-    // Estoque: coluna NÃO confirmada em supermercado.itens (só existe
-    // comprovada na base legada central.itens/estoquen1-6, que tem preço
-    // zerado e por isso não é usada pra mais nada aqui). Tentativa isolada
-    // do resto da resposta — se a coluna não existir, loga e segue sem
-    // travar a consulta de preço/nome, que já é comprovada em produção.
-    try {
-      var [estRows] = await conn.query(
-        'SELECT Estoque FROM supermercado.itens WHERE CodigoBarra = ? LIMIT 1',
-        [req.params.codigoBarras]
-      );
-      if (estRows.length && estRows[0].Estoque != null) produto.estoque = Number(estRows[0].Estoque);
-    } catch (eEst) {
-      console.error('[etiquetas-api] coluna de estoque indisponível em supermercado.itens (esperado até confirmar ao vivo):', eEst.code || eEst.message);
+    // Estoque real por loja: confirmado (2026-08-25) que supermercado.itens
+    // não tem estoque populado (coluna existe mas é 0 em 100% dos itens
+    // ativos) — o dado real mora em central.estoquen1..6 (uma tabela por
+    // loja), ligado por CodigoBarra (nInterno NÃO bate entre os dois
+    // schemas, confirmado por teste direto). Loja resolvida via LOJA_NUMERO
+    // a partir do campo `loja` do usuário logado (req.userLoja). Tentativa
+    // isolada — se o usuário não tiver loja mapeada, ou a consulta falhar,
+    // segue sem travar a consulta de preço/nome (frontend já trata
+    // produto.estoque ausente com "—", app.js:5822).
+    var numeroLoja = LOJA_NUMERO[_normalizarLoja(req.userLoja)];
+    if (numeroLoja) {
+      try {
+        var [estRows] = await conn.query(
+          'SELECT Qtd FROM central.estoquen' + numeroLoja + ' WHERE CodigoBarra = ? LIMIT 1',
+          [req.params.codigoBarras]
+        );
+        if (estRows.length && estRows[0].Qtd != null) produto.estoque = Number(estRows[0].Qtd);
+      } catch (eEst) {
+        console.error('[etiquetas-api] erro ao consultar estoque da loja ' + numeroLoja + ':', eEst.code || eEst.message);
+      }
     }
     res.json(produto);
   } catch (e) {
@@ -112,29 +135,81 @@ app.get('/produto/:codigoBarras', verificarToken, async function(req, res) {
   }
 });
 
-// Busca por nome ou código (substring) — usada pela tela de Etiquetas em
-// Lote pra montar o lote com produtos reais em vez do catálogo mockado
-// (ETC_MOCK_PRODUTOS no app.js, mantido só pra Avulsa/Consulta enriquecerem
-// marca/estoque-anterior quando o código bate com os 6 itens de exemplo).
-// Sem filtro de Departamento/Setor/Marca — sem coluna confirmada pra isso.
+// Busca por nome ou código (substring), com filtro opcional por Mercadológico
+// 1/2 (Departamento/Setor) — usada pela tela de Etiquetas em Lote pra montar
+// o lote com produtos reais em vez do catálogo mockado (ETC_MOCK_PRODUTOS no
+// app.js, mantido só pra Avulsa/Consulta enriquecerem marca/estoque-anterior
+// quando o código bate com os 6 itens de exemplo).
+// Confirmado (2026-08-25): só CodGrupo/CodGrupoSub têm dado real ligado a
+// produto em supermercado.itens (join com central.grupo/gruposub). Marca e
+// um hipotético 3º nível (central.grupomarca/marca, codsetor/central.setor)
+// foram testados e estão 100% vazios nos itens ativos — não implementados.
+// Com filtro(s) preenchido(s), o termo de busca vira opcional (permite
+// "navegar" por Mercadológico sem digitar nada).
 app.get('/produtos/buscar', verificarToken, async function(req, res) {
   var termo = (req.query.q || '').trim();
-  if (!termo || termo.length < 2) return res.json([]);
+  var codGrupo = req.query.codGrupo ? Number(req.query.codGrupo) : null;
+  var codGrupoSub = req.query.codGrupoSub ? Number(req.query.codGrupoSub) : null;
+  if ((!termo || termo.length < 2) && !codGrupo && !codGrupoSub) return res.json([]);
   var conn;
   try {
     conn = await mysql.createConnection(dbConfig);
-    var like = '%' + termo + '%';
+    var condicoes = ['CodDesativado = 0'];
+    var params = [];
+    if (termo && termo.length >= 2) {
+      condicoes.push('(Descricao LIKE ? OR CodigoBarra LIKE ?)');
+      var like = '%' + termo + '%';
+      params.push(like, like);
+    }
+    if (codGrupo) { condicoes.push('CodGrupo = ?'); params.push(codGrupo); }
+    if (codGrupoSub) { condicoes.push('CodGrupoSub = ?'); params.push(codGrupoSub); }
     var [rows] = await conn.query(
       'SELECT CodigoBarra, Descricao, preco, unvenda FROM supermercado.itens ' +
-      'WHERE CodDesativado = 0 AND (Descricao LIKE ? OR CodigoBarra LIKE ?) ' +
-      'ORDER BY Descricao LIMIT 30',
-      [like, like]
+      'WHERE ' + condicoes.join(' AND ') + ' ORDER BY Descricao LIMIT 60',
+      params
     );
     res.json(rows.map(function(r) {
       return { codigoBarras: r.CodigoBarra, nome: r.Descricao, preco: Number(r.preco), unidade: r.unvenda };
     }));
   } catch (e) {
     console.error('[etiquetas-api] erro MySQL (busca):', e.code || e.message);
+    res.status(503).json({ error: 'Erro ao consultar o ERP' });
+  } finally {
+    if (conn) await conn.end().catch(function(){});
+  }
+});
+
+// Mercadológico 1 (Departamento) — lista completa, pra popular o filtro da
+// tela de Montar Lote. Pouco mais de 40 grupos, não precisa paginar.
+app.get('/mercadologico/grupos', verificarToken, async function(req, res) {
+  var conn;
+  try {
+    conn = await mysql.createConnection(dbConfig);
+    var [rows] = await conn.query('SELECT CodGrupo, Descricao FROM central.grupo ORDER BY Descricao');
+    res.json(rows.map(function(r) { return { codGrupo: r.CodGrupo, descricao: r.Descricao }; }));
+  } catch (e) {
+    console.error('[etiquetas-api] erro MySQL (grupos):', e.code || e.message);
+    res.status(503).json({ error: 'Erro ao consultar o ERP' });
+  } finally {
+    if (conn) await conn.end().catch(function(){});
+  }
+});
+
+// Mercadológico 2 (Setor) — filtrado por Departamento quando ?codGrupo= é
+// passado (uso normal: operador escolhe Departamento primeiro).
+app.get('/mercadologico/subgrupos', verificarToken, async function(req, res) {
+  var codGrupo = req.query.codGrupo ? Number(req.query.codGrupo) : null;
+  var conn;
+  try {
+    conn = await mysql.createConnection(dbConfig);
+    var sql = 'SELECT CodSubGrupo, Descricao FROM central.gruposub';
+    var params = [];
+    if (codGrupo) { sql += ' WHERE CodGrupo = ?'; params.push(codGrupo); }
+    sql += ' ORDER BY Descricao';
+    var [rows] = await conn.query(sql, params);
+    res.json(rows.map(function(r) { return { codGrupoSub: r.CodSubGrupo, descricao: r.Descricao }; }));
+  } catch (e) {
+    console.error('[etiquetas-api] erro MySQL (subgrupos):', e.code || e.message);
     res.status(503).json({ error: 'Erro ao consultar o ERP' });
   } finally {
     if (conn) await conn.end().catch(function(){});

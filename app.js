@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '334';
+var BUILD = '335';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5254,6 +5254,14 @@ var ETC_MOCK_PRODUTOS = [
 ];
 
 var _etcLoteSelecionados = {}; // codigoBarras -> {produto, qtd}
+// Filtro Mercadológico 1/2 (Departamento/Setor) da tela de Montar Lote —
+// só esses dois níveis têm dado real ligado a produto no ERP (confirmado
+// 2026-08-25, ver etiquetas-api.js /mercadologico/*). codGrupo/codGrupoSub
+// vazios = sem filtro (busca só por termo, comportamento de antes).
+var _etcLoteFiltros = { codGrupo: '', codGrupoSub: '' };
+// Cache da lista de Departamentos (Mercadológico 1) — pouco mais de 40
+// itens, buscada uma vez por sessão (não muda durante o uso do app).
+var _etcMercadologicoGrupos = null;
 // true enquanto o construtor "Montar novo lote" (busca/filtro/checkbox) está
 // na tela. Essa tela não tem nenhuma UI dependente do PrinterManager — usado
 // por _etcAtualizarStatusUI pra não descartar a seleção em andamento quando
@@ -5266,6 +5274,7 @@ var _etcMontandoLote = false;
 // ali jogaria fora a seleção que o operador já tinha montado).
 function _etcIniciarNovoLote() {
   _etcLoteSelecionados = {};
+  _etcLoteFiltros = { codGrupo: '', codGrupoSub: '' };
   renderEtcMontarLote();
 }
 
@@ -5273,8 +5282,8 @@ function _etcIniciarNovoLote() {
 // .254→.252) — substitui o catálogo mockado que esta tela usava antes
 // (ETC_MOCK_PRODUTOS continua existindo só pra enriquecer marca/estoque-
 // anterior em Avulsa/Consulta quando o código bate com os 6 itens de
-// exemplo, ver essas duas telas). Sem filtro de Departamento/Setor/Marca —
-// sem coluna confirmada no banco pra isso (ver etiquetas-api.js).
+// exemplo, ver essas duas telas). Filtro por Mercadológico 1/2 via
+// _etcLoteFiltros, ver _etcBuscarProdutosLote.
 var _etcLoteResultadosBusca = [];
 
 function renderEtcMontarLote() {
@@ -5294,6 +5303,10 @@ function renderEtcMontarLote() {
       '<div><div class="etc-bipar-title">Bipar produto</div><div class="etc-bipar-desc">Aponte a câmera para o código de barras do produto</div></div>' +
     '</div>' +
     '<input id="etc-lote-busca" placeholder="🔎 Buscar por código ou nome do produto (mín. 2 letras)" style="width:100%;padding:12px;font-size:14px;margin-bottom:10px">' +
+    '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+      '<select id="etc-lote-filtro-depto" style="flex:1;padding:10px;font-size:13px" onchange="_etcOnMudarDepartamentoLote()"><option value="">Departamento (todos)</option></select>' +
+      '<select id="etc-lote-filtro-setor" style="flex:1;padding:10px;font-size:13px" onchange="_etcOnMudarSetorLote()" disabled><option value="">Setor (todos)</option></select>' +
+    '</div>' +
     '<div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px">' +
       '<span style="color:var(--g);font-weight:700;cursor:pointer;text-decoration:underline" onclick="_etcSelecionarTodosLote()">Selecionar todos</span>' +
       '<span style="color:var(--t3);font-weight:700;cursor:pointer;text-decoration:underline" onclick="_etcLimparSelecaoLote()">Limpar seleção</span>' +
@@ -5334,9 +5347,66 @@ function renderEtcMontarLote() {
       _etcRenderListaLote();
     });
   });
+  _etcCarregarFiltrosLote();
   if (_etcLoteResultadosBusca.length) _etcRenderListaLote();
-  else document.getElementById('etc-lote-lista').innerHTML = '<div class="empty">Digite pra buscar produtos...</div>';
+  else document.getElementById('etc-lote-lista').innerHTML = '<div class="empty">Digite pra buscar ou escolha um Departamento...</div>';
   _etcAtualizarBarraLote();
+}
+
+// Carrega o select de Departamento (cache por sessão) e restaura a seleção
+// atual de _etcLoteFiltros ao reentrar nesta tela (ex.: voltar da Revisão).
+function _etcCarregarFiltrosLote() {
+  var selDepto = document.getElementById('etc-lote-filtro-depto');
+  var selSetor = document.getElementById('etc-lote-filtro-setor');
+  if (!selDepto) return;
+  function preencherDeptos() {
+    selDepto.innerHTML = '<option value="">Departamento (todos)</option>' +
+      _etcMercadologicoGrupos.map(function(g) {
+        return '<option value="' + g.codGrupo + '"' + (String(g.codGrupo) === String(_etcLoteFiltros.codGrupo) ? ' selected' : '') + '>' + _escHtml(g.descricao) + '</option>';
+      }).join('');
+    if (_etcLoteFiltros.codGrupo) _etcCarregarSetoresLote(_etcLoteFiltros.codGrupo, _etcLoteFiltros.codGrupoSub);
+  }
+  if (_etcMercadologicoGrupos) { preencherDeptos(); return; }
+  firebase.auth().currentUser.getIdToken().then(function(token) {
+    return fetch(ETIQUETAS_API_URL + '/mercadologico/grupos', { headers: {Authorization: 'Bearer ' + token} });
+  }).then(function(resp) { return resp.ok ? resp.json() : []; }).then(function(grupos) {
+    _etcMercadologicoGrupos = grupos;
+    preencherDeptos();
+  }).catch(function() { /* filtro fica indisponível, busca por termo continua funcionando */ });
+}
+
+function _etcCarregarSetoresLote(codGrupo, codGrupoSubSelecionado) {
+  var selSetor = document.getElementById('etc-lote-filtro-setor');
+  if (!selSetor) return;
+  selSetor.disabled = true;
+  selSetor.innerHTML = '<option value="">Carregando...</option>';
+  firebase.auth().currentUser.getIdToken().then(function(token) {
+    return fetch(ETIQUETAS_API_URL + '/mercadologico/subgrupos?codGrupo=' + encodeURIComponent(codGrupo), { headers: {Authorization: 'Bearer ' + token} });
+  }).then(function(resp) { return resp.ok ? resp.json() : []; }).then(function(subgrupos) {
+    selSetor.disabled = false;
+    selSetor.innerHTML = '<option value="">Setor (todos)</option>' +
+      subgrupos.map(function(s) {
+        return '<option value="' + s.codGrupoSub + '"' + (String(s.codGrupoSub) === String(codGrupoSubSelecionado) ? ' selected' : '') + '>' + _escHtml(s.descricao) + '</option>';
+      }).join('');
+  }).catch(function() { selSetor.innerHTML = '<option value="">Setor (todos)</option>'; });
+}
+
+function _etcOnMudarDepartamentoLote() {
+  var val = document.getElementById('etc-lote-filtro-depto').value;
+  _etcLoteFiltros.codGrupo = val;
+  _etcLoteFiltros.codGrupoSub = '';
+  if (val) _etcCarregarSetoresLote(val, '');
+  else {
+    var selSetor = document.getElementById('etc-lote-filtro-setor');
+    selSetor.innerHTML = '<option value="">Setor (todos)</option>';
+    selSetor.disabled = true;
+  }
+  _etcBuscarProdutosLote(document.getElementById('etc-lote-busca').value.trim());
+}
+
+function _etcOnMudarSetorLote() {
+  _etcLoteFiltros.codGrupoSub = document.getElementById('etc-lote-filtro-setor').value;
+  _etcBuscarProdutosLote(document.getElementById('etc-lote-busca').value.trim());
 }
 
 // Busca por substring no ERP real (nome ou código, via etiquetas-api). Único
@@ -5346,14 +5416,18 @@ function renderEtcMontarLote() {
 function _etcBuscarProdutosLote(termo) {
   var lista = document.getElementById('etc-lote-lista');
   if (!lista) return; // debounce pode disparar depois do operador já ter saído da tela
-  if (!termo || termo.length < 2) {
+  var temFiltro = !!(_etcLoteFiltros.codGrupo || _etcLoteFiltros.codGrupoSub);
+  if ((!termo || termo.length < 2) && !temFiltro) {
     _etcLoteResultadosBusca = [];
-    lista.innerHTML = '<div class="empty">Digite pra buscar produtos...</div>';
+    lista.innerHTML = '<div class="empty">Digite pra buscar ou escolha um Departamento...</div>';
     return;
   }
   lista.innerHTML = '<div class="empty">Buscando...</div>';
+  var qs = 'q=' + encodeURIComponent((termo && termo.length >= 2) ? termo : '');
+  if (_etcLoteFiltros.codGrupo) qs += '&codGrupo=' + encodeURIComponent(_etcLoteFiltros.codGrupo);
+  if (_etcLoteFiltros.codGrupoSub) qs += '&codGrupoSub=' + encodeURIComponent(_etcLoteFiltros.codGrupoSub);
   firebase.auth().currentUser.getIdToken().then(function(token) {
-    return fetch(ETIQUETAS_API_URL + '/produtos/buscar?q=' + encodeURIComponent(termo), {
+    return fetch(ETIQUETAS_API_URL + '/produtos/buscar?' + qs, {
       headers: {Authorization: 'Bearer ' + token}
     });
   }).then(function(resp) {

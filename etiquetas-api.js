@@ -29,10 +29,9 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || 'https://fc360oficial.git
   .split(',').map(function(o) { return o.trim(); }).filter(Boolean);
 app.use(cors({
   origin: ALLOWED_ORIGINS,
-  methods: ['GET', 'POST'],
+  methods: ['GET'],
   allowedHeaders: ['Authorization', 'Content-Type']
 }));
-app.use(express.json({ limit: '1mb' }));
 
 // Verifica o Firebase ID token do operador já logado no FC360, e resolve
 // o clienteId do usuário consultando a mesma coleção `usuarios` que o
@@ -214,57 +213,6 @@ app.get('/mercadologico/subgrupos', verificarToken, async function(req, res) {
     res.status(503).json({ error: 'Erro ao consultar o ERP' });
   } finally {
     if (conn) await conn.end().catch(function(){});
-  }
-});
-
-// Proxy do Assistente IA (Gemini) — a chave GEMINI_API_KEY nunca sai do
-// servidor. Antes (até BUILD 337) ficava hardcoded direto no app.js
-// público (var _GK), extraível por qualquer um abrindo o devtools do
-// navegador. O front manda só systemInstruction+contents (o contexto de
-// dados da loja já montado) e recebe de volta o texto pronto — a lógica de
-// escolha de modelo (_iaGetModel) foi replicada aqui, cacheada em memória
-// do processo (reinicia se o processo reiniciar, sem problema, é só 1
-// chamada extra à API do Gemini nesse caso).
-var _iaModeloCache = null;
-function _iaResolverModelo() {
-  if (_iaModeloCache) return Promise.resolve(_iaModeloCache);
-  return fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + process.env.GEMINI_API_KEY)
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var modelos = data.models || [];
-      var m = modelos.find(function(m) {
-        return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && m.name.indexOf('flash') >= 0 && m.name.indexOf('lite') < 0;
-      }) || modelos.find(function(m) {
-        return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0;
-      });
-      _iaModeloCache = m ? m.name.replace('models/', '') : 'gemini-pro';
-      return _iaModeloCache;
-    })
-    .catch(function() { return 'gemini-pro'; });
-}
-
-app.post('/ia/mensagem', verificarToken, async function(req, res) {
-  var systemInstruction = (req.body && req.body.systemInstruction) || '';
-  var contents = (req.body && req.body.contents) || [];
-  if (!contents.length) return res.status(400).json({ error: 'Mensagem vazia' });
-  try {
-    var modelo = await _iaResolverModelo();
-    var resp = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent?key=' + process.env.GEMINI_API_KEY,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system_instruction: { parts: [{ text: systemInstruction }] }, contents: contents })
-      }
-    );
-    var data = await resp.json();
-    if (data.error) return res.status(502).json({ error: data.error.message });
-    var texto = data.candidates && data.candidates[0] && data.candidates[0].content.parts[0].text;
-    if (!texto) return res.status(502).json({ error: 'Resposta vazia da IA' });
-    res.json({ resposta: texto });
-  } catch (e) {
-    console.error('[etiquetas-api] erro Gemini:', e.message);
-    res.status(503).json({ error: 'Erro ao consultar o assistente' });
   }
 });
 

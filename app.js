@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '340';
+var BUILD = '341';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1664,7 +1664,7 @@ function setupRole() {
     if (_tbMT) _tbMT.style.display = 'none';
     show('nav-clientes', true);
     ['sb-adm-sec','tab-gerenciar','nav-dashboard','nav-central','nav-relat',
-     'nav-assistente','nav-monitor','nav-token','btn-zerar-dados','nav-users','nav-alertas',
+     'nav-monitor','nav-token','btn-zerar-dados','nav-users','nav-alertas',
      'nav-plano','nav-checklist','nav-sec-checklist','sb-inv-sec','nav-inv-gestao','nav-inv-coleta','nav-capa'
     ].forEach(function(id){ show(id, false); });
     return;
@@ -1683,7 +1683,6 @@ function setupRole() {
   show('nav-etiquetas', (isAdmin || isSup) && !isColetor && _moduloAtivo('etiquetas'));
   show('sb-etiquetas-sec', (isAdmin || isSup) && !isColetor && _moduloAtivo('etiquetas'));
   show('nav-relat', (isAdmin || isSup || r==='gerencia') && !isColetor);
-  show('nav-assistente', isAdmin && _moduloAtivo('assistente_ia'));
   show('nav-monitor', isAdmin && _moduloAtivo('monitor'));
   show('nav-token', isAdmin);
   show('btn-zerar-dados', isAdmin);
@@ -9530,8 +9529,8 @@ function _renderClientesLista() {
   var wrap = document.getElementById('painel-clientes-wrap');
   if (!wrap) return;
   var hoje = new Date(); hoje.setHours(0,0,0,0);
-  var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','assistente_ia','etiquetas'];
-  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos',alertas:'Alertas',relatorios:'Relatórios',central:'Central',monitor:'Monitor',assistente_ia:'IA',etiquetas:'Etiquetas'};
+  var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas'];
+  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos',alertas:'Alertas',relatorios:'Relatórios',central:'Central',monitor:'Monitor',etiquetas:'Etiquetas'};
   var PLANO_LABEL = {basico:'Básico',completo:'Completo',premium:'Premium'};
 
   var ativosCount = _clientesCache.filter(function(c){ return c.ativo !== false; }).length;
@@ -9726,8 +9725,8 @@ function _atualizarVersaoClientes() {
 
 function abrirEditarCliente(clienteId) {
   var c = _clientesCache.find(function(x){ return x.id===clienteId; }) || {};
-  var MODS = ['checklist','inventario','planos_acao','relatorios','central','assistente_ia','monitor','etiquetas'];
-  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',assistente_ia:'Assistente IA',monitor:'Monitor',etiquetas:'Etiquetas'};
+  var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas'];
+  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas'};
   var modHtml = MODS.map(function(m){
     var on = !c.modulos || c.modulos[m] !== false;
     var ls = on ? 'background:rgba(34,197,94,.1);color:#15803d;border-radius:8px;' : 'color:var(--t2);border-radius:8px;';
@@ -9763,7 +9762,7 @@ function fecharEditarCliente() {
 }
 
 function salvarEdicaoCliente(clienteId) {
-  var MODS = ['checklist','inventario','planos_acao','perdas','relatorios','central','assistente_ia','monitor','etiquetas'];
+  var MODS = ['checklist','inventario','planos_acao','perdas','relatorios','central','monitor','etiquetas'];
   var modulos = {};
   MODS.forEach(function(m){ modulos[m] = !!(document.getElementById('ec-mod-'+m)||{}).checked; });
   var dados = {
@@ -9783,8 +9782,8 @@ function salvarEdicaoCliente(clienteId) {
 }
 
 function abrirNovoCliente() {
-  var MODS = ['checklist','inventario','planos_acao','relatorios','central','assistente_ia','monitor','etiquetas'];
-  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',assistente_ia:'Assistente IA',monitor:'Monitor',etiquetas:'Etiquetas'};
+  var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas'];
+  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas'};
   var modHtml = MODS.map(function(m){
     return '<label onchange="var i=this.querySelector(\'input\');this.style.background=i.checked?\'rgba(34,197,94,.1)\':\'\';this.style.color=i.checked?\'#15803d\':\'\';" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;font-size:13px;font-weight:600;background:rgba(34,197,94,.1);color:#15803d;border-radius:8px;">'+
       '<input type="checkbox" id="nc-mod-'+m+'" checked style="width:16px;height:16px;accent-color:#22c55e;flex-shrink:0"> '+MODS_LABEL[m]+'</label>';
@@ -9814,7 +9813,7 @@ function fecharNovoCliente() {
 }
 
 function criarNovoCliente() {
-  var MODS = ['checklist','inventario','planos_acao','perdas','relatorios','central','assistente_ia','monitor','etiquetas'];
+  var MODS = ['checklist','inventario','planos_acao','perdas','relatorios','central','monitor','etiquetas'];
   var nome = (document.getElementById('nc-nome')||{}).value||'';
   var id = ((document.getElementById('nc-id')||{}).value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   var errEl = document.getElementById('nc-err');
@@ -14601,370 +14600,4 @@ window.addEventListener('beforeunload', function() {
       }
     }
   } catch(e) {}
-})();
-
-// ══════════════════════════════════════════════
-// ASSISTENTE IA — Google Gemini
-// ══════════════════════════════════════════════
-// Chave do Gemini NÃO fica mais aqui (BUILD 338) — ficava hardcoded nesta
-// var (_GK), extraível por qualquer um no devtools do navegador, pois este
-// arquivo é público (GitHub Pages). Agora o front só manda o contexto já
-// montado pro proxy em etiquetas-api.js (/ia/mensagem), que guarda a chave
-// no servidor e escolhe o modelo — ver esse arquivo pro porquê.
-var _iaHist = [];
-var _iaLoading = false;
-
-var _IA_QUICK = [
-  {label: '📊 Desempenho hoje',   msg: 'Como está o desempenho dos checklists hoje? Dê um resumo e dicas.'},
-  {label: '⚠️ O que devo priorizar?', msg: 'Com base no meu perfil e rotinas de loja, o que devo priorizar agora?'},
-  {label: '💡 Dica de gestão',    msg: 'Me dê uma dica prática de gestão para supermercados.'},
-  {label: '📦 Inventário',        msg: 'Me explique boas práticas para fazer inventário rápido e preciso em supermercado.'}
-];
-
-function renderAssistente() {
-  var msgs = document.getElementById('ia-chat-msgs');
-  var quick = document.getElementById('ia-quick-btns');
-  if (!msgs) return;
-
-  if (quick && !quick.hasChildNodes()) {
-    _IA_QUICK.forEach(function(q) {
-      var b = document.createElement('button');
-      b.textContent = q.label;
-      b.style.cssText = 'padding:7px 14px;border:1.5px solid var(--gray2);border-radius:20px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--t);transition:.2s';
-      b.onmouseenter = function(){this.style.borderColor='#FFC600';this.style.background='#fffbeb';};
-      b.onmouseleave = function(){this.style.borderColor='var(--gray2)';this.style.background='#fff';};
-      b.onclick = function(){ enviarMensagemIA(q.msg); };
-      quick.appendChild(b);
-    });
-  }
-
-  if (_iaHist.length === 0) {
-    var nome = (S.user && S.user.nome) ? S.user.nome.split(' ')[0] : 'você';
-    _iaAddMsg('bot', 'Olá, ' + nome + '! 👋 Sou o assistente do Fluxo Certo 360.\n\nPosso te ajudar com relatórios, dicas de gestão e análises da sua operação. Use os botões acima ou me pergunte qualquer coisa sobre a loja!');
-  }
-  _iaRender();
-}
-
-function _iaRender() {
-  var c = document.getElementById('ia-chat-msgs');
-  if (!c) return;
-  c.innerHTML = '';
-  _iaHist.forEach(function(m) {
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;' + (m.r === 'u' ? 'justify-content:flex-end' : 'justify-content:flex-start');
-    var bub = document.createElement('div');
-    var isUser = m.r === 'u';
-    bub.style.cssText = 'max-width:82%;padding:11px 15px;border-radius:' +
-      (isUser ? '16px 16px 4px 16px;background:#FFC600;color:#0d0d0d;font-weight:500' : '16px 16px 16px 4px;background:#fff;color:#111;border:1px solid #e5e7eb') +
-      ';font-size:13.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,.06)';
-    bub.textContent = m.t;
-    wrap.appendChild(bub);
-    c.appendChild(wrap);
-  });
-  c.scrollTop = c.scrollHeight;
-}
-
-function _iaAddMsg(role, text) {
-  _iaHist.push({r: role, t: text});
-  _iaRender();
-}
-
-function enviarMensagemIA(textoFixo) {
-  if (_iaLoading) return;
-  var input = document.getElementById('ia-input');
-  var msg = textoFixo || (input ? input.value.trim() : '');
-  if (!msg) return;
-  if (input && !textoFixo) input.value = '';
-
-  _iaAddMsg('u', msg);
-  _iaLoading = true;
-
-  var placeholderIdx = _iaHist.length;
-  _iaAddMsg('bot', '⏳ Pensando...');
-
-  var u      = S.currentUser || {};
-  var perfil = u.perfil || 'Gestor';
-  var loja   = u.loja   || 'Loja';
-  var nome   = u.nome   || 'Usuário';
-  var agora  = new Date().toLocaleString('pt-BR');
-  var hoje   = new Date().toLocaleDateString('pt-BR');
-
-  // ── coleta dados reais ──────────────────────────────
-  var resultados     = (typeof getResultados==='function') ? getResultados() : (S.resultadosCache||[]);
-  var resultHoje     = resultados.filter(function(r){ return r.dataHora&&r.dataHora.indexOf(hoje)===0; });
-  var invsAbertos    = (S.invsCache||[]).filter(function(i){ return i.status==='aberto'; });
-  var invsEncerrados = (S.invsCache||[]).filter(function(i){ return i.status==='encerrado'; });
-  var sete = new Date(); sete.setDate(sete.getDate()-7);
-  function _dePt(dh){ try{ var p=dh.split(' ')[0].split('/'); return new Date(p[2],p[1]-1,p[0]); }catch(e){ return new Date(0); } }
-  var result7d   = resultados.filter(function(r){ return r.dataHora&&_dePt(r.dataHora)>=sete; });
-  var reprov7d   = result7d.filter(function(r){ return r.reprovado; });
-  var planos     = (typeof getPlanos==='function') ? getPlanos() : [];
-  var planosLoja = planos.filter(function(p){ return !p.loja||p.loja===(u.loja||''); });
-  var planosAbertos   = planosLoja.filter(function(p){ return p.status==='aberto'; });
-  var planosAtrasados = planosAbertos.filter(function(p){ return p.prazoFim&&new Date(p.prazoFim)<new Date(); });
-  var perdas     = S.perdaItems||[];
-  var myCLs      = (typeof getMyCLs==='function') ? getMyCLs() : [];
-  var CLsNaoFeitos = myCLs.filter(function(cl){
-    return !resultHoje.some(function(r){ return r.checklistId===cl.id; });
-  });
-
-  // ── itens que mais falham nos últimos 7 dias ─────────
-  var falhasMap = {};
-  result7d.forEach(function(r){
-    if(!r.itens) return;
-    r.itens.forEach(function(it){
-      if(!it.feito && it.texto){
-        var k = it.texto.trim();
-        if(!falhasMap[k]) falhasMap[k]={n:0,critico:it.critico};
-        falhasMap[k].n++;
-        if(it.critico) falhasMap[k].critico=true;
-      }
-    });
-  });
-  var topFalhas = Object.keys(falhasMap).sort(function(a,b){ return falhasMap[b].n-falhasMap[a].n; }).slice(0,8);
-
-  // ── performance por operador (7 dias) ────────────────
-  var opMap = {};
-  result7d.forEach(function(r){
-    var op = r.operador||'?';
-    if(!opMap[op]) opMap[op]={total:0,reprov:0,pctSum:0};
-    opMap[op].total++;
-    if(r.reprovado) opMap[op].reprov++;
-    opMap[op].pctSum+=(r.pct||0);
-  });
-
-  // ── monta contexto ───────────────────────────────────
-  var ctx = '\n\n=== DADOS REAIS DO SISTEMA (' + agora + ') ===\n';
-  ctx += 'Loja: ' + loja + ' | Usuário: ' + nome + ' (' + perfil + ')\n';
-
-  // Checklists hoje
-  ctx += '\n>> CHECKLISTS HOJE (' + resultHoje.length + ' concluídos';
-  if(CLsNaoFeitos.length) ctx += ' | ' + CLsNaoFeitos.length + ' PENDENTES';
-  ctx += ')\n';
-  resultHoje.forEach(function(r){
-    ctx += '  ✅ ' + (r.checklistNome||'?') + ' — ' + (r.feitos||0) + '/' + (r.total||0) + ' itens (' + (r.pct||0) + '%)' + (r.reprovado?' ⚠️REPROVADO':'') + ' por ' + r.operador + '\n';
-  });
-  if(CLsNaoFeitos.length){
-    ctx += '  AINDA NÃO FEITOS HOJE:\n';
-    CLsNaoFeitos.slice(0,8).forEach(function(cl){ ctx += '  ❌ ' + (cl.label||cl.nome||cl.id) + '\n'; });
-  }
-
-  // Planos de ação
-  ctx += '\n>> PLANOS DE AÇÃO (' + planosAbertos.length + ' abertos | ' + planosAtrasados.length + ' ATRASADOS)\n';
-  if(planosAtrasados.length){
-    planosAtrasados.slice(0,5).forEach(function(p){
-      ctx += '  🔴 ATRASADO: ' + (p.desc||'?') + ' | Resp: ' + (p.responsavel||'N/A') + ' | Prazo: ' + (p.prazo||p.prazoFim||'?') + '\n';
-    });
-  }
-  var abertosNaoAtrasados = planosAbertos.filter(function(p){ return !planosAtrasados.includes(p); });
-  abertosNaoAtrasados.slice(0,5).forEach(function(p){
-    ctx += '  🟡 Aberto: ' + (p.desc||'?') + ' | Resp: ' + (p.responsavel||'N/A') + '\n';
-  });
-
-  // Itens que mais falham
-  if(topFalhas.length){
-    ctx += '\n>> ITENS QUE MAIS FALHAM NOS ÚLTIMOS 7 DIAS\n';
-    topFalhas.forEach(function(k){
-      var f=falhasMap[k];
-      ctx += '  ' + (f.critico?'🔴 [CRÍTICO]':'🟡') + ' "' + k + '" — ' + f.n + 'x não concluído\n';
-    });
-  }
-
-  // Performance por operador
-  ctx += '\n>> PERFORMANCE POR OPERADOR (últimos 7 dias)\n';
-  Object.keys(opMap).forEach(function(op){
-    var o=opMap[op];
-    var media=o.total?Math.round(o.pctSum/o.total):0;
-    ctx += '  • ' + op + ': ' + o.total + ' checklist(s), ' + o.reprov + ' reprovado(s), média ' + media + '%\n';
-  });
-
-  // ── Equipe e mapa de usuários (declarado antes para uso no inventário) ──
-  var todosUsuarios = (typeof getUsers==='function') ? getUsers() : (S.usersCache||[]);
-  var roleNames2 = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção',coletor:'Coletor'};
-  var usersMapIA = {};
-  todosUsuarios.forEach(function(usr){ usersMapIA[usr.id||''] = usr.nome||'?'; });
-
-  // ── Inventários: endereços, coletores, divergências (dados em cache) ──
-  var todosInvs = S.invsCache || [];
-  ctx += '\n>> INVENTÁRIOS (' + invsAbertos.length + ' em andamento | ' + invsEncerrados.length + ' encerrados)\n';
-  todosInvs.slice(0,6).forEach(function(inv) {
-    var ends = inv.enderecos || [];
-    var atribs = inv.atribuicoes || {};
-    var resolucoes = inv.resolucoes || {};
-    var statusLabel = inv.status==='aberto' ? '🔄 EM ANDAMENTO' : '✅ Encerrado';
-    ctx += '  ' + statusLabel + ': ' + (inv.nome||inv.id) + ' (' + ends.length + ' endereços | ' + (inv.totalBipagens||0) + ' bipagens)\n';
-    // Coletores atribuídos por endereço
-    var coletorMap = {};
-    ends.forEach(function(e) {
-      var atrib = _normalizeAtrib(atribs[e]);
-      (atrib.coletores||[]).forEach(function(c) {
-        var cnome = c.nome || usersMapIA[c.userId||''] || c.userId || '?';
-        if (!coletorMap[cnome]) coletorMap[cnome] = {ends:0,concl:0};
-        coletorMap[cnome].ends++;
-        if (c.concluido) coletorMap[cnome].concl++;
-      });
-    });
-    var cNomes = Object.keys(coletorMap);
-    if (cNomes.length) {
-      ctx += '    Coletores: ' + cNomes.map(function(n){ return n+' ('+coletorMap[n].concl+'/'+coletorMap[n].ends+' concluídos)'; }).join(', ') + '\n';
-    } else if (ends.length) {
-      ctx += '    Coletores: nenhum atribuído ainda\n';
-    }
-    // Divergências resolvidas (resolucoes vem do doc Firestore)
-    var divKeys = Object.keys(resolucoes);
-    if (divKeys.length) {
-      ctx += '    Divergências resolvidas: ' + divKeys.length + ' endereço(s)\n';
-      divKeys.slice(0,4).forEach(function(e) {
-        var res = resolucoes[e];
-        ctx += '      • ' + e + ' → Rodada ' + (res.rodada||'?') + ' aprovada (por ' + (res.resolvidoPor||'admin') + ')\n';
-      });
-      if (divKeys.length>4) ctx += '      ... e mais ' + (divKeys.length-4) + '\n';
-    }
-  });
-
-  // Perdas
-  if(perdas.length){
-    ctx += '\n>> PERDAS REGISTRADAS HOJE (' + perdas.length + ' itens)\n';
-    perdas.slice(0,5).forEach(function(p){ ctx += '  • ' + (p.produto||p.nome||'Item') + ': ' + (p.quantidade||'?') + ' ' + (p.unidade||'un') + '\n'; });
-  }
-
-  // Últimos 7 dias resumo
-  ctx += '\n>> RESUMO 7 DIAS: ' + result7d.length + ' checklists | ' + reprov7d.length + ' reprovados | ' + planosAtrasados.length + ' planos atrasados\n';
-
-  // ── Cadastro de checklists por loja/setor ─────────────
-  var todosOsCLs = (typeof getCustomCLs==='function') ? getCustomCLs() : [];
-  if(todosOsCLs.length){
-    ctx += '\n>> CHECKLISTS CADASTRADOS NO SISTEMA (' + todosOsCLs.length + ' customizados)\n';
-    var clPorLoja = {};
-    todosOsCLs.forEach(function(cl){
-      var lojaKey = cl.loja || 'Todas as lojas';
-      if(!clPorLoja[lojaKey]) clPorLoja[lojaKey] = [];
-      clPorLoja[lojaKey].push(cl);
-    });
-    Object.keys(clPorLoja).forEach(function(lojaKey){
-      ctx += '  Loja: ' + lojaKey + '\n';
-      clPorLoja[lojaKey].forEach(function(cl){
-        ctx += '    • [' + (cl.setor||'Geral') + '] ' + (cl.nome||cl.label||cl.id) + ' (perfil: ' + (cl.perfil||'todos') + ')\n';
-      });
-    });
-  }
-
-  // ── Equipe cadastrada por loja ────────────────────────
-  if(todosUsuarios.length){
-    ctx += '\n>> EQUIPE CADASTRADA POR LOJA\n';
-    var usersPorLoja = {};
-    todosUsuarios.forEach(function(usr){
-      var lojaKey = usr.loja || 'Sem loja definida';
-      if(!usersPorLoja[lojaKey]) usersPorLoja[lojaKey] = [];
-      usersPorLoja[lojaKey].push(usr);
-    });
-    Object.keys(usersPorLoja).forEach(function(lojaKey){
-      ctx += '  Loja: ' + lojaKey + '\n';
-      usersPorLoja[lojaKey].forEach(function(usr){
-        ctx += '    • ' + (usr.nome||'?') + ' — ' + (roleNames2[usr.perfil]||usr.perfil||'?') + '\n';
-      });
-    });
-  }
-
-  // ── Resultados agrupados por loja (7 dias) ────────────
-  var result7dTodos = (S.resultadosCache||[]).filter(function(r){ return r.dataHora&&_dePt(r.dataHora)>=sete; });
-  var resultPorLoja = {};
-  result7dTodos.forEach(function(r){
-    var lojaKey = r.loja || 'Sem loja';
-    if(!resultPorLoja[lojaKey]) resultPorLoja[lojaKey] = {total:0,reprov:0,pctSum:0};
-    resultPorLoja[lojaKey].total++;
-    if(r.reprovado) resultPorLoja[lojaKey].reprov++;
-    resultPorLoja[lojaKey].pctSum += (r.pct||0);
-  });
-  if(Object.keys(resultPorLoja).length > 1){
-    ctx += '\n>> DESEMPENHO POR LOJA (últimos 7 dias)\n';
-    Object.keys(resultPorLoja).forEach(function(lojaKey){
-      var rl = resultPorLoja[lojaKey];
-      var media = rl.total ? Math.round(rl.pctSum/rl.total) : 0;
-      var gestores = todosUsuarios.filter(function(u2){ return u2.loja===lojaKey && (u2.perfil==='gerencia'||u2.perfil==='supervisor'||u2.perfil==='admin'); });
-      var nomeGestores = gestores.map(function(g){ return g.nome+'('+(roleNames2[g.perfil]||g.perfil)+')'; }).join(', ') || 'N/A';
-      ctx += '  📍 ' + lojaKey + ': ' + rl.total + ' checklists | ' + rl.reprov + ' reprovados | média ' + media + '% | Gestão: ' + nomeGestores + '\n';
-    });
-  }
-
-  // ── Finaliza: carrega bipagens do inv ativo, depois chama Gemini ──
-  function _finalizaIA(bips) {
-    // Produtos coletados no inventário ativo (via bipagens do Firestore)
-    if (bips && bips.length && invsAbertos[0]) {
-      var invAct = invsAbertos[0];
-      var eanMap = {};
-      var endColeta = {};
-      bips.forEach(function(b) {
-        if (!b.ean) return;
-        eanMap[b.ean] = (eanMap[b.ean]||0) + (b.qty||1);
-        if (!endColeta[b.endereco]) endColeta[b.endereco] = 0;
-        endColeta[b.endereco] += (b.qty||1);
-      });
-      var topEans = Object.keys(eanMap).sort(function(a,b){ return eanMap[b]-eanMap[a]; }).slice(0,10);
-      var endsComColeta = Object.keys(endColeta).length;
-      var totalEnds = (invAct.enderecos||[]).length;
-      ctx += '\n>> PRODUTOS COLETADOS — ' + (invAct.nome||invAct.id) + '\n';
-      ctx += '   Endereços com coleta: ' + endsComColeta + '/' + totalEnds + '\n';
-      ctx += '   EANs únicos registrados: ' + Object.keys(eanMap).length + '\n';
-      if (topEans.length) {
-        ctx += '   Top produtos por quantidade:\n';
-        topEans.forEach(function(ean){ ctx += '     • EAN ' + ean + ': ' + eanMap[ean] + ' un\n'; });
-      }
-      var endsSem = (invAct.enderecos||[]).filter(function(e){ return !endColeta[e]; });
-      if (endsSem.length) {
-        ctx += '   Endereços sem coleta (' + endsSem.length + '): ' + endsSem.slice(0,6).join(', ') + (endsSem.length>6?'...':'') + '\n';
-      }
-    }
-
-    var sp = 'Você é um assistente de gestão integrado ao Fluxo Certo 360, sistema para supermercados e varejo.\n' +
-      'Responda SEMPRE em português brasileiro. Seja objetivo, prático e direto ao ponto.\n' +
-      'Use os dados reais abaixo para análises precisas. Quando identificar problemas, sugira ações concretas.' + ctx;
-
-    var allMsgs = _iaHist.slice(0, placeholderIdx);
-    var firstUserIdx = -1;
-    for (var i = 0; i < allMsgs.length; i++) { if (allMsgs[i].r === 'u') { firstUserIdx = i; break; } }
-    var contents = (firstUserIdx >= 0 ? allMsgs.slice(firstUserIdx) : allMsgs).map(function(m) {
-      return {role: m.r === 'u' ? 'user' : 'model', parts: [{text: m.t}]};
-    });
-
-    firebase.auth().currentUser.getIdToken().then(function(token) {
-      return fetch(ETIQUETAS_API_URL + '/ia/mensagem', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
-        body: JSON.stringify({ systemInstruction: sp, contents: contents })
-      });
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var resp = 'Não consegui gerar uma resposta. Tente novamente.';
-      try {
-        if (data.error) resp = '⚠️ Erro da API: ' + data.error;
-        else resp = data.resposta;
-      } catch(e){ console.error('Gemini response:', JSON.stringify(data)); }
-      _iaHist[placeholderIdx] = {r:'bot', t:resp};
-      _iaLoading = false;
-      _iaRender();
-    })
-    .catch(function(e){
-      console.error('Gemini fetch error:', e);
-      _iaHist[placeholderIdx] = {r:'bot', t:'⚠️ Erro de conexão. Verifique a internet e tente novamente.'};
-      _iaLoading = false;
-      _iaRender();
-    });
-  }
-
-  if (invsAbertos.length) {
-    loadBipagensByInv(invsAbertos[0].id, _finalizaIA);
-  } else {
-    _finalizaIA(null);
-  }
-}
-
-// Nav override para assistente
-(function(){
-  var _navOrig = nav;
-  nav = function(page, el, opts) {
-    _navOrig(page, el, opts);
-    if (page === 'assistente') setTimeout(renderAssistente, 50);
-  };
 })();

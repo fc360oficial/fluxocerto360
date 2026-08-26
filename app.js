@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '339';
+var BUILD = '340';
 var ETIQUETAS_API_URL = 'https://folding-cache-shaped-semi.trycloudflare.com'; // TEMP: túnel de teste local, não commitar
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -8695,19 +8695,32 @@ function salvarPlano() {
   var prazoFim = new Date(Date.now() + prazoHoras * 3600000).toISOString();
   var mensagem = (document.getElementById('plano-mensagem')||{}).value || '';
   var planoSalvo = null;
+  var camposParaFirestore = null;
   if (editingPlanoId) {
+    // Grava no Firestore SÓ os campos editados neste formulário (merge) —
+    // nunca o objeto local inteiro. Bug real (2026-08-25, achado em
+    // auditoria): planoSalvo copiava TODO o plano do cache local via
+    // Object.assign (status, historico, conclusao, resolvidoEm,
+    // prorrogacoes inclusos) e mandava isso pro _gravarPlanoNoFirestore —
+    // se o cache local estivesse desatualizado (outro dispositivo já tinha
+    // resolvido esse plano), editar só o prazo aqui revertia a resolução
+    // alheia silenciosamente. planoSalvo (mesclado) continua servindo pro
+    // cache local/UI, só o que vai pro servidor é a fatia editada.
+    var camposEditados = {desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim()};
     list = list.map(function(p){
       if (p.id!==editingPlanoId) return p;
-      planoSalvo = Object.assign({},p,{desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim()});
+      planoSalvo = Object.assign({},p,camposEditados);
       return planoSalvo;
     });
+    camposParaFirestore = Object.assign({id:editingPlanoId}, camposEditados);
   } else {
     var quem = S.currentUser ? S.currentUser.nome : '—';
     planoSalvo = {id:genId(),desc:desc,responsavel:document.getElementById('plano-resp').value.trim(),prazo:document.getElementById('plano-prazo').value,origem:document.getElementById('plano-origem').value.trim(),obs:document.getElementById('plano-obs').value.trim(),status:'aberto',loja:loja,criadoEm:now,criadoTimestamp:new Date().toISOString(),criadoPor:quem,prazoHoras:prazoHoras,prazoFim:prazoFim,mensagem:mensagem.trim(),prorrogacoes:[],historico:[{acao:'criado',para:'aberto',por:quem,em:now}],clienteId:(S.currentUser && S.currentUser.clienteId)||''};
     list.push(planoSalvo);
+    camposParaFirestore = planoSalvo;
   }
   savePlanos(list);
-  _gravarPlanoNoFirestore(planoSalvo);
+  _gravarPlanoNoFirestore(camposParaFirestore);
   fecharModalPlano();
   renderPlanos(planoFiltroAtual);
   atualizarBadgePlano();

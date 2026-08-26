@@ -126,9 +126,6 @@
       </div>
 
       <div class="sb-sec" id="sb-adm-sec" style="display:none"></div>
-      <div class="sb-item" id="nav-assistente" style="display:none" onclick="nav('assistente',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>Assistente IA
-      </div>
       <div class="sb-item" id="nav-monitor" style="display:none" onclick="nav('monitor',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Monitor
       </div>
@@ -1238,25 +1235,6 @@
         <div id="inv-avulsa-wrap"></div>
       </div><!-- /panel-inv-avulsa -->
 
-      <!-- ASSISTENTE IA -->
-      <div id="panel-assistente" class="panel">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-          <div style="width:44px;height:44px;background:#FFC600;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">✨</div>
-          <div>
-            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;font-weight:800">Assistente IA</div>
-            <div style="font-size:12px;color:var(--t3)">Powered by Google Gemini · responde em segundos</div>
-          </div>
-        </div>
-        <div id="ia-quick-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
-        <div id="ia-chat-msgs" style="background:#f4f6f9;border-radius:14px;padding:16px;margin-bottom:12px;min-height:280px;max-height:calc(100vh - 340px);overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
-        <div style="display:flex;gap:8px">
-          <input id="ia-input" type="text" placeholder="Pergunte sobre checklists, inventário, dicas de gestão..."
-            style="flex:1;padding:13px 16px;border:1.5px solid var(--gray2);border-radius:12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensagemIA()}">
-          <button onclick="enviarMensagemIA()" style="background:#FFC600;border:none;color:#0d0d0d;font-weight:700;padding:13px 22px;border-radius:12px;cursor:pointer;font-size:13px;white-space:nowrap">Enviar →</button>
-        </div>
-      </div><!-- /panel-assistente -->
-
       <!-- MONITOR CONFIG -->
       <div id="panel-monitor" class="panel">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
@@ -1976,7 +1954,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="client.js"></script>
 <script src="qrcode-generator.min.js"></script>
-<script src="app.js?v=340" defer></script>
+<script src="app.js?v=341" defer></script>
 
 
 </body>

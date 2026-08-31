@@ -1,3 +1,8 @@
 hhk0a8gt2cn.sn.mynetname.net {
-    reverse_proxy localhost:3003
+    handle_path /etiquetas-api/* {
+        reverse_proxy localhost:3011
+    }
+    handle {
+        reverse_proxy localhost:3003
+    }
 }

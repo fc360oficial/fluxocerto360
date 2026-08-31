@@ -185,7 +185,7 @@ app.get('/mercadologico/grupos', verificarToken, async function(req, res) {
   var conn;
   try {
     conn = await mysql.createConnection(dbConfig);
-    var [rows] = await conn.query('SELECT CodGrupo, Descricao FROM central.grupo ORDER BY Descricao');
+    var [rows] = await conn.query('SELECT CodGrupo, Descricao FROM central.grupo WHERE CodDesativado = 0 ORDER BY Descricao');
     res.json(rows.map(function(r) { return { codGrupo: r.CodGrupo, descricao: r.Descricao }; }));
   } catch (e) {
     console.error('[etiquetas-api] erro MySQL (grupos):', e.code || e.message);
@@ -202,9 +202,9 @@ app.get('/mercadologico/subgrupos', verificarToken, async function(req, res) {
   var conn;
   try {
     conn = await mysql.createConnection(dbConfig);
-    var sql = 'SELECT CodSubGrupo, Descricao FROM central.gruposub';
+    var sql = 'SELECT CodSubGrupo, Descricao FROM central.gruposub WHERE CodDesativado = 0';
     var params = [];
-    if (codGrupo) { sql += ' WHERE CodGrupo = ?'; params.push(codGrupo); }
+    if (codGrupo) { sql += ' AND CodGrupo = ?'; params.push(codGrupo); }
     sql += ' ORDER BY Descricao';
     var [rows] = await conn.query(sql, params);
     res.json(rows.map(function(r) { return { codGrupoSub: r.CodSubGrupo, descricao: r.Descricao }; }));

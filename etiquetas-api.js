@@ -181,11 +181,18 @@ app.get('/produtos/buscar', verificarToken, async function(req, res) {
 
 // Mercadológico 1 (Departamento) — lista completa, pra popular o filtro da
 // tela de Montar Lote. Pouco mais de 40 grupos, não precisa paginar.
+// GRUPOS_USO_INTERNO: grupos ativos no ERP (CodDesativado=0) mas que não são
+// mercadoria de prateleira (uso interno/taxa) — pedido do Tiago (2026-08-31),
+// não tem flag no banco pra isso, só exclusão manual por código.
+var GRUPOS_USO_INTERNO = [62, 64]; // 62=USO E CONSUMO, 64=TAXA DE ENTREGA
 app.get('/mercadologico/grupos', verificarToken, async function(req, res) {
   var conn;
   try {
     conn = await mysql.createConnection(dbConfig);
-    var [rows] = await conn.query('SELECT CodGrupo, Descricao FROM central.grupo WHERE CodDesativado = 0 ORDER BY Descricao');
+    var [rows] = await conn.query(
+      'SELECT CodGrupo, Descricao FROM central.grupo WHERE CodDesativado = 0 AND CodGrupo NOT IN (?) ORDER BY Descricao',
+      [GRUPOS_USO_INTERNO]
+    );
     res.json(rows.map(function(r) { return { codGrupo: r.CodGrupo, descricao: r.Descricao }; }));
   } catch (e) {
     console.error('[etiquetas-api] erro MySQL (grupos):', e.code || e.message);

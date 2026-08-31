@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '342';
+var BUILD = '343';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5222,6 +5222,8 @@ var _etcMercadologicoGrupos = null;
 // por _etcAtualizarStatusUI pra não descartar a seleção em andamento quando
 // o status da impressora muda (ver renderEtcMontarLote/renderEtcLotes/renderFilaLote).
 var _etcMontandoLote = false;
+// Código com 4 dígitos igual à tela "Consultar Mercadológico" do ERP (ex: 23 -> "0023").
+function _etcCodMerc(cod) { return String(cod).padStart(4, '0'); }
 
 // Reseta a seleção e entra no construtor "Montar novo lote" — só este ponto
 // de entrada zera _etcLoteSelecionados. renderEtcMontarLote() sozinha NUNCA
@@ -5317,7 +5319,7 @@ function _etcCarregarFiltrosLote() {
   function preencherDeptos() {
     selDepto.innerHTML = '<option value="">Departamento (todos)</option>' +
       _etcMercadologicoGrupos.map(function(g) {
-        return '<option value="' + g.codGrupo + '"' + (String(g.codGrupo) === String(_etcLoteFiltros.codGrupo) ? ' selected' : '') + '>' + _escHtml(g.descricao) + '</option>';
+        return '<option value="' + g.codGrupo + '"' + (String(g.codGrupo) === String(_etcLoteFiltros.codGrupo) ? ' selected' : '') + '>' + _etcCodMerc(g.codGrupo) + ' - ' + _escHtml(g.descricao) + '</option>';
       }).join('');
     if (_etcLoteFiltros.codGrupo) _etcCarregarSetoresLote(_etcLoteFiltros.codGrupo, _etcLoteFiltros.codGrupoSub);
   }
@@ -5341,7 +5343,7 @@ function _etcCarregarSetoresLote(codGrupo, codGrupoSubSelecionado) {
     selSetor.disabled = false;
     selSetor.innerHTML = '<option value="">Setor (todos)</option>' +
       subgrupos.map(function(s) {
-        return '<option value="' + s.codGrupoSub + '"' + (String(s.codGrupoSub) === String(codGrupoSubSelecionado) ? ' selected' : '') + '>' + _escHtml(s.descricao) + '</option>';
+        return '<option value="' + s.codGrupoSub + '"' + (String(s.codGrupoSub) === String(codGrupoSubSelecionado) ? ' selected' : '') + '>' + _etcCodMerc(s.codGrupoSub) + ' - ' + _escHtml(s.descricao) + '</option>';
       }).join('');
   }).catch(function() { selSetor.innerHTML = '<option value="">Setor (todos)</option>'; });
 }

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '343';
+var BUILD = '344';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5763,6 +5763,18 @@ function imprimirProximoDaFila() {
   }).catch(function(e) {
     if (e && e._loggedAlready) return;
     erroReal = true;
+    // Motivos de CONEXÃO (impressora já estava desconectada antes desta
+    // tentativa, ex.: caiu durante um teste anterior na Avulsa) não passam
+    // pelo handler gattserverdisconnected (que só existe pra desconexão AO
+    // VIVO durante a fila) — sem este desvio, o operador só via um toast
+    // técnico genérico em vez da tela dedicada de reconexão (mesma UX que já
+    // existe pra desconexão ao vivo). "Aguarde"/"ocupada" continuam como
+    // toast normal, não é caso de reconectar.
+    var motivosDesconexao = ['SEM_SUPORTE', 'SEM_DISPOSITIVO_SALVO', 'DISPOSITIVO_NAO_ENCONTRADO', 'RECONEXAO_FALHOU', 'NAO_CONECTADA'];
+    if (e && motivosDesconexao.indexOf(e.motivo) !== -1) {
+      renderEtcFilaInterrompida();
+      return;
+    }
     showToast('❌ Erro ao imprimir: ' + e.message + ' (fila mantida, tente de novo)');
   }).then(function() {
     // Roda sempre (sucesso ou erro tratado acima) — equivalente a um "finally"
@@ -5771,9 +5783,11 @@ function imprimirProximoDaFila() {
     if (erroReal) {
       // Erro real de impressão: para o loop (se houver) e reabilita os
       // botões — como _avancarFilaLoteAposImpressao() não rodou, a fila
-      // continua com os mesmos itens (nenhum foi consumido).
+      // continua com os mesmos itens (nenhum foi consumido). Se o catch acima
+      // já levou pra tela de reconexão (_etcFilaInterrompidaAtiva), não
+      // sobrescrever com a tela normal da fila.
       _etcModoImprimirTudo = false;
-      renderFilaLote();
+      if (!_etcFilaInterrompidaAtiva) renderFilaLote();
       return;
     }
     if (_etcModoImprimirTudo && _loteAtualFila.length) {

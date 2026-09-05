@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '344';
+var BUILD = '345';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1144,7 +1144,10 @@ function ativarToken(fromModal) {
   var errEl = document.getElementById('ativ-token-err');
   var token = (inp ? inp.value.trim().toUpperCase() : '');
   if (!token) { if (errEl) errEl.textContent = 'Informe o token.'; return; }
-  var clienteId = S.currentUser && S.currentUser.clienteId;
+  var deployId = (window.FC360_CLIENT_ID && window.FC360_CLIENT_ID.trim()) || '';
+  var clienteId = (deployId && deployId !== 'universal' ? deployId : '')
+    || (S.currentUser && S.currentUser.clienteId)
+    || '';
   if (!clienteId) { if (errEl) errEl.textContent = 'Usuário sem cliente configurado.'; return; }
   if (errEl) errEl.textContent = '';
   db.collection('tokens').where('token','==',token).where('clienteId','==',clienteId).get().then(function(snap) {

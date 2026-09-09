@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '348';
+var BUILD = '349';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -10123,6 +10123,70 @@ function _desenharLinhasVersoes(clienteId, org, repoName, versoes, builds, build
     '</div>';
   }).join('');
   listaEl.innerHTML = rows;
+}
+
+var BASE_REPO_ORG = 'fc360oficial';
+var BASE_REPO_NOME = 'fluxocerto360';
+var _notasVersaoCache = {};
+
+function _toggleNotasVersao(sha, build, buildAnterior) {
+  var el = document.getElementById('notas-'+sha);
+  if (!el) return;
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if (_notasVersaoCache[build]) { el.innerHTML = _notasVersaoCache[build]; return; }
+  el.innerHTML = 'Buscando notas...';
+  _buscarNotasVersao(buildAnterior, build).then(function(html) {
+    _notasVersaoCache[build] = html;
+    el.innerHTML = html;
+  });
+}
+
+function _buscarNotasVersao(buildAnterior, buildAtual) {
+  return db.collection('config').doc('superadmin').get({source:'server'}).then(function(doc) {
+    var token = (doc.data()||{}).githubToken;
+    var headers = { Authorization: 'token '+token, Accept: 'application/vnd.github+json' };
+    return fetch('https://api.github.com/repos/'+BASE_REPO_ORG+'/'+BASE_REPO_NOME+'/commits?path=app.js&per_page=50', { headers: headers })
+      .then(function(r) {
+        if (!r.ok) throw new Error('GitHub '+r.status);
+        return r.json();
+      })
+      .then(function(commits) {
+        return _coletarNotasNoIntervalo(commits, 0, buildAnterior, buildAtual, headers);
+      });
+  }).then(function(notas) {
+    if (notas.length === 0) {
+      return 'Notas não disponíveis pra essa versão. <a href="https://github.com/'+BASE_REPO_ORG+'/'+BASE_REPO_NOME+'/commits/main" target="_blank" rel="noopener">Ver histórico completo no GitHub</a>.';
+    }
+    return '<ul style="margin:0;padding-left:18px">'+notas.map(function(n){ return '<li>'+n+'</li>'; }).join('')+'</ul>';
+  }).catch(function(e) {
+    return 'Erro ao buscar notas: '+e.message;
+  });
+}
+
+// Percorre os commits do repo base (mais novo -> mais velho) buscando o patch de
+// app.js em cada um, até achar todas as transições de build no intervalo
+// (buildAnterior, buildAtual]. Para assim que passar do início do intervalo,
+// pra não gastar chamada de API à toa.
+function _coletarNotasNoIntervalo(commits, i, buildAnterior, buildAtual, headers) {
+  if (i >= commits.length) return Promise.resolve([]);
+  var c = commits[i];
+  return fetch('https://api.github.com/repos/'+BASE_REPO_ORG+'/'+BASE_REPO_NOME+'/commits/'+c.sha, { headers: headers })
+    .then(function(r){ return r.json(); })
+    .then(function(detalhe) {
+      var arquivo = (detalhe.files||[]).filter(function(f){ return f.filename === 'app.js'; })[0];
+      var transicao = arquivo ? _extrairBuildDoPatch(arquivo.patch) : null;
+      if (transicao) {
+        var depois = parseInt(transicao.depois, 10);
+        if (depois <= parseInt(buildAnterior, 10)) return [];
+        if (depois <= parseInt(buildAtual, 10)) {
+          return _coletarNotasNoIntervalo(commits, i+1, buildAnterior, buildAtual, headers).then(function(resto) {
+            return [c.commit.message].concat(resto);
+          });
+        }
+      }
+      return _coletarNotasNoIntervalo(commits, i+1, buildAnterior, buildAtual, headers);
+    });
 }
 
 function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, callback) {

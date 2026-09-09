@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '347';
+var BUILD = '348';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -10066,7 +10066,7 @@ function abrirModalVersoes(clienteId) {
   db.collection('config').doc('superadmin').get({source:'server'}).then(function(doc) {
     var cfg = doc.data();
     var token = cfg.githubToken, org = cfg.githubOrg || 'fc360oficial';
-    db.collection('config').doc('repos').get({source:'server'}).then(function(rDoc) {
+    return db.collection('config').doc('repos').get({source:'server'}).then(function(rDoc) {
       var repoName = (rDoc.data()||{})[clienteId];
       var listaEl = document.getElementById('versoes-lista');
       if (!repoName) { if (listaEl) listaEl.innerHTML = 'Repositório não configurado pra esse cliente.'; return; }

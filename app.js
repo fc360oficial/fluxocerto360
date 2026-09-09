@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '346';
+var BUILD = '347';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -9610,6 +9610,7 @@ function _renderClientesLista() {
         '<button class="btn btn-sm" style="background:#1a1a1a;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="entrarComoCliente(\''+safeId+'\')">🚪 Entrar como</button>' +
         '<button class="btn btn-sm" style="background:#1a5c9c;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="gerarTokenCliente(\''+safeId+'\')">🔑 Token</button>' +
         '<button class="btn btn-sm" style="color:var(--t2);border:1.5px solid var(--gray2);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:#fff" onclick="verTokensCliente(\''+safeId+'\')">📋 Tokens</button>' +
+        (c.id === 'fluxocerto' ? '' : '<button class="btn btn-sm" style="background:#fff;color:var(--t2);border:1.5px solid var(--gray2);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="abrirModalVersoes(\''+safeId+'\')">🕓 Versões</button>') +
         '<button class="btn btn-sm" id="btn-deploy-'+safeId+'" style="background:#2d6a2d;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="deployCliente(\''+safeId+'\')">🚀 Deploy</button>' +
         (c.id === 'fluxocerto' ? '' : (inativo
           ? '<button class="btn btn-sm" style="background:#1a5c34;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="toggleAtivoCliente(\''+safeId+'\',true)">✅ Reativar</button>'
@@ -10050,6 +10051,78 @@ function cancelarToken(tokenId, clienteId) {
     renderPainelClientes();
     showToast('🔒 Acesso revogado.');
   }).catch(function(e){ showToast('Erro: '+e.message); });
+}
+
+function abrirModalVersoes(clienteId) {
+  var existing = document.getElementById('modal-versoes'); if (existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend',
+    '<div id="modal-versoes" onclick="if(event.target===this)this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px">'+
+      '<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto">'+
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;font-weight:800;margin-bottom:16px">Versões — '+clienteId+'</div>'+
+        '<div id="versoes-lista">Carregando...</div>'+
+        '<button onclick="document.getElementById(\'modal-versoes\').remove()" style="margin-top:16px;width:100%;padding:10px;background:var(--gray);border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>'+
+      '</div></div>');
+
+  db.collection('config').doc('superadmin').get({source:'server'}).then(function(doc) {
+    var cfg = doc.data();
+    var token = cfg.githubToken, org = cfg.githubOrg || 'fc360oficial';
+    db.collection('config').doc('repos').get({source:'server'}).then(function(rDoc) {
+      var repoName = (rDoc.data()||{})[clienteId];
+      var listaEl = document.getElementById('versoes-lista');
+      if (!repoName) { if (listaEl) listaEl.innerHTML = 'Repositório não configurado pra esse cliente.'; return; }
+      fetch('https://api.github.com/repos/'+org+'/'+repoName+'/commits?sha=main&per_page=10', {
+        headers: { Authorization: 'token '+token, Accept: 'application/vnd.github+json' }
+      }).then(function(r) {
+        if (!r.ok) throw new Error('GitHub '+r.status);
+        return r.json();
+      }).then(function(commits) {
+        var versoes = _filtrarUltimasVersoes(commits, 3);
+        if (versoes.length === 0) { if (listaEl) listaEl.innerHTML = 'Nenhuma versão publicada ainda.'; return; }
+        return Promise.all(versoes.map(function(v) {
+          return fetch('https://raw.githubusercontent.com/'+org+'/'+repoName+'/'+v.sha+'/version.json?t='+Date.now())
+            .then(function(r){ return r.json(); })
+            .then(function(data){ return data.build; })
+            .catch(function(){ return '?'; });
+        })).then(function(builds) {
+          var verAoVivoEl = document.getElementById('ver-'+clienteId);
+          var buildAoVivo = verAoVivoEl ? verAoVivoEl.textContent.replace('v','') : '';
+          _desenharLinhasVersoes(clienteId, org, repoName, versoes, builds, buildAoVivo);
+        });
+      }).catch(function(e) {
+        if (listaEl) listaEl.innerHTML = 'Erro ao buscar histórico: '+e.message;
+      });
+    });
+  }).catch(function(e) {
+    var listaEl = document.getElementById('versoes-lista');
+    if (listaEl) listaEl.innerHTML = 'Erro: '+e.message;
+  });
+}
+
+function _desenharLinhasVersoes(clienteId, org, repoName, versoes, builds, buildAoVivo) {
+  var listaEl = document.getElementById('versoes-lista');
+  if (!listaEl) return;
+  var rows = versoes.map(function(v, i) {
+    var build = builds[i];
+    var buildAnterior = (i+1 < versoes.length) ? builds[i+1] : (parseInt(build,10)-1);
+    var dataFmt = new Date(v.data).toLocaleString('pt-BR');
+    var ehAtual = String(build) === String(buildAoVivo);
+    return '<div style="padding:12px 0;border-bottom:1px solid var(--gray2)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">'+
+        '<div>'+
+          '<div style="font-family:monospace;font-size:14px;font-weight:700">v'+build+'</div>'+
+          '<div style="font-size:11px;color:var(--t2)">'+dataFmt+'</div>'+
+        '</div>'+
+        (ehAtual
+          ? '<span style="font-size:11px;font-weight:700;color:#1a5c34;background:#d1f0e0;padding:3px 8px;border-radius:6px;white-space:nowrap">🟢 Publicada agora</span>'
+          : '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+              '<button class="btn btn-sm" style="border:1.5px solid var(--gray2);background:#fff;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer" onclick="_toggleNotasVersao(\''+v.sha+'\',\''+build+'\',\''+buildAnterior+'\')">Ver o que mudou</button>'+
+              '<button class="btn btn-sm" style="border:none;background:#b7500a;color:#fff;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer" onclick="reverterVersaoCliente(\''+clienteId+'\',\''+v.sha+'\',\''+build+'\')">↩️ Reverter</button>'+
+            '</div>')+
+      '</div>'+
+      '<div id="notas-'+v.sha+'" style="display:none;margin-top:10px;padding:10px;background:var(--gray);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.5"></div>'+
+    '</div>';
+  }).join('');
+  listaEl.innerHTML = rows;
 }
 
 function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, callback) {

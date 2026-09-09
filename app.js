@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '345';
+var BUILD = '346';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -9672,6 +9672,24 @@ function _fetchComTimeout(url, ms) {
   }, function(e) {
     clearTimeout(timer);
     throw e;
+  });
+}
+
+function _extrairBuildDoPatch(patch) {
+  if (!patch) return null;
+  var antes = patch.match(/^-var BUILD = '(\d+)';/m);
+  var depois = patch.match(/^\+var BUILD = '(\d+)';/m);
+  if (!antes || !depois) return null;
+  return { antes: antes[1], depois: depois[1] };
+}
+
+function _filtrarUltimasVersoes(commits, limite) {
+  var n = limite || 3;
+  return (commits || []).filter(function(c) {
+    var msg = (c.commit && c.commit.message) || '';
+    return msg.indexOf('Auto-deploy') === 0 || msg.indexOf('Rollback para build') === 0;
+  }).slice(0, n).map(function(c) {
+    return { sha: c.sha, mensagem: c.commit.message, data: c.commit.author.date };
   });
 }
 

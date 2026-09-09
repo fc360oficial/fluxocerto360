@@ -1,0 +1,28 @@
+name: Rollback to previous version
+on:
+  repository_dispatch:
+    types: [rollback]
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - name: Backup client identity
+        run: cp client.js /tmp/client_backup.js
+      - name: Checkout old commit from this repo's own history
+        run: |
+          git checkout ${{ github.event.client_payload.sha }} -- .
+          git checkout HEAD -- .github/
+      - name: Restore client identity and push
+        run: |
+          cp /tmp/client_backup.js client.js
+          git add -A
+          git config user.email "deploy@fluxocerto.com"
+          git config user.name "FC360 Auto Deploy"
+          git diff --staged --quiet || git commit -m "Rollback para build anterior ($(date '+%d/%m/%Y %H:%M'))"
+          git push origin HEAD:main

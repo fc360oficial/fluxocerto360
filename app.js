@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '349';
+var BUILD = '350';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -10189,7 +10189,37 @@ function _coletarNotasNoIntervalo(commits, i, buildAnterior, buildAtual, headers
     });
 }
 
-function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, callback) {
+function reverterVersaoCliente(clienteId, sha, build) {
+  if (!confirm('Reverter "'+clienteId+'" pra build v'+build+'?\n\nIsso publica um commit novo revertendo os arquivos — nada é apagado do histórico.')) return;
+  db.collection('config').doc('superadmin').get({source:'server'}).then(function(doc) {
+    var cfg = doc.data();
+    var token = cfg.githubToken, org = cfg.githubOrg || 'fc360oficial';
+    db.collection('config').doc('repos').get({source:'server'}).then(function(rDoc) {
+      var repoName = (rDoc.data()||{})[clienteId];
+      if (!repoName) { showToast('❌ Repositório não configurado para: '+clienteId); return; }
+      var dispatchTime = Date.now();
+      fetch('https://api.github.com/repos/'+org+'/'+repoName+'/dispatches', {
+        method: 'POST',
+        headers: { Authorization: 'token '+token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: 'rollback', client_payload: { sha: sha } })
+      }).then(function(res) {
+        if (res.status === 204) {
+          showToast('⏳ Revertendo pra v'+build+'...');
+          var m = document.getElementById('modal-versoes'); if (m) m.remove();
+          _pollWorkflow(org, repoName, token, dispatchTime, null, clienteId, false, build, function(ok) {
+            if (ok) renderPainelClientes();
+          });
+        } else if (res.status === 404 || res.status === 422) {
+          showToast('❌ Esse cliente ainda não tem o workflow de rollback — rode o setup manual primeiro (ver docs/superpowers/specs/2026-09-08-painel-versoes-rollback-design.md).');
+        } else {
+          showToast('❌ Erro GitHub ('+clienteId+'): '+res.status);
+        }
+      }).catch(function(e) { showToast('❌ Erro: '+e.message); });
+    });
+  }).catch(function(e) { showToast('❌ Erro Firestore: '+e.message); });
+}
+
+function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, buildAlvo, callback) {
   var tentativas = 0;
   var maxTentativas = 36;
   function _tick() {
@@ -10213,7 +10243,7 @@ function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, 
         setTimeout(_tick, 10000);
       } else if (run.status === 'completed') {
         if (run.conclusion === 'success') {
-          db.collection('clientes').doc(clienteId).update({ ultimoDeploy: firebase.firestore.FieldValue.serverTimestamp(), buildDeploy: BUILD }).catch(function(){});
+          db.collection('clientes').doc(clienteId).update({ ultimoDeploy: firebase.firestore.FieldValue.serverTimestamp(), buildDeploy: buildAlvo }).catch(function(){});
           if (btn) { btn.textContent = '✅ Publicado!'; btn.style.background = 'linear-gradient(135deg,#22c55e,#15803d)'; }
           if (!silencioso) showToast('✅ Deploy concluído para '+clienteId+'!');
           setTimeout(function() {
@@ -10283,7 +10313,7 @@ function deployCliente(clienteId, silencioso, callback) {
       }).then(function(res) {
         if (res.status === 204) {
           if (btn) { btn.textContent = '⏳ 0s...'; }
-          _pollWorkflow(org, repoName, token, dispatchTime, btn, clienteId, silencioso, callback);
+          _pollWorkflow(org, repoName, token, dispatchTime, btn, clienteId, silencioso, BUILD, callback);
         } else {
           res.text().then(function(t){
             if (!silencioso) showToast('❌ Erro GitHub ('+clienteId+'): '+res.status);

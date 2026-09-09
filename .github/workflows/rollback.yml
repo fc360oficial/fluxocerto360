@@ -15,8 +15,11 @@ jobs:
       - name: Backup client identity
         run: cp client.js /tmp/client_backup.js
       - name: Checkout old commit from this repo's own history
+        env:
+          ROLLBACK_SHA: ${{ github.event.client_payload.sha }}
         run: |
-          git checkout ${{ github.event.client_payload.sha }} -- .
+          echo "$ROLLBACK_SHA" | grep -Eq '^[0-9a-f]{7,40}$' || { echo "sha inválido: $ROLLBACK_SHA"; exit 1; }
+          git checkout "$ROLLBACK_SHA" -- .
           git checkout HEAD -- .github/
       - name: Restore client identity and push
         run: |

@@ -4330,16 +4330,34 @@ function renderFornecedores() {
   });
 }
 
+function toggleDiaFornecedor(btn) {
+  btn.classList.toggle('btn-p');
+  btn.classList.toggle('btn-s');
+}
+
 function abrirModalFornecedor(id) {
   document.getElementById('forn-id').value = id || '';
   document.getElementById('forn-nome').value = '';
+  document.getElementById('forn-telefone').value = '';
+  document.getElementById('forn-email').value = '';
   document.getElementById('forn-lojas').value = '';
+  document.getElementById('forn-periodicidade').value = 'semanal';
+  document.querySelectorAll('#forn-dias .dia-btn').forEach(function(b) {
+    b.classList.remove('btn-p'); b.classList.add('btn-s');
+  });
   document.getElementById('modal-fornecedor').style.display = 'flex';
   if (id) {
     fornecedoresCol().doc(id).get().then(function(doc) {
       var f = doc.data();
-      document.getElementById('forn-nome').value = f.nome;
-      document.getElementById('forn-lojas').value = (f.lojas||[]).join(',');
+      document.getElementById('forn-nome').value = f.nome || '';
+      document.getElementById('forn-telefone').value = f.telefone || '';
+      document.getElementById('forn-email').value = f.email || '';
+      document.getElementById('forn-lojas').value = (f.lojas || []).join(',');
+      document.getElementById('forn-periodicidade').value = f.periodicidade || 'semanal';
+      (f.diasSemana || []).forEach(function(dia) {
+        var btn = document.querySelector('#forn-dias .dia-btn[data-dia="' + dia + '"]');
+        if (btn) { btn.classList.remove('btn-s'); btn.classList.add('btn-p'); }
+      });
     });
   }
 }
@@ -4349,11 +4367,22 @@ function salvarFornecedor() {
   var nome = document.getElementById('forn-nome').value.trim();
   var lojas = document.getElementById('forn-lojas').value.split(',').map(function(s){return s.trim();}).filter(Boolean);
   if (!nome || !lojas.length) { showToast('Preencha nome e ao menos uma loja.'); return; }
-  var dados = {nome: nome, lojas: lojas, ativo: true};
+  var diasSemana = Array.prototype.slice.call(document.querySelectorAll('#forn-dias .dia-btn.btn-p'))
+    .map(function(b) { return parseInt(b.getAttribute('data-dia'), 10); });
+  var dados = {
+    nome: nome,
+    telefone: document.getElementById('forn-telefone').value.trim() || null,
+    email: document.getElementById('forn-email').value.trim() || null,
+    lojas: lojas,
+    diasSemana: diasSemana,
+    periodicidade: document.getElementById('forn-periodicidade').value,
+    ativo: true
+  };
   var op = id ? fornecedoresCol().doc(id).update(dados) : fornecedoresCol().add(dados);
   op.then(function() {
     document.getElementById('modal-fornecedor').style.display = 'none';
-    renderFornecedores();
+    showToast('Fornecedor salvo.');
+    if (typeof renderPromotoresPainel === 'function') renderPromotoresPainel();
   });
 }
 

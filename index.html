@@ -568,14 +568,35 @@
       </div>
 
       <div class="modal-bg" id="modal-fornecedor" style="display:none">
-        <div class="modal-box" style="width:420px">
+        <div class="modal-box" style="width:440px">
           <div class="modal-title">Fornecedor</div>
           <input type="hidden" id="forn-id">
           <label>Nome</label>
           <input id="forn-nome" placeholder="Nome do fornecedor">
+          <label style="margin-top:12px">Telefone</label>
+          <input id="forn-telefone" placeholder="(00) 00000-0000">
+          <label style="margin-top:12px">E-mail</label>
+          <input id="forn-email" type="email" placeholder="contato@fornecedor.com">
           <label style="margin-top:12px">Lojas atendidas (IDs separados por vírgula)</label>
           <input id="forn-lojas" placeholder="1,2,3">
-          <div class="btn-row" style="margin-top:16px">
+          <label style="margin-top:12px">Dias da semana esperados</label>
+          <div id="forn-dias" style="display:flex;gap:6px;margin-bottom:16px">
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="1" onclick="toggleDiaFornecedor(this)">Seg</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="2" onclick="toggleDiaFornecedor(this)">Ter</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="3" onclick="toggleDiaFornecedor(this)">Qua</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="4" onclick="toggleDiaFornecedor(this)">Qui</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="5" onclick="toggleDiaFornecedor(this)">Sex</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="6" onclick="toggleDiaFornecedor(this)">Sáb</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="0" onclick="toggleDiaFornecedor(this)">Dom</button>
+          </div>
+          <label>Periodicidade</label>
+          <select id="forn-periodicidade" style="margin-bottom:16px">
+            <option value="semanal">Semanal</option>
+            <option value="diaria">Diária</option>
+            <option value="quinzenal">Quinzenal</option>
+            <option value="mensal">Mensal</option>
+          </select>
+          <div class="btn-row">
             <button class="btn btn-p" onclick="salvarFornecedor()">Salvar</button>
             <button class="btn btn-s" onclick="document.getElementById('modal-fornecedor').style.display='none'">Cancelar</button>
           </div>

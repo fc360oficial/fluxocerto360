@@ -4730,9 +4730,19 @@ function salvarFornecedor() {
   });
 }
 
-function abrirQrFornecedor(lojaId) {
-  if (!lojaId) { showToast('Esse fornecedor não tem loja cadastrada.'); return; }
-  var url = location.origin + '/checkin.html?c=' + S.clienteConfig.id + '&l=' + lojaId;
+function renderQrGridLojas() {
+  var lojas = getLojasUnicas(S_PROM.fornecedores);
+  var wrap = document.getElementById('promotores-qr-grid');
+  if (!lojas.length) { wrap.innerHTML = '<div class="empty">Cadastre um fornecedor com loja pra gerar QR codes.</div>'; return; }
+  wrap.innerHTML = lojas.map(function(lojaId) {
+    return '<div class="card" style="padding:14px;text-align:center">'
+      + '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Loja ' + lojaId + '</div>'
+      + '<button class="btn btn-s btn-sm" style="width:100%" onclick="abrirQrLoja(\'' + lojaId + '\')">Ver / Imprimir</button></div>';
+  }).join('');
+}
+
+function abrirQrLoja(lojaId) {
+  var url = location.origin + location.pathname + '?checkin=1&c=' + S.clienteConfig.id + '&l=' + lojaId;
   var qr = qrcode(0, 'M');
   qr.addData(url);
   qr.make();

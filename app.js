@@ -4520,6 +4520,52 @@ function salvarAgendamento() {
   }).catch(function(e) { showToast('Erro ao agendar: ' + e.message); });
 }
 
+var _agendaSemanaOffset = 0;
+
+function abrirAgendaSemanal() {
+  _agendaSemanaOffset = 0;
+  document.getElementById('modal-agenda-semanal').style.display = 'flex';
+  renderAgendaSemanal(0, true);
+}
+
+function renderAgendaSemanal(delta, resetar) {
+  _agendaSemanaOffset = resetar ? 0 : _agendaSemanaOffset + delta;
+  var hoje = new Date();
+  var diaSemanaHoje = hoje.getDay();
+  var segundaBase = new Date(hoje);
+  segundaBase.setDate(hoje.getDate() - ((diaSemanaHoje + 6) % 7) + (_agendaSemanaOffset * 7));
+
+  var nomesDia = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  var hojeStr = getLocalDate();
+  var grid = document.getElementById('agenda-semanal-grid');
+
+  var colunas = [];
+  for (var i = 0; i < 7; i++) {
+    var dia = new Date(segundaBase);
+    dia.setDate(segundaBase.getDate() + i);
+    var diaStr = dia.toISOString().slice(0, 10);
+    var isHoje = diaStr === hojeStr;
+    var isFimSemana = dia.getDay() === 0 || dia.getDay() === 6;
+    var visitasDoDia = S_PROM.visitas.filter(function(v) { return v.dataAgendada === diaStr; })
+      .sort(function(a, b) { return (a.horaAgendada||'') < (b.horaAgendada||'') ? -1 : 1; });
+
+    var cards = visitasDoDia.map(function(v) {
+      var st = STATUS_VISITA[v.status] || {label: v.status, cls: 'st-info'};
+      return '<div class="card" style="padding:8px;margin-bottom:6px;font-size:11px">'
+        + '<div style="font-weight:700">' + (v.horaAgendada || '--:--') + ' · ' + (v.fornecedorNome||'-') + '</div>'
+        + '<div style="color:var(--t3)">' + (v.promotorNome||'-') + ' · ' + (v.lojaNome||'-') + '</div>'
+        + '<span class="st ' + st.cls + '" style="margin-top:4px;display:inline-block">' + st.label + '</span></div>';
+    }).join('') || '<div style="font-size:11px;color:var(--t3)">Sem visitas</div>';
+
+    colunas.push(
+      '<div style="background:' + (isHoje ? '#fff8e1' : isFimSemana ? '#fafafa' : 'transparent') + ';border-radius:8px;padding:8px;border:1px solid var(--gray2)">'
+      + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:8px">' + nomesDia[dia.getDay()] + ' ' + dia.getDate() + '/' + (dia.getMonth()+1) + '</div>'
+      + cards + '</div>'
+    );
+  }
+  grid.innerHTML = colunas.join('');
+}
+
 function toggleDiaFornecedor(btn) {
   btn.classList.toggle('btn-p');
   btn.classList.toggle('btn-s');

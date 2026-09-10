@@ -667,6 +667,21 @@
         </div>
       </div>
 
+      <div class="modal-bg" id="modal-agenda-semanal" style="display:none">
+        <div class="modal-box" style="width:900px;max-width:95vw">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="modal-title" style="margin:0">Agenda Semanal</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button class="btn btn-s btn-sm" onclick="renderAgendaSemanal(-1)">◀</button>
+              <button class="btn btn-s btn-sm" onclick="renderAgendaSemanal(0,true)">Hoje</button>
+              <button class="btn btn-s btn-sm" onclick="renderAgendaSemanal(1)">▶</button>
+            </div>
+          </div>
+          <div id="agenda-semanal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;max-height:60vh;overflow-y:auto"></div>
+          <div class="btn-row" style="margin-top:16px"><button class="btn btn-s" style="width:100%" onclick="document.getElementById('modal-agenda-semanal').style.display='none'">Fechar</button></div>
+        </div>
+      </div>
+
       <div class="modal-bg" id="modal-qr" style="display:none">
         <div class="modal-box" style="width:340px;text-align:center">
           <div class="modal-title">QR Code da loja</div>

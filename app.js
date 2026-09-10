@@ -98,6 +98,213 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
   }
 })();
 
+// ── Check-in de promotor como convidado (QR das lojas) ─────────────────────
+// Roda numa instância Firebase SECUNDÁRIA (mesmo padrão de _getSecondaryAuth,
+// usado em migrarFirebaseAuth) pra nunca interferir com uma sessão real já
+// logada no mesmo navegador/aba (ex.: tablet da loja com admin logado).
+//
+// IMPORTANTE: toda leitura/escrita de `promotor_visitas` usa o Firestore da
+// app SECUNDÁRIA (guestDb = firebase.app('promotorCheckin').firestore()),
+// nunca o `db` global (Firestore da app PRIMÁRIA/default). Uma instância de
+// Firestore só carrega as credenciais da app Firebase da qual ela foi obtida
+// — `db` (obtido de firebase.firestore(), sem app explícita) sempre usa o
+// auth da app default (o mesmo `firebase.auth()` usado por finalizarLogin/
+// onAuthStateChanged em todo o resto do arquivo), mesmo que o guest tenha
+// logado anonimamente na app secundária. Se usássemos `db` aqui: (a) numa
+// aba sem ninguém logado, request.auth seria null nas regras do Firestore e
+// toda leitura/escrita de promotor_visitas seria negada; (b) numa aba com um
+// admin real já logado, a escrita sairia autenticada como o UID do admin,
+// não o guestUid do convidado — violando `sessionUid == request.auth.uid`
+// das regras (firestore.rules) e falhando também, só que de um jeito muito
+// mais perigoso de se confundir com corrupção de sessão. Por isso o guestDb
+// dedicado: garante que toda operação em promotor_visitas é sempre avaliada
+// contra a identidade anônima do convidado, isolada do que estiver rolando
+// na app primária. Leitura de `clientes/{id}` (nome da loja) e de
+// `fornecedores` continua no `db` primário — são leituras públicas
+// (fornecedores: allow read: if true) e não dependem de identidade.
+(function() {
+  var params = new URLSearchParams(location.search);
+  if (params.get('checkin') !== '1') return;
+
+  var CLIENTE_ID = params.get('c') || '';
+  var LOJA_ID = params.get('l') || '';
+  var overlay = document.getElementById('checkin-guest-overlay');
+  overlay.style.cssText = 'display:flex;position:fixed;inset:0;z-index:999999;background:#F5F6F8;align-items:center;justify-content:center;padding:20px;font-family:\'Segoe UI\',sans-serif';
+  overlay.innerHTML = '<div class="card" id="cg-card" style="background:#fff;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,.08)">'
+    + '<div id="cg-titulo" style="font-size:20px;font-weight:800;margin-bottom:4px">Carregando...</div>'
+    + '<div id="cg-sub" style="font-size:13px;color:#6b7280;margin-bottom:20px"></div>'
+    + '<div id="cg-erro" style="display:none;font-size:13px;padding:12px;border-radius:10px;margin-bottom:16px;background:#fee2e2;color:#991b1b"></div>'
+    + '</div>';
+
+  function cgErro(msg) {
+    var el = document.getElementById('cg-erro');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function getGuestAuth() {
+    try { return firebase.app('promotorCheckin').auth(); }
+    catch(e) { return firebase.initializeApp(_fbAuthConfig, 'promotorCheckin').auth(); }
+  }
+
+  if (!CLIENTE_ID || !LOJA_ID) { cgErro('Link inválido — faltam parâmetros na URL.'); return; }
+
+  var guestAuth = null;
+  // Firestore obtido da MESMA app secundária do guestAuth — é isso que faz
+  // as regras (`request.auth`) enxergarem o guestUid, e não o auth da app
+  // primária. Ver comentário grande acima do IIFE.
+  var guestDb = null;
+  var guestUid = null;
+  var fornecedoresDaLoja = [];
+  var visitaAbertaId = null;
+  var visitaAgendadaId = null;
+
+  // `_fbAuthConfig` só é atribuído mais abaixo neste mesmo arquivo (é tudo
+  // um único script, executado de cima pra baixo, de forma síncrona) — essa
+  // IIFE roda logo no topo do arquivo, antes daquele ponto. Por isso adiamos
+  // a inicialização da app secundária (getGuestAuth) pro próximo tick via
+  // setTimeout(0): garante que o script inteiro já terminou de rodar e
+  // `_fbAuthConfig` já foi atribuído antes de usá-lo. Sem isso,
+  // firebase.initializeApp(undefined, 'promotorCheckin') falharia.
+  setTimeout(function() {
+    guestAuth = getGuestAuth();
+    guestDb = guestAuth.app.firestore();
+
+    guestAuth.signInAnonymously().then(function(cred) {
+      guestUid = cred.user.uid;
+      return db.collection('clientes').doc(CLIENTE_ID).get();
+    }).then(function(doc) {
+      var nome = doc.exists ? (doc.data().nome || CLIENTE_ID) : CLIENTE_ID;
+      document.getElementById('cg-titulo').textContent = nome;
+      document.getElementById('cg-sub').textContent = 'Loja: ' + LOJA_ID;
+      return db.collection('clientes').doc(CLIENTE_ID).collection('fornecedores')
+        .where('lojas', 'array-contains', LOJA_ID).where('ativo', '==', true).get();
+    }).then(function(snap) {
+      fornecedoresDaLoja = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+      return verificarVisita();
+    }).catch(function(e) { cgErro('Erro ao iniciar: ' + e.message); });
+  }, 0);
+
+  function verificarVisita() {
+    var col = guestDb.collection('clientes').doc(CLIENTE_ID).collection('promotor_visitas');
+    return col.where('sessionUid', '==', guestUid).where('checkOutEm', '==', null).limit(1).get()
+      .then(function(snap) {
+        if (!snap.empty) {
+          visitaAbertaId = snap.docs[0].id;
+          renderCheckout(snap.docs[0].data());
+          return;
+        }
+        var hoje = getLocalDate();
+        return col.where('lojaId', '==', LOJA_ID).where('status', '==', 'agendada').where('dataAgendada', '==', hoje).get();
+      }).then(function(snapAgendadas) {
+        if (visitaAbertaId) return;
+        if (snapAgendadas && !snapAgendadas.empty) {
+          visitaAgendadaId = snapAgendadas.docs[0].id;
+        }
+        renderCheckin();
+      });
+  }
+
+  function renderCheckin() {
+    var card = document.getElementById('cg-card');
+    var opcoes = fornecedoresDaLoja.map(function(f) { return '<option value="' + f.id + '">' + f.nome + '</option>'; }).join('');
+    if (!opcoes) {
+      card.innerHTML += '<div style="font-size:13px;padding:12px;border-radius:10px;background:#fee2e2;color:#991b1b">Nenhum fornecedor cadastrado pra essa loja ainda. Fale com o administrador.</div>';
+      return;
+    }
+    card.innerHTML +=
+      '<label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase">Fornecedor</label>'
+      + '<select id="cg-fornecedor" style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;margin-bottom:16px"><option value="">Selecione...</option>' + opcoes + '</select>'
+      + '<label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase">Seu nome</label>'
+      + '<input id="cg-nome" placeholder="Nome completo" style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;margin-bottom:16px">'
+      + '<button id="cg-btn" style="width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:#FFC600;color:#111">Registrar entrada</button>';
+    document.getElementById('cg-btn').onclick = fazerCheckin;
+  }
+
+  function fazerCheckin() {
+    var fornecedorId = document.getElementById('cg-fornecedor').value;
+    var nome = document.getElementById('cg-nome').value.trim();
+    if (!fornecedorId) { cgErro('Selecione o fornecedor.'); return; }
+    if (!nome) { cgErro('Informe seu nome.'); return; }
+    var fornecedor = fornecedoresDaLoja.filter(function(f) { return f.id === fornecedorId; })[0];
+    var btn = document.getElementById('cg-btn');
+    btn.disabled = true; btn.textContent = 'Registrando...';
+
+    function gravar(geo) {
+      var col = guestDb.collection('clientes').doc(CLIENTE_ID).collection('promotor_visitas');
+      var dados = {
+        checkInEm: firebase.firestore.FieldValue.serverTimestamp(),
+        checkInGeo: geo,
+        sessionUid: guestUid,
+        status: 'na_loja'
+      };
+      var op;
+      if (visitaAgendadaId) {
+        op = col.doc(visitaAgendadaId).update(dados);
+      } else {
+        op = col.add(Object.assign({
+          fornecedorId: fornecedorId,
+          fornecedorNome: fornecedor.nome,
+          lojaId: LOJA_ID,
+          lojaNome: LOJA_ID,
+          promotorNome: nome,
+          promotorTelefone: null,
+          dataAgendada: getLocalDate(),
+          horaAgendada: null,
+          checkOutEm: null,
+          checkOutGeo: null
+        }, dados));
+      }
+      op.then(function(ref) {
+        visitaAbertaId = visitaAgendadaId || (ref && ref.id);
+        verificarVisita();
+      }).catch(function(e) {
+        btn.disabled = false; btn.textContent = 'Registrar entrada';
+        cgErro('Erro ao registrar: ' + e.message);
+      });
+    }
+
+    if (!navigator.geolocation) { gravar(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) { gravar({lat: pos.coords.latitude, lng: pos.coords.longitude}); },
+      function() { gravar(null); },
+      {timeout: 5000}
+    );
+  }
+
+  function renderCheckout(visita) {
+    var card = document.getElementById('cg-card');
+    var hora = visita.checkInEm && visita.checkInEm.toDate ? visita.checkInEm.toDate().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
+    card.innerHTML +=
+      '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-bottom:16px"><b style="display:block;font-size:16px;margin-bottom:4px">Você está em: ' + visita.lojaNome + '</b>Fornecedor: ' + visita.fornecedorNome + '<br>Entrada às ' + hora + '</div>'
+      + '<button id="cg-btn-out" style="width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:#FFC600;color:#111">Registrar saída</button>';
+    document.getElementById('cg-btn-out').onclick = fazerCheckout;
+  }
+
+  function fazerCheckout() {
+    var btn = document.getElementById('cg-btn-out');
+    btn.disabled = true; btn.textContent = 'Registrando...';
+    function gravar(geo) {
+      guestDb.collection('clientes').doc(CLIENTE_ID).collection('promotor_visitas').doc(visitaAbertaId).update({
+        checkOutEm: firebase.firestore.FieldValue.serverTimestamp(),
+        checkOutGeo: geo,
+        status: 'realizada'
+      }).then(function() {
+        document.getElementById('cg-card').innerHTML = '<div style="font-size:20px;font-weight:800;margin-bottom:4px">✅ Saída registrada</div><div style="font-size:13px;color:#6b7280">Obrigado! Você já pode fechar essa página.</div>';
+      }).catch(function(e) {
+        btn.disabled = false; btn.textContent = 'Registrar saída';
+        cgErro('Erro ao registrar: ' + e.message);
+      });
+    }
+    if (!navigator.geolocation) { gravar(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) { gravar({lat: pos.coords.latitude, lng: pos.coords.longitude}); },
+      function() { gravar(null); },
+      {timeout: 5000}
+    );
+  }
+})();
+
 // ── PWA: registrar Service Worker ──
 var _swRefreshing = false;
 

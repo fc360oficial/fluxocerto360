@@ -13,20 +13,49 @@ service cloud.firestore {
 
     match /clientes/{clienteId}/promotor_visitas/{visitaId} {
       allow read: if request.auth != null;
-      // Create: só o dono da sessão anônima pode criar, e só com os campos
-      // esperados (sessionUid tem que bater com quem está autenticado).
+
+      // Create #1: Admin/Supervisor agenda uma visita com antecedência
+      // (não anônimo, ainda sem check-in).
+      allow create: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && request.resource.data.status == 'agendada'
+        && request.resource.data.sessionUid == null
+        && request.resource.data.checkInEm == null
+        && request.resource.data.checkOutEm == null;
+
+      // Create #2: promotor convidado chega sem agendamento prévio e já
+      // faz check-in direto (comportamento v1, mantido).
       allow create: if request.auth != null
         && request.resource.data.sessionUid == request.auth.uid
+        && request.resource.data.status == 'na_loja'
         && request.resource.data.checkOutEm == null;
-      // Update: só quem criou a visita (mesmo sessionUid) pode fechar o
-      // check-out, e só o campo de check-out (não pode reescrever check-in).
+
+      // Update #1: promotor convidado "assume" uma visita agendada
+      // existente e faz check-in (sessionUid ainda não preenchido).
+      allow update: if request.auth != null
+        && resource.data.status == 'agendada'
+        && resource.data.sessionUid == null
+        && request.resource.data.sessionUid == request.auth.uid
+        && request.resource.data.status == 'na_loja'
+        && request.resource.data.fornecedorId == resource.data.fornecedorId
+        && request.resource.data.lojaId == resource.data.lojaId;
+
+      // Update #2: o mesmo convidado que fez o check-in fecha o check-out.
       allow update: if request.auth != null
         && resource.data.sessionUid == request.auth.uid
         && resource.data.checkOutEm == null
+        && request.resource.data.status == 'realizada'
         && request.resource.data.fornecedorId == resource.data.fornecedorId
         && request.resource.data.lojaId == resource.data.lojaId
         && request.resource.data.checkInEm == resource.data.checkInEm;
-      allow delete: if false;
+
+      // Update #3: Admin/Supervisor edita/fecha manualmente (ex: marcar
+      // "não compareceu", fechar visita travada por troca de celular).
+      allow update: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+
+      allow delete: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
     match /clientes/{clienteId}/etiquetas_layout/{layoutId} {

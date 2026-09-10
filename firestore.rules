@@ -24,27 +24,34 @@ service cloud.firestore {
         && request.resource.data.checkOutEm == null;
 
       // Create #2: promotor convidado chega sem agendamento prévio e já
-      // faz check-in direto (comportamento v1, mantido).
+      // faz check-in direto (comportamento v1, mantido). checkInEm precisa
+      // ser o horário do servidor (request.time) — nunca um valor arbitrário
+      // que o cliente anônimo poderia forjar.
       allow create: if request.auth != null
         && request.resource.data.sessionUid == request.auth.uid
         && request.resource.data.status == 'na_loja'
+        && request.resource.data.checkInEm == request.time
         && request.resource.data.checkOutEm == null;
 
       // Update #1: promotor convidado "assume" uma visita agendada
-      // existente e faz check-in (sessionUid ainda não preenchido).
+      // existente e faz check-in (sessionUid ainda não preenchido). Mesma
+      // trava de checkInEm == request.time do Create #2, pelo mesmo motivo.
       allow update: if request.auth != null
         && resource.data.status == 'agendada'
         && resource.data.sessionUid == null
         && request.resource.data.sessionUid == request.auth.uid
         && request.resource.data.status == 'na_loja'
+        && request.resource.data.checkInEm == request.time
         && request.resource.data.fornecedorId == resource.data.fornecedorId
         && request.resource.data.lojaId == resource.data.lojaId;
 
       // Update #2: o mesmo convidado que fez o check-in fecha o check-out.
+      // checkOutEm também travado em request.time, mesmo motivo do check-in.
       allow update: if request.auth != null
         && resource.data.sessionUid == request.auth.uid
         && resource.data.checkOutEm == null
         && request.resource.data.status == 'realizada'
+        && request.resource.data.checkOutEm == request.time
         && request.resource.data.fornecedorId == resource.data.fornecedorId
         && request.resource.data.lojaId == resource.data.lojaId
         && request.resource.data.checkInEm == resource.data.checkInEm;

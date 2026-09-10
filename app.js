@@ -4449,15 +4449,21 @@ function toggleDiaAgendamento(btn) {
 function _gerarDatasAgendamento(dataInicial, dataFinal, periodicidade, diasSemana) {
   if (!periodicidade) return [dataInicial];
   var datas = [];
+  var inicio = new Date(dataInicial + 'T00:00:00');
   var cursor = new Date(dataInicial + 'T00:00:00');
   var fim = new Date((dataFinal || dataInicial) + 'T00:00:00');
-  var semanaInicial = Math.floor(cursor.getTime() / (7 * 86400000));
   while (cursor <= fim && datas.length < 60) {
     var diaSemana = cursor.getDay();
     var passaFiltroDia = periodicidade === 'diaria' || periodicidade === 'mensal' || !diasSemana.length || diasSemana.indexOf(diaSemana) >= 0;
     if (periodicidade === 'quinzenal') {
-      var semanaAtual = Math.floor(cursor.getTime() / (7 * 86400000));
-      passaFiltroDia = passaFiltroDia && ((semanaAtual - semanaInicial) % 2 === 0);
+      // Semana ancorada na própria dataInicial (não no calendário Unix) —
+      // achado do reviewer da Task 5: ancorar no epoch fazia o primeiro
+      // bloco sair mais curto que 7 dias dependendo do dia da semana
+      // escolhido, e a próxima ocorrência cair 7 ou 21 dias depois em vez
+      // de sempre 14.
+      var diasDesdeInicio = Math.round((cursor.getTime() - inicio.getTime()) / 86400000);
+      var semanaIndex = Math.floor(diasDesdeInicio / 7);
+      passaFiltroDia = passaFiltroDia && (semanaIndex % 2 === 0);
     }
     if (periodicidade === 'mensal') {
       passaFiltroDia = cursor.getDate() === new Date(dataInicial + 'T00:00:00').getDate();

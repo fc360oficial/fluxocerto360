@@ -625,6 +625,48 @@
         </div>
       </div>
 
+      <div class="modal-bg" id="modal-agendamento" style="display:none">
+        <div class="modal-box" style="width:460px">
+          <div class="modal-title">Novo Agendamento</div>
+          <label>Fornecedor</label>
+          <select id="ag-fornecedor"></select>
+          <label style="margin-top:12px">Nome do promotor</label>
+          <input id="ag-promotor-nome" placeholder="Nome completo">
+          <label style="margin-top:12px">Telefone do promotor</label>
+          <input id="ag-promotor-telefone" placeholder="(00) 00000-0000">
+          <label style="margin-top:12px">Loja</label>
+          <input id="ag-loja" placeholder="ID/nome da loja">
+          <div style="display:flex;gap:10px">
+            <div style="flex:1"><label style="margin-top:12px">Data inicial</label><input id="ag-data-inicial" type="date"></div>
+            <div style="flex:1"><label style="margin-top:12px">Hora</label><input id="ag-hora" type="time"></div>
+          </div>
+          <label style="margin-top:12px">Recorrência</label>
+          <div id="ag-dias" style="display:flex;gap:6px;margin-bottom:12px">
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="1" onclick="toggleDiaAgendamento(this)">Seg</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="2" onclick="toggleDiaAgendamento(this)">Ter</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="3" onclick="toggleDiaAgendamento(this)">Qua</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="4" onclick="toggleDiaAgendamento(this)">Qui</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="5" onclick="toggleDiaAgendamento(this)">Sex</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="6" onclick="toggleDiaAgendamento(this)">Sáb</button>
+            <button type="button" class="btn btn-s btn-sm dia-btn" data-dia="0" onclick="toggleDiaAgendamento(this)">Dom</button>
+          </div>
+          <label>Periodicidade</label>
+          <select id="ag-periodicidade">
+            <option value="">Avulso (só a data inicial)</option>
+            <option value="diaria">Diária</option>
+            <option value="semanal">Semanal</option>
+            <option value="quinzenal">Quinzenal</option>
+            <option value="mensal">Mensal</option>
+          </select>
+          <label style="margin-top:12px">Data final (obrigatório se recorrente)</label>
+          <input id="ag-data-final" type="date" style="margin-bottom:16px">
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="salvarAgendamento()">Salvar</button>
+            <button class="btn btn-s" onclick="document.getElementById('modal-agendamento').style.display='none'">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
       <div class="modal-bg" id="modal-qr" style="display:none">
         <div class="modal-box" style="width:340px;text-align:center">
           <div class="modal-title">QR Code da loja</div>

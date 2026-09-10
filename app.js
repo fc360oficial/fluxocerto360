@@ -4308,6 +4308,8 @@ function getLojasUnicas(fornecedores) {
 var S_PROM = {visitas: [], fornecedores: [], filtro: 'todos', busca: ''};
 
 function renderPromotoresPainel() {
+  document.getElementById('promotores-agendamento-btn').innerHTML =
+    '<button class="btn btn-p btn-sm" onclick="abrirModalAgendamento()">+ Novo Agendamento</button>';
   Promise.all([
     visitasCol().get(),
     fornecedoresCol().get()
@@ -4418,6 +4420,98 @@ function renderTabelaVisitas() {
         + '<td><span class="st ' + st.cls + '">' + st.label + '</span></td></tr>';
     }).join('')
     + '</tbody></table>';
+}
+
+function abrirModalAgendamento() {
+  var sel = document.getElementById('ag-fornecedor');
+  sel.innerHTML = '<option value="">Selecione...</option>' + S_PROM.fornecedores.map(function(f) {
+    return '<option value="' + f.id + '" data-nome="' + f.nome + '">' + f.nome + '</option>';
+  }).join('');
+  document.getElementById('ag-promotor-nome').value = '';
+  document.getElementById('ag-promotor-telefone').value = '';
+  document.getElementById('ag-loja').value = '';
+  document.getElementById('ag-data-inicial').value = getLocalDate();
+  document.getElementById('ag-hora').value = '';
+  document.getElementById('ag-periodicidade').value = '';
+  document.getElementById('ag-data-final').value = '';
+  document.querySelectorAll('#ag-dias .dia-btn').forEach(function(b) { b.classList.remove('btn-p'); b.classList.add('btn-s'); });
+  document.getElementById('modal-agendamento').style.display = 'flex';
+}
+
+function toggleDiaAgendamento(btn) {
+  btn.classList.toggle('btn-p');
+  btn.classList.toggle('btn-s');
+}
+
+// Gera as datas de ocorrência entre dataInicial e dataFinal conforme a
+// periodicidade. Sem periodicidade = uma ocorrência só (avulso).
+// Teto de 60 ocorrências pra nunca gerar uma escrita em massa por engano.
+function _gerarDatasAgendamento(dataInicial, dataFinal, periodicidade, diasSemana) {
+  if (!periodicidade) return [dataInicial];
+  var datas = [];
+  var cursor = new Date(dataInicial + 'T00:00:00');
+  var fim = new Date((dataFinal || dataInicial) + 'T00:00:00');
+  var semanaInicial = Math.floor(cursor.getTime() / (7 * 86400000));
+  while (cursor <= fim && datas.length < 60) {
+    var diaSemana = cursor.getDay();
+    var passaFiltroDia = periodicidade === 'diaria' || periodicidade === 'mensal' || !diasSemana.length || diasSemana.indexOf(diaSemana) >= 0;
+    if (periodicidade === 'quinzenal') {
+      var semanaAtual = Math.floor(cursor.getTime() / (7 * 86400000));
+      passaFiltroDia = passaFiltroDia && ((semanaAtual - semanaInicial) % 2 === 0);
+    }
+    if (periodicidade === 'mensal') {
+      passaFiltroDia = cursor.getDate() === new Date(dataInicial + 'T00:00:00').getDate();
+    }
+    if (passaFiltroDia) datas.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return datas;
+}
+
+function salvarAgendamento() {
+  var fornecedorSel = document.getElementById('ag-fornecedor');
+  var fornecedorId = fornecedorSel.value;
+  var fornecedorNome = fornecedorSel.options[fornecedorSel.selectedIndex] ? fornecedorSel.options[fornecedorSel.selectedIndex].getAttribute('data-nome') : '';
+  var promotorNome = document.getElementById('ag-promotor-nome').value.trim();
+  var lojaId = document.getElementById('ag-loja').value.trim();
+  var dataInicial = document.getElementById('ag-data-inicial').value;
+  var periodicidade = document.getElementById('ag-periodicidade').value;
+  var dataFinal = document.getElementById('ag-data-final').value;
+
+  if (!fornecedorId || !promotorNome || !lojaId || !dataInicial) { showToast('Preencha fornecedor, promotor, loja e data inicial.'); return; }
+  if (periodicidade && !dataFinal) { showToast('Informe a data final da recorrência.'); return; }
+
+  var diasSemana = Array.prototype.slice.call(document.querySelectorAll('#ag-dias .dia-btn.btn-p'))
+    .map(function(b) { return parseInt(b.getAttribute('data-dia'), 10); });
+  var datas = _gerarDatasAgendamento(dataInicial, dataFinal, periodicidade, diasSemana);
+  if (!datas.length) { showToast('Nenhuma data gerada — confira os dias da semana e o período.'); return; }
+
+  var batch = db.batch();
+  var col = visitasCol();
+  datas.forEach(function(data) {
+    var ref = col.doc();
+    batch.set(ref, {
+      fornecedorId: fornecedorId,
+      fornecedorNome: fornecedorNome,
+      lojaId: lojaId,
+      lojaNome: lojaId,
+      promotorNome: promotorNome,
+      promotorTelefone: document.getElementById('ag-promotor-telefone').value.trim() || null,
+      dataAgendada: data,
+      horaAgendada: document.getElementById('ag-hora').value || null,
+      status: 'agendada',
+      sessionUid: null,
+      checkInEm: null,
+      checkInGeo: null,
+      checkOutEm: null,
+      checkOutGeo: null
+    });
+  });
+  batch.commit().then(function() {
+    document.getElementById('modal-agendamento').style.display = 'none';
+    showToast(datas.length + ' visita(s) agendada(s).');
+    renderPromotoresPainel();
+  }).catch(function(e) { showToast('Erro ao agendar: ' + e.message); });
 }
 
 function toggleDiaFornecedor(btn) {

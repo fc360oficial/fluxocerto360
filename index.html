@@ -690,6 +690,12 @@
         </div>
       </div>
 
+      <div id="drawer-fornecedor-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:900" onclick="fecharDrawerFornecedor()"></div>
+      <div id="drawer-fornecedor" style="display:none;position:fixed;top:0;right:0;bottom:0;width:360px;max-width:90vw;background:#fff;z-index:901;box-shadow:-4px 0 20px rgba(0,0,0,.15);padding:22px;overflow-y:auto">
+        <button class="btn btn-s btn-sm" style="margin-bottom:16px" onclick="fecharDrawerFornecedor()">← Fechar</button>
+        <div id="drawer-fornecedor-conteudo"></div>
+      </div>
+
       <div id="panel-etiquetas" class="panel">
         <div style="margin-bottom:16px">
           <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700">Etiquetas</div>

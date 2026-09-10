@@ -4572,6 +4572,108 @@ function renderAgendaSemanal(delta, resetar) {
   grid.innerHTML = colunas.join('');
 }
 
+function abrirDrawerFornecedor(id) {
+  var f = S_PROM.fornecedores.filter(function(x) { return x.id === id; })[0];
+  if (!f) return;
+  var visitasDoFornecedor = S_PROM.visitas.filter(function(v) { return v.fornecedorId === id; })
+    .sort(function(a, b) { return (b.dataAgendada||'') < (a.dataAgendada||'') ? -1 : 1; })
+    .slice(0, 6);
+
+  var nomesDia = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  var diasTexto = (f.diasSemana || []).map(function(d) { return nomesDia[d]; }).join(', ') || '-';
+
+  var historico = visitasDoFornecedor.map(function(v) {
+    var duracao = '-';
+    if (v.checkInEm && v.checkOutEm) {
+      var ini = v.checkInEm.toDate ? v.checkInEm.toDate() : new Date(v.checkInEm);
+      var fim = v.checkOutEm.toDate ? v.checkOutEm.toDate() : new Date(v.checkOutEm);
+      duracao = Math.round((fim - ini) / 60000) + ' min';
+    }
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--gray2);font-size:12px">'
+      + '<div style="font-weight:700">' + (v.dataAgendada||'-') + ' · ' + labelStatusVisita(v.status) + '</div>'
+      + '<div style="color:var(--t3)">' + (v.lojaNome||'-') + ' · ' + (v.promotorNome||'-') + ' · Duração: ' + duracao + '</div></div>';
+  }).join('') || '<div class="empty">Sem visitas registradas ainda.</div>';
+
+  document.getElementById('drawer-fornecedor-conteudo').innerHTML =
+    '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px">' + f.nome + '</div>'
+    + '<div style="font-size:12px;color:var(--t3);margin-bottom:16px">' + (f.telefone||'sem telefone') + (f.email ? ' · ' + f.email : '') + '</div>'
+    + '<div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px">'
+    + '<div><strong>Lojas:</strong> ' + (f.lojas||[]).join(', ') + '</div>'
+    + '<div><strong>Dias esperados:</strong> ' + diasTexto + '</div>'
+    + '<div><strong>Periodicidade:</strong> ' + (f.periodicidade || '-') + '</div></div>'
+    + '<div style="font-weight:700;font-size:13px;margin-bottom:8px">Últimas visitas</div>'
+    + historico;
+
+  document.getElementById('drawer-fornecedor-bg').style.display = 'block';
+  document.getElementById('drawer-fornecedor').style.display = 'block';
+}
+
+function fecharDrawerFornecedor() {
+  document.getElementById('drawer-fornecedor-bg').style.display = 'none';
+  document.getElementById('drawer-fornecedor').style.display = 'none';
+}
+
+function renderRankingsPromotores() {
+  var realizadas = S_PROM.visitas.filter(function(v) { return v.status === 'realizada'; });
+
+  // Pontualidade por promotor
+  var porPromotor = {};
+  realizadas.forEach(function(v) {
+    var p = calcPontualidade(v);
+    if (!p) return;
+    var chave = v.promotorNome || '-';
+    if (!porPromotor[chave]) porPromotor[chave] = {total: 0, pontual: 0};
+    porPromotor[chave].total++;
+    if (p === 'pontual' || p === 'antecipado') porPromotor[chave].pontual++;
+  });
+  var rankPromotor = Object.keys(porPromotor).map(function(nome) {
+    return {nome: nome, pct: Math.round((porPromotor[nome].pontual / porPromotor[nome].total) * 100)};
+  }).sort(function(a, b) { return b.pct - a.pct; }).slice(0, 5);
+
+  // Tempo médio em loja
+  var temposPorPromotor = {};
+  realizadas.forEach(function(v) {
+    if (!v.checkInEm || !v.checkOutEm) return;
+    var ini = v.checkInEm.toDate ? v.checkInEm.toDate() : new Date(v.checkInEm);
+    var fim = v.checkOutEm.toDate ? v.checkOutEm.toDate() : new Date(v.checkOutEm);
+    var min = (fim - ini) / 60000;
+    var chave = v.promotorNome || '-';
+    if (!temposPorPromotor[chave]) temposPorPromotor[chave] = [];
+    temposPorPromotor[chave].push(min);
+  });
+  var rankTempo = Object.keys(temposPorPromotor).map(function(nome) {
+    var lista = temposPorPromotor[nome];
+    var media = lista.reduce(function(a, b) { return a + b; }, 0) / lista.length;
+    return {nome: nome, media: Math.round(media)};
+  }).sort(function(a, b) { return b.media - a.media; }).slice(0, 5);
+
+  // Cumprimento por fornecedor
+  var porFornecedor = {};
+  S_PROM.visitas.forEach(function(v) {
+    var chave = v.fornecedorNome || '-';
+    if (!porFornecedor[chave]) porFornecedor[chave] = {total: 0, realizadas: 0};
+    porFornecedor[chave].total++;
+    if (v.status === 'realizada') porFornecedor[chave].realizadas++;
+  });
+  var rankFornecedor = Object.keys(porFornecedor).map(function(nome) {
+    return {nome: nome, pct: Math.round((porFornecedor[nome].realizadas / porFornecedor[nome].total) * 100)};
+  }).sort(function(a, b) { return b.pct - a.pct; }).slice(0, 5);
+
+  function bloco(titulo, itens, sufixo) {
+    var linhas = itens.map(function(it, i) {
+      var valor = sufixo === '%' ? it.pct + '%' : it.media + ' min';
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray2);font-size:12px">'
+        + '<span>' + (i+1) + '. ' + it.nome + '</span><strong>' + valor + '</strong></div>';
+    }).join('') || '<div class="empty" style="font-size:12px">Sem dados ainda.</div>';
+    return '<div class="card" style="padding:14px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">' + titulo + '</div>' + linhas + '</div>';
+  }
+
+  document.getElementById('promotores-rankings').innerHTML =
+    bloco('Ranking de Pontualidade', rankPromotor, '%')
+    + bloco('Tempo Médio em Loja', rankTempo, 'min')
+    + bloco('Cumprimento por Fornecedor', rankFornecedor, '%');
+}
+
 function toggleDiaFornecedor(btn) {
   btn.classList.toggle('btn-p');
   btn.classList.toggle('btn-s');

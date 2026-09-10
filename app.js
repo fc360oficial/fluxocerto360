@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '345';
+var BUILD = '346';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1222,7 +1222,9 @@ var CAPA_MODULOS = [
     },
     page: function(){ return S.role === 'admin' ? 'inv' : 'inv-coleta'; },
     icone:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/>' },
-  { id:'promotores', label:'Promotores', desenvolvido:false,
+  { id:'promotores', label:'Promotores', desenvolvido:true, moduloChave:'promotores',
+    roleOk: function(){ return S.role==='admin' || S.role==='supervisor'; },
+    page: function(){ return 'promotores'; },
     icone:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' },
   { id:'pesquisa', label:'Pesquisa Concorrentes', desenvolvido:false,
     icone:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>' },
@@ -1926,7 +1928,7 @@ function setupRole() {
   show('nav-capa', true);
   var mostrarEmBreve = false; // vitrine "Em Breve" desativada a pedido do Tiago (2026-08-18); reativar trocando pra: isAdmin || r==='gerencia' || isSup
   show('sb-embreve-sec', mostrarEmBreve);
-  show('nav-embreve-promotores', mostrarEmBreve);
+  show('nav-promotores', (isAdmin || isSup) && _moduloAtivo('promotores'));
   show('nav-embreve-pesquisa', mostrarEmBreve);
   show('nav-embreve-recebimento', mostrarEmBreve);
   show('nav-embreve-validade', mostrarEmBreve);
@@ -2065,6 +2067,9 @@ function nav(page, el) {
       gerarPillsMesCentral();
       switchCentralTab('checklist', document.querySelector('#central-tabs .tab'));
     });
+  }
+  if (page === 'promotores') {
+    renderPromotoresPainel();
   }
   if (page==='checklist') {
     // Recarrega planos do Firebase toda vez que entra no Checklist — sem isso,
@@ -10196,7 +10201,7 @@ function _renderClientesLista() {
   if (!wrap) return;
   var hoje = new Date(); hoje.setHours(0,0,0,0);
   var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas'];
-  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos',alertas:'Alertas',relatorios:'Relatórios',central:'Central',monitor:'Monitor',etiquetas:'Etiquetas'};
+  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos',alertas:'Alertas',relatorios:'Relatórios',central:'Central',monitor:'Monitor',etiquetas:'Etiquetas',promotores:'Promotores'};
   var PLANO_LABEL = {basico:'Básico',completo:'Completo',premium:'Premium'};
 
   var ativosCount = _clientesCache.filter(function(c){ return c.ativo !== false; }).length;
@@ -10392,7 +10397,7 @@ function _atualizarVersaoClientes() {
 function abrirEditarCliente(clienteId) {
   var c = _clientesCache.find(function(x){ return x.id===clienteId; }) || {};
   var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas'];
-  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas'};
+  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas',promotores:'Promotores'};
   var modHtml = MODS.map(function(m){
     var on = !c.modulos || c.modulos[m] !== false;
     var ls = on ? 'background:rgba(34,197,94,.1);color:#15803d;border-radius:8px;' : 'color:var(--t2);border-radius:8px;';
@@ -10449,7 +10454,7 @@ function salvarEdicaoCliente(clienteId) {
 
 function abrirNovoCliente() {
   var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas'];
-  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas'};
+  var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas',promotores:'Promotores'};
   var modHtml = MODS.map(function(m){
     return '<label onchange="var i=this.querySelector(\'input\');this.style.background=i.checked?\'rgba(34,197,94,.1)\':\'\';this.style.color=i.checked?\'#15803d\':\'\';" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;font-size:13px;font-weight:600;background:rgba(34,197,94,.1);color:#15803d;border-radius:8px;">'+
       '<input type="checkbox" id="nc-mod-'+m+'" checked style="width:16px;height:16px;accent-color:#22c55e;flex-shrink:0"> '+MODS_LABEL[m]+'</label>';

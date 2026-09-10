@@ -549,21 +549,43 @@
       </div>
 
       <div id="panel-promotores" class="panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700">Promotores</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Fornecedores e visitas por loja</div></div>
-        </div>
-        <div class="tabs" id="promotores-tabs" style="margin-bottom:16px">
-          <div class="tab on" onclick="switchPromotoresTab('fornecedores',this)">Fornecedores</div>
-          <div class="tab" onclick="switchPromotoresTab('visitas',this)">Visitas</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700">Gestão de Promotores</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Fornecedores, agenda e visitas por loja</div></div>
+          <div id="promotores-agendamento-btn" style="display:flex;gap:8px"></div>
         </div>
 
-        <div id="promotores-tab-fornecedores">
-          <button class="btn btn-p btn-sm" style="margin-bottom:14px" onclick="abrirModalFornecedor()">+ Novo Fornecedor</button>
-          <div id="fornecedores-lista"></div>
+        <div id="promotores-kpis"></div>
+        <div id="promotores-cumprimento" style="margin:14px 0"></div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <input id="promotores-busca" placeholder="Buscar por fornecedor, promotor ou loja..." style="flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--gray2);border-radius:10px;font-size:13px" oninput="buscarPromotores(this.value)">
+          <button class="btn btn-s btn-sm" onclick="abrirAgendaSemanal()">📅 Agenda Semanal</button>
         </div>
 
-        <div id="promotores-tab-visitas" style="display:none">
-          <div id="visitas-lista"></div>
+        <div class="tabs" id="promotores-filtros">
+          <div class="tab on" data-filtro="todos" onclick="aplicarFiltroPromotores('todos',this)">Todos</div>
+          <div class="tab" data-filtro="hoje" onclick="aplicarFiltroPromotores('hoje',this)">Hoje</div>
+          <div class="tab" data-filtro="agendada" onclick="aplicarFiltroPromotores('agendada',this)">Agendados</div>
+          <div class="tab" data-filtro="na_loja" onclick="aplicarFiltroPromotores('na_loja',this)">Na Loja</div>
+          <div class="tab" data-filtro="realizada" onclick="aplicarFiltroPromotores('realizada',this)">Realizados</div>
+          <div class="tab" data-filtro="nao_compareceu" onclick="aplicarFiltroPromotores('nao_compareceu',this)">Não Compareceram</div>
+          <div class="tab" data-filtro="fim_de_semana" onclick="aplicarFiltroPromotores('fim_de_semana',this)">Fim de Semana</div>
+          <div class="tab" data-filtro="proximos7" onclick="aplicarFiltroPromotores('proximos7',this)">Próximos 7 dias</div>
+        </div>
+
+        <div id="promotores-tabela"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:24px" id="promotores-rankings"></div>
+
+        <div style="margin-top:24px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:10px">Fornecedores cadastrados</div>
+          <button class="btn btn-p btn-sm" style="margin-bottom:12px" onclick="abrirModalFornecedor()">+ Novo Fornecedor</button>
+          <div id="promotores-fornecedores-lista"></div>
+        </div>
+
+        <div style="margin-top:24px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:10px">QR codes por loja</div>
+          <div id="promotores-qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px"></div>
         </div>
       </div>
 

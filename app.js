@@ -4257,14 +4257,6 @@ function switchCentralTab(tab, btn) {
 }
 
 // ── Promotores (fornecedores + visitas) ──
-function switchPromotoresTab(tab, btn) {
-  document.getElementById('promotores-tab-fornecedores').style.display = tab === 'fornecedores' ? 'block' : 'none';
-  document.getElementById('promotores-tab-visitas').style.display = tab === 'visitas' ? 'block' : 'none';
-  document.querySelectorAll('#promotores-tabs .tab').forEach(function(t){t.classList.remove('on');});
-  if (btn) btn.classList.add('on');
-  if (tab === 'visitas') renderVisitasPromotor();
-}
-
 function fornecedoresCol() {
   return db.collection('clientes').doc(S.clienteConfig.id).collection('fornecedores');
 }
@@ -4312,22 +4304,120 @@ function getLojasUnicas(fornecedores) {
   return Object.keys(set).sort();
 }
 
-function renderFornecedores() {
-  var wrap = document.getElementById('fornecedores-lista');
-  wrap.innerHTML = '<div class="empty">Carregando...</div>';
-  fornecedoresCol().get().then(function(snap) {
-    if (snap.empty) { wrap.innerHTML = '<div class="empty">Nenhum fornecedor cadastrado ainda.</div>'; return; }
-    wrap.innerHTML = snap.docs.map(function(d) {
-      var f = d.data();
-      return '<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px;margin-bottom:8px">'
-        + '<div><strong>' + f.nome + '</strong><div style="font-size:12px;color:var(--t3)">Lojas: ' + (f.lojas||[]).join(', ') + '</div></div>'
-        + '<div style="display:flex;gap:6px">'
-        + '<button class="btn btn-s btn-sm" onclick="abrirQrFornecedor(\'' + (f.lojas && f.lojas[0] || '') + '\')">QR</button>'
-        + '<button class="btn btn-s btn-sm" onclick="abrirModalFornecedor(\'' + d.id + '\')">Editar</button>'
-        + '<button class="btn btn-d btn-sm" onclick="excluirFornecedor(\'' + d.id + '\')">Excluir</button>'
-        + '</div></div>';
-    }).join('');
+// ── Painel Promotores ──
+var S_PROM = {visitas: [], fornecedores: [], filtro: 'todos', busca: ''};
+
+function renderPromotoresPainel() {
+  Promise.all([
+    visitasCol().get(),
+    fornecedoresCol().get()
+  ]).then(function(results) {
+    S_PROM.visitas = results[0].docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+    S_PROM.fornecedores = results[1].docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+    renderKpisPromotores();
+    renderTabelaVisitas();
+    renderFornecedoresLista();
+    if (typeof renderQrGridLojas === 'function') renderQrGridLojas();
+    if (typeof renderRankingsPromotores === 'function') renderRankingsPromotores();
+  }).catch(function(e) {
+    document.getElementById('promotores-tabela').innerHTML = '<div class="empty">Erro ao carregar: ' + e.message + '</div>';
   });
+}
+
+function renderFornecedoresLista() {
+  var wrap = document.getElementById('promotores-fornecedores-lista');
+  if (!S_PROM.fornecedores.length) { wrap.innerHTML = '<div class="empty">Nenhum fornecedor cadastrado ainda.</div>'; return; }
+  wrap.innerHTML = S_PROM.fornecedores.map(function(f) {
+    return '<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px;margin-bottom:8px">'
+      + '<div><strong>' + f.nome + '</strong><div style="font-size:12px;color:var(--t3)">Lojas: ' + (f.lojas||[]).join(', ') + (f.telefone ? ' · ' + f.telefone : '') + '</div></div>'
+      + '<div style="display:flex;gap:6px">'
+      + '<button class="btn btn-s btn-sm" onclick="abrirDrawerFornecedor(\'' + f.id + '\')">Ver</button>'
+      + '<button class="btn btn-s btn-sm" onclick="abrirModalFornecedor(\'' + f.id + '\')">Editar</button>'
+      + '<button class="btn btn-d btn-sm" onclick="excluirFornecedor(\'' + f.id + '\')">Excluir</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function excluirFornecedor(id) {
+  if (!confirm('Excluir este fornecedor?')) return;
+  fornecedoresCol().doc(id).delete().then(renderPromotoresPainel);
+}
+
+function renderKpisPromotores() {
+  var hoje = getLocalDate();
+  var visitasHoje = S_PROM.visitas.filter(function(v) { return v.dataAgendada === hoje; });
+  var previstas = visitasHoje.length;
+  var realizadas = visitasHoje.filter(function(v) { return v.status === 'realizada'; }).length;
+  var naLoja = visitasHoje.filter(function(v) { return v.status === 'na_loja'; }).length;
+  var naoCompareceram = visitasHoje.filter(function(v) { return v.status === 'nao_compareceu'; }).length;
+  var pct = previstas ? Math.round((realizadas / previstas) * 100) : 0;
+
+  document.getElementById('promotores-kpis').innerHTML =
+    '<style>#promotores-kpis .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}'
+    + '#promotores-kpis .kpi{background:#f8f9fa;border-radius:8px;padding:12px 14px;border-left:4px solid #FFC600}'
+    + '#promotores-kpis .k-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:4px}'
+    + '#promotores-kpis .k-val{font-size:22px;font-weight:800}</style>'
+    + '<div class="kpis">'
+    + '<div class="kpi"><div class="k-lbl">Visitas Previstas Hoje</div><div class="k-val">' + previstas + '</div></div>'
+    + '<div class="kpi"><div class="k-lbl">Check-ins Realizados</div><div class="k-val">' + realizadas + '</div></div>'
+    + '<div class="kpi"><div class="k-lbl">Em Loja Agora</div><div class="k-val">' + naLoja + '</div></div>'
+    + '<div class="kpi" style="border-left-color:' + (naoCompareceram > 0 ? '#e74c3c' : '#FFC600') + '"><div class="k-lbl">Não Compareceram</div><div class="k-val" style="color:' + (naoCompareceram > 0 ? '#e74c3c' : 'inherit') + '">' + naoCompareceram + '</div></div>'
+    + '</div>';
+
+  document.getElementById('promotores-cumprimento').innerHTML =
+    '<div style="font-size:12px;color:var(--t3);margin-bottom:4px">Cumprimento da Agenda (hoje): ' + pct + '%</div>'
+    + '<div style="background:var(--gray);border-radius:8px;height:8px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + (pct >= 80 ? '#2d9e62' : pct >= 50 ? '#e67e22' : '#e74c3c') + '"></div></div>';
+}
+
+function aplicarFiltroPromotores(filtro, btn) {
+  S_PROM.filtro = filtro;
+  document.querySelectorAll('#promotores-filtros .tab').forEach(function(t) { t.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  renderTabelaVisitas();
+}
+
+function buscarPromotores(valor) {
+  S_PROM.busca = (valor || '').toLowerCase().trim();
+  renderTabelaVisitas();
+}
+
+function _visitasFiltradas() {
+  var hoje = getLocalDate();
+  var em7dias = new Date(); em7dias.setDate(em7dias.getDate() + 7);
+  var em7diasStr = em7dias.toISOString().slice(0, 10);
+
+  return S_PROM.visitas.filter(function(v) {
+    if (S_PROM.filtro === 'hoje' && v.dataAgendada !== hoje) return false;
+    if (S_PROM.filtro === 'proximos7' && !(v.dataAgendada >= hoje && v.dataAgendada <= em7diasStr)) return false;
+    if (['agendada','na_loja','realizada','nao_compareceu','fim_de_semana'].indexOf(S_PROM.filtro) >= 0 && v.status !== S_PROM.filtro) return false;
+    if (S_PROM.busca) {
+      var alvo = ((v.fornecedorNome||'') + ' ' + (v.promotorNome||'') + ' ' + (v.lojaNome||'')).toLowerCase();
+      if (alvo.indexOf(S_PROM.busca) === -1) return false;
+    }
+    return true;
+  }).sort(function(a, b) { return (b.dataAgendada||'') < (a.dataAgendada||'') ? -1 : 1; });
+}
+
+function renderTabelaVisitas() {
+  var wrap = document.getElementById('promotores-tabela');
+  var visitas = _visitasFiltradas();
+  if (!visitas.length) { wrap.innerHTML = '<div class="empty">Nenhuma visita encontrada.</div>'; return; }
+
+  var pontualidadeLabel = {antecipado: 'Antecipado', pontual: 'Pontual', atrasado: 'Atrasado'};
+
+  wrap.innerHTML = '<table class="tbl"><thead><tr><th>Data</th><th>Fornecedor</th><th>Promotor</th><th>Loja</th><th>Programado</th><th>Entrada</th><th>Saída</th><th>Status</th></tr></thead><tbody>'
+    + visitas.map(function(v) {
+      var st = STATUS_VISITA[v.status] || {label: v.status, cls: 'st-info'};
+      var pont = calcPontualidade(v);
+      var entrada = v.checkInEm ? (v.checkInEm.toDate ? v.checkInEm.toDate() : new Date(v.checkInEm)).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '-';
+      var saida = v.checkOutEm ? (v.checkOutEm.toDate ? v.checkOutEm.toDate() : new Date(v.checkOutEm)).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : (v.status === 'na_loja' ? '<span class="st st-warn">Em aberto</span>' : '-');
+      return '<tr><td>' + (v.dataAgendada || '-') + '</td><td>' + (v.fornecedorNome||'-') + '</td><td>' + (v.promotorNome||'-') + '</td><td>' + (v.lojaNome||'-') + '</td>'
+        + '<td>' + (v.horaAgendada || '-') + '</td>'
+        + '<td>' + entrada + (pont ? ' <span class="st ' + (pont==='atrasado'?'st-err':pont==='antecipado'?'st-info':'st-ok') + '">' + pontualidadeLabel[pont] + '</span>' : '') + '</td>'
+        + '<td>' + saida + '</td>'
+        + '<td><span class="st ' + st.cls + '">' + st.label + '</span></td></tr>';
+    }).join('')
+    + '</tbody></table>';
 }
 
 function toggleDiaFornecedor(btn) {
@@ -4384,11 +4474,6 @@ function salvarFornecedor() {
     showToast('Fornecedor salvo.');
     if (typeof renderPromotoresPainel === 'function') renderPromotoresPainel();
   });
-}
-
-function excluirFornecedor(id) {
-  if (!confirm('Excluir este fornecedor?')) return;
-  fornecedoresCol().doc(id).delete().then(renderFornecedores);
 }
 
 function abrirQrFornecedor(lojaId) {

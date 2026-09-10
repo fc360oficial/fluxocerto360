@@ -4269,6 +4269,49 @@ function fornecedoresCol() {
   return db.collection('clientes').doc(S.clienteConfig.id).collection('fornecedores');
 }
 
+function visitasCol() {
+  return db.collection('clientes').doc(S.clienteConfig.id).collection('promotor_visitas');
+}
+
+var STATUS_VISITA = {
+  agendada:       {label: 'Agendada',          cls: 'st-warn'},
+  na_loja:        {label: 'Na Loja',            cls: 'st-ok'},
+  realizada:      {label: 'Realizada',          cls: 'st-info'},
+  nao_compareceu: {label: 'Não Compareceu',     cls: 'st-err'},
+  fim_de_semana:  {label: 'Fim de Semana',      cls: 'st-info'}
+};
+
+function labelStatusVisita(status) {
+  var s = STATUS_VISITA[status];
+  return s ? s.label : status;
+}
+
+// Compara horaAgendada (HH:MM) com o horário real de checkInEm.
+// >15min de atraso = 'atrasado', <=-10min (chegou adiantado) = 'antecipado', senão 'pontual'.
+// Sem horaAgendada ou sem checkInEm ainda: retorna null (sem badge).
+function calcPontualidade(visita) {
+  if (!visita.horaAgendada || !visita.checkInEm) return null;
+  var checkInDate = visita.checkInEm.toDate ? visita.checkInEm.toDate() : new Date(visita.checkInEm);
+  var partes = visita.horaAgendada.split(':');
+  var agendado = new Date(checkInDate);
+  agendado.setHours(parseInt(partes[0], 10), parseInt(partes[1], 10), 0, 0);
+  var diffMin = (checkInDate - agendado) / 60000;
+  if (diffMin > 15) return 'atrasado';
+  if (diffMin <= -10) return 'antecipado';
+  return 'pontual';
+}
+
+// Sem lista canônica de lojas no FC360 (cada módulo gerencia lojas por
+// texto livre) — deriva o conjunto de lojas a partir dos fornecedores
+// cadastrados neste módulo.
+function getLojasUnicas(fornecedores) {
+  var set = {};
+  (fornecedores || []).forEach(function(f) {
+    (f.lojas || []).forEach(function(l) { set[l] = true; });
+  });
+  return Object.keys(set).sort();
+}
+
 function renderFornecedores() {
   var wrap = document.getElementById('fornecedores-lista');
   wrap.innerHTML = '<div class="empty">Carregando...</div>';

@@ -4386,7 +4386,10 @@ function buscarPromotores(valor) {
 function _visitasFiltradas() {
   var hoje = getLocalDate();
   var em7dias = new Date(); em7dias.setDate(em7dias.getDate() + 7);
-  var em7diasStr = em7dias.toISOString().slice(0, 10);
+  // Data local, não toISOString() (UTC) — mesma classe de bug corrigida na
+  // agenda semanal (Task 6): dataAgendada é sempre local, comparar com uma
+  // string UTC desalinhava o intervalo perto do fim do dia no fuso do Brasil.
+  var em7diasStr = em7dias.getFullYear() + '-' + String(em7dias.getMonth() + 1).padStart(2, '0') + '-' + String(em7dias.getDate()).padStart(2, '0');
 
   return S_PROM.visitas.filter(function(v) {
     if (S_PROM.filtro === 'hoje' && v.dataAgendada !== hoje) return false;

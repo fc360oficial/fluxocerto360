@@ -3,12 +3,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /clientes/{clienteId} {
-      // Leitura pública: o modo convidado de check-in (sem login,
-      // ?checkin=1 embutido no PWA — Task 9) precisa ler o nome do
-      // cliente antes de qualquer autenticação existir. Mesma
-      // justificativa do read público de fornecedores logo abaixo.
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      // Leitura pública, só get (nunca list): o modo convidado de check-in
+      // (sem login, ?checkin=1 embutido no PWA — Task 9) precisa ler o nome
+      // do cliente antes de qualquer autenticação existir. `allow list` fica
+      // de fora de propósito — sem isso, "allow read: if true" deixaria a
+      // coleção `clientes` inteira (nome/plano/validade de TODOS os
+      // clientes) listável por qualquer um com a API key pública (achado do
+      // reviewer da Task 9). Sem regra de write aqui — esse doc só é escrito
+      // pelo painel superadmin, cuja regra real vive no Console (este
+      // arquivo local é conhecidamente desatualizado, ver commit anterior).
+      allow get: if true;
     }
 
     match /clientes/{clienteId}/fornecedores/{fornecedorId} {

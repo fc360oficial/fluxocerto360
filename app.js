@@ -134,6 +134,11 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
     + '<div id="cg-titulo" style="font-size:20px;font-weight:800;margin-bottom:4px">Carregando...</div>'
     + '<div id="cg-sub" style="font-size:13px;color:#6b7280;margin-bottom:20px"></div>'
     + '<div id="cg-erro" style="display:none;font-size:13px;padding:12px;border-radius:10px;margin-bottom:16px;background:#fee2e2;color:#991b1b"></div>'
+    // #cg-body é sempre substituído (=), nunca concatenado (+=) — cg-titulo/
+    // cg-sub/cg-erro ficam fora dele pra sobreviver às trocas de tela
+    // (achado do reviewer da Task 9: += duplicava o formulário e travava o
+    // botão a cada re-render).
+    + '<div id="cg-body"></div>'
     + '</div>';
 
   function cgErro(msg) {
@@ -194,25 +199,23 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
           renderCheckout(snap.docs[0].data());
           return;
         }
-        var hoje = getLocalDate();
-        return col.where('lojaId', '==', LOJA_ID).where('status', '==', 'agendada').where('dataAgendada', '==', hoje).get();
-      }).then(function(snapAgendadas) {
-        if (visitaAbertaId) return;
-        if (snapAgendadas && !snapAgendadas.empty) {
-          visitaAgendadaId = snapAgendadas.docs[0].id;
-        }
+        // A busca por visita agendada só roda depois que o promotor escolhe
+        // o fornecedor no formulário (em fazerCheckin) — achado do reviewer
+        // da Task 9: buscar aqui, sem filtrar por fornecedor, pegava a
+        // primeira visita agendada da loja no dia, não necessariamente a
+        // do fornecedor que o promotor realmente representa.
         renderCheckin();
       });
   }
 
   function renderCheckin() {
-    var card = document.getElementById('cg-card');
-    var opcoes = fornecedoresDaLoja.map(function(f) { return '<option value="' + f.id + '">' + f.nome + '</option>'; }).join('');
+    var body = document.getElementById('cg-body');
+    var opcoes = fornecedoresDaLoja.map(function(f) { return '<option value="' + f.id + '">' + _escHtml(f.nome) + '</option>'; }).join('');
     if (!opcoes) {
-      card.innerHTML += '<div style="font-size:13px;padding:12px;border-radius:10px;background:#fee2e2;color:#991b1b">Nenhum fornecedor cadastrado pra essa loja ainda. Fale com o administrador.</div>';
+      body.innerHTML = '<div style="font-size:13px;padding:12px;border-radius:10px;background:#fee2e2;color:#991b1b">Nenhum fornecedor cadastrado pra essa loja ainda. Fale com o administrador.</div>';
       return;
     }
-    card.innerHTML +=
+    body.innerHTML =
       '<label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase">Fornecedor</label>'
       + '<select id="cg-fornecedor" style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;margin-bottom:16px"><option value="">Selecione...</option>' + opcoes + '</select>'
       + '<label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase">Seu nome</label>'
@@ -229,9 +232,9 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
     var fornecedor = fornecedoresDaLoja.filter(function(f) { return f.id === fornecedorId; })[0];
     var btn = document.getElementById('cg-btn');
     btn.disabled = true; btn.textContent = 'Registrando...';
+    var col = guestDb.collection('clientes').doc(CLIENTE_ID).collection('promotor_visitas');
 
     function gravar(geo) {
-      var col = guestDb.collection('clientes').doc(CLIENTE_ID).collection('promotor_visitas');
       var dados = {
         checkInEm: firebase.firestore.FieldValue.serverTimestamp(),
         checkInGeo: geo,
@@ -264,19 +267,35 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
       });
     }
 
-    if (!navigator.geolocation) { gravar(null); return; }
-    navigator.geolocation.getCurrentPosition(
-      function(pos) { gravar({lat: pos.coords.latitude, lng: pos.coords.longitude}); },
-      function() { gravar(null); },
-      {timeout: 5000}
-    );
+    function prosseguir() {
+      if (!navigator.geolocation) { gravar(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        function(pos) { gravar({lat: pos.coords.latitude, lng: pos.coords.longitude}); },
+        function() { gravar(null); },
+        {timeout: 5000}
+      );
+    }
+
+    // Só agora, com o fornecedor escolhido, busca uma visita agendada pra
+    // ESSE fornecedor nessa loja hoje — evita "assumir" a visita agendada
+    // de outro fornecedor (achado do reviewer da Task 9).
+    var hoje = getLocalDate();
+    col.where('lojaId', '==', LOJA_ID).where('fornecedorId', '==', fornecedorId)
+      .where('status', '==', 'agendada').where('dataAgendada', '==', hoje).limit(1).get()
+      .then(function(snapAgendadas) {
+        visitaAgendadaId = (!snapAgendadas.empty) ? snapAgendadas.docs[0].id : null;
+        prosseguir();
+      }).catch(function(e) {
+        btn.disabled = false; btn.textContent = 'Registrar entrada';
+        cgErro('Erro ao verificar agendamento: ' + e.message);
+      });
   }
 
   function renderCheckout(visita) {
-    var card = document.getElementById('cg-card');
+    var body = document.getElementById('cg-body');
     var hora = visita.checkInEm && visita.checkInEm.toDate ? visita.checkInEm.toDate().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
-    card.innerHTML +=
-      '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-bottom:16px"><b style="display:block;font-size:16px;margin-bottom:4px">Você está em: ' + visita.lojaNome + '</b>Fornecedor: ' + visita.fornecedorNome + '<br>Entrada às ' + hora + '</div>'
+    body.innerHTML =
+      '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-bottom:16px"><b style="display:block;font-size:16px;margin-bottom:4px">Você está em: ' + _escHtml(visita.lojaNome) + '</b>Fornecedor: ' + _escHtml(visita.fornecedorNome) + '<br>Entrada às ' + hora + '</div>'
       + '<button id="cg-btn-out" style="width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:#FFC600;color:#111">Registrar saída</button>';
     document.getElementById('cg-btn-out').onclick = fazerCheckout;
   }
@@ -4623,7 +4642,7 @@ function renderTabelaVisitas() {
       var pont = calcPontualidade(v);
       var entrada = v.checkInEm ? (v.checkInEm.toDate ? v.checkInEm.toDate() : new Date(v.checkInEm)).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '-';
       var saida = v.checkOutEm ? (v.checkOutEm.toDate ? v.checkOutEm.toDate() : new Date(v.checkOutEm)).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : (v.status === 'na_loja' ? '<span class="st st-warn">Em aberto</span>' : '-');
-      return '<tr><td>' + (v.dataAgendada || '-') + '</td><td>' + (v.fornecedorNome||'-') + '</td><td>' + (v.promotorNome||'-') + '</td><td>' + (v.lojaNome||'-') + '</td>'
+      return '<tr><td>' + (v.dataAgendada || '-') + '</td><td>' + _escHtml(v.fornecedorNome||'-') + '</td><td>' + _escHtml(v.promotorNome||'-') + '</td><td>' + _escHtml(v.lojaNome||'-') + '</td>'
         + '<td>' + (v.horaAgendada || '-') + '</td>'
         + '<td>' + entrada + (pont ? ' <span class="st ' + (pont==='atrasado'?'st-err':pont==='antecipado'?'st-info':'st-ok') + '">' + pontualidadeLabel[pont] + '</span>' : '') + '</td>'
         + '<td>' + saida + '</td>'
@@ -4765,8 +4784,8 @@ function renderAgendaSemanal(delta, resetar) {
     var cards = visitasDoDia.map(function(v) {
       var st = STATUS_VISITA[v.status] || {label: v.status, cls: 'st-info'};
       return '<div class="card" style="padding:8px;margin-bottom:6px;font-size:11px">'
-        + '<div style="font-weight:700">' + (v.horaAgendada || '--:--') + ' · ' + (v.fornecedorNome||'-') + '</div>'
-        + '<div style="color:var(--t3)">' + (v.promotorNome||'-') + ' · ' + (v.lojaNome||'-') + '</div>'
+        + '<div style="font-weight:700">' + (v.horaAgendada || '--:--') + ' · ' + _escHtml(v.fornecedorNome||'-') + '</div>'
+        + '<div style="color:var(--t3)">' + _escHtml(v.promotorNome||'-') + ' · ' + _escHtml(v.lojaNome||'-') + '</div>'
         + '<span class="st ' + st.cls + '" style="margin-top:4px;display:inline-block">' + st.label + '</span></div>';
     }).join('') || '<div style="font-size:11px;color:var(--t3)">Sem visitas</div>';
 
@@ -4798,7 +4817,7 @@ function abrirDrawerFornecedor(id) {
     }
     return '<div style="padding:8px 0;border-bottom:1px solid var(--gray2);font-size:12px">'
       + '<div style="font-weight:700">' + (v.dataAgendada||'-') + ' · ' + labelStatusVisita(v.status) + '</div>'
-      + '<div style="color:var(--t3)">' + (v.lojaNome||'-') + ' · ' + (v.promotorNome||'-') + ' · Duração: ' + duracao + '</div></div>';
+      + '<div style="color:var(--t3)">' + _escHtml(v.lojaNome||'-') + ' · ' + _escHtml(v.promotorNome||'-') + ' · Duração: ' + duracao + '</div></div>';
   }).join('') || '<div class="empty">Sem visitas registradas ainda.</div>';
 
   document.getElementById('drawer-fornecedor-conteudo').innerHTML =
@@ -4870,7 +4889,7 @@ function renderRankingsPromotores() {
     var linhas = itens.map(function(it, i) {
       var valor = sufixo === '%' ? it.pct + '%' : it.media + ' min';
       return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray2);font-size:12px">'
-        + '<span>' + (i+1) + '. ' + it.nome + '</span><strong>' + valor + '</strong></div>';
+        + '<span>' + (i+1) + '. ' + _escHtml(it.nome) + '</span><strong>' + valor + '</strong></div>';
     }).join('') || '<div class="empty" style="font-size:12px">Sem dados ainda.</div>';
     return '<div class="card" style="padding:14px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">' + titulo + '</div>' + linhas + '</div>';
   }

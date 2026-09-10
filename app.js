@@ -4543,7 +4543,10 @@ function renderAgendaSemanal(delta, resetar) {
   for (var i = 0; i < 7; i++) {
     var dia = new Date(segundaBase);
     dia.setDate(segundaBase.getDate() + i);
-    var diaStr = dia.toISOString().slice(0, 10);
+    // Data local (não toISOString, que é UTC e desalinha com getLocalDate()
+    // em fusos negativos como o Brasil — as visitas são gravadas com data
+    // local, então o agrupamento por coluna precisa usar o mesmo formato).
+    var diaStr = dia.getFullYear() + '-' + String(dia.getMonth() + 1).padStart(2, '0') + '-' + String(dia.getDate()).padStart(2, '0');
     var isHoje = diaStr === hojeStr;
     var isFimSemana = dia.getDay() === 0 || dia.getDay() === 6;
     var visitasDoDia = S_PROM.visitas.filter(function(v) { return v.dataAgendada === diaStr; })

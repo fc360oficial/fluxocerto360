@@ -172,17 +172,25 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
   // `_fbAuthConfig` já foi atribuído antes de usá-lo. Sem isso,
   // firebase.initializeApp(undefined, 'promotorCheckin') falharia.
   setTimeout(function() {
-    guestAuth = getGuestAuth();
-    guestDb = guestAuth.app.firestore();
+    try {
+      guestAuth = getGuestAuth();
+      guestDb = guestAuth.app.firestore();
+    } catch (e) {
+      cgErro('Erro ao iniciar sessão de convidado: ' + e.message);
+      return;
+    }
 
     guestAuth.signInAnonymously().then(function(cred) {
       guestUid = cred.user.uid;
-      return db.collection('clientes').doc(CLIENTE_ID).get();
+      // guestDb (não db, o primário) — clientes/fornecedores exigem
+      // request.auth != null desde a revisão de segurança da Task 9; a
+      // sessão anônima da app secundária já cobre isso.
+      return guestDb.collection('clientes').doc(CLIENTE_ID).get();
     }).then(function(doc) {
       var nome = doc.exists ? (doc.data().nome || CLIENTE_ID) : CLIENTE_ID;
       document.getElementById('cg-titulo').textContent = nome;
       document.getElementById('cg-sub').textContent = 'Loja: ' + LOJA_ID;
-      return db.collection('clientes').doc(CLIENTE_ID).collection('fornecedores')
+      return guestDb.collection('clientes').doc(CLIENTE_ID).collection('fornecedores')
         .where('lojas', 'array-contains', LOJA_ID).where('ativo', '==', true).get();
     }).then(function(snap) {
       fornecedoresDaLoja = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
@@ -296,8 +304,25 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
     var hora = visita.checkInEm && visita.checkInEm.toDate ? visita.checkInEm.toDate().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
     body.innerHTML =
       '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-bottom:16px"><b style="display:block;font-size:16px;margin-bottom:4px">Você está em: ' + _escHtml(visita.lojaNome) + '</b>Fornecedor: ' + _escHtml(visita.fornecedorNome) + '<br>Entrada às ' + hora + '</div>'
-      + '<button id="cg-btn-out" style="width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:#FFC600;color:#111">Registrar saída</button>';
+      + '<button id="cg-btn-out" style="width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:#FFC600;color:#111">Registrar saída</button>'
+      // Celular/tablet compartilhado entre promotores: o segundo a escanear
+      // herda a sessão anônima (e a visita em aberto) do primeiro. Esse link
+      // troca de sessão anônima e volta pro formulário de check-in em vez de
+      // fechar a visita de outra pessoa por engano (achado da revisão final).
+      + '<div id="cg-nao-sou-eu" style="text-align:center;margin-top:12px;font-size:12px;color:#6b7280;text-decoration:underline;cursor:pointer">Esse não sou eu — trocar de promotor</div>';
     document.getElementById('cg-btn-out').onclick = fazerCheckout;
+    document.getElementById('cg-nao-sou-eu').onclick = trocarPromotor;
+  }
+
+  function trocarPromotor() {
+    guestAuth.signOut().then(function() {
+      return guestAuth.signInAnonymously();
+    }).then(function(cred) {
+      guestUid = cred.user.uid;
+      visitaAbertaId = null;
+      visitaAgendadaId = null;
+      verificarVisita();
+    }).catch(function(e) { cgErro('Erro ao trocar de promotor: ' + e.message); });
   }
 
   function fazerCheckout() {
@@ -1177,7 +1202,19 @@ var S = {
 };
 
 // ── Feature flags por cliente ─────────────────────────────────────────────
+// Módulos "opt-in": nascem TRAVADOS por padrão (precisa contratar
+// explicitamente), diferente do padrão histórico dos outros módulos (chave
+// ausente = ativo). Só entra aqui um módulo novo que já tem escrita
+// alcançável por usuário não-autenticado (ex: check-in de promotor
+// convidado) — achado da revisão final de branch do Promotores v2: sem
+// isso, todo cliente existente (sem `modulos.promotores` gravado ainda)
+// nascia com o card VIVO em vez de travado.
+var MODULOS_OPT_IN = {promotores: true};
+
 function _moduloAtivo(nome) {
+  if (MODULOS_OPT_IN[nome]) {
+    return !!(S.clienteConfig && S.clienteConfig.modulos && S.clienteConfig.modulos[nome] === true);
+  }
   if (!S.clienteConfig) return true;
   var m = S.clienteConfig.modulos;
   if (!m) return true;
@@ -4562,7 +4599,7 @@ function renderFornecedoresLista() {
   if (!S_PROM.fornecedores.length) { wrap.innerHTML = '<div class="empty">Nenhum fornecedor cadastrado ainda.</div>'; return; }
   wrap.innerHTML = S_PROM.fornecedores.map(function(f) {
     return '<div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px;margin-bottom:8px">'
-      + '<div><strong>' + f.nome + '</strong><div style="font-size:12px;color:var(--t3)">Lojas: ' + (f.lojas||[]).join(', ') + (f.telefone ? ' · ' + f.telefone : '') + '</div></div>'
+      + '<div><strong>' + _escHtml(f.nome) + '</strong><div style="font-size:12px;color:var(--t3)">Lojas: ' + _escHtml((f.lojas||[]).join(', ')) + (f.telefone ? ' · ' + _escHtml(f.telefone) : '') + '</div></div>'
       + '<div style="display:flex;gap:6px">'
       + '<button class="btn btn-s btn-sm" onclick="abrirDrawerFornecedor(\'' + f.id + '\')">Ver</button>'
       + '<button class="btn btn-s btn-sm" onclick="abrirModalFornecedor(\'' + f.id + '\')">Editar</button>'
@@ -4641,25 +4678,43 @@ function renderTabelaVisitas() {
 
   var pontualidadeLabel = {antecipado: 'Antecipado', pontual: 'Pontual', atrasado: 'Atrasado'};
 
-  wrap.innerHTML = '<table class="tbl"><thead><tr><th>Data</th><th>Fornecedor</th><th>Promotor</th><th>Loja</th><th>Programado</th><th>Entrada</th><th>Saída</th><th>Status</th></tr></thead><tbody>'
+  wrap.innerHTML = '<table class="tbl"><thead><tr><th>Data</th><th>Fornecedor</th><th>Promotor</th><th>Loja</th><th>Programado</th><th>Entrada</th><th>Saída</th><th>Status</th><th></th></tr></thead><tbody>'
     + visitas.map(function(v) {
       var st = STATUS_VISITA[v.status] || {label: v.status, cls: 'st-info'};
       var pont = calcPontualidade(v);
       var entrada = v.checkInEm ? (v.checkInEm.toDate ? v.checkInEm.toDate() : new Date(v.checkInEm)).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : '-';
       var saida = v.checkOutEm ? (v.checkOutEm.toDate ? v.checkOutEm.toDate() : new Date(v.checkOutEm)).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : (v.status === 'na_loja' ? '<span class="st st-warn">Em aberto</span>' : '-');
+      // Fechar manualmente: cobre o caso de promotor que trocou de
+      // celular/navegador no meio da visita e ficou com o check-out
+      // travado (limitação aceita do check-in por sessão anônima, ver spec
+      // seção 8) — usa a regra Update #3 do Firestore (admin/supervisor
+      // não-anônimo pode editar qualquer visita).
+      var acao = v.status === 'na_loja' ? '<button class="btn btn-s btn-sm" onclick="fecharVisitaManualmente(\'' + v.id + '\')">Fechar</button>' : '';
       return '<tr><td>' + (v.dataAgendada || '-') + '</td><td>' + _escHtml(v.fornecedorNome||'-') + '</td><td>' + _escHtml(v.promotorNome||'-') + '</td><td>' + _escHtml(v.lojaNome||'-') + '</td>'
         + '<td>' + (v.horaAgendada || '-') + '</td>'
         + '<td>' + entrada + (pont ? ' <span class="st ' + (pont==='atrasado'?'st-err':pont==='antecipado'?'st-info':'st-ok') + '">' + pontualidadeLabel[pont] + '</span>' : '') + '</td>'
         + '<td>' + saida + '</td>'
-        + '<td><span class="st ' + st.cls + '">' + st.label + '</span></td></tr>';
+        + '<td><span class="st ' + st.cls + '">' + st.label + '</span></td>'
+        + '<td>' + acao + '</td></tr>';
     }).join('')
     + '</tbody></table>';
+}
+
+function fecharVisitaManualmente(id) {
+  if (!confirm('Fechar esta visita manualmente? Use quando o promotor esqueceu de registrar a saída ou trocou de celular no meio da visita.')) return;
+  visitasCol().doc(id).update({
+    checkOutEm: firebase.firestore.FieldValue.serverTimestamp(),
+    status: 'realizada'
+  }).then(function() {
+    showToast('Visita fechada.');
+    renderPromotoresPainel();
+  }).catch(function(e) { showToast('Erro ao fechar: ' + e.message); });
 }
 
 function abrirModalAgendamento() {
   var sel = document.getElementById('ag-fornecedor');
   sel.innerHTML = '<option value="">Selecione...</option>' + S_PROM.fornecedores.map(function(f) {
-    return '<option value="' + f.id + '" data-nome="' + f.nome + '">' + f.nome + '</option>';
+    return '<option value="' + f.id + '" data-nome="' + _escHtml(f.nome) + '">' + _escHtml(f.nome) + '</option>';
   }).join('');
   document.getElementById('ag-promotor-nome').value = '';
   document.getElementById('ag-promotor-telefone').value = '';
@@ -4702,7 +4757,11 @@ function _gerarDatasAgendamento(dataInicial, dataFinal, periodicidade, diasSeman
     if (periodicidade === 'mensal') {
       passaFiltroDia = cursor.getDate() === new Date(dataInicial + 'T00:00:00').getDate();
     }
-    if (passaFiltroDia) datas.push(cursor.toISOString().slice(0, 10));
+    // Data local, não toISOString() (UTC) — mesma classe de bug já corrigida
+    // na agenda semanal e no filtro "próximos 7 dias" (achado da revisão
+    // final de branch): aqui é pior porque é caminho de ESCRITA, não só
+    // exibição — gravaria dataAgendada errada perto da virada do dia.
+    if (passaFiltroDia) datas.push(cursor.getFullYear() + '-' + String(cursor.getMonth() + 1).padStart(2, '0') + '-' + String(cursor.getDate()).padStart(2, '0'));
     cursor.setDate(cursor.getDate() + 1);
   }
   return datas;
@@ -4826,10 +4885,10 @@ function abrirDrawerFornecedor(id) {
   }).join('') || '<div class="empty">Sem visitas registradas ainda.</div>';
 
   document.getElementById('drawer-fornecedor-conteudo').innerHTML =
-    '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px">' + f.nome + '</div>'
-    + '<div style="font-size:12px;color:var(--t3);margin-bottom:16px">' + (f.telefone||'sem telefone') + (f.email ? ' · ' + f.email : '') + '</div>'
+    '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px">' + _escHtml(f.nome) + '</div>'
+    + '<div style="font-size:12px;color:var(--t3);margin-bottom:16px">' + _escHtml(f.telefone||'sem telefone') + (f.email ? ' · ' + _escHtml(f.email) : '') + '</div>'
     + '<div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px">'
-    + '<div><strong>Lojas:</strong> ' + (f.lojas||[]).join(', ') + '</div>'
+    + '<div><strong>Lojas:</strong> ' + _escHtml((f.lojas||[]).join(', ')) + '</div>'
     + '<div><strong>Dias esperados:</strong> ' + diasTexto + '</div>'
     + '<div><strong>Periodicidade:</strong> ' + (f.periodicidade || '-') + '</div></div>'
     + '<div style="font-weight:700;font-size:13px;margin-bottom:8px">Últimas visitas</div>'
@@ -4967,8 +5026,8 @@ function renderQrGridLojas() {
   if (!lojas.length) { wrap.innerHTML = '<div class="empty">Cadastre um fornecedor com loja pra gerar QR codes.</div>'; return; }
   wrap.innerHTML = lojas.map(function(lojaId) {
     return '<div class="card" style="padding:14px;text-align:center">'
-      + '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Loja ' + lojaId + '</div>'
-      + '<button class="btn btn-s btn-sm" style="width:100%" onclick="abrirQrLoja(\'' + lojaId + '\')">Ver / Imprimir</button></div>';
+      + '<div style="font-size:12px;font-weight:700;margin-bottom:8px">Loja ' + _escHtml(lojaId) + '</div>'
+      + '<button class="btn btn-s btn-sm" style="width:100%" onclick="abrirQrLoja(\'' + lojaId.replace(/'/g, "\\'") + '\')">Ver / Imprimir</button></div>';
   }).join('');
 }
 
@@ -10220,7 +10279,7 @@ function _renderClientesLista() {
     var licBg  = semLic||vencido ? '#fdecea'  : diasR<=7 ? '#fef3e2' : '#d1f0e0';
     var licTxt = semLic ? 'Sem licença' : vencido ? 'Vencida em '+venc.toLocaleDateString('pt-BR') : diasR+' dias · até '+venc.toLocaleDateString('pt-BR');
     var modBadges = MODS.map(function(m){
-      var on = !c.modulos || c.modulos[m] !== false;
+      var on = MODULOS_OPT_IN[m] ? (c.modulos && c.modulos[m] === true) : (!c.modulos || c.modulos[m] !== false);
       return on ? '<span style="display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;margin:2px;background:#e8f5ee;color:#1a5c34">'+MODS_LABEL[m]+'</span>' : '';
     }).join('');
     var safeId = c.id.replace(/'/g,"\\'");
@@ -10456,8 +10515,12 @@ function abrirNovoCliente() {
   var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas','promotores'];
   var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas',promotores:'Promotores'};
   var modHtml = MODS.map(function(m){
-    return '<label onchange="var i=this.querySelector(\'input\');this.style.background=i.checked?\'rgba(34,197,94,.1)\':\'\';this.style.color=i.checked?\'#15803d\':\'\';" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;font-size:13px;font-weight:600;background:rgba(34,197,94,.1);color:#15803d;border-radius:8px;">'+
-      '<input type="checkbox" id="nc-mod-'+m+'" checked style="width:16px;height:16px;accent-color:#22c55e;flex-shrink:0"> '+MODS_LABEL[m]+'</label>';
+    // Módulos opt-in (ver MODULOS_OPT_IN) nascem DESMARCADOS mesmo em
+    // cliente novo — precisa contratar explicitamente.
+    var on = !MODULOS_OPT_IN[m];
+    var ls = on ? 'background:rgba(34,197,94,.1);color:#15803d;' : 'color:var(--t2);';
+    return '<label onchange="var i=this.querySelector(\'input\');this.style.background=i.checked?\'rgba(34,197,94,.1)\':\'\';this.style.color=i.checked?\'#15803d\':\'\';" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;font-size:13px;font-weight:600;border-radius:8px;'+ls+'">'+
+      '<input type="checkbox" id="nc-mod-'+m+'"'+(on?' checked':'')+' style="width:16px;height:16px;accent-color:#22c55e;flex-shrink:0"> '+MODS_LABEL[m]+'</label>';
   }).join('');
   var html = '<div id="modal-novo-cliente" onclick="if(event.target===this)fecharNovoCliente()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px">'+
     '<div style="background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto">'+

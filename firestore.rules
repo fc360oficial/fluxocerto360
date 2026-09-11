@@ -2,30 +2,52 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Módulo contratado pelo cliente? Usado só pra travar a ESCRITA
+    // anônima de promotor_visitas — sem isso, a trava de "módulo contratado"
+    // existia só na UI (capa/sidebar), e qualquer um com clienteId+lojaId de
+    // um cliente que nunca contratou o módulo podia gravar visitas via API
+    // direta (achado da revisão final de branch do Promotores v2).
+    function promotoresContratado(clienteId) {
+      return get(/databases/$(database)/documents/clientes/$(clienteId)).data.get('modulos', {}).get('promotores', false) == true;
+    }
+
     match /clientes/{clienteId} {
-      // Leitura pública, só get (nunca list): o modo convidado de check-in
-      // (sem login, ?checkin=1 embutido no PWA — Task 9) precisa ler o nome
-      // do cliente antes de qualquer autenticação existir. `allow list` fica
-      // de fora de propósito — sem isso, "allow read: if true" deixaria a
-      // coleção `clientes` inteira (nome/plano/validade de TODOS os
-      // clientes) listável por qualquer um com a API key pública (achado do
-      // reviewer da Task 9). Sem regra de write aqui — esse doc só é escrito
-      // pelo painel superadmin, cuja regra real vive no Console (este
-      // arquivo local é conhecidamente desatualizado, ver commit anterior).
-      allow get: if true;
+      // Leitura só get (nunca list), pra qualquer autenticado (inclui
+      // anônimo): o modo convidado de check-in (sem login, ?checkin=1
+      // embutido no PWA — Task 9) precisa ler o nome do cliente, mas só
+      // depois de logar anonimamente na app secundária — não precisa ser
+      // público de verdade. `allow list` fica de fora de propósito — sem
+      // isso, a coleção `clientes` inteira (nome/plano/validade de TODOS os
+      // clientes) ficaria listável por qualquer um com a API key pública.
+      // Sem regra de write aqui — esse doc só é escrito pelo painel
+      // superadmin, cuja regra real vive no Console (este arquivo local é
+      // conhecidamente desatualizado, ver commit anterior).
+      allow get: if request.auth != null;
     }
 
     match /clientes/{clienteId}/fornecedores/{fornecedorId} {
-      // Leitura pública: a página de check-in (sem login) precisa listar
-      // os fornecedores daquela loja pro select.
-      allow read: if true;
-      // Escrita só autenticado (usuários reais do FC360, checado na regra
-      // geral do app — aqui só garantimos que não é totalmente aberto).
+      // Leitura pra qualquer autenticado (inclui anônimo) — o modo
+      // convidado de check-in precisa listar os fornecedores daquela loja,
+      // mas loga anonimamente antes de ler, então não precisa ser público
+      // de verdade (achado da revisão final: telefone/email do fornecedor,
+      // adicionados na Task 3, ficavam expostos com "allow read: if true").
+      allow read: if request.auth != null;
+      // Escrita só autenticado não-anônimo (usuários reais do FC360).
       allow write: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
     match /clientes/{clienteId}/promotor_visitas/{visitaId} {
-      allow read: if request.auth != null;
+      // Leitura: usuário real do FC360 vê tudo do próprio cliente. Convidado
+      // anônimo só vê (a) a própria visita em aberto/fechada, filtrando por
+      // sessionUid — necessário pro fluxo de check-out reconhecer sessão
+      // já aberta — e (b) uma visita agendada ainda não reivindicada
+      // (sessionUid nulo), necessário pra checar se já existe agendamento
+      // pro fornecedor escolhido. Sem isso, "allow read: if request.auth !=
+      // null" deixava qualquer sessão anônima listar o histórico de visitas
+      // (nomes, telefones, GPS) de QUALQUER cliente (achado da revisão final).
+      allow read: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      allow read: if request.auth != null && resource.data.sessionUid == request.auth.uid;
+      allow read: if request.auth != null && resource.data.sessionUid == null && resource.data.status == 'agendada';
 
       // Create #1: Admin/Supervisor agenda uma visita com antecedência
       // (não anônimo, ainda sem check-in).
@@ -39,16 +61,22 @@ service cloud.firestore {
       // Create #2: promotor convidado chega sem agendamento prévio e já
       // faz check-in direto (comportamento v1, mantido). checkInEm precisa
       // ser o horário do servidor (request.time) — nunca um valor arbitrário
-      // que o cliente anônimo poderia forjar.
+      // que o cliente anônimo poderia forjar. promotoresContratado() trava
+      // a escrita anônima pra clientes que não têm o módulo ativo.
       allow create: if request.auth != null
         && request.resource.data.sessionUid == request.auth.uid
         && request.resource.data.status == 'na_loja'
         && request.resource.data.checkInEm == request.time
-        && request.resource.data.checkOutEm == null;
+        && request.resource.data.checkOutEm == null
+        && promotoresContratado(clienteId);
 
       // Update #1: promotor convidado "assume" uma visita agendada
       // existente e faz check-in (sessionUid ainda não preenchido). Mesma
       // trava de checkInEm == request.time do Create #2, pelo mesmo motivo.
+      // Campos de agendamento (dataAgendada, horaAgendada, nomes/telefones)
+      // ficam travados iguais ao valor anterior — sem isso, um cliente
+      // anônimo malicioso podia reescrever data/identidade de uma visita
+      // agendada de outro fornecedor (achado da revisão final de branch).
       allow update: if request.auth != null
         && resource.data.status == 'agendada'
         && resource.data.sessionUid == null
@@ -56,7 +84,14 @@ service cloud.firestore {
         && request.resource.data.status == 'na_loja'
         && request.resource.data.checkInEm == request.time
         && request.resource.data.fornecedorId == resource.data.fornecedorId
-        && request.resource.data.lojaId == resource.data.lojaId;
+        && request.resource.data.lojaId == resource.data.lojaId
+        && request.resource.data.dataAgendada == resource.data.dataAgendada
+        && request.resource.data.horaAgendada == resource.data.horaAgendada
+        && request.resource.data.fornecedorNome == resource.data.fornecedorNome
+        && request.resource.data.lojaNome == resource.data.lojaNome
+        && request.resource.data.promotorNome == resource.data.promotorNome
+        && request.resource.data.promotorTelefone == resource.data.promotorTelefone
+        && promotoresContratado(clienteId);
 
       // Update #2: o mesmo convidado que fez o check-in fecha o check-out.
       // checkOutEm também travado em request.time, mesmo motivo do check-in.

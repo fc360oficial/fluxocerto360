@@ -10458,7 +10458,7 @@ function abrirEditarCliente(clienteId) {
   var MODS = ['checklist','inventario','planos_acao','relatorios','central','monitor','etiquetas','promotores'];
   var MODS_LABEL = {checklist:'Checklist',inventario:'Inventário',planos_acao:'Planos de Ação',alertas:'Alertas',relatorios:'Relatórios',central:'Central de Resultados',monitor:'Monitor',etiquetas:'Etiquetas',promotores:'Promotores'};
   var modHtml = MODS.map(function(m){
-    var on = !c.modulos || c.modulos[m] !== false;
+    var on = MODULOS_OPT_IN[m] ? (c.modulos && c.modulos[m] === true) : (!c.modulos || c.modulos[m] !== false);
     var ls = on ? 'background:rgba(34,197,94,.1);color:#15803d;border-radius:8px;' : 'color:var(--t2);border-radius:8px;';
     return '<label onchange="var i=this.querySelector(\'input\');this.style.background=i.checked?\'rgba(34,197,94,.1)\':\'\';this.style.color=i.checked?\'#15803d\':\'\';" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;font-size:13px;font-weight:600;'+ls+'">'+
       '<input type="checkbox" id="ec-mod-'+m+'"'+(on?' checked':'')+' style="width:16px;height:16px;accent-color:#22c55e;flex-shrink:0"> '+MODS_LABEL[m]+'</label>';

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '354';
+var BUILD = '355';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -288,8 +288,12 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
     // ESSE fornecedor nessa loja hoje — evita "assumir" a visita agendada
     // de outro fornecedor (achado do reviewer da Task 9).
     var hoje = getLocalDate();
+    // sessionUid == null é obrigatório na consulta: a regra do Firestore só
+    // libera leitura anônima de visita agendada ainda não reivindicada, e
+    // uma query precisa provar via filtros que todo resultado satisfaz a regra.
     col.where('lojaId', '==', LOJA_ID).where('fornecedorId', '==', fornecedorId)
-      .where('status', '==', 'agendada').where('dataAgendada', '==', hoje).limit(1).get()
+      .where('status', '==', 'agendada').where('sessionUid', '==', null)
+      .where('dataAgendada', '==', hoje).limit(1).get()
       .then(function(snapAgendadas) {
         visitaAgendadaId = (!snapAgendadas.empty) ? snapAgendadas.docs[0].id : null;
         prosseguir();

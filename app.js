@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '356';
+var BUILD = '357';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5048,32 +5048,77 @@ function abrirQrLoja(lojaId) {
 
 // Folha A4 por loja pra colar na entrada (recebimento / entrada de
 // funcionários). lojas = array de IDs, ou null pra todas as lojas com
-// fornecedor cadastrado. Imprime via área oculta + @media print (funciona
-// no PWA instalado, onde window.open costuma ser bloqueado).
+// fornecedor cadastrado. Renderiza num iframe oculto com CSS próprio —
+// isolado do CSS do app (a versão anterior via @media print no style.css
+// imprimia a tela inteira quando o navegador segurava CSS antigo em cache)
+// e funciona no PWA instalado, onde window.open costuma ser bloqueado.
 function imprimirQrLojas(lojas) {
   if (!lojas) lojas = getLojasUnicas(S_PROM.fornecedores);
   lojas = (lojas || []).filter(Boolean);
   if (!lojas.length) { showToast('Nenhuma loja com fornecedor cadastrado.'); return; }
   var cliente = (S.clienteConfig && S.clienteConfig.nome) || '';
-  var area = document.getElementById('qr-print-area');
-  area.innerHTML = lojas.map(function(lojaId) {
+  var logoUrl = new URL('logo.png', location.href).href;
+  var folhas = lojas.map(function(lojaId) {
     var url = location.origin + location.pathname + '?checkin=1&c=' + S.clienteConfig.id + '&l=' + lojaId;
     var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-    return '<div class="qr-folha">'
-      + '<div class="qr-cliente">' + _escHtml(cliente) + '</div>'
-      + '<div class="qr-loja">Loja ' + _escHtml(lojaId) + '</div>'
-      + qr.createSvgTag(8)
-      + '<div class="qr-titulo">Promotor: registre sua visita</div>'
-      + '<div class="qr-passos">1. Aponte a câmera do celular pro QR code<br>2. Escolha o fornecedor e informe seu nome<br>3. Ao sair, leia o QR de novo e registre a saída</div>'
-      + '<div class="qr-url">' + _escHtml(url) + '</div>'
-      + '</div>';
+    return '<section class="folha">'
+      + '<header><img src="' + logoUrl + '" alt="Fluxo Certo 360"><div class="hd-txt"><div class="hd-cliente">' + _escHtml(cliente) + '</div><div class="hd-loja">Loja ' + _escHtml(lojaId) + '</div></div></header>'
+      + '<main>'
+      + '<h1>Promotor, registre sua visita</h1>'
+      + '<p class="sub">Leia o QR code com a câmera do celular ao chegar e ao sair da loja.</p>'
+      + '<div class="qr-card">' + qr.createSvgTag(8) + '</div>'
+      + '<ol class="passos">'
+      + '<li><span>1</span><div><b>Aponte a câmera</b> do celular pro QR code. Não precisa instalar nada.</div></li>'
+      + '<li><span>2</span><div><b>Escolha o fornecedor</b> que você representa e informe seu nome.</div></li>'
+      + '<li><span>3</span><div><b>Ao sair, leia o QR de novo</b> e toque em "Registrar saída".</div></li>'
+      + '</ol>'
+      + '</main>'
+      + '<footer><div class="ft-url">' + _escHtml(url) + '</div><div class="ft-marca">Fluxo Certo 360 · Controle de promotores</div></footer>'
+      + '</section>';
   }).join('');
-  document.body.classList.add('qr-printing');
-  var limpar = function() { document.body.classList.remove('qr-printing'); area.innerHTML = ''; window.removeEventListener('afterprint', limpar); };
-  window.addEventListener('afterprint', limpar);
-  setTimeout(function() { window.print(); }, 50);
-  // Fallback caso afterprint não dispare (alguns WebViews)
-  setTimeout(limpar, 60000);
+  var css = '@page{size:A4 portrait;margin:0}'
+    + '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + 'html,body{margin:0;padding:0;background:#fff;font-family:"Plus Jakarta Sans",Arial,Helvetica,sans-serif;color:#111}'
+    + '.folha{width:210mm;height:297mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}'
+    + '.folha:last-child{page-break-after:auto;break-after:auto}'
+    + 'header{background:#FFC600;padding:14mm 16mm 12mm;display:flex;align-items:center;gap:10mm}'
+    + 'header img{width:34mm;height:34mm;mix-blend-mode:multiply;flex:none}'
+    + '.hd-cliente{font-size:15pt;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#3a2f00;opacity:.85}'
+    + '.hd-loja{font-size:34pt;font-weight:800;line-height:1.05;color:#111;margin-top:2mm}'
+    + 'main{flex:1;display:flex;flex-direction:column;align-items:center;padding:12mm 16mm 0;text-align:center}'
+    + 'h1{font-size:26pt;font-weight:800;margin:0;letter-spacing:-.02em}'
+    + '.sub{font-size:12.5pt;color:#555;margin:3mm 0 9mm;max-width:150mm}'
+    + '.qr-card{background:#fff;border:1.2mm solid #111;border-radius:8mm;padding:7mm;line-height:0}'
+    + '.qr-card svg{width:94mm;height:94mm;display:block}'
+    + '.passos{list-style:none;margin:11mm 0 0;padding:0;width:100%;max-width:160mm;text-align:left}'
+    + '.passos li{display:flex;align-items:center;gap:6mm;font-size:13pt;line-height:1.35;padding:3.5mm 0;border-top:0.3mm solid #e5e7eb}'
+    + '.passos li:first-child{border-top:none}'
+    + '.passos span{flex:none;width:11mm;height:11mm;border-radius:50%;background:#FFC600;color:#111;font-weight:800;font-size:14pt;display:flex;align-items:center;justify-content:center}'
+    + 'footer{padding:6mm 16mm 10mm;display:flex;justify-content:space-between;align-items:flex-end;gap:8mm;border-top:0.3mm solid #e5e7eb}'
+    + '.ft-url{font-size:8pt;color:#888;word-break:break-all;max-width:120mm}'
+    + '.ft-marca{font-size:9pt;font-weight:600;color:#555;white-space:nowrap}';
+  var html = '<!doctype html><html><head><meta charset="utf-8"><title>QR Codes — Promotores</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">'
+    + '<style>' + css + '</style></head><body>' + folhas + '</body></html>';
+  var antigo = document.getElementById('qr-print-frame');
+  if (antigo) antigo.parentNode.removeChild(antigo);
+  var frame = document.createElement('iframe');
+  frame.id = 'qr-print-frame';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(frame);
+  var doc = frame.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  var imprimiu = false;
+  var disparar = function() {
+    if (imprimiu) return; imprimiu = true;
+    try { frame.contentWindow.focus(); frame.contentWindow.print(); }
+    catch (e) { showToast('Não foi possível abrir a impressão: ' + e.message); }
+  };
+  var img = doc.querySelector('header img');
+  if (img && !img.complete) { img.onload = img.onerror = function() { setTimeout(disparar, 150); }; }
+  else setTimeout(disparar, 150);
+  setTimeout(disparar, 2500); // fallback se a logo/fonte demorar
 }
 
 // ── Etiquetas ──

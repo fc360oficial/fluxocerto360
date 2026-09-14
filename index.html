@@ -589,7 +589,10 @@
         </div>
 
         <div style="margin-top:24px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:10px">QR codes por loja</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <div style="font-weight:700;font-size:14px">QR codes por loja</div>
+            <button class="btn btn-s btn-sm" onclick="imprimirQrLojas(null)">🖨️ Imprimir todas as lojas</button>
+          </div>
           <div id="promotores-qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px"></div>
         </div>
       </div>
@@ -676,7 +679,10 @@
         <div class="modal-box" style="width:340px;text-align:center">
           <div class="modal-title">QR Code da loja</div>
           <div id="qr-container" style="margin:16px 0"></div>
-          <button class="btn btn-s" style="width:100%" onclick="document.getElementById('modal-qr').style.display='none'">Fechar</button>
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn btn-p" style="flex:1" onclick="imprimirQrLojas([document.getElementById('modal-qr').dataset.loja])">🖨️ Imprimir</button>
+            <button class="btn btn-s" style="flex:1" onclick="document.getElementById('modal-qr').style.display='none'">Fechar</button>
+          </div>
         </div>
       </div>
 
@@ -2049,6 +2055,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="client.js"></script>
+<div id="qr-print-area"></div>
 <script src="qrcode-generator.min.js"></script>
 <script src="app.js?v=346" defer></script>
 

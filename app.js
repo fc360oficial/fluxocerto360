@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '355';
+var BUILD = '356';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5042,7 +5042,38 @@ function abrirQrLoja(lojaId) {
   qr.addData(url);
   qr.make();
   document.getElementById('qr-container').innerHTML = qr.createSvgTag(5) + '<div style="font-size:11px;color:var(--t3);margin-top:8px;word-break:break-all">' + url + '</div>';
+  document.getElementById('modal-qr').dataset.loja = lojaId;
   document.getElementById('modal-qr').style.display = 'flex';
+}
+
+// Folha A4 por loja pra colar na entrada (recebimento / entrada de
+// funcionários). lojas = array de IDs, ou null pra todas as lojas com
+// fornecedor cadastrado. Imprime via área oculta + @media print (funciona
+// no PWA instalado, onde window.open costuma ser bloqueado).
+function imprimirQrLojas(lojas) {
+  if (!lojas) lojas = getLojasUnicas(S_PROM.fornecedores);
+  lojas = (lojas || []).filter(Boolean);
+  if (!lojas.length) { showToast('Nenhuma loja com fornecedor cadastrado.'); return; }
+  var cliente = (S.clienteConfig && S.clienteConfig.nome) || '';
+  var area = document.getElementById('qr-print-area');
+  area.innerHTML = lojas.map(function(lojaId) {
+    var url = location.origin + location.pathname + '?checkin=1&c=' + S.clienteConfig.id + '&l=' + lojaId;
+    var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+    return '<div class="qr-folha">'
+      + '<div class="qr-cliente">' + _escHtml(cliente) + '</div>'
+      + '<div class="qr-loja">Loja ' + _escHtml(lojaId) + '</div>'
+      + qr.createSvgTag(8)
+      + '<div class="qr-titulo">Promotor: registre sua visita</div>'
+      + '<div class="qr-passos">1. Aponte a câmera do celular pro QR code<br>2. Escolha o fornecedor e informe seu nome<br>3. Ao sair, leia o QR de novo e registre a saída</div>'
+      + '<div class="qr-url">' + _escHtml(url) + '</div>'
+      + '</div>';
+  }).join('');
+  document.body.classList.add('qr-printing');
+  var limpar = function() { document.body.classList.remove('qr-printing'); area.innerHTML = ''; window.removeEventListener('afterprint', limpar); };
+  window.addEventListener('afterprint', limpar);
+  setTimeout(function() { window.print(); }, 50);
+  // Fallback caso afterprint não dispare (alguns WebViews)
+  setTimeout(limpar, 60000);
 }
 
 // ── Etiquetas ──

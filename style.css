@@ -371,3 +371,18 @@ tbody tr:hover td{background:#fafcfa}
 @media (max-width: 380px) {
   .capa-grid{grid-template-columns:repeat(2,1fr)}
 }
+/* ── Impressão dos QR codes do Promotores (uma folha A4 por loja) ── */
+#qr-print-area{display:none}
+@media print {
+  body.qr-printing > *:not(#qr-print-area){display:none !important}
+  body.qr-printing #qr-print-area{display:block !important}
+  body.qr-printing{background:#fff !important;margin:0}
+  .qr-folha{page-break-after:always;break-after:page;height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#111}
+  .qr-folha:last-child{page-break-after:auto;break-after:auto}
+  .qr-folha .qr-cliente{font-size:22px;font-weight:700;color:#555;letter-spacing:.5px;text-transform:uppercase}
+  .qr-folha .qr-loja{font-size:44px;font-weight:800;margin:6px 0 26px}
+  .qr-folha svg{width:340px;height:340px}
+  .qr-folha .qr-titulo{font-size:30px;font-weight:800;margin-top:28px}
+  .qr-folha .qr-passos{font-size:18px;color:#333;margin-top:14px;line-height:1.7;max-width:520px}
+  .qr-folha .qr-url{font-size:11px;color:#888;margin-top:30px;word-break:break-all;max-width:560px}
+}

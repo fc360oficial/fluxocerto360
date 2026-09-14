@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '346';
+var BUILD = '352';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -10321,6 +10321,7 @@ function _renderClientesLista() {
         '<button class="btn btn-sm" style="background:#1a1a1a;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="entrarComoCliente(\''+safeId+'\')">🚪 Entrar como</button>' +
         '<button class="btn btn-sm" style="background:#1a5c9c;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="gerarTokenCliente(\''+safeId+'\')">🔑 Token</button>' +
         '<button class="btn btn-sm" style="color:var(--t2);border:1.5px solid var(--gray2);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:#fff" onclick="verTokensCliente(\''+safeId+'\')">📋 Tokens</button>' +
+        (c.id === 'fluxocerto' ? '' : '<button class="btn btn-sm" style="background:#fff;color:var(--t2);border:1.5px solid var(--gray2);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="abrirModalVersoes(\''+safeId+'\')">🕓 Versões</button>') +
         '<button class="btn btn-sm" id="btn-deploy-'+safeId+'" style="background:#2d6a2d;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="deployCliente(\''+safeId+'\')">🚀 Deploy</button>' +
         (c.id === 'fluxocerto' ? '' : (inativo
           ? '<button class="btn btn-sm" style="background:#1a5c34;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="toggleAtivoCliente(\''+safeId+'\',true)">✅ Reativar</button>'
@@ -10383,6 +10384,24 @@ function _fetchComTimeout(url, ms) {
   }, function(e) {
     clearTimeout(timer);
     throw e;
+  });
+}
+
+function _extrairBuildDoPatch(patch) {
+  if (!patch) return null;
+  var antes = patch.match(/^-var BUILD = '(\d+)';/m);
+  var depois = patch.match(/^\+var BUILD = '(\d+)';/m);
+  if (!antes || !depois) return null;
+  return { antes: antes[1], depois: depois[1] };
+}
+
+function _filtrarUltimasVersoes(commits, limite) {
+  var n = limite || 3;
+  return (commits || []).filter(function(c) {
+    var msg = (c.commit && c.commit.message) || '';
+    return msg.indexOf('Auto-deploy') === 0 || msg.indexOf('Rollback para build') === 0;
+  }).slice(0, n).map(function(c) {
+    return { sha: c.sha, mensagem: c.commit.message, data: c.commit.author.date };
   });
 }
 
@@ -10749,7 +10768,184 @@ function cancelarToken(tokenId, clienteId) {
   }).catch(function(e){ showToast('Erro: '+e.message); });
 }
 
-function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, callback) {
+function abrirModalVersoes(clienteId) {
+  var existing = document.getElementById('modal-versoes'); if (existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend',
+    '<div id="modal-versoes" onclick="if(event.target===this)this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px">'+
+      '<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto">'+
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;font-weight:800;margin-bottom:16px">Versões — '+clienteId+'</div>'+
+        '<div id="versoes-lista">Carregando...</div>'+
+        '<button onclick="document.getElementById(\'modal-versoes\').remove()" style="margin-top:16px;width:100%;padding:10px;background:var(--gray);border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>'+
+      '</div></div>');
+
+  db.collection('config').doc('superadmin').get({source:'server'}).then(function(doc) {
+    var cfg = doc.data();
+    var token = cfg.githubToken, org = cfg.githubOrg || 'fc360oficial';
+    return db.collection('config').doc('repos').get({source:'server'}).then(function(rDoc) {
+      var repoName = (rDoc.data()||{})[clienteId];
+      var listaEl = document.getElementById('versoes-lista');
+      if (!repoName) { if (listaEl) listaEl.innerHTML = 'Repositório não configurado pra esse cliente.'; return; }
+      fetch('https://api.github.com/repos/'+org+'/'+repoName+'/commits?sha=main&per_page=10', {
+        headers: { Authorization: 'token '+token, Accept: 'application/vnd.github+json' }
+      }).then(function(r) {
+        if (!r.ok) throw new Error('GitHub '+r.status);
+        return r.json();
+      }).then(function(commits) {
+        var versoes = _filtrarUltimasVersoes(commits, 3);
+        if (versoes.length === 0) { if (listaEl) listaEl.innerHTML = 'Nenhuma versão publicada ainda.'; return; }
+        var shaAoVivo = commits[0].sha;
+        return Promise.all(versoes.map(function(v) {
+          return fetch('https://raw.githubusercontent.com/'+org+'/'+repoName+'/'+v.sha+'/version.json?t='+Date.now())
+            .then(function(r){ return r.json(); })
+            .then(function(data){ return data.build; })
+            .catch(function(){ return '?'; });
+        })).then(function(builds) {
+          _desenharLinhasVersoes(clienteId, versoes, builds, shaAoVivo);
+        });
+      }).catch(function(e) {
+        if (listaEl) listaEl.innerHTML = 'Erro ao buscar histórico: '+e.message;
+      });
+    });
+  }).catch(function(e) {
+    var listaEl = document.getElementById('versoes-lista');
+    if (listaEl) listaEl.innerHTML = 'Erro: '+e.message;
+  });
+}
+
+function _desenharLinhasVersoes(clienteId, versoes, builds, shaAoVivo) {
+  var listaEl = document.getElementById('versoes-lista');
+  if (!listaEl) return;
+  var rows = versoes.map(function(v, i) {
+    var build = builds[i];
+    var buildAnterior = (i+1 < versoes.length) ? builds[i+1] : (parseInt(build,10)-1);
+    var dataFmt = new Date(v.data).toLocaleString('pt-BR');
+    var ehAtual = v.sha === shaAoVivo;
+    var buildDesconhecido = build === '?';
+    return '<div style="padding:12px 0;border-bottom:1px solid var(--gray2)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">'+
+        '<div>'+
+          '<div style="font-family:monospace;font-size:14px;font-weight:700">v'+build+'</div>'+
+          '<div style="font-size:11px;color:var(--t2)">'+dataFmt+'</div>'+
+        '</div>'+
+        (ehAtual
+          ? '<span style="font-size:11px;font-weight:700;color:#1a5c34;background:#d1f0e0;padding:3px 8px;border-radius:6px;white-space:nowrap">🟢 Publicada agora</span>'
+          : buildDesconhecido
+          ? '<span style="font-size:11px;color:var(--t3)">build indisponível</span>'
+          : '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+              '<button class="btn btn-sm" style="border:1.5px solid var(--gray2);background:#fff;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer" onclick="_toggleNotasVersao(\''+v.sha+'\',\''+build+'\',\''+buildAnterior+'\')">Ver o que mudou</button>'+
+              '<button class="btn btn-sm" style="border:none;background:#b7500a;color:#fff;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer" onclick="reverterVersaoCliente(\''+clienteId+'\',\''+v.sha+'\',\''+build+'\')">↩️ Reverter</button>'+
+            '</div>')+
+      '</div>'+
+      '<div id="notas-'+v.sha+'" style="display:none;margin-top:10px;padding:10px;background:var(--gray);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.5"></div>'+
+    '</div>';
+  }).join('');
+  listaEl.innerHTML = rows;
+}
+
+var BASE_REPO_ORG = 'fc360oficial';
+var BASE_REPO_NOME = 'fluxocerto360';
+var _notasVersaoCache = {};
+
+function _toggleNotasVersao(sha, build, buildAnterior) {
+  var el = document.getElementById('notas-'+sha);
+  if (!el) return;
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  var chave = buildAnterior+'-'+build;
+  if (_notasVersaoCache[chave]) { el.innerHTML = _notasVersaoCache[chave]; return; }
+  el.innerHTML = 'Buscando notas...';
+  _buscarNotasVersao(buildAnterior, build).then(function(html) {
+    _notasVersaoCache[chave] = html;
+    el.innerHTML = html;
+  });
+}
+
+function _buscarNotasVersao(buildAnterior, buildAtual) {
+  return db.collection('config').doc('superadmin').get({source:'server'}).then(function(doc) {
+    var token = (doc.data()||{}).githubToken;
+    var headers = { Authorization: 'token '+token, Accept: 'application/vnd.github+json' };
+    return fetch('https://api.github.com/repos/'+BASE_REPO_ORG+'/'+BASE_REPO_NOME+'/commits?path=app.js&per_page=50', { headers: headers })
+      .then(function(r) {
+        if (!r.ok) throw new Error('GitHub '+r.status);
+        return r.json();
+      })
+      .then(function(commits) {
+        return _coletarNotasNoIntervalo(commits, 0, buildAnterior, buildAtual, headers);
+      });
+  }).then(function(notas) {
+    if (notas.length === 0) {
+      return 'Notas não disponíveis pra essa versão. <a href="https://github.com/'+BASE_REPO_ORG+'/'+BASE_REPO_NOME+'/commits/main" target="_blank" rel="noopener">Ver histórico completo no GitHub</a>.';
+    }
+    return '<ul style="margin:0;padding-left:18px">'+notas.map(function(n){ return '<li>'+n+'</li>'; }).join('')+'</ul>';
+  }).catch(function(e) {
+    return 'Erro ao buscar notas: '+e.message;
+  });
+}
+
+// Percorre os commits do repo base (mais novo -> mais velho) buscando o patch de
+// app.js em cada um, até achar todas as transições de build no intervalo
+// (buildAnterior, buildAtual]. Para assim que passar do início do intervalo,
+// pra não gastar chamada de API à toa.
+function _coletarNotasNoIntervalo(commits, i, buildAnterior, buildAtual, headers) {
+  if (i >= commits.length) return Promise.resolve([]);
+  var c = commits[i];
+  return fetch('https://api.github.com/repos/'+BASE_REPO_ORG+'/'+BASE_REPO_NOME+'/commits/'+c.sha, { headers: headers })
+    .then(function(r){ return r.json(); })
+    .then(function(detalhe) {
+      var arquivo = (detalhe.files||[]).filter(function(f){ return f.filename === 'app.js'; })[0];
+      var transicao = arquivo ? _extrairBuildDoPatch(arquivo.patch) : null;
+      if (transicao) {
+        var depois = parseInt(transicao.depois, 10);
+        if (depois <= parseInt(buildAnterior, 10)) return [];
+        if (depois <= parseInt(buildAtual, 10)) {
+          return _coletarNotasNoIntervalo(commits, i+1, buildAnterior, buildAtual, headers).then(function(resto) {
+            return [c.commit.message].concat(resto);
+          });
+        }
+      }
+      return _coletarNotasNoIntervalo(commits, i+1, buildAnterior, buildAtual, headers);
+    });
+}
+
+function reverterVersaoCliente(clienteId, sha, build) {
+  if (!confirm('Reverter "'+clienteId+'" pra build v'+build+'?\n\nIsso publica um commit novo revertendo os arquivos — nada é apagado do histórico.')) return;
+  db.collection('config').doc('superadmin').get({source:'server'}).then(function(doc) {
+    var cfg = doc.data();
+    var token = cfg.githubToken, org = cfg.githubOrg || 'fc360oficial';
+    return db.collection('config').doc('repos').get({source:'server'}).then(function(rDoc) {
+      var repoName = (rDoc.data()||{})[clienteId];
+      if (!repoName) { showToast('❌ Repositório não configurado para: '+clienteId); return; }
+      fetch('https://api.github.com/repos/'+org+'/'+repoName+'/contents/.github/workflows/rollback.yml', {
+        headers: { Authorization: 'token '+token, Accept: 'application/vnd.github+json' }
+      }).then(function(checkRes) {
+        if (checkRes.status === 404) {
+          showToast('❌ Esse cliente ainda não tem o workflow de rollback — rode o setup manual primeiro (ver docs/superpowers/specs/2026-09-08-painel-versoes-rollback-design.md).');
+          return;
+        }
+        var dispatchTime = Date.now();
+        return fetch('https://api.github.com/repos/'+org+'/'+repoName+'/dispatches', {
+          method: 'POST',
+          headers: { Authorization: 'token '+token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_type: 'rollback', client_payload: { sha: sha } })
+        }).then(function(res) {
+          if (res.status === 204) {
+            showToast('⏳ Revertendo pra v'+build+'...');
+            var m = document.getElementById('modal-versoes'); if (m) m.remove();
+            _pollWorkflow(org, repoName, token, dispatchTime, null, clienteId, false, build, function(ok) {
+              if (ok) renderPainelClientes();
+            });
+          } else if (res.status === 404 || res.status === 422) {
+            showToast('❌ Esse cliente ainda não tem o workflow de rollback — rode o setup manual primeiro (ver docs/superpowers/specs/2026-09-08-painel-versoes-rollback-design.md).');
+          } else {
+            showToast('❌ Erro GitHub ('+clienteId+'): '+res.status);
+          }
+        });
+      }).catch(function(e) { showToast('❌ Erro: '+e.message); });
+    });
+  }).catch(function(e) { showToast('❌ Erro Firestore: '+e.message); });
+}
+
+function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, buildAlvo, callback) {
   var tentativas = 0;
   var maxTentativas = 36;
   function _tick() {
@@ -10773,7 +10969,7 @@ function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, 
         setTimeout(_tick, 10000);
       } else if (run.status === 'completed') {
         if (run.conclusion === 'success') {
-          db.collection('clientes').doc(clienteId).update({ ultimoDeploy: firebase.firestore.FieldValue.serverTimestamp(), buildDeploy: BUILD }).catch(function(){});
+          db.collection('clientes').doc(clienteId).update({ ultimoDeploy: firebase.firestore.FieldValue.serverTimestamp(), buildDeploy: buildAlvo }).catch(function(){});
           if (btn) { btn.textContent = '✅ Publicado!'; btn.style.background = 'linear-gradient(135deg,#22c55e,#15803d)'; }
           if (!silencioso) showToast('✅ Deploy concluído para '+clienteId+'!');
           setTimeout(function() {
@@ -10843,7 +11039,7 @@ function deployCliente(clienteId, silencioso, callback) {
       }).then(function(res) {
         if (res.status === 204) {
           if (btn) { btn.textContent = '⏳ 0s...'; }
-          _pollWorkflow(org, repoName, token, dispatchTime, btn, clienteId, silencioso, callback);
+          _pollWorkflow(org, repoName, token, dispatchTime, btn, clienteId, silencioso, BUILD, callback);
         } else {
           res.text().then(function(t){
             if (!silencioso) showToast('❌ Erro GitHub ('+clienteId+'): '+res.status);

@@ -18,7 +18,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.3/JsBarcode.all.min.js"></script>
 
-<link rel="stylesheet" href="style.css?v=357"/>
+<link rel="stylesheet" href="style.css?v=358"/>
 </head>
 <body>
 
@@ -554,6 +554,22 @@
       </div>
 
       <div id="panel-promotores" class="panel">
+        <!-- Modo celular: operação do dia (gerente/supervisor na loja). A retaguarda inteira fica em #promotores-desktop. -->
+        <div id="promotores-mobile" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
+            <div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700">Promotores</div><div id="pm-data" style="font-size:12px;color:var(--t3);margin-top:2px"></div></div>
+            <select id="pm-loja" onchange="trocarLojaPromotoresMobile(this.value)" style="padding:8px 10px;border:1px solid var(--gray2);border-radius:10px;font-size:13px;font-weight:600;background:#fff"></select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
+            <button class="btn btn-p" style="padding:16px 10px;font-size:14px;justify-content:center" onclick="abrirQrTelaCheia()">📱 Mostrar QR</button>
+            <button class="btn btn-s" style="padding:16px 10px;font-size:14px;justify-content:center" onclick="abrirModalVisitaManual()">✍️ Registrar visita</button>
+          </div>
+          <div class="pm-sec">Na loja agora</div><div id="pm-na-loja"></div>
+          <div class="pm-sec">Agenda de hoje</div><div id="pm-agenda"></div>
+          <div class="pm-sec">Encerradas hoje</div><div id="pm-encerradas"></div>
+        </div>
+
+        <div id="promotores-desktop">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
           <div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700">Gestão de Promotores</div><div style="font-size:13px;color:var(--t3);margin-top:2px">Fornecedores, agenda e visitas por loja</div></div>
           <div id="promotores-agendamento-btn" style="display:flex;gap:8px"></div>
@@ -594,6 +610,7 @@
             <button class="btn btn-s btn-sm" onclick="imprimirQrLojas(null)">🖨️ Imprimir todas as lojas</button>
           </div>
           <div id="promotores-qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px"></div>
+        </div>
         </div>
       </div>
 
@@ -682,6 +699,28 @@
           <div class="btn-row" style="margin-top:0">
             <button class="btn btn-p" style="flex:1" onclick="imprimirQrLojas([document.getElementById('modal-qr').dataset.loja])">🖨️ Imprimir</button>
             <button class="btn btn-s" style="flex:1" onclick="document.getElementById('modal-qr').style.display='none'">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="prom-qr-full" style="display:none;position:fixed;inset:0;background:#fff;z-index:2000;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center" onclick="fecharQrTelaCheia()">
+        <div id="pqf-cliente" style="font-size:12px;font-weight:700;letter-spacing:.6px;color:#6b7280;text-transform:uppercase"></div>
+        <div id="pqf-loja" style="font-size:28px;font-weight:800;margin:4px 0 18px"></div>
+        <div id="pqf-qr" style="line-height:0;border:4px solid #111;border-radius:18px;padding:14px"></div>
+        <div style="font-size:16px;font-weight:700;margin-top:20px">Promotor, aponte a câmera aqui</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:4px">Toque na tela pra fechar</div>
+      </div>
+
+      <div class="modal-bg" id="modal-visita-manual" style="display:none">
+        <div class="modal-box" style="width:420px;max-width:95vw">
+          <div class="modal-title">Registrar visita</div>
+          <div style="font-size:12px;color:var(--t3);margin:-10px 0 14px">Use quando o promotor não conseguiu ler o QR. A entrada fica registrada no seu nome.</div>
+          <div class="fg" style="margin-bottom:12px"><label>Fornecedor</label><select id="vm-fornecedor"></select></div>
+          <div class="fg" style="margin-bottom:12px"><label>Nome do promotor</label><input id="vm-nome" placeholder="Nome completo"></div>
+          <div class="fg" style="margin-bottom:4px"><label>Loja</label><input id="vm-loja" readonly style="background:#f3f4f6"></div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="salvarVisitaManual()">Registrar entrada</button>
+            <button class="btn btn-s" onclick="document.getElementById('modal-visita-manual').style.display='none'">Cancelar</button>
           </div>
         </div>
       </div>

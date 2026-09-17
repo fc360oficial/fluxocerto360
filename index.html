@@ -1311,6 +1311,7 @@
                 <option value="ESTOQUE">ESTOQUE</option>
                 <option value="LOJA">LOJA</option>
               </select>
+              <label style="font-size:12px;display:flex;align-items:center;gap:4px;font-weight:600"><input type="checkbox" id="inv-bip-nc" onchange="renderInvBipagens(document.getElementById('inv-bip-filter').value||null,null,document.getElementById('inv-bip-setor-filter').value||null)"> Só não cadastrados</label>
               <button class="btn btn-s btn-sm" onclick="renderInvBipagens(null,null,null);document.getElementById('inv-bip-filter').value='';document.getElementById('inv-bip-setor-filter').value='';document.getElementById('inv-bip-col-filter').style.display='none';_fecharCorrecaoView()">Todos</button>
             </div>
             <!-- Botões Correção + PDF -->
@@ -1492,6 +1493,22 @@
 </div>
 
 <!-- MODAL NOVO INVENTÁRIO -->
+<div class="modal-bg" id="modal-cat-map" style="display:none">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-h">Importar catálogo — confirme as colunas</div>
+    <div id="cat-map-prev" style="font-family:monospace;font-size:11px;background:var(--gray);padding:8px;border-radius:8px;margin-bottom:12px;overflow-x:auto;white-space:pre"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;font-weight:600">
+      <label>Código interno<br><select id="cat-map-codigo" style="width:100%"></select></label>
+      <label>EAN<br><select id="cat-map-ean" style="width:100%"></select></label>
+      <label>Descrição<br><select id="cat-map-desc" style="width:100%"></select></label>
+      <label>Unidade<br><select id="cat-map-un" style="width:100%"></select></label>
+      <label>Estoque do sistema (opcional)<br><select id="cat-map-estoque" style="width:100%"></select></label>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:16px"><input type="checkbox" id="cat-map-header"> 1ª linha é cabeçalho</label>
+    </div>
+    <div class="modal-err" id="cat-map-err" style="margin-top:8px"></div>
+    <div class="modal-f" style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn" onclick="document.getElementById('modal-cat-map').style.display='none'">Cancelar</button><button class="btn btn-p" onclick="_confirmarImportCat()">Importar</button></div>
+  </div>
+</div>
 <div class="modal-bg" id="modal-inv">
   <div class="modal-box" style="width:500px">
     <div class="modal-title">Novo Inventário</div>

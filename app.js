@@ -10371,7 +10371,7 @@ function excluirClienteCompleto(id) {
       dump.inv_inventarios = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
       snap.docs.forEach(function(d){ allRefs.push(d.ref); });
       var invIds = snap.docs.map(function(d){ return d.id; });
-      return Promise.all(['inv_bipagens','inv_catalogo','inv_auditlog'].map(function(col) {
+      return Promise.all(['inv_bipagens','inv_catalogo','inv_catalogo_blocos','inv_auditlog'].map(function(col) {
         return Promise.all(invIds.map(function(invId) {
           return db.collection(col).where('invId','==',invId).get();
         })).then(function(snaps) {
@@ -12475,19 +12475,27 @@ function _normEan(s) {
   return stripped || '0';
 }
 
+// Item do catálogo por código interno ou EAN (nunca devolve múltiplos: pega o 1º).
+function _catItemDe(cat, chave) {
+  if(!cat||!cat.total) return null;
+  var r=InvCore.resolverCodigo(cat, chave);
+  return r ? (r.multiplos ? r.multiplos[0] : r) : null;
+}
+function _catItem(invId, chave) { return _catItemDe(_catCache[invId], chave); }
+// Catálogo em blocos (inv_catalogo_blocos, 1000 itens/doc). Fallback: coleção antiga 1 doc/item.
 function loadCatalogoByInv(invId, cb) {
   if (_catCache[invId]) { if (cb) cb(_catCache[invId]); return; }
-  db.collection('inv_catalogo')
-    .where('invId','==',invId)
-    .get().then(function(snap){
-      var map = {};
-      snap.docs.forEach(function(d){
-        var p = d.data();
-        map[_normEan(p.ean)] = { desc: p.desc||'', un: p.un||'' };
-      });
-      _catCache[invId] = map;
-      if (cb) cb(map);
-    }).catch(function(){ _catCache[invId]={}; if (cb) cb({}); });
+  db.collection('inv_catalogo_blocos').where('invId','==',invId).get().then(function(snap){
+    if (!snap.empty) {
+      var itens=[];
+      snap.docs.sort(function(a,b){ return (a.data().n||0)-(b.data().n||0); }).forEach(function(d){ itens=itens.concat(d.data().itens||[]); });
+      _catCache[invId]=InvCore.criarCatalogo(itens); if(cb) cb(_catCache[invId]); return;
+    }
+    return db.collection('inv_catalogo').where('invId','==',invId).get().then(function(s2){
+      var itens=s2.docs.map(function(d){ var p=d.data(); return {c:'',e:p.ean,d:p.desc,u:p.un}; });
+      _catCache[invId]=InvCore.criarCatalogo(itens); if(cb) cb(_catCache[invId]);
+    });
+  }).catch(function(){ _catCache[invId]=InvCore.criarCatalogo([]); if(cb) cb(_catCache[invId]); });
 }
 
 // ── Admin: modal novo inventário ─────────────────────────────────
@@ -12559,12 +12567,12 @@ function _renderImportCatStatus(invId, forceReload) {
   var isAberto=_invAtivo&&_invAtivo.status==='aberto';
   if (forceReload) delete _catCache[invId];
   loadCatalogoByInv(invId,function(cat){
-    var n=Object.keys(cat).length;
+    var n=cat.total; var comEan=Object.keys(cat.porEan).length;
     if (n>0) {
       var reenviarBtn=isAberto?'<button class="btn btn-s btn-sm" onclick="abrirImportCat()">↩ Reenviar arquivo</button>':'';
       wrap.innerHTML=
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
-          '<span style="padding:4px 12px;background:#e8f5ee;border:1.5px solid #c8e6c9;border-radius:8px;font-size:12px;font-weight:700;color:#1a5c34">✓ Catálogo: '+n+' produtos importados</span>'+
+          '<span style="padding:4px 12px;background:#e8f5ee;border:1.5px solid #c8e6c9;border-radius:8px;font-size:12px;font-weight:700;color:#1a5c34">✓ Catálogo: '+n+' produtos · '+comEan+' com EAN</span>'+
           reenviarBtn+
         '</div>';
     } else {
@@ -12577,90 +12585,60 @@ function abrirImportCat() {
   document.getElementById('inv-import-file').click();
 }
 
+var _catImport=null;
 function importarCatalogo(event) {
-  var file = event.target.files[0];
-  if (!file || !_invAtivo) return;
-  var invId = _invAtivo.id;
-  var loja = _invAtivo.loja || '';
-
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var text = e.target.result;
-    var lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length>0; });
-    if (!lines.length) { alert('Arquivo vazio.'); event.target.value=''; return; }
-
-    // Detectar delimitador
-    var delim = lines[0].includes(';') ? ';' : lines[0].includes('|') ? '|' : '\t';
-
-    // Detectar coluna EAN (8 ou 13 dígitos) e se há header
-    var startLine = 0;
-    var eanCol = -1;
-    function detectEanCol(lineStr) {
-      var cols = lineStr.split(delim);
-      for (var i=0; i<cols.length; i++) {
-        if (/^\d{8}$|^\d{13}$/.test(cols[i].trim())) { return i; }
-      }
-      return -1;
-    }
-    eanCol = detectEanCol(lines[0]);
-    if (eanCol===-1 && lines[1]) { eanCol=detectEanCol(lines[1]); startLine=1; }
-    if (eanCol===-1) eanCol=0; // fallback: primeira coluna
-
-    var descCol = eanCol+1;
-    var unCol = descCol+1;
-
-    var produtos = [];
-    var contPorEan = {};
-    for (var i=startLine; i<lines.length; i++) {
-      var cols = lines[i].split(delim);
-      var ean = (cols[eanCol]||'').trim().replace(/\D/g,'');
-      var desc = (cols[descCol]||'').trim();
-      var un = (cols[unCol]||'').trim();
-      if (!ean) continue;
-      // Catálogos com códigos internos (ex: "0", "1") repetem o mesmo "ean" em
-      // vários produtos diferentes (itens sem código de barras real). Em vez de
-      // descartar essas linhas, cada uma vira um doc próprio — o docId só ganha
-      // sufixo a partir da 2ª ocorrência do mesmo ean, pra nunca colidir dentro
-      // do mesmo lote de 400 (o que derrubava a importação inteira).
-      var n = (contPorEan[ean] = (contPorEan[ean]||0) + 1);
-      var docId = n===1 ? (invId+'_'+ean) : (invId+'_'+ean+'_'+n);
-      produtos.push({ invId:invId, loja:loja, ean:ean, desc:desc, un:un, docId:docId });
-    }
-    if (!produtos.length) { alert('Nenhum produto encontrado no arquivo.'); event.target.value=''; return; }
-
-    // Batch write (400 por lote). Coleções novas no Firestore tem um limite
-    // de ritmo de escrita que escala aos poucos — mandar dezenas de lotes em
-    // sequencia sem pausa estoura "resource-exhausted" mesmo no plano Blaze.
-    // Por isso: pausa entre lotes + retry com backoff se algum lote falhar.
-    function _delay(ms) { return new Promise(function(res){ setTimeout(res, ms); }); }
-    function _commitComRetry(lote, tentativa) {
-      var b = db.batch();
-      lote.forEach(function(prod){
-        var ref = db.collection('inv_catalogo').doc(prod.docId);
-        b.set(ref, prod);
-      });
-      return b.commit().catch(function(err){
-        if (tentativa >= 5) throw err;
-        var espera = 800 * Math.pow(2, tentativa); // 800, 1600, 3200, 6400, 12800ms
-        return _delay(espera).then(function(){ return _commitComRetry(lote, tentativa+1); });
-      });
-    }
-    var lotes = [];
-    for (var j=0; j<produtos.length; j+=400) lotes.push(produtos.slice(j,j+400));
-    var statusEl = document.getElementById('inv-cat-status');
-    var p = Promise.resolve();
-    lotes.forEach(function(lote, loteIdx){
-      p = p.then(function(){
-        if (statusEl) statusEl.innerHTML = '<div style="padding:8px 12px;color:#856404">Importando... lote '+(loteIdx+1)+'/'+lotes.length+'</div>';
-        return _commitComRetry(lote, 0);
-      }).then(function(){ return _delay(350); }); // pausa entre lotes p/ nao estourar o limite de ritmo
-    });
-    p.then(function(){
-      event.target.value='';
-      _renderImportCatStatus(invId, true); // forceReload: invalida cache e busca contagem atual
-    }).catch(function(err){ alert('Erro ao importar: '+(err.message||err)); event.target.value=''; });
+  var file=event.target.files[0]; if(!file||!_invAtivo) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var text=e.target.result;
+    if(text.indexOf('\uFFFD')>=0){ var r2=new FileReader(); r2.onload=function(ev){ _abrirMapCat(ev.target.result); }; r2.readAsText(file,'UTF-8'); return; }
+    _abrirMapCat(text);
   };
-  reader.readAsText(file,'ISO-8859-1');
+  reader.readAsText(file,'ISO-8859-1'); event.target.value='';
+}
+function _abrirMapCat(text) {
+  var parsed=InvCore.parseCatalogoTexto(text); if(!parsed.linhas.length){ alert('Arquivo vazio.'); return; }
+  var map=InvCore.mapearColunas(parsed.linhas[0], parsed.linhas.slice(1,6));
+  _catImport={linhas:parsed.linhas};
+  var opts=function(sel){ return '<option value="-1">—</option>'+parsed.linhas[0].map(function(hh,i){ return '<option value="'+i+'"'+(sel===i?' selected':'')+'>'+(i+1)+': '+String(hh).slice(0,18)+'</option>'; }).join(''); };
+  ['codigo','ean','desc','un','estoque'].forEach(function(k){ document.getElementById('cat-map-'+k).innerHTML=opts(map[k]); });
+  document.getElementById('cat-map-header').checked=map.temHeader;
+  document.getElementById('cat-map-prev').textContent=parsed.linhas.slice(0,3).map(function(l){ return l.join(' | '); }).join('\n');
+  document.getElementById('cat-map-err').textContent='';
+  document.getElementById('modal-cat-map').style.display='flex';
+}
+function _confirmarImportCat() {
+  var g=function(k){ return parseInt(document.getElementById('cat-map-'+k).value); };
+  var m={codigo:g('codigo'),ean:g('ean'),desc:g('desc'),un:g('un'),estoque:g('estoque')};
+  var err=document.getElementById('cat-map-err');
+  if(m.codigo<0&&m.ean<0){ err.textContent='Escolha ao menos Código interno ou EAN.'; return; }
+  var header=document.getElementById('cat-map-header').checked;
+  var linhas=_catImport.linhas.slice(header?1:0);
+  var itens=linhas.map(function(l){ return {c:m.codigo>=0?(l[m.codigo]||''):'', e:m.ean>=0?(l[m.ean]||'').replace(/\s/g,''):'', d:m.desc>=0?(l[m.desc]||''):'', u:m.un>=0?(l[m.un]||'').toUpperCase():'', q:m.estoque>=0?(parseFloat(String(l[m.estoque]).replace(',','.'))||0):null}; })
+    .filter(function(it){ return it.c||it.e; });
+  document.getElementById('modal-cat-map').style.display='none';
+  _gravarBlocosCatalogo(_invAtivo.id, itens);
+}
+function _gravarBlocosCatalogo(invId, itens) {
+  var blocos=InvCore.montarBlocos(itens,1000), statusEl=document.getElementById('inv-cat-status');
+  var clienteId=(S.currentUser&&S.currentUser.clienteId)||'';
+  function _delay(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+  db.collection('inv_catalogo_blocos').where('invId','==',invId).get().then(function(snap){
+    if (snap.empty) return;
+    var b=db.batch(); snap.docs.forEach(function(d){ b.delete(d.ref); }); return b.commit();
+  }).then(function(){
+    var p=Promise.resolve();
+    blocos.forEach(function(itensBloco,n){
+      p=p.then(function(){
+        if(statusEl) statusEl.innerHTML='<div style="padding:8px 12px;color:#856404">Importando... bloco '+(n+1)+'/'+blocos.length+'</div>';
+        var tent=0;
+        function tenta(){ return db.collection('inv_catalogo_blocos').doc(invId+'_'+n).set({invId:invId,clienteId:clienteId,n:n,itens:itensBloco}).catch(function(e){ if(++tent>5) throw e; return _delay(800*Math.pow(2,tent)).then(tenta); }); }
+        return tenta();
+      }).then(function(){ return _delay(150); });
+    });
+    return p;
+  }).then(function(){ delete _catCache[invId]; _renderImportCatStatus(invId,true); })
+    .catch(function(e){ alert('Erro ao importar: '+(e.message||e)); });
 }
 
 // ── Encerrar inventário ───────────────────────────────────────────
@@ -12801,7 +12779,9 @@ function renderInvBipagens(filtroEnd, filtroCol, filtroSetor) {
           filtroCol = null;
         }
       }
+      var ncEl=document.getElementById('inv-bip-nc'); var soNC=!!(ncEl&&ncEl.checked);
       var filtrados = bips.filter(function(b){
+        if (soNC && !b.naoCadastrado) return false;
         if (filtroEnd && b.endereco !== filtroEnd) return false;
         if (filtroCol && b.coletorId !== filtroCol) return false;
         if (filtroSetor && (b.setor||'') !== filtroSetor) return false;
@@ -12814,7 +12794,7 @@ function renderInvBipagens(filtroEnd, filtroCol, filtroSetor) {
         return;
       }
       tbody.innerHTML = filtrados.map(function(b){
-        var prod = cat[b.ean]||{};
+        var prod = _catItemDe(cat,b.codigo||b.ean)||{};
         var hora = b.ts ? new Date(b.ts.seconds*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
         var isCorr=b.modo==='correcao';
         var qtyTxt=isCorr
@@ -12826,7 +12806,7 @@ function renderInvBipagens(filtroEnd, filtroCol, filtroSetor) {
         var setorStr=b.setor?' · '+b.setor:'';
         return '<tr style="'+(isCorr?'background:#fff8f4;':'')+'">'+
           '<td>'+seqTxt+'</td>'+
-          '<td style="font-family:monospace;font-size:12px">'+b.ean+'</td>'+
+          '<td style="font-family:monospace;font-size:12px">'+(b.codigo?'<b>'+b.codigo+'</b> · ':'')+b.ean+(b.naoCadastrado?' <span style="color:#e65100;font-weight:700;font-size:10px">NC</span>':'')+'</td>'+
           '<td style="font-size:12px">'+(prod.desc||'—')+'</td>'+
           '<td style="font-weight:700;text-align:center">'+qtyTxt+'</td>'+
           '<td style="font-size:12px">'+(b.coletorNome||'—')+'</td>'+
@@ -12919,7 +12899,7 @@ function buscarEanCorrecao() {
     var totalQty=bips.reduce(function(s,b){ return s+(b.qty||0); },0);
     _corrEanCache={ean:ean, total:totalQty, regs:bips.length};
     loadCatalogoByInv(_invAtivo.id, function(cat){
-      var p=cat[ean]||{};
+      var p=_catItemDe(cat,ean)||{};
       var piEl=document.getElementById('corr-produto-info');
       var pnEl=document.getElementById('corr-produto-nome');
       var taEl=document.getElementById('corr-total-atual');
@@ -12994,7 +12974,7 @@ function _renderUltimasBipagens(bips, invId) {
     }
     wrap.innerHTML='<table style="width:100%"><thead><tr><th style="width:55px">Seq</th><th>EAN</th><th>Descrição</th><th style="width:55px;text-align:center">Qtd</th></tr></thead><tbody>'+
       bips.map(function(b){
-        var prod = cat[b.ean]||{};
+        var prod = _catItemDe(cat,b.codigo||b.ean)||{};
         return '<tr style="'+(b._erro?'background:#fdecea':b._pend?'opacity:.6':'')+'">'+
           '<td><span style="font-weight:700;color:var(--t3)">#'+b.seq+'</span></td>'+
           '<td style="font-family:monospace;font-size:12px">'+(b.codigo?'<b>'+b.codigo+'</b> · ':'')+b.ean+'</td>'+
@@ -13087,7 +13067,7 @@ function verDivergencias(endereco) {
       if (tbody){
         if (!divs.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--g);padding:20px">✓ Sem divergências</td></tr>'; }
         else { tbody.innerHTML=divs.map(function(d){
-          var p=cat[d.ean]||{};
+          var p=_catItemDe(cat,d.ean)||{};
           return '<tr><td style="font-family:monospace;font-size:12px">'+d.ean+'</td><td style="font-size:12px">'+(p.desc||'—')+'</td><td style="text-align:center;font-weight:700">'+d.qty1+'</td><td style="text-align:center;font-weight:700">'+d.qty2+'</td><td style="text-align:center;color:var(--r);font-weight:700">'+d.diff+'</td></tr>';
         }).join(''); }
       }
@@ -13235,6 +13215,7 @@ function _carregarUltimasBipagens(invId,endereco,rodada,modo) {
 // ── Exportação ERP com template configurável ──────────────────────────────
 
 var _ERP_CAMPOS = [
+  {id:'codigo',    label:'Código interno'},
   {id:'ean',       label:'EAN / Código'},
   {id:'qty',       label:'Quantidade'},
   {id:'endereco',  label:'Endereço/Local'},
@@ -13251,7 +13232,7 @@ var _ERP_CAMPOS = [
 var _ERP_PRESETS = {
   'fc360': {
     label:'FC360 Padrão',
-    campos:['endereco','ean','qty','desc','un','setor','rodada'],
+    campos:['endereco','codigo','ean','qty','desc','un','setor','rodada'],
     sep:';', header:true, agrupa:false, dec:'int', enc:'utf8bom'
   },
   'protheus': {
@@ -13479,8 +13460,8 @@ function _erp_buildLinhas(bips, cat, perfil) {
   if (perfil.agrupa) {
     var mapa = {};
     bipsFilt.forEach(function(b){
-      var k = b.ean;
-      if (!mapa[k]) mapa[k] = {ean:b.ean, qty:0, endereco:b.endereco, setor:b.setor||'', coletorId:b.coletorId||'', seq:b.seq||0, rodada:b.rodada||1, ts:b.ts};
+      var k = b.codigo||b.ean;
+      if (!mapa[k]) mapa[k] = {ean:b.ean, codigo:b.codigo||'', qty:0, endereco:b.endereco, setor:b.setor||'', coletorId:b.coletorId||'', seq:b.seq||0, rodada:b.rodada||1, ts:b.ts};
       mapa[k].qty += (b.qty||1);
     });
     dados = Object.values(mapa);
@@ -13494,9 +13475,10 @@ function _erp_buildLinhas(bips, cat, perfil) {
     lines.push(perfil.campos.map(function(id){ return labelMap[id]||id; }).join(perfil.sep));
   }
   dados.forEach(function(b){
-    var p = cat[b.ean]||{};
+    var p = _catItemDe(cat,b.codigo||b.ean)||{};
     var ts = b.ts&&b.ts.seconds ? new Date(b.ts.seconds*1000) : null;
     var row = perfil.campos.map(function(id){
+      if (id==='codigo')    return b.codigo||'';
       if (id==='ean')       return b.ean||'';
       if (id==='qty')       return _erp_formatarQty(b.qty||1, perfil.dec);
       if (id==='endereco')  return b.endereco||'';
@@ -13679,6 +13661,20 @@ function _invTipoTag(tipo) {
 }
 
 // ── Override renderInvList — só ativos, badge FILA ────────────────────────
+var _invBipCount = {};
+function _contarBipagens(invId, cb) {
+  var c=_invBipCount[invId];
+  if (c && Date.now()-c.t<30000) { cb(c.n); return; }
+  db.collection('inv_bipagens').where('invId','==',invId).count().get().then(function(sn){
+    _invBipCount[invId]={n:sn.data().count,t:Date.now()}; cb(_invBipCount[invId].n);
+  }).catch(function(){ cb(null); });
+}
+function _preencherContagens(){
+  document.querySelectorAll('span[id^="invcnt-"]').forEach(function(e){
+    var id=e.id.slice(7);
+    _contarBipagens(id,function(n){ e.textContent=n==null?'—':n.toLocaleString('pt-BR'); });
+  });
+}
 function renderInvList() {
   var wrap = document.getElementById('inv-lista');
   if (!wrap) return;
@@ -13696,7 +13692,7 @@ function renderInvList() {
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'+
         '<div>'+
           '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:15px;font-weight:700">'+inv.nome+filaTag+'</div>'+
-          '<div style="font-size:12px;color:var(--t3);margin-top:3px">'+tipoTag+'Criado '+dataStr+' · '+endCount+' endereços · '+(inv.totalBipagens||0)+' bipagens</div>'+
+          '<div style="font-size:12px;color:var(--t3);margin-top:3px">'+tipoTag+'Criado '+dataStr+' · '+endCount+' endereços · '+'<span id="invcnt-'+inv.id+'">…</span> bipagens</div>'+
         '</div>'+
         '<span style="white-space:nowrap;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#d1f0e0;color:#1a5c34">ABERTO</span>'+
       '</div>'+
@@ -13707,6 +13703,7 @@ function renderInvList() {
       '</div>'+
     '</div>';
   }).join('');
+  _preencherContagens();
   atualizarNavColeta();
 }
 
@@ -13773,7 +13770,7 @@ function _histRenderLista() {
       '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'+
         '<div>'+
           '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:15px;font-weight:700">'+inv.nome+'</div>'+
-          '<div style="font-size:12px;color:var(--t3);margin-top:3px">'+tipoTag+'Encerrado '+dt+' · '+ends+' endereços · '+(inv.totalBipagens||0)+' bipagens</div>'+
+          '<div style="font-size:12px;color:var(--t3);margin-top:3px">'+tipoTag+'Encerrado '+dt+' · '+ends+' endereços · '+'<span id="invcnt-'+inv.id+'">…</span> bipagens</div>'+
         '</div>'+
         '<span style="padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#f0f0f0;color:#666">ENCERRADO</span>'+
       '</div>'+
@@ -13782,6 +13779,7 @@ function _histRenderLista() {
       '</div>'+
     '</div>';
   }).join('');
+  _preencherContagens();
 }
 
 function _abrirHistInv(invId) {
@@ -14464,23 +14462,22 @@ function renderColeta() {
     loadCatalogoByInv(inv.id,function(cat){
       var ei=document.getElementById('inv-ean-input');
       if (!ei) return;
-      var hasCat=Object.keys(cat).length>0;
+      var hasCat=!!(cat&&cat.total);
       ei.addEventListener('input',function(){
         var val=this.value.trim();
         var pr=document.getElementById('inv-desc-preview');
         if (!pr) return;
-        var p=cat[val];
-        var completo=/^\d{8}$|^\d{13}$/.test(val);
-        if (p&&p.desc) {
-          pr.textContent='📦 '+p.desc+(p.un?' — '+p.un:'');
+        if (!val||!hasCat){ pr.textContent=''; return; }
+        var r=InvCore.resolverCodigo(cat,val);
+        var eanCompleto=/^\d{8}$|^\d{12,14}$/.test(val);
+        if (r&&r.multiplos) { pr.textContent='⚠ Código de barras em '+r.multiplos.length+' produtos — escolha ao registrar'; pr.style.color='#b38600'; return; }
+        if (r) {
+          pr.textContent='📦 '+r.codigo+' · '+r.desc+(r.un?' — '+r.un:'');
           pr.style.color='var(--g)';
-          if (completo) {
-            var qi=document.getElementById('inv-qty-input');
-            if (qi){ qi.focus(); qi.select(); }
-          }
-        } else if (completo&&hasCat) {
-          pr.textContent='⚠ Produto não está na base';
-          pr.style.color='var(--r)';
+          // Código interno curto: espera o Enter (leitor manda Enter). EAN completo: pula pra Qtd na hora.
+          if (eanCompleto) { var qi=document.getElementById('inv-qty-input'); if (qi){ qi.focus(); qi.select(); } }
+        } else if (eanCompleto) {
+          pr.textContent='⚠ Não cadastrado — será registrado com marcação'; pr.style.color='var(--r)';
         } else {
           pr.textContent='';
         }
@@ -14510,7 +14507,7 @@ function _exibirModalFinalizar(bips) {
   var cat=_catCache[inv.id]||{};
   var totalPecas=bips.reduce(function(s,b){ return s+(b.qty||1); },0);
   var rows=bips.map(function(b){
-    var p=cat[b.ean]||{};
+    var p=_catItemDe(cat,b.codigo||b.ean)||{};
     return '<tr>'+
       '<td style="font-family:monospace;font-size:12px;white-space:nowrap">'+b.ean+'</td>'+
       '<td style="font-size:12px;color:var(--t2)">'+(p.desc||'<span style="color:var(--t3)">—</span>')+'</td>'+
@@ -14852,7 +14849,7 @@ function gerarPDFBipagens() {
         var bc=setor==='ESTOQUE'?'#1a3c9c':setor==='LOJA'?'#b38600':'#999';
         var eanRows=Object.keys(slot.eans).sort().map(function(ean){
           var qty=slot.eans[ean];
-          var desc=(cat[ean]&&cat[ean].desc)||'-';
+          var desc=((_catItemDe(cat,ean)||{}).desc)||'-';
           return '<tr><td style="font-family:monospace;font-size:10px">'+ean+'</td><td>'+desc+'</td><td style="text-align:center;font-weight:700">'+qty+'</td></tr>';
         });
         var sub=Object.keys(slot.eans).reduce(function(s,k){ return s+slot.eans[k]; },0);
@@ -15005,6 +15002,7 @@ function _limparSubcolecoes(invId) {
   }
   deletarColecao('inv_bipagens');
   deletarColecao('inv_catalogo');
+  deletarColecao('inv_catalogo_blocos');
   deletarColecao('inv_auditlog');
 }
 
@@ -15327,13 +15325,13 @@ function _eanEnterKey() {
   var ei=document.getElementById('inv-ean-input'); if(!ei) return;
   var val=ei.value.trim();
   var inv=_invColetaAtual?_invColetaAtual.inv:null;
-  var cat=inv?(_catCache[inv.id]||{}):{};
-  var hasCat=Object.keys(cat).length>0;
+  var cat=inv?(_catCache[inv.id]||null):null;
   var pr=document.getElementById('inv-desc-preview');
   if (!val){ ei.focus(); return; }
-  if (hasCat&&!cat[val]) {
-    if(pr){ pr.textContent='⚠ Produto não está na base'; pr.style.color='var(--r)'; }
-    ei.focus(); return;
+  if (cat&&cat.total&&pr) {
+    var r=InvCore.resolverCodigo(cat,val);
+    if (!r){ pr.textContent='⚠ Não cadastrado — será registrado com marcação'; pr.style.color='var(--r)'; }
+    else if (!r.multiplos){ pr.textContent='📦 '+r.codigo+' · '+r.desc+(r.un?' — '+r.un:''); pr.style.color='var(--g)'; }
   }
   var qi=document.getElementById('inv-qty-input');
   if (qi){ qi.focus(); qi.select(); }
@@ -15437,36 +15435,37 @@ function mostrarItensNaoColetados() {
   var wrap=document.getElementById('inv-nao-coletados-wrap'); if(!wrap) return;
   wrap.innerHTML='<div style="color:var(--t3);font-size:13px;padding:10px 0">⏳ Carregando...</div>';
   loadCatalogoByInv(_invAtivo.id,function(cat){
-    var eans=Object.keys(cat);
-    if (!eans.length) {
+    if (!cat.total) {
       wrap.innerHTML='<div style="font-size:13px;color:var(--t3);padding:10px 0">Nenhum catálogo importado para este inventário.</div>';
       return;
     }
+    var itens=[];
+    Object.keys(cat.porCodigo).forEach(function(c){ itens.push(cat.porCodigo[c]); });
+    Object.keys(cat.porEan).forEach(function(k){ cat.porEan[k].forEach(function(it){ if(!it.c) itens.push(it); }); });
     db.collection('inv_bipagens').where('invId','==',_invAtivo.id).get().then(function(snap){
-      var bipados={};
-      snap.docs.forEach(function(d){ bipados[d.data().ean]=true; });
-      var naoCol=eans.filter(function(e){ return !bipados[e]; });
+      var bip={};
+      snap.docs.forEach(function(d){ var b=d.data(); if(b.codigo) bip['c:'+b.codigo]=true; if(b.ean) bip['e:'+InvCore.normEan(b.ean)]=true; });
+      var naoCol=itens.filter(function(it){ return !(it.c&&bip['c:'+it.c]) && !(it.e&&bip['e:'+InvCore.normEan(it.e)]); });
       if (!naoCol.length) {
-        wrap.innerHTML='<div style="padding:14px;background:#f0faf5;border-radius:10px;color:#1a5c34;font-weight:700;font-size:13px">✓ Todos os '+eans.length+' produtos foram coletados!</div>';
+        wrap.innerHTML='<div style="padding:14px;background:#f0faf5;border-radius:10px;color:#1a5c34;font-weight:700;font-size:13px">✓ Todos os '+itens.length+' produtos foram coletados!</div>';
         return;
       }
-      var rows=naoCol.map(function(ean){
-        var p=cat[ean]||{};
-        return '<tr><td style="font-family:monospace;font-size:12px">'+ean+'</td><td>'+(p.desc||'—')+'</td><td style="color:var(--t3)">'+(p.un||'')+'</td></tr>';
+      var rows=naoCol.map(function(it){
+        return '<tr><td style="font-family:monospace;font-size:12px">'+(it.c||'—')+'</td><td style="font-family:monospace;font-size:12px">'+(it.e||'—')+'</td><td>'+(it.d||'—')+'</td><td style="color:var(--t3)">'+(it.u||'')+'</td></tr>';
       }).join('');
       wrap.innerHTML=
-        '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+naoCol.length+' de '+eans.length+' produtos sem coleta</div>'+
-        '<div style="overflow-x:auto"><table><thead><tr><th>EAN</th><th>Descrição</th><th>Un</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+        '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+naoCol.length+' de '+itens.length+' produtos sem coleta</div>'+
+        '<div style="overflow-x:auto"><table><thead><tr><th>Código</th><th>EAN</th><th>Descrição</th><th>Un</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
         '<button class="btn btn-s btn-sm" style="margin-top:10px" onclick="_exportarNaoColetadosCsv()">⬇ CSV</button>';
-      window._naoColetadosCache={eans:naoCol,cat:cat,invNome:_invAtivo.nome};
+      window._naoColetadosCache={itens:naoCol,invNome:_invAtivo.nome};
     }).catch(function(e){ wrap.innerHTML='<div style="color:var(--r);font-size:13px">Erro: '+e.message+'</div>'; });
   });
 }
 
 function _exportarNaoColetadosCsv() {
   var c=window._naoColetadosCache; if(!c) return;
-  var lines=['EAN;DESCRICAO;UNIDADE'];
-  c.eans.forEach(function(ean){ var p=c.cat[ean]||{}; lines.push([ean,p.desc||'',p.un||''].join(';')); });
+  var lines=['CODIGO;EAN;DESCRICAO;UNIDADE'];
+  c.itens.forEach(function(it){ lines.push([it.c||'',it.e||'',it.d||'',it.u||''].join(';')); });
   var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a'); a.href=url;
@@ -15588,7 +15587,7 @@ function renderColetaAvulsa() {
       ei.addEventListener('input',function(){
         var val=this.value.trim();
         var pr=document.getElementById('avulsa-desc-preview'); if(!pr) return;
-        var p=cat[val]||{};
+        var p=_catItemDe(cat,val)||{};
         pr.textContent=p.desc?'📦 '+p.desc+(p.un?' — '+p.un:''):'';
         pr.style.color='var(--g)';
       });

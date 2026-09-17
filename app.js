@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '366';
+var BUILD = '367';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14407,7 +14407,7 @@ function _iniciarCamFixa(){
     _bipSom('ok');
     ei.value=val; ei.dispatchEvent(new Event('input'));
     var m=document.getElementById('inv-cam-msg'); if(m){ m.textContent='Lido: '+val; setTimeout(function(){ if(m) m.textContent='Aponte pro código de barras'; },1500); }
-    _eanEnterKey();
+    _eanEnterKey(true);
   }).catch(function(err){ _pararCamFixa(); localStorage.setItem(_CAM_FIXA_KEY,'0'); showToast('Câmera indisponível: '+(err.message||err)); });
 }
 function _pararCamFixa(){
@@ -14732,15 +14732,23 @@ function renderColeta() {
       if (!ei) return;
       var hasCat=!!(cat&&cat.total);
       // Leitor sem sufixo Enter: rajada de teclas + pausa de 250 ms = fim da leitura → mesmo que Enter.
-      var _rajadaEan=InvCore.criarDetectorRajada(100,3), _rajadaTimer=null;
+      var _rajadaEan=InvCore.criarDetectorRajada(100,3), _rajadaTimer=null, _ultimaTecla=0, _emRajada=false;
       ei.addEventListener('keydown',function(ev){
-        if (ev.key==='Enter'){ if(_rajadaTimer){ clearTimeout(_rajadaTimer); _rajadaTimer=null; } return; }
-        if (!ev.key||ev.key.length!==1) return;
-        if (_rajadaEan.tecla(ev.key, Date.now())) {
-          if(_rajadaTimer) clearTimeout(_rajadaTimer);
-          _rajadaTimer=setTimeout(function(){ _rajadaTimer=null; if(document.activeElement===ei&&ei.value.trim()) _eanEnterKey(); },250);
+        var agora=Date.now();
+        if (ev.key==='Enter'){
+          if(_rajadaTimer){ clearTimeout(_rajadaTimer); _rajadaTimer=null; }
+          // Enter logo depois de uma rajada = Enter do leitor (não da pessoa)
+          if (_emRajada&&agora-_ultimaTecla<150){ ev.preventDefault(); ev.stopImmediatePropagation(); _emRajada=false; _eanEnterKey(true); }
+          return;
         }
-      });
+        if (!ev.key||ev.key.length!==1) return;
+        _ultimaTecla=agora;
+        if (_rajadaEan.tecla(ev.key, agora)) {
+          _emRajada=true;
+          if(_rajadaTimer) clearTimeout(_rajadaTimer);
+          _rajadaTimer=setTimeout(function(){ _rajadaTimer=null; _emRajada=false; if(document.activeElement===ei&&ei.value.trim()) _eanEnterKey(true); },250);
+        }
+      }, true);
       ei.addEventListener('input',function(){
         var val=this.value.trim();
         var pr=document.getElementById('inv-desc-preview');
@@ -15601,20 +15609,48 @@ function voltarInvLista() {
 }
 
 // ── _eanEnterKey — Enter no campo EAN: vai pra qty se reconhecido ─────────
-function _eanEnterKey() {
+function _eanEnterKey(deScanner) {
   var ei=document.getElementById('inv-ean-input'); if(!ei) return;
   var val=ei.value.trim();
   var inv=_invColetaAtual?_invColetaAtual.inv:null;
   var cat=inv?(_catCache[inv.id]||null):null;
   var pr=document.getElementById('inv-desc-preview');
   if (!val){ ei.focus(); return; }
-  if (cat&&cat.total&&pr) {
-    var r=InvCore.resolverCodigo(cat,val);
-    if (!r){ pr.textContent='⚠ Não cadastrado — será registrado com marcação'; pr.style.color='var(--r)'; }
-    else if (!r.multiplos){ pr.textContent='📦 '+r.codigo+' · '+r.desc+(r.un?' — '+r.un:''); pr.style.color='var(--g)'; }
+  var r=null;
+  if (cat&&cat.total) {
+    r=InvCore.resolverCodigo(cat,val);
+    if (pr) {
+      if (!r){ pr.textContent='⚠ Não cadastrado — '+(deScanner?'confira o código e toque em Registrar se estiver certo':'será registrado com marcação'); pr.style.color='var(--r)'; }
+      else if (!r.multiplos){ pr.textContent='📦 '+r.codigo+' · '+r.desc+(r.un?' — '+r.un:''); pr.style.color='var(--g)'; }
+    }
+    // Trava 1 (leitor/câmera): fora da base não pula pra Qtd — pode ser leitura truncada
+    if (deScanner&&!r){ _bipSom('alerta'); ei.focus(); ei.select(); return; }
+    // Trava 2 (leitor/câmera): código curto pode ser pedaço de um EAN que virou código interno válido — confirma com a descrição
+    if (deScanner&&r&&!r.multiplos&&/^\d{1,4}$/.test(val)){ _abrirConfirmaCurto(val,r); return; }
   }
   var qi=document.getElementById('inv-qty-input');
   if (qi){ qi.focus(); qi.select(); }
+}
+function _abrirConfirmaCurto(val,r){
+  var m=document.getElementById('modal-curto'); if(m) m.remove();
+  _bipSom('alerta');
+  var html='<div id="modal-curto" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2300;display:flex;align-items:flex-end;justify-content:center">'+
+    '<div style="background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px">'+
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#b38600;margin-bottom:4px">Código curto lido pelo leitor</div>'+
+    '<div style="font-size:26px;font-weight:800;font-family:monospace;margin-bottom:2px">'+val+'</div>'+
+    '<div style="font-size:15px;font-weight:700;margin-bottom:14px">'+(r.desc||'')+(r.un?' <span style="font-weight:400;color:var(--t3)">— '+r.un+'</span>':'')+'</div>'+
+    '<div style="font-size:12px;color:var(--t2);margin-bottom:14px">É esse produto? Se o leitor pegou só parte de um código de barras, cancele e leia de novo.</div>'+
+    '<div style="display:flex;gap:10px">'+
+      '<button onclick="_confirmaCurto(false)" style="flex:1;padding:13px;background:#fff;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-weight:700;font-family:inherit">Cancelar</button>'+
+      '<button onclick="_confirmaCurto(true)" style="flex:2;padding:13px;background:var(--y);color:#111;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit">✓ É esse</button>'+
+    '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+function _confirmaCurto(ok){
+  var m=document.getElementById('modal-curto'); if(m) m.remove();
+  var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
+  if (ok){ if(qi){ qi.focus(); qi.select(); } return; }
+  if (ei){ ei.value=''; var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent=''; ei.focus(); }
 }
 
 // ── Override registrarBipagem — ID coletor + validação de base ────────────

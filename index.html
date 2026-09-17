@@ -1270,6 +1270,20 @@
 
           <!-- Tab Auditoria -->
           <div id="inv-tab-auditoria" style="display:none;margin-top:14px">
+            <!-- Resultado do balanço -->
+            <div class="card" style="max-width:920px;margin-bottom:14px">
+              <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Resultado: Contado × Sistema</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Compara a contagem com o estoque do sistema por produto, com sobra, falta e valor a custo. Lista os endereços que mais vale recontar.</p>
+              <button class="btn btn-p" onclick="calcularResultadoBalanco()">📊 Calcular resultado</button>
+              <div id="inv-resultado-wrap" style="margin-top:14px"></div>
+            </div>
+            <!-- Pendências -->
+            <div class="card" style="max-width:920px;margin-bottom:14px">
+              <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Pendências antes de exportar</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Códigos bipados que não estão no catálogo e itens registrados sem código. Precisam de cadastro ou correção no ERP.</p>
+              <button class="btn btn-s" onclick="mostrarPendenciasBalanco()">⚠ Verificar pendências</button>
+              <div id="inv-pendencias-wrap" style="margin-top:14px"></div>
+            </div>
             <!-- Folha de conferência por endereço -->
             <div class="card" style="max-width:520px;margin-bottom:14px">
               <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Folha de Conferência (papel)</div>
@@ -1513,6 +1527,7 @@
       <label>Descrição<br><select id="cat-map-desc" style="width:100%"></select></label>
       <label>Unidade<br><select id="cat-map-un" style="width:100%"></select></label>
       <label>Estoque do sistema (opcional)<br><select id="cat-map-estoque" style="width:100%"></select></label>
+      <label>Custo unitário (opcional)<br><select id="cat-map-custo" style="width:100%"></select></label>
       <label style="display:flex;align-items:center;gap:6px;margin-top:16px"><input type="checkbox" id="cat-map-header"> 1ª linha é cabeçalho</label>
     </div>
     <div class="modal-err" id="cat-map-err" style="margin-top:8px"></div>
@@ -2123,7 +2138,7 @@
 <script src="client.js"></script>
 <script src="qrcode-generator.min.js"></script>
 <script src="lib/inv-bip-core.js?v=1"></script>
-<script src="app.js?v=363" defer></script>
+<script src="app.js?v=364" defer></script>
 
 
 </body>

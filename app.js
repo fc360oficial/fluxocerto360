@@ -12437,7 +12437,6 @@ var _invAtivo = null;        // inventário em detalhe (admin)
 var _invColetaAtual = null;  // inventário e endereço do coletor
 var _catCache = {};          // { invId: { ean: {desc,un} } }
 var _nextSeq = 1;
-var _bipRegistrando = false;
 
 // ── Firestore: carregar inventários da loja ──────────────────────
 function loadInventariosFromFirebase(cb) {
@@ -12996,10 +12995,10 @@ function _renderUltimasBipagens(bips, invId) {
     wrap.innerHTML='<table style="width:100%"><thead><tr><th style="width:55px">Seq</th><th>EAN</th><th>Descrição</th><th style="width:55px;text-align:center">Qtd</th></tr></thead><tbody>'+
       bips.map(function(b){
         var prod = cat[b.ean]||{};
-        return '<tr>'+
+        return '<tr style="'+(b._erro?'background:#fdecea':b._pend?'opacity:.6':'')+'">'+
           '<td><span style="font-weight:700;color:var(--t3)">#'+b.seq+'</span></td>'+
-          '<td style="font-family:monospace;font-size:12px">'+b.ean+'</td>'+
-          '<td style="font-size:12px">'+(prod.desc||'—')+'</td>'+
+          '<td style="font-family:monospace;font-size:12px">'+(b.codigo?'<b>'+b.codigo+'</b> · ':'')+b.ean+'</td>'+
+          '<td style="font-size:12px">'+(prod.desc||'—')+(b.naoCadastrado?' <span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;background:#fff3e0;color:#e65100">NC</span>':'')+'</td>'+
           '<td style="font-weight:700;text-align:center">'+b.qty+'</td>'+
         '</tr>';
       }).join('')+
@@ -13226,11 +13225,11 @@ function _carregarUltimasBipagens(invId,endereco,rodada,modo) {
     var bips=snap.docs.map(function(d){ return d.data(); });
     if (modo==='auditoria'&&rodada) bips=bips.filter(function(b){ return (b.rodada||1)===rodada; });
     bips.sort(function(a,b){ return (b.seq||0)-(a.seq||0); });
-    var mx=bips.length?bips[0].seq:0;
-    _nextSeq=mx+1;
+    _nextSeq=(bips.length?bips[0].seq:0)+1;
+    _bipsLocais=bips.slice(0,50);
     var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
-    _renderUltimasBipagens(bips.slice(0,20),invId);
-  }).catch(function(e){ console.error('_carregarUltimasBipagens',e); _nextSeq=1; _renderUltimasBipagens([],invId); });
+    _renderUltimasBipagens(_bipsLocais.slice(0,20),invId);
+  }).catch(function(e){ console.error('_carregarUltimasBipagens',e); _nextSeq=1; _bipsLocais=[]; _renderUltimasBipagens([],invId); });
 }
 
 // ── Exportação ERP com template configurável ──────────────────────────────
@@ -14429,7 +14428,7 @@ function renderColeta() {
           '</div>'+
           '<button type="button" onclick="iniciarScanEAN(\'inv-ean-input\')" title="Ler código de barras com a câmera" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
-            '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\'){if(_getModoPallet()){var fi=document.getElementById(\'inv-fator-input\');if(fi){fi.focus();fi.select();}}else registrarBipagem();}"/></div>'+
+            '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)"/></div>'+
           '<div id="inv-fator-wrap" style="width:62px;'+(palletOn?'':'display:none')+'">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd Emb</label>'+
             '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()"/></div>'+
@@ -15341,47 +15340,95 @@ function _eanEnterKey() {
 }
 
 // ── Override registrarBipagem — ID coletor + validação de base ────────────
+// Leitor Bluetooth (keyboard wedge) pode disparar um código novo enquanto a Qtd está focada:
+// detecta a rajada, registra a bipagem anterior com a Qtd que estava e joga o código novo no EAN.
+var _rajadaQty = InvCore.criarDetectorRajada(100, 4);
+function _qtyKeydown(ev) {
+  if (ev.key==='Enter') { ev.preventDefault(); if(_getModoPallet()){ var fi=document.getElementById('inv-fator-input'); if(fi){fi.focus();fi.select();} } else registrarBipagem(); return false; }
+  if (ev.key && ev.key.length===1) {
+    var buf=_rajadaQty.tecla(ev.key, Date.now());
+    if (buf) {
+      ev.preventDefault();
+      var qi=ev.target, ei=document.getElementById('inv-ean-input');
+      qi.value=String(qi.value).slice(0, -(buf.length-1)) || '1';
+      registrarBipagem();
+      if(ei){ ei.value=buf; ei.focus(); ei.dispatchEvent(new Event('input')); }
+      return false;
+    }
+  }
+  return true;
+}
+var _bipsLocais = [];   // últimas bipagens do endereço atual (mais nova primeiro)
+// Grava sem esperar o servidor: a fila offline do Firestore (IndexedDB) garante o envio.
+function _gravarBipagemLocal(bipData) {
+  var ref = db.collection('inv_bipagens').doc();
+  bipData.clienteId = bipData.clienteId || (S.currentUser && S.currentUser.clienteId) || '';
+  bipData._pend = true;
+  _offlinePending++; if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
+  var p = ref.set(bipData).then(function(){
+    _offlinePending=Math.max(0,_offlinePending-1); if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
+    bipData._pend=false;
+  }).catch(function(e){
+    _offlinePending=Math.max(0,_offlinePending-1); if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
+    bipData._pend=false; bipData._erro=(e&&e.code)||'erro';
+    _bipSom('erro'); showToast('❌ Falha ao gravar '+bipData.ean+': '+((e&&e.message)||e), 6000);
+    _renderUltimasBipagens(_bipsLocais.slice(0,20), bipData.invId);
+  });
+  return { id: ref.id, promise: p };
+}
+
+// ── registrarBipagem — local-first, resolve pelo catálogo (código interno ou EAN) ──
 function registrarBipagem() {
-  if (_bipRegistrando) return;
   if (!_invColetaAtual) return;
   if (_invColetaAtual.concluido){ alert('Você já finalizou sua contagem.'); return; }
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
   if (!ei||!qi) return;
   var fi=document.getElementById('inv-fator-input');
-  var ean=ei.value.trim(), qty=parseInt(qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
-  var qtyTotal=qty*fator;
-  if (!ean){ ei.focus(); return; }
+  var lido=ei.value.trim(), qty=parseInt(qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
+  if (!lido){ ei.focus(); return; }
   if (qty<1) qty=1;
   var coletorId=_getIdColetor();
   if (!coletorId){ _editarIdColetor(); return; }
   var inv=_invColetaAtual.inv;
   if (inv.status!=='aberto'){ alert('Inventário encerrado.'); return; }
-  // Valida contra catálogo se houver base importada
-  var cat=_catCache[inv.id]||{};
-  var hasCat=Object.keys(cat).length>0;
-  if (hasCat&&!cat[ean]) {
-    var pr=document.getElementById('inv-desc-preview');
-    if(pr){ pr.textContent='⚠ Produto não está na base'; pr.style.color='var(--r)'; }
-    ei.focus(); return;
-  }
-  var end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao', seq=_nextSeq;
-  _bipRegistrando=true;
-  var _bipData={invId:inv.id,loja:inv.loja||'',endereco:end,seq:seq,ean:ean,qty:qtyTotal,rodada:rodada,modo:modo,setor:(_filaEndAtual&&_filaEndAtual.setor)||'',coletorId:coletorId,coletorNome:_getNomeColetor()||coletorId,ts:firebase.firestore.FieldValue.serverTimestamp()};
-  if(fator>1) _bipData.fator=fator;
-  _offlinePending++;
-  if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
-  db.collection('inv_bipagens').add(_bipData).then(function(){
-    _offlinePending=Math.max(0,_offlinePending-1);
-    if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
-    db.collection('inv_inventarios').doc(inv.id).update({totalBipagens:firebase.firestore.FieldValue.increment(1)}).catch(function(){});
-    _nextSeq++;
-    var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
-    ei.value=''; qi.value='1'; if(fi) fi.value='1';
-    var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent='';
-    ei.focus();
-    _carregarUltimasBipagens(inv.id,end,rodada,modo);
-    _bipRegistrando=false;
-  }).catch(function(e){ _offlinePending=Math.max(0,_offlinePending-1); if(window._atualizarOfflineBanner) window._atualizarOfflineBanner(); _bipRegistrando=false; alert('Erro: '+e.message); });
+  var cat=_catCache[inv.id]||null;
+  var res=(cat&&cat.total)?InvCore.resolverCodigo(cat,lido):null;
+  if (res&&res.multiplos){ _abrirPickerMultiplos(res.multiplos, lido); return; }
+  _registrarResolvido(lido, res, qty*fator, fator);
+}
+function _registrarResolvido(lido, res, qtyTotal, fator) {
+  var inv=_invColetaAtual.inv, end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao';
+  var cat=_catCache[inv.id]||null, hasCat=!!(cat&&cat.total);
+  var bip={invId:inv.id,loja:inv.loja||'',endereco:end,seq:_nextSeq,ean:lido,codigo:res?res.codigo:'',qty:qtyTotal,rodada:rodada,modo:modo,
+    setor:(_filaEndAtual&&_filaEndAtual.setor)||'',coletorId:_getIdColetor(),coletorNome:_getNomeColetor()||_getIdColetor(),ts:firebase.firestore.FieldValue.serverTimestamp()};
+  if(fator>1) bip.fator=fator;
+  if(hasCat&&!res) bip.naoCadastrado=true;
+  _nextSeq++;
+  _gravarBipagemLocal(bip);
+  _bipsLocais.unshift(bip); if(_bipsLocais.length>50) _bipsLocais.length=50;
+  _bipSom(bip.naoCadastrado?'alerta':'ok');
+  var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input'), fi=document.getElementById('inv-fator-input');
+  if(ei) ei.value=''; if(qi) qi.value='1'; if(fi) fi.value='1';
+  var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent='';
+  var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
+  _renderUltimasBipagens(_bipsLocais.slice(0,20), inv.id);
+  if(ei) ei.focus();
+}
+function _abrirPickerMultiplos(lista, lido) {
+  var html='<div id="modal-multi" onclick="if(event.target===this)this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2300;display:flex;align-items:flex-end;justify-content:center">'+
+    '<div style="background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px">'+
+    '<div style="font-weight:800;font-size:16px;margin-bottom:4px">Mesmo código de barras em '+lista.length+' produtos</div>'+
+    '<div style="font-size:12px;color:var(--t3);margin-bottom:12px">Toque no produto certo.</div>'+
+    lista.map(function(p,i){ return '<button onclick="_escolherMultiplo('+i+')" style="width:100%;text-align:left;padding:12px;margin-bottom:8px;border:1.5px solid var(--gray2);border-radius:10px;background:#fff;font-family:inherit;cursor:pointer"><b style="font-family:monospace">'+p.codigo+'</b> · '+p.desc+'</button>'; }).join('')+
+    '<button onclick="document.getElementById(\'modal-multi\').remove()" style="width:100%;padding:11px;border:1.5px solid var(--gray2);border-radius:10px;background:#fff;font-family:inherit">Cancelar</button></div></div>';
+  window._multiLista=lista; window._multiLido=lido;
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+function _escolherMultiplo(i) {
+  var m=document.getElementById('modal-multi'); if(m) m.remove();
+  var qi=document.getElementById('inv-qty-input'), fi=document.getElementById('inv-fator-input');
+  var qty=parseInt(qi&&qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
+  _registrarResolvido(window._multiLido, window._multiLista[i], qty*fator, fator);
 }
 
 // ── Feature 2: Itens não coletados ───────────────────────────────────────
@@ -15563,10 +15610,8 @@ function _avulsaSelInv(invId) {
   renderColetaAvulsa();
 }
 
-var _avulsaRegistrando=false;
 
 function registrarBipagemAvulsa() {
-  if (_avulsaRegistrando) return;
   var ei=document.getElementById('avulsa-ean-input'), qi=document.getElementById('avulsa-qty-input');
   if (!ei||!qi) return;
   var ean=ei.value.trim(), qty=parseInt(qi.value)||1;
@@ -15577,20 +15622,17 @@ function registrarBipagemAvulsa() {
   if (!_avulsaInvId) return;
   var inv=(S.invsCache||[]).find(function(i){ return i.id===_avulsaInvId; });
   if (!inv||inv.status!=='aberto'){ alert('Inventário não está aberto.'); return; }
-  _avulsaRegistrando=true;
-  db.collection('inv_bipagens').add({
+  _gravarBipagemLocal({
     invId:_avulsaInvId, loja:inv.loja||'', endereco:'_AVULSO', seq:Date.now(), ean:ean, qty:qty,
     rodada:1, modo:'avulso',
     coletorId:coletorId, coletorNome:_getNomeColetor()||coletorId,
     ts:firebase.firestore.FieldValue.serverTimestamp()
-  }).then(function(){
-    db.collection('inv_inventarios').doc(_avulsaInvId).update({totalBipagens:firebase.firestore.FieldValue.increment(1)}).catch(function(){});
-    ei.value=''; qi.value='1';
-    var pr=document.getElementById('avulsa-desc-preview'); if(pr) pr.textContent='';
-    ei.focus();
-    _avulsaRegistrando=false;
-    _carregarAvulsaLista();
-  }).catch(function(e){ _avulsaRegistrando=false; alert('Erro: '+e.message); });
+  });
+  _bipSom('ok');
+  ei.value=''; qi.value='1';
+  var pr=document.getElementById('avulsa-desc-preview'); if(pr) pr.textContent='';
+  ei.focus();
+  setTimeout(_carregarAvulsaLista, 400);
 }
 
 function _carregarAvulsaLista() {
@@ -15732,21 +15774,12 @@ function _confirmarSemEAN(){
     coletorId:coletorId, coletorNome:_getNomeColetor()||coletorId,
     semEAN:true, ts:firebase.firestore.FieldValue.serverTimestamp()
   };
-  _offlinePending++;
-  if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
-  db.collection('inv_bipagens').add(bipData).then(function(){
-    _offlinePending=Math.max(0,_offlinePending-1);
-    if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
-    db.collection('inv_inventarios').doc(inv.id).update({totalBipagens:firebase.firestore.FieldValue.increment(1)}).catch(function(){});
-    _nextSeq++;
-    showToast('📝 "'+desc+'" × '+qty+' registrado.');
-    _carregarUltimasBipagens(inv.id,info.endereco,info.rodada||1,info.modo||'colaboracao');
-    var ei=document.getElementById('inv-ean-input'); if(ei) ei.focus();
-  }).catch(function(e){
-    _offlinePending=Math.max(0,_offlinePending-1);
-    if(window._atualizarOfflineBanner) window._atualizarOfflineBanner();
-    alert('Erro: '+e.message);
-  });
+  _nextSeq++;
+  _gravarBipagemLocal(bipData);
+  _bipsLocais.unshift(bipData); _bipSom('ok');
+  showToast('📝 "'+desc+'" × '+qty+' registrado.');
+  _renderUltimasBipagens(_bipsLocais.slice(0,20), inv.id);
+  var ei=document.getElementById('inv-ean-input'); if(ei) ei.focus();
 }
 
 

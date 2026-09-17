@@ -28,7 +28,7 @@ test('criarCatalogo indexa por código e EAN normalizado', () => {
 });
 
 test('resolverCodigo: código interno exato tem prioridade', () => {
-  assert.deepEqual(C.resolverCodigo(cat, '1'), { codigo: '1', ean: '7812081100004', desc: 'MOUSE', un: 'UN', estoque: 0 });
+  assert.deepEqual(C.resolverCodigo(cat, '1'), { codigo: '1', ean: '7812081100004', desc: 'MOUSE', un: 'UN', estoque: 0, custo: null });
 });
 test('resolverCodigo: EAN com e sem zero à esquerda', () => {
   assert.equal(C.resolverCodigo(cat, '0041334001005').codigo, '9');
@@ -71,7 +71,7 @@ test('parseCatalogoTexto detecta tab e pipe', () => {
 
 test('mapearColunas pelo cabeçalho do TXT do bazar', () => {
   const m = C.mapearColunas(['CODIGO', 'EAN', 'DESCRICAO', 'UN', 'ESTOQUE'], [['1', '7812081100004', 'MOUSE', 'UN', '0']]);
-  assert.deepEqual(m, { codigo: 0, ean: 1, desc: 2, un: 3, estoque: 4, temHeader: true });
+  assert.deepEqual(m, { codigo: 0, ean: 1, desc: 2, un: 3, estoque: 4, custo: -1, temHeader: true });
 });
 test('mapearColunas sem cabeçalho usa heurística', () => {
   const m = C.mapearColunas(['7899335409663', 'BACIA 17L', 'UN'], [['7899335402978', 'BALDE 15L', 'UN']]);
@@ -91,4 +91,41 @@ test('detector de rajada: leitor manda rápido, humano não', () => {
   assert.equal(h.tecla('1', 0), null);
   assert.equal(h.tecla('2', 500), null);
   assert.equal(h.tecla('3', 510), null);
+});
+
+test('mapearColunas reconhece CUSTO', () => {
+  const m = C.mapearColunas(['CODIGO', 'EAN', 'DESCRICAO', 'UN', 'ESTOQUE', 'CUSTO'], []);
+  assert.equal(m.custo, 5);
+});
+
+test('calcularResultado: contado x sistema, valor a custo, NC e endereços', () => {
+  const cat2 = C.criarCatalogo([
+    { c: '10', e: '7890000000017', d: 'PRATO', u: 'UN', q: 10, k: 2.5 },
+    { c: '20', e: '', d: 'BALDE', u: 'UN', q: 5, k: 4 },
+    { c: '30', e: '7890000000031', d: 'COPO', u: 'UN', q: 3, k: null },
+  ]);
+  const bips = [
+    { endereco: '1', ean: '7890000000017', codigo: '10', qty: 8, rodada: 1 },
+    { endereco: '2', ean: '10', codigo: '10', qty: 4, rodada: 1 },
+    { endereco: '1', ean: '20', codigo: '20', qty: 2, rodada: 1 },
+    { endereco: '_CORRECAO', ean: '20', codigo: '', qty: -1, modo: 'correcao' },
+    { endereco: '3', ean: '999', codigo: '', qty: 7, naoCadastrado: true, rodada: 1 },
+    { endereco: '3', ean: '7890000000031', codigo: '30', qty: 3, rodada: 1 },
+  ];
+  const r = C.calcularResultado(cat2, bips, {});
+  const by = {}; r.linhas.forEach(l => { by[l.codigo || l.ean] = l; });
+  assert.equal(by['10'].contado, 12); assert.equal(by['10'].dif, 2); assert.equal(by['10'].valor, 5);
+  assert.equal(by['20'].contado, 1); assert.equal(by['20'].dif, -4); assert.equal(by['20'].valor, -16);
+  assert.equal(by['30'].dif, 0); assert.equal(by['30'].valor, null);
+  assert.equal(by['999'].nc, true); assert.equal(by['999'].contado, 7); assert.equal(by['999'].dif, null);
+  assert.equal(r.totais.divergentes, 2); assert.equal(r.totais.sobraUn, 2); assert.equal(r.totais.faltaUn, 4);
+  assert.equal(r.totais.sobraVal, 5); assert.equal(r.totais.faltaVal, 16); assert.equal(r.totais.naoCadastrados, 1);
+  assert.equal(r.enderecos[0].endereco, '1');   // balde faltando 4 × R$4 pesa mais que os pratos
+  assert.equal(r.linhas[0].codigo, '20');       // ordenado por valor absoluto
+});
+
+test('calcularResultado respeita rodada resolvida', () => {
+  const cat3 = C.criarCatalogo([{ c: '1', e: '', d: 'X', u: 'UN', q: 1, k: 1 }]);
+  const bips = [{ endereco: 'A', codigo: '1', ean: '1', qty: 5, rodada: 1 }, { endereco: 'A', codigo: '1', ean: '1', qty: 1, rodada: 2 }];
+  assert.equal(C.calcularResultado(cat3, bips, { A: { rodada: 2 } }).linhas[0].contado, 1);
 });

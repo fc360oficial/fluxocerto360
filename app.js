@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '363';
+var BUILD = '364';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5221,6 +5221,118 @@ function abrirQrLoja(lojaId) {
   document.getElementById('qr-container').innerHTML = qr.createSvgTag(5) + '<div style="font-size:11px;color:var(--t3);margin-top:8px;word-break:break-all">' + url + '</div>';
   document.getElementById('modal-qr').dataset.loja = lojaId;
   document.getElementById('modal-qr').style.display = 'flex';
+}
+
+
+// ── Auditoria: Resultado do balanço (contado × sistema) ─────────────────────
+var _resultadoCache=null;
+function _fmtBRL(v){ return (v<0?'-':'')+'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function calcularResultadoBalanco() {
+  if (!_invAtivo) return;
+  var wrap=document.getElementById('inv-resultado-wrap'); if(!wrap) return;
+  wrap.innerHTML='<div style="color:var(--t3);font-size:13px;padding:10px 0">⏳ Calculando...</div>';
+  var inv=_invAtivo;
+  loadBipagensByInv(inv.id,function(bips){ loadCatalogoByInv(inv.id,function(cat){
+    if (!cat.total){ wrap.innerHTML='<div style="font-size:13px;color:var(--t3);padding:10px 0">Importe o catálogo com a coluna de estoque do sistema pra comparar.</div>'; return; }
+    var temEstoque=Object.keys(cat.porCodigo).some(function(k){ return cat.porCodigo[k].q!=null; });
+    if (!temEstoque){ wrap.innerHTML='<div style="font-size:13px;color:#b38600;padding:10px 0">O catálogo importado não tem a coluna Estoque do sistema. Reenvie o arquivo marcando essa coluna.</div>'; return; }
+    var r=InvCore.calcularResultado(cat,bips,inv.resolucoes||{});
+    _resultadoCache={r:r,invNome:inv.nome};
+    _renderResultadoBalanco();
+  }); });
+}
+function _renderResultadoBalanco() {
+  var wrap=document.getElementById('inv-resultado-wrap'); if(!wrap||!_resultadoCache) return;
+  var r=_resultadoCache.r, t=r.totais;
+  var soDiv=!!(document.getElementById('res-so-div')||{}).checked;
+  var busca=((document.getElementById('res-busca')||{}).value||'').toLowerCase();
+  var lim=window._resLimite||300;
+  var linhas=r.linhas.filter(function(l){ if(soDiv&&!(l.dif)&&!l.nc) return false; if(busca&&(l.codigo+' '+l.ean+' '+l.desc).toLowerCase().indexOf(busca)<0) return false; return true; });
+  var tile=function(lbl,val,cor){ return '<div style="flex:1;min-width:120px;background:var(--gray);border-radius:10px;padding:10px 12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3)">'+lbl+'</div><div style="font-size:18px;font-weight:800;color:'+(cor||'var(--t)')+'">'+val+'</div></div>'; };
+  var liquido=t.sobraVal-t.faltaVal;
+  var rows=linhas.slice(0,lim).map(function(l){
+    var cor=l.dif>0?'#1a5c34':l.dif<0?'#c0392b':'var(--t3)';
+    return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+'</td>'+
+      '<td style="text-align:right">'+(l.sistema==null?'—':l.sistema)+'</td><td style="text-align:right;font-weight:700">'+l.contado+'</td><td style="text-align:right;font-weight:800;color:'+cor+'">'+(l.dif==null?'—':(l.dif>0?'+':'')+l.dif)+'</td><td style="text-align:right;color:'+cor+'">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td></tr>';
+  }).join('');
+  wrap.innerHTML=
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      tile('Produtos',t.itens.toLocaleString('pt-BR'))+tile('Divergentes',t.divergentes.toLocaleString('pt-BR'),'#b38600')+
+      tile('Sobra',(+t.sobraUn.toFixed(3)).toLocaleString('pt-BR')+' un · '+_fmtBRL(t.sobraVal),'#1a5c34')+tile('Falta',(+t.faltaUn.toFixed(3)).toLocaleString('pt-BR')+' un · '+_fmtBRL(t.faltaVal),'#c0392b')+
+      tile('Resultado a custo',_fmtBRL(liquido),liquido<0?'#c0392b':'#1a5c34')+
+    '</div>'+
+    (t.semCusto?'<div style="font-size:11px;color:#b38600;margin-bottom:8px">'+t.semCusto+' produto(s) divergente(s) sem custo no catálogo — não entram nos valores em R$.</div>':'')+
+    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+
+      '<label style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px"><input type="checkbox" id="res-so-div" '+(soDiv?'checked':'')+' onchange="_renderResultadoBalanco()"> Só divergentes</label>'+
+      '<input id="res-busca" placeholder="Buscar código ou descrição" value="'+busca.replace(/"/g,'&quot;')+'" oninput="window._resLimite=300;_renderResultadoBalanco()" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit">'+
+      '<span style="font-size:11px;color:var(--t3)">'+linhas.length.toLocaleString('pt-BR')+' linhas</span>'+
+      '<button class="btn btn-s btn-sm" onclick="_exportarResultadoCsv()">⬇ CSV</button>'+
+    '</div>'+
+    '<div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table><thead><tr><th>Código</th><th>EAN</th><th>Descrição</th><th style="text-align:right">Sistema</th><th style="text-align:right">Contado</th><th style="text-align:right">Diferença</th><th style="text-align:right">Valor</th></tr></thead><tbody>'+
+      (rows||'<tr><td colspan="7" style="color:var(--t3)">Nada a mostrar.</td></tr>')+
+      (linhas.length>lim?'<tr><td colspan="7" style="text-align:center;padding:10px"><button class="btn btn-s btn-sm" onclick="window._resLimite=(window._resLimite||300)+1000;_renderResultadoBalanco()">Mostrar mais ('+(linhas.length-lim).toLocaleString('pt-BR')+' restantes)</button></td></tr>':'')+
+    '</tbody></table></div>'+
+    _htmlEnderecosRecontar(r);
+}
+function _htmlEnderecosRecontar(r) {
+  var ends=r.enderecos.filter(function(e){ return e.itensDivergentes>0; }).slice(0,15);
+  if (!ends.length) return '<div style="margin-top:14px;font-size:13px;color:#1a5c34;font-weight:700">✓ Nenhum endereço com divergência estimada.</div>';
+  var isAberto=_invAtivo&&_invAtivo.status==='aberto';
+  var rows=ends.map(function(e){
+    var slot=((_invAtivo&&_invAtivo.fila)||{})[e.endereco]||{};
+    var safe=e.endereco.replace(/'/g,"\\'");
+    var btn=isAberto&&slot.concluido?'<button class="btn btn-s btn-sm" style="color:var(--r);border-color:var(--r)" onclick="reabrirEndereco(\''+_invAtivo.id+'\',\''+safe+'\')">↩ Reabrir pra recontar</button>':(slot.concluido?'':'<span style="font-size:11px;color:var(--t3)">em aberto</span>');
+    return '<tr><td style="font-family:monospace;font-weight:700">'+e.endereco+'</td><td style="font-size:12px">'+(slot.nome||'—')+'</td><td style="text-align:right">'+e.itensDivergentes+'</td><td style="text-align:right">'+(+e.unidades.toFixed(1)).toLocaleString('pt-BR')+'</td><td style="text-align:right;font-weight:700">'+_fmtBRL(e.score)+'</td><td>'+btn+'</td></tr>';
+  }).join('');
+  return '<div style="margin-top:18px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px">Endereços pra recontar (estimativa)</div>'+
+    '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">A divergência de cada produto é distribuída entre os endereços onde ele foi bipado, na proporção do que foi contado em cada um. Quanto maior o valor, mais vale recontar.</div>'+
+    '<div style="overflow-x:auto"><table><thead><tr><th>Endereço</th><th>Coletor</th><th style="text-align:right">Itens diverg.</th><th style="text-align:right">Unid. estim.</th><th style="text-align:right">Impacto</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function _exportarResultadoCsv() {
+  if (!_resultadoCache) return;
+  var lines=['CODIGO;EAN;DESCRICAO;UN;SISTEMA;CONTADO;DIFERENCA;CUSTO;VALOR;NAO_CADASTRADO'];
+  var f=function(v){ return v==null?'':String(v).replace('.',','); };
+  _resultadoCache.r.linhas.forEach(function(l){ lines.push([l.codigo,l.ean,l.desc.replace(/;/g,' '),l.un,f(l.sistema),f(l.contado),f(l.dif),f(l.custo),f(l.valor==null?null:+l.valor.toFixed(2)),l.nc?'SIM':''].join(';')); });
+  var blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url;
+  a.download=(_resultadoCache.invNome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_resultado.csv'; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+}
+
+// ── Auditoria: Pendências pra resolver antes de exportar (NC + sem código) ──
+function mostrarPendenciasBalanco() {
+  if (!_invAtivo) return;
+  var wrap=document.getElementById('inv-pendencias-wrap'); if(!wrap) return;
+  wrap.innerHTML='<div style="color:var(--t3);font-size:13px;padding:10px 0">⏳ Carregando...</div>';
+  loadBipagensByInv(_invAtivo.id,function(bips){
+    var nc={}, sem=[];
+    bips.forEach(function(b){
+      if (b.semEAN){ sem.push(b); return; }
+      if (!b.naoCadastrado) return;
+      var k=b.ean; if(!nc[k]) nc[k]={ean:k,qty:0,n:0,ends:{},coletores:{}};
+      nc[k].qty+=Number(b.qty)||0; nc[k].n++; nc[k].ends[b.endereco]=1; nc[k].coletores[b.coletorId||'?']=1;
+    });
+    var ncList=Object.values(nc).sort(function(a,b){ return b.qty-a.qty; });
+    window._pendenciasCache={nc:ncList,sem:sem,invNome:_invAtivo.nome};
+    var ncRows=ncList.map(function(x){ return '<tr><td style="font-family:monospace;font-size:12px">'+x.ean+'</td><td style="text-align:right;font-weight:700">'+x.qty+'</td><td style="text-align:right">'+x.n+'</td><td style="font-size:11px">'+Object.keys(x.ends).join(', ')+'</td><td style="font-size:11px">'+Object.keys(x.coletores).join(', ')+'</td></tr>'; }).join('');
+    var semRows=sem.sort(function(a,b){ return String(a.endereco).localeCompare(String(b.endereco),undefined,{numeric:true})||(a.seq||0)-(b.seq||0); }).map(function(b){ return '<tr><td style="font-family:monospace">'+b.endereco+'</td><td>'+(b.desc||'')+'</td><td style="text-align:right;font-weight:700">'+b.qty+'</td><td style="font-size:11px">'+(b.coletorId||'')+'</td></tr>'; }).join('');
+    if (!ncList.length&&!sem.length){ wrap.innerHTML='<div style="padding:12px;background:#f0faf5;border-radius:10px;color:#1a5c34;font-weight:700;font-size:13px">✓ Nenhuma pendência: tudo que foi bipado está no catálogo.</div>'; return; }
+    wrap.innerHTML=
+      '<div style="font-size:12px;color:var(--t2);margin-bottom:10px">Esses itens <b>não entram</b> na importação do ERP até serem cadastrados ou corrigidos.</div>'+
+      '<div style="font-weight:700;font-size:13px;margin-bottom:4px">Códigos não cadastrados ('+ncList.length+')</div>'+
+      (ncRows?'<div style="overflow-x:auto;max-height:300px;overflow-y:auto;margin-bottom:12px"><table><thead><tr><th>Código lido</th><th style="text-align:right">Qtd</th><th style="text-align:right">Bipagens</th><th>Endereços</th><th>Coletores</th></tr></thead><tbody>'+ncRows+'</tbody></table></div>':'<div style="font-size:12px;color:var(--t3);margin-bottom:12px">Nenhum.</div>')+
+      '<div style="font-weight:700;font-size:13px;margin-bottom:4px">Sem código, registrados por descrição ('+sem.length+')</div>'+
+      (semRows?'<div style="overflow-x:auto;max-height:300px;overflow-y:auto;margin-bottom:12px"><table><thead><tr><th>Endereço</th><th>Descrição digitada</th><th style="text-align:right">Qtd</th><th>Coletor</th></tr></thead><tbody>'+semRows+'</tbody></table></div>':'<div style="font-size:12px;color:var(--t3);margin-bottom:12px">Nenhum.</div>')+
+      '<button class="btn btn-s btn-sm" onclick="_exportarPendenciasCsv()">⬇ CSV das pendências</button>';
+  });
+}
+function _exportarPendenciasCsv() {
+  var c=window._pendenciasCache; if(!c) return;
+  var lines=['TIPO;CODIGO_LIDO;DESCRICAO;QTD;BIPAGENS;ENDERECOS;COLETORES'];
+  c.nc.forEach(function(x){ lines.push(['NAO_CADASTRADO',x.ean,'',x.qty,x.n,Object.keys(x.ends).join(' '),Object.keys(x.coletores).join(' ')].join(';')); });
+  c.sem.forEach(function(b){ lines.push(['SEM_CODIGO','',(b.desc||'').replace(/;/g,' '),b.qty,1,b.endereco,b.coletorId||''].join(';')); });
+  var blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url;
+  a.download=(c.invNome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_pendencias.csv'; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); },2000);
 }
 
 // ── Folha de conferência por endereço (A4, ordem de bipagem, pra reconferir no papel) ──
@@ -12562,7 +12674,7 @@ function loadCatalogoByInv(invId, cb) {
       _catCache[invId]=InvCore.criarCatalogo(itens); if(cb) cb(_catCache[invId]); return;
     }
     return db.collection('inv_catalogo').where('invId','==',invId).get().then(function(s2){
-      var itens=s2.docs.map(function(d){ var p=d.data(); return {c:'',e:p.ean,d:p.desc,u:p.un}; });
+      var itens=s2.docs.map(function(d){ var p=d.data(); return {c:'',e:p.ean,d:p.desc,u:p.un,q:null,k:null}; });
       _catCache[invId]=InvCore.criarCatalogo(itens); if(cb) cb(_catCache[invId]);
     });
   }).catch(function(){ _catCache[invId]=InvCore.criarCatalogo([]); if(cb) cb(_catCache[invId]); });
@@ -12671,7 +12783,7 @@ function _abrirMapCat(text) {
   var map=InvCore.mapearColunas(parsed.linhas[0], parsed.linhas.slice(1,6));
   _catImport={linhas:parsed.linhas};
   var opts=function(sel){ return '<option value="-1">—</option>'+parsed.linhas[0].map(function(hh,i){ return '<option value="'+i+'"'+(sel===i?' selected':'')+'>'+(i+1)+': '+String(hh).slice(0,18)+'</option>'; }).join(''); };
-  ['codigo','ean','desc','un','estoque'].forEach(function(k){ document.getElementById('cat-map-'+k).innerHTML=opts(map[k]); });
+  ['codigo','ean','desc','un','estoque','custo'].forEach(function(k){ document.getElementById('cat-map-'+k).innerHTML=opts(map[k]); });
   document.getElementById('cat-map-header').checked=map.temHeader;
   document.getElementById('cat-map-prev').textContent=parsed.linhas.slice(0,3).map(function(l){ return l.join(' | '); }).join('\n');
   document.getElementById('cat-map-err').textContent='';
@@ -12679,12 +12791,12 @@ function _abrirMapCat(text) {
 }
 function _confirmarImportCat() {
   var g=function(k){ return parseInt(document.getElementById('cat-map-'+k).value); };
-  var m={codigo:g('codigo'),ean:g('ean'),desc:g('desc'),un:g('un'),estoque:g('estoque')};
+  var m={codigo:g('codigo'),ean:g('ean'),desc:g('desc'),un:g('un'),estoque:g('estoque'),custo:g('custo')};
   var err=document.getElementById('cat-map-err');
   if(m.codigo<0&&m.ean<0){ err.textContent='Escolha ao menos Código interno ou EAN.'; return; }
   var header=document.getElementById('cat-map-header').checked;
   var linhas=_catImport.linhas.slice(header?1:0);
-  var itens=linhas.map(function(l){ return {c:m.codigo>=0?(l[m.codigo]||''):'', e:m.ean>=0?(l[m.ean]||'').replace(/\s/g,''):'', d:m.desc>=0?(l[m.desc]||''):'', u:m.un>=0?(l[m.un]||'').toUpperCase():'', q:m.estoque>=0?(parseFloat(String(l[m.estoque]).replace(',','.'))||0):null}; })
+  var itens=linhas.map(function(l){ return {c:m.codigo>=0?(l[m.codigo]||''):'', e:m.ean>=0?(l[m.ean]||'').replace(/\s/g,''):'', d:m.desc>=0?(l[m.desc]||''):'', u:m.un>=0?(l[m.un]||'').toUpperCase():'', q:m.estoque>=0?(parseFloat(String(l[m.estoque]).replace(',','.'))||0):null, k:m.custo>=0?(parseFloat(String(l[m.custo]).replace(',','.'))||0):null}; })
     .filter(function(it){ return it.c||it.e; });
   document.getElementById('modal-cat-map').style.display='none';
   _gravarBlocosCatalogo(_invAtivo.id, itens);
@@ -15286,7 +15398,7 @@ function _pararEnderecosRealtime() {
 
 // ── Salva estado do detalhe para restaurar no reload ─────────────────────────
 function switchInvTab(tab,btn) {
-  if (tab==='auditoria') setTimeout(_popularSelectFolhaConf,0);
+  if (tab==='auditoria') { setTimeout(_popularSelectFolhaConf,0); _resultadoCache=null; var rw=document.getElementById('inv-resultado-wrap'); if(rw) rw.innerHTML=''; var pw=document.getElementById('inv-pendencias-wrap'); if(pw) pw.innerHTML=''; }
   // Salva estado em localStorage (sobrevive ao fechamento do PWA)
   if (_invAtivo) {
     localStorage.setItem('inv_detalhe_state', JSON.stringify({invId:_invAtivo.id,tab:tab}));

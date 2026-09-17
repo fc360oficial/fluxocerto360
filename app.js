@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '362';
+var BUILD = '363';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5221,6 +5221,70 @@ function abrirQrLoja(lojaId) {
   document.getElementById('qr-container').innerHTML = qr.createSvgTag(5) + '<div style="font-size:11px;color:var(--t3);margin-top:8px;word-break:break-all">' + url + '</div>';
   document.getElementById('modal-qr').dataset.loja = lojaId;
   document.getElementById('modal-qr').style.display = 'flex';
+}
+
+// ── Folha de conferência por endereço (A4, ordem de bipagem, pra reconferir no papel) ──
+// Documento isolado num iframe com CSS próprio e logo, mesmo padrão de imprimirQrLojas.
+function _popularSelectFolhaConf() {
+  var sel=document.getElementById('folha-conf-end'); if(!sel||!_invAtivo) return;
+  var ends=_invAtivo.enderecos||[];
+  sel.innerHTML='<option value="">Todos os endereços com bipagem</option>'+ends.map(function(e){ return '<option value="'+e.replace(/"/g,'&quot;')+'">'+e+'</option>'; }).join('');
+}
+function imprimirFolhaConferencia() {
+  if (!_invAtivo) return;
+  var sel=document.getElementById('folha-conf-end'); var soEnd=sel?sel.value:'';
+  var inv=_invAtivo;
+  loadBipagensByInv(inv.id,function(bips){ loadCatalogoByInv(inv.id,function(cat){
+    var resolucoes=inv.resolucoes||{};
+    bips=bips.filter(function(b){ if(b.modo==='correcao'||b.endereco==='_AVULSO'||b.endereco==='_CORRECAO') return false; var r=resolucoes[b.endereco]; return !r||(b.rodada||1)===r.rodada; });
+    if (soEnd) bips=bips.filter(function(b){ return b.endereco===soEnd; });
+    if (!bips.length){ showToast('Nenhuma bipagem'+(soEnd?' no endereço '+soEnd:'')+'.'); return; }
+    var porEnd={}; bips.forEach(function(b){ (porEnd[b.endereco]=porEnd[b.endereco]||[]).push(b); });
+    var ends=Object.keys(porEnd).sort(function(a,b){ return a.localeCompare(b,undefined,{numeric:true}); });
+    var esc=function(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
+    var logoUrl=new URL('logo.png',location.href).href;
+    var hoje=new Date().toLocaleDateString('pt-BR');
+    var folhas=ends.map(function(end){
+      var lista=porEnd[end].slice().sort(function(a,b){ return (a.seq||0)-(b.seq||0); });
+      var slot=(inv.fila||{})[end]||{};
+      var coletores={}; lista.forEach(function(b){ if(b.coletorId) coletores[b.coletorId]=b.coletorNome||b.coletorId; });
+      var colStr=Object.keys(coletores).map(function(k){ return k+(coletores[k]&&coletores[k]!==k?' - '+coletores[k]:''); }).join(', ')||'—';
+      var totalUn=lista.reduce(function(a,b){ return a+(Number(b.qty)||0); },0);
+      var rows=lista.map(function(b){
+        var p=_catItemDe(cat,b.codigo||b.ean)||{};
+        var hora=b.ts&&b.ts.seconds?new Date(b.ts.seconds*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+        return '<tr><td class="c">'+esc(b.seq)+'</td><td class="m">'+esc(b.codigo||'')+'</td><td class="m">'+esc(p.ean||b.ean)+'</td><td>'+esc(p.desc||b.desc||'')+(b.naoCadastrado?' <b class="nc">NC</b>':'')+'</td><td class="c">'+esc(p.un||'')+'</td><td class="c q">'+esc(b.qty)+'</td><td class="c">'+hora+'</td><td class="box"></td><td class="box ok"></td></tr>';
+      }).join('');
+      return '<section class="folha">'+
+        '<header><img src="'+logoUrl+'" alt=""><div class="t"><div class="h1">Folha de Conferência</div><div class="h2">'+esc(inv.nome)+'</div></div><div class="end"><div class="lbl">Endereço</div><div class="num">'+esc(end)+'</div></div></header>'+
+        '<div class="meta"><span><b>Setor:</b> '+esc(slot.setor||'—')+'</span><span><b>Coletor:</b> '+esc(colStr)+'</span><span><b>Itens:</b> '+lista.length+'</span><span><b>Unidades bipadas:</b> '+totalUn+'</span><span><b>Impresso:</b> '+hoje+'</span></div>'+
+        '<table><thead><tr><th>Seq</th><th>Código</th><th>Barras</th><th>Descrição</th><th>Un</th><th>Bipado</th><th>Hora</th><th>Conferido</th><th>✓</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+        '<footer><div class="ass"><div class="linha"></div>Conferente</div><div class="ass"><div class="linha"></div>Responsável</div><div class="obs"><b>Obs.:</b></div></footer>'+
+      '</section>';
+    }).join('');
+    var css='@page{size:A4;margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:"Plus Jakarta Sans",Arial,sans-serif;color:#111;font-size:11px}'+
+      '.folha{page-break-after:always}.folha:last-child{page-break-after:auto}'+
+      'header{display:flex;align-items:center;gap:14px;border-bottom:3px solid #FFC600;padding-bottom:8px;margin-bottom:8px}header img{height:40px}header .t{flex:1}.h1{font-size:18px;font-weight:800}.h2{font-size:12px;color:#555}'+
+      '.end{text-align:right}.end .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#777}.end .num{font-size:30px;font-weight:800;font-family:monospace}'+
+      '.meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:8px;font-size:11px}'+
+      'table{width:100%;border-collapse:collapse}th{background:#fff4c2;font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:5px 4px;border-bottom:1.5px solid #e0c65a}'+
+      'td{padding:5px 4px;border-bottom:1px solid #ddd;vertical-align:middle}tr:nth-child(even) td{background:#fafafa}td.c{text-align:center}td.m{font-family:monospace;font-size:10.5px;white-space:nowrap}td.q{font-weight:800;font-size:13px}'+
+      'td.box{width:64px;border:1.5px solid #999;height:24px}td.box.ok{width:26px}.nc{color:#e65100;font-size:9px}'+
+      'footer{display:flex;gap:24px;margin-top:26px;align-items:flex-end}.ass{width:180px;text-align:center;font-size:10px;color:#555}.ass .linha{border-top:1px solid #333;margin-bottom:4px}.obs{flex:1;border:1px solid #ccc;min-height:40px;padding:4px;font-size:10px}';
+    var html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Folha de Conferência</title>'+
+      '<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">'+
+      '<style>'+css+'</style></head><body>'+folhas+'</body></html>';
+    var antigo=document.getElementById('conf-print-frame'); if(antigo) antigo.parentNode.removeChild(antigo);
+    var frame=document.createElement('iframe'); frame.id='conf-print-frame'; frame.setAttribute('aria-hidden','true');
+    frame.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none';
+    document.body.appendChild(frame);
+    var doc=frame.contentWindow.document; doc.open(); doc.write(html); doc.close();
+    var imprimiu=false;
+    var disparar=function(){ if(imprimiu) return; imprimiu=true; try{ frame.contentWindow.focus(); frame.contentWindow.print(); }catch(e){ showToast('Não foi possível abrir a impressão: '+e.message); } };
+    var img=doc.querySelector('header img');
+    if (img&&!img.complete){ img.onload=img.onerror=function(){ setTimeout(disparar,150); }; } else setTimeout(disparar,150);
+    setTimeout(disparar,2500);
+  }); });
 }
 
 // Folha A4 por loja pra colar na entrada (recebimento / entrada de
@@ -12454,13 +12518,19 @@ function loadInventariosFromFirebase(cb) {
   }).catch(function(){ S.invsCache=[]; if (cb) cb(); });
 }
 
-function loadBipagensByInv(invId, cb) {
+// Cache de 45 s por inventário: as abas do admin (Bipagens, Auditoria, PDF, Produtividade,
+// Folha) chamavam isso a cada clique — com dezenas de milhares de bipagens era um download inteiro por vez.
+var _bipsInvCache = {};
+function loadBipagensByInv(invId, cb, forcar) {
+  var c=_bipsInvCache[invId];
+  if (!forcar && c && Date.now()-c.t<45000) { if (cb) cb(c.list.slice()); return; }
   db.collection('inv_bipagens')
     .where('invId','==',invId)
     .get().then(function(snap){
       var list = snap.docs.map(function(d){ return d.data(); });
       list.sort(function(a,b){ return (a.seq||0)-(b.seq||0); });
-      if (cb) cb(list);
+      _bipsInvCache[invId]={t:Date.now(),list:list};
+      if (cb) cb(list.slice());
     }).catch(function(e){ console.error('loadBipagensByInv',e); if (cb) cb([]); });
 }
 
@@ -12789,11 +12859,13 @@ function renderInvBipagens(filtroEnd, filtroCol, filtroSetor) {
       });
       var tbody = document.getElementById('inv-bip-tbody');
       if (!tbody) return;
+      var cntEl=document.getElementById('inv-bip-count'); if(cntEl) cntEl.textContent=filtrados.length.toLocaleString('pt-BR')+' bipagens';
       if (!filtrados.length) {
         tbody.innerHTML='<tr class="erow"><td colspan="6">Nenhuma bipagem'+(filtroEnd?' neste endereço':filtroSetor?' no setor '+filtroSetor:'')+' ainda.</td></tr>';
         return;
       }
-      tbody.innerHTML = filtrados.map(function(b){
+      var _lim=window._bipLimite||300, _rest=filtrados.length-_lim;
+      tbody.innerHTML = filtrados.slice(0,_lim).map(function(b){
         var prod = _catItemDe(cat,b.codigo||b.ean)||{};
         var hora = b.ts ? new Date(b.ts.seconds*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
         var isCorr=b.modo==='correcao';
@@ -12812,7 +12884,7 @@ function renderInvBipagens(filtroEnd, filtroCol, filtroSetor) {
           '<td style="font-size:12px">'+(b.coletorNome||'—')+'</td>'+
           '<td style="font-size:12px">'+(isCorr?'Correção':''+b.endereco+setorStr)+' · '+hora+'</td>'+
         '</tr>';
-      }).join('');
+      }).join('')+(_rest>0?'<tr><td colspan="6" style="text-align:center;padding:12px"><button class="btn btn-s btn-sm" onclick="window._bipLimite=(window._bipLimite||300)+1000;renderInvBipagens(document.getElementById(\'inv-bip-filter\').value||null,null,document.getElementById(\'inv-bip-setor-filter\').value||null)">Mostrar mais ('+_rest.toLocaleString('pt-BR')+' restantes)</button></td></tr>':'');
     });
   });
 }
@@ -15214,6 +15286,7 @@ function _pararEnderecosRealtime() {
 
 // ── Salva estado do detalhe para restaurar no reload ─────────────────────────
 function switchInvTab(tab,btn) {
+  if (tab==='auditoria') setTimeout(_popularSelectFolhaConf,0);
   // Salva estado em localStorage (sobrevive ao fechamento do PWA)
   if (_invAtivo) {
     localStorage.setItem('inv_detalhe_state', JSON.stringify({invId:_invAtivo.id,tab:tab}));

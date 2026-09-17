@@ -14123,6 +14123,7 @@ function iniciarScanEAN(inputId) {
   _eanCodeReader = reader;
   reader.decodeFromConstraints({video:{facingMode:'environment'}}, 'ean-scan-video', function(result){
     if (result && _eanCodeReader === reader) {
+      _bipSom('ok');
       var val = result.getText();
       pararScanEAN();
       var inp = document.getElementById(inputId);
@@ -14235,6 +14236,22 @@ function _encontrarAtribuicao() {
 var _COLETOR_KEY     = 'fc360_coletor_id';
 var _COLETOR_INV_KEY = 'fc360_coletor_inv'; // invId do inventário em que o ID foi registrado
 var _PALLET_KEY      = 'fc360_modo_pallet';
+// ── Bip sonoro (WebAudio, sem asset). AudioContext nasce no 1º toque (autoplay Android). ──
+var _bipCtx = null;
+function _bipCtxGet(){ try{ if(!_bipCtx) _bipCtx=new (window.AudioContext||window.webkitAudioContext)(); if(_bipCtx.state==='suspended') _bipCtx.resume(); return _bipCtx; }catch(e){ return null; } }
+document.addEventListener('touchstart', function(){ _bipCtxGet(); }, {once:true, passive:true});
+document.addEventListener('click', function(){ _bipCtxGet(); }, {once:true});
+function _bipSom(tipo) {
+  var ctx=_bipCtxGet(); if(!ctx) return;
+  var seq = tipo==='erro' ? [[300,250]] : tipo==='alerta' ? [[600,90],[600,90]] : [[1200,80]];
+  var t=ctx.currentTime;
+  seq.forEach(function(p){
+    var o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='square'; o.frequency.value=p[0]; o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.25,t); g.gain.exponentialRampToValueAtTime(0.001,t+p[1]/1000);
+    o.start(t); o.stop(t+p[1]/1000); t+=p[1]/1000+0.05;
+  });
+}
 function _getModoPallet(){ return localStorage.getItem(_PALLET_KEY)==='1'; }
 function _toggleModoPallet(){
   var on=!_getModoPallet();

@@ -13662,12 +13662,28 @@ function _invTipoTag(tipo) {
 
 // ── Override renderInvList — só ativos, badge FILA ────────────────────────
 var _invBipCount = {};
+// Conta bipagens sem baixar os docs. O SDK compat 10.12 não expõe count(), então usa a
+// API REST de agregação com o token do próprio usuário (mesmas regras de segurança).
+function _contarDocs(colecao, campo, valor) {
+  var u=firebase.auth().currentUser; if(!u) return Promise.resolve(null);
+  var proj=firebase.app().options.projectId;
+  return u.getIdToken().then(function(tok){
+    return fetch('https://firestore.googleapis.com/v1/projects/'+proj+'/databases/(default)/documents:runAggregationQuery',{
+      method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+      body:JSON.stringify({structuredAggregationQuery:{aggregations:[{count:{},alias:'n'}],structuredQuery:{from:[{collectionId:colecao}],where:{fieldFilter:{field:{fieldPath:campo},op:'EQUAL',value:{stringValue:valor}}}}}})
+    });
+  }).then(function(r){ return r.json(); }).then(function(j){
+    var n=parseInt((((j[0]||{}).result||{}).aggregateFields||{}).n&&j[0].result.aggregateFields.n.integerValue);
+    return isNaN(n)?null:n;
+  }).catch(function(){ return null; });
+}
 function _contarBipagens(invId, cb) {
   var c=_invBipCount[invId];
   if (c && Date.now()-c.t<30000) { cb(c.n); return; }
-  db.collection('inv_bipagens').where('invId','==',invId).count().get().then(function(sn){
-    _invBipCount[invId]={n:sn.data().count,t:Date.now()}; cb(_invBipCount[invId].n);
-  }).catch(function(){ cb(null); });
+  _contarDocs('inv_bipagens','invId',invId).then(function(n){
+    if (n!=null) _invBipCount[invId]={n:n,t:Date.now()};
+    cb(n);
+  });
 }
 function _preencherContagens(){
   document.querySelectorAll('span[id^="invcnt-"]').forEach(function(e){

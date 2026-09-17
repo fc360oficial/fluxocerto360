@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '360';
+var BUILD = '361';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14488,6 +14488,16 @@ function renderColeta() {
       var ei=document.getElementById('inv-ean-input');
       if (!ei) return;
       var hasCat=!!(cat&&cat.total);
+      // Leitor sem sufixo Enter: rajada de teclas + pausa de 250 ms = fim da leitura → mesmo que Enter.
+      var _rajadaEan=InvCore.criarDetectorRajada(100,3), _rajadaTimer=null;
+      ei.addEventListener('keydown',function(ev){
+        if (ev.key==='Enter'){ if(_rajadaTimer){ clearTimeout(_rajadaTimer); _rajadaTimer=null; } return; }
+        if (!ev.key||ev.key.length!==1) return;
+        if (_rajadaEan.tecla(ev.key, Date.now())) {
+          if(_rajadaTimer) clearTimeout(_rajadaTimer);
+          _rajadaTimer=setTimeout(function(){ _rajadaTimer=null; if(document.activeElement===ei&&ei.value.trim()) _eanEnterKey(); },250);
+        }
+      });
       ei.addEventListener('input',function(){
         var val=this.value.trim();
         var pr=document.getElementById('inv-desc-preview');

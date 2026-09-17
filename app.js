@@ -14363,22 +14363,14 @@ function renderColeta() {
     db.collection('inv_inventarios').doc(filaInv.id).get().then(function(snap){
       if (!snap.exists) return;
       var fresh=Object.assign({id:snap.id},snap.data());
-      // Carrega contagem de bipagens por endereço para mostrar no picker
-      loadBipagensByInv(fresh.id, function(bips){
-        var cnt={};
-        bips.forEach(function(b){
-          if (!cnt[b.endereco]) cnt[b.endereco]={total:0,coletores:{}};
-          cnt[b.endereco].total++;
-          if (b.coletorId) cnt[b.endereco].coletores[b.coletorId]=(cnt[b.endereco].coletores[b.coletorId]||0)+1;
-        });
-        wrap.innerHTML='<div>'+
-          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">'+
-            '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:17px;font-weight:700;flex:1">'+fresh.nome+'</div>'+
-            '<span style="padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#d1f0e0;color:#1a5c34">ABERTO</span>'+
-          '</div>'+
-          _renderSelecaoEndereco(fresh, cnt)+'</div>';
-        setTimeout(function(){ var el=document.getElementById('fila-end-input'); if(el){ el.focus(); el.select(); } },80);
-      });
+      // Só o estado do slot (vem no doc do inventário): não baixa as bipagens inteiras.
+      wrap.innerHTML='<div>'+
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">'+
+          '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:17px;font-weight:700;flex:1">'+fresh.nome+'</div>'+
+          '<span style="padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#d1f0e0;color:#1a5c34">ABERTO</span>'+
+        '</div>'+
+        _renderSelecaoEndereco(fresh, {})+'</div>';
+      setTimeout(function(){ var el=document.getElementById('fila-end-input'); if(el){ el.focus(); el.select(); } },80);
     });
     return;
     } // end else (sem slot próprio)

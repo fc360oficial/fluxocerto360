@@ -1270,6 +1270,15 @@
 
           <!-- Tab Auditoria -->
           <div id="inv-tab-auditoria" style="display:none;margin-top:14px">
+            <!-- Folha de conferência por endereço -->
+            <div class="card" style="max-width:520px;margin-bottom:14px">
+              <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Folha de Conferência (papel)</div>
+              <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Uma folha A4 por endereço, na ordem em que foi bipado, com espaço pra quantidade conferida e visto.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <select id="folha-conf-end" style="flex:1;min-width:160px;padding:9px 12px;border:1.5px solid var(--gray2);border-radius:9px;font-size:13px;font-family:inherit"></select>
+                <button class="btn btn-p" onclick="imprimirFolhaConferencia()">🖨️ Imprimir</button>
+              </div>
+            </div>
             <!-- Relatório PDF -->
             <div class="card" style="max-width:520px;margin-bottom:14px">
               <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;margin-bottom:6px">Relatório PDF</div>
@@ -1311,6 +1320,7 @@
                 <option value="ESTOQUE">ESTOQUE</option>
                 <option value="LOJA">LOJA</option>
               </select>
+              <span id="inv-bip-count" style="font-size:12px;color:var(--t3);font-weight:600"></span>
               <label style="font-size:12px;display:flex;align-items:center;gap:4px;font-weight:600"><input type="checkbox" id="inv-bip-nc" onchange="renderInvBipagens(document.getElementById('inv-bip-filter').value||null,null,document.getElementById('inv-bip-setor-filter').value||null)"> Só não cadastrados</label>
               <button class="btn btn-s btn-sm" onclick="renderInvBipagens(null,null,null);document.getElementById('inv-bip-filter').value='';document.getElementById('inv-bip-setor-filter').value='';document.getElementById('inv-bip-col-filter').style.display='none';_fecharCorrecaoView()">Todos</button>
             </div>
@@ -2113,7 +2123,7 @@
 <script src="client.js"></script>
 <script src="qrcode-generator.min.js"></script>
 <script src="lib/inv-bip-core.js?v=1"></script>
-<script src="app.js?v=362" defer></script>
+<script src="app.js?v=363" defer></script>
 
 
 </body>

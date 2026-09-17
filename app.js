@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '361';
+var BUILD = '362';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -13234,6 +13234,11 @@ var _ERP_CAMPOS = [
 ];
 
 var _ERP_PRESETS = {
+  'conferencia': {
+    label:'Conferência (ordem de bipagem)',
+    campos:['endereco','seq','coletorId','hora','codigo','barra','desc','qty','setor'],
+    sep:';', header:true, agrupa:false, dec:'int', enc:'utf8bom'
+  },
   'bazar': {
     label:'ERP Bazar — código barra;qtd (3 casas)',
     campos:['barra','qty'],
@@ -13482,7 +13487,7 @@ function _erp_buildLinhas(bips, cat, perfil) {
     });
     dados = Object.values(mapa);
   } else {
-    dados = bipsFilt;
+    dados = bipsFilt.slice().sort(function(a,b){ return String(a.endereco).localeCompare(String(b.endereco),undefined,{numeric:true}) || (a.seq||0)-(b.seq||0); });
   }
   var lines = [];
   var labelMap = {};

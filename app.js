@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '368';
+var BUILD = '369';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14394,7 +14394,7 @@ function _iniciarCamFixa(){
   var reader=new ZXing.BrowserMultiFormatReader(hints);
   _camFixa=reader; _atualizarBtnCamFixa();
   reader.decodeFromConstraints({video:{facingMode:'environment'}},'inv-cam-video',function(result){
-    if (!result||_camFixa!==reader) return;
+    if (!result||_camFixa!==reader||_decisaoAberta()) return;
     var val=result.getText(), agora=Date.now();
     // Exige a mesma leitura 2x seguidas (em até 1,2 s) antes de aceitar: corta leitura errada da câmera
     if (!(_camFixaCand.val===val&&agora-_camFixaCand.t<1200)) { _camFixaCand={val:val,t:agora}; return; }
@@ -15631,6 +15631,9 @@ function _eanEnterKey(deScanner) {
   var qi=document.getElementById('inv-qty-input');
   if (qi){ qi.focus(); qi.select(); }
 }
+// Enquanto uma decisão está aberta (código curto / EAN duplicado), leitor, câmera e teclado ficam bloqueados.
+function _decisaoAberta(){ return !!(document.getElementById('modal-curto')||document.getElementById('modal-multi')); }
+document.addEventListener('keydown', function(ev){ if(_decisaoAberta()){ ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
 function _abrirConfirmaCurto(val,r){
   var m=document.getElementById('modal-curto'); if(m) m.remove();
   _bipSom('alerta');
@@ -15693,7 +15696,7 @@ function _gravarBipagemLocal(bipData) {
 
 // ── registrarBipagem — local-first, resolve pelo catálogo (código interno ou EAN) ──
 function registrarBipagem() {
-  if (!_invColetaAtual) return;
+  if (!_invColetaAtual||_decisaoAberta()) return;
   if (_invColetaAtual.concluido){ alert('Você já finalizou sua contagem.'); return; }
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
   if (!ei||!qi) return;
@@ -15729,15 +15732,16 @@ function _registrarResolvido(lido, res, qtyTotal, fator) {
   if(ei) ei.focus();
 }
 function _abrirPickerMultiplos(lista, lido) {
-  var html='<div id="modal-multi" onclick="if(event.target===this)this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2300;display:flex;align-items:flex-end;justify-content:center">'+
+  var html='<div id="modal-multi" onclick="if(event.target===this)_cancelarMultiplo()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2300;display:flex;align-items:flex-end;justify-content:center">'+
     '<div style="background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px">'+
     '<div style="font-weight:800;font-size:16px;margin-bottom:4px">Mesmo código de barras em '+lista.length+' produtos</div>'+
     '<div style="font-size:12px;color:var(--t3);margin-bottom:12px">Toque no produto certo.</div>'+
     lista.map(function(p,i){ return '<button onclick="_escolherMultiplo('+i+')" style="width:100%;text-align:left;padding:12px;margin-bottom:8px;border:1.5px solid var(--gray2);border-radius:10px;background:#fff;font-family:inherit;cursor:pointer"><b style="font-family:monospace">'+p.codigo+'</b> · '+p.desc+'</button>'; }).join('')+
-    '<button onclick="document.getElementById(\'modal-multi\').remove()" style="width:100%;padding:11px;border:1.5px solid var(--gray2);border-radius:10px;background:#fff;font-family:inherit">Cancelar</button></div></div>';
+    '<button onclick="_cancelarMultiplo()" style="width:100%;padding:11px;border:1.5px solid var(--gray2);border-radius:10px;background:#fff;font-family:inherit">Cancelar</button></div></div>';
   window._multiLista=lista; window._multiLido=lido;
   document.body.insertAdjacentHTML('beforeend',html);
 }
+function _cancelarMultiplo(){ var m=document.getElementById('modal-multi'); if(m) m.remove(); var ei=document.getElementById('inv-ean-input'); if(ei){ ei.value=''; var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent=''; ei.focus(); } }
 function _escolherMultiplo(i) {
   var m=document.getElementById('modal-multi'); if(m) m.remove();
   var qi=document.getElementById('inv-qty-input'), fi=document.getElementById('inv-fator-input');

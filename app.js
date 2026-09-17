@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '359';
+var BUILD = '360';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -13218,6 +13218,7 @@ function _carregarUltimasBipagens(invId,endereco,rodada,modo) {
 // ── Exportação ERP com template configurável ──────────────────────────────
 
 var _ERP_CAMPOS = [
+  {id:'barra',     label:'Código de barras (EAN ou código interno)'},
   {id:'codigo',    label:'Código interno'},
   {id:'ean',       label:'EAN / Código'},
   {id:'qty',       label:'Quantidade'},
@@ -13233,6 +13234,11 @@ var _ERP_CAMPOS = [
 ];
 
 var _ERP_PRESETS = {
+  'bazar': {
+    label:'ERP Bazar — código barra;qtd (3 casas)',
+    campos:['barra','qty'],
+    sep:';', header:false, agrupa:true, dec:'comma3', enc:'ansi'
+  },
   'fc360': {
     label:'FC360 Padrão',
     campos:['endereco','codigo','ean','qty','desc','un','setor','rodada'],
@@ -13326,6 +13332,8 @@ function _abrirModalExportErp(perfil) {
             '<option value="int"'+(perfil.dec==='int'?' selected':'')+'>Inteiro ( 15 )</option>'+
             '<option value="dot"'+(perfil.dec==='dot'?' selected':'')+'>Decimal ponto ( 15.00 )</option>'+
             '<option value="comma"'+(perfil.dec==='comma'?' selected':'')+'>Decimal vírgula ( 15,00 )</option>'+
+            '<option value="dot3"'+(perfil.dec==='dot3'?' selected':'')+'>3 casas, ponto ( 15.000 )</option>'+
+            '<option value="comma3"'+(perfil.dec==='comma3'?' selected':'')+'>3 casas, vírgula ( 15,000 )</option>'+
           '</select>'+
         '</div>'+
         '<div>'+
@@ -13450,6 +13458,8 @@ function _erp_lerPerfil() {
 function _erp_formatarQty(n, dec) {
   if (dec==='dot')   return n.toFixed(2);
   if (dec==='comma') return n.toFixed(2).replace('.',',');
+  if (dec==='dot3')  return n.toFixed(3);
+  if (dec==='comma3') return n.toFixed(3).replace('.',',');
   return String(n);
 }
 
@@ -13459,12 +13469,15 @@ function _erp_buildLinhas(bips, cat, perfil) {
     var res=resolucoes[b.endereco]; if(!res) return true;
     return (b.rodada||1)===res.rodada;
   });
+  // Código de barras pra devolver ao ERP: EAN do catálogo se o item tem, senão o código interno lido.
+  function _barra(b){ var p=_catItemDe(cat,b.codigo||b.ean)||{}; return p.ean||b.codigo||b.ean||''; }
+  var porBarra = perfil.campos.indexOf('barra')>=0;
   var dados;
   if (perfil.agrupa) {
     var mapa = {};
     bipsFilt.forEach(function(b){
-      var k = b.codigo||b.ean;
-      if (!mapa[k]) mapa[k] = {ean:b.ean, codigo:b.codigo||'', qty:0, endereco:b.endereco, setor:b.setor||'', coletorId:b.coletorId||'', seq:b.seq||0, rodada:b.rodada||1, ts:b.ts};
+      var k = porBarra ? _barra(b) : (b.codigo||b.ean);
+      if (!mapa[k]) mapa[k] = {ean:b.ean, codigo:b.codigo||'', barra:_barra(b), qty:0, endereco:b.endereco, setor:b.setor||'', coletorId:b.coletorId||'', seq:b.seq||0, rodada:b.rodada||1, ts:b.ts};
       mapa[k].qty += (b.qty||1);
     });
     dados = Object.values(mapa);
@@ -13481,6 +13494,7 @@ function _erp_buildLinhas(bips, cat, perfil) {
     var p = _catItemDe(cat,b.codigo||b.ean)||{};
     var ts = b.ts&&b.ts.seconds ? new Date(b.ts.seconds*1000) : null;
     var row = perfil.campos.map(function(id){
+      if (id==='barra')     return b.barra!=null?b.barra:_barra(b);
       if (id==='codigo')    return b.codigo||'';
       if (id==='ean')       return b.ean||'';
       if (id==='qty')       return _erp_formatarQty(b.qty||1, perfil.dec);

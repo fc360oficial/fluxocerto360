@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '367';
+var BUILD = '368';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14689,8 +14689,8 @@ function renderColeta() {
         '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+
           '<div style="flex:1;min-width:200px">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">EAN / Código de Barras</label>'+
+            '<div id="inv-desc-preview" style="font-size:13px;font-weight:600;margin-bottom:6px;min-height:20px"></div>'+
             '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" disabled placeholder="Carregando endereço..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
-            '<div id="inv-desc-preview" style="font-size:12px;margin-top:5px;min-height:18px"></div>'+
           '</div>'+
           '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+

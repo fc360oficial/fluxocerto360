@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '365';
+var BUILD = '366';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14363,6 +14363,59 @@ function pararScanEAN() {
   var ov = document.getElementById('ean-scan-overlay'); if (ov) ov.remove();
 }
 
+
+// ── Câmera fixa na coleta: fica aberta num quadro acima do campo e lê em sequência ──
+// Lê → bip → preenche o campo → pula pra Qtd. A câmera continua ligada pro próximo item.
+var _camFixa = null, _camFixaUltimo = {val:'', t:0}, _camFixaCand = {val:'', t:0};
+var _CAM_FIXA_KEY = 'fc360_cam_fixa';
+function _camFixaLigada(){ return localStorage.getItem(_CAM_FIXA_KEY)==='1'; }
+function _toggleCamFixa(){
+  if (_camFixa) { localStorage.setItem(_CAM_FIXA_KEY,'0'); _pararCamFixa(); _atualizarBtnCamFixa(); return; }
+  localStorage.setItem(_CAM_FIXA_KEY,'1'); _iniciarCamFixa();
+}
+function _atualizarBtnCamFixa(){
+  var b=document.getElementById('inv-cam-btn'); if(!b) return;
+  var on=!!_camFixa;
+  b.style.background=on?'var(--y)':'#fff'; b.style.borderColor=on?'var(--y)':'var(--gray2)';
+  b.title=on?'Câmera ligada — toque pra desligar':'Ligar câmera (fica aberta pra ler em sequência)';
+}
+function _iniciarCamFixa(){
+  if (_camFixa) return;
+  var wrap=document.getElementById('inv-cam-fixa'); if(!wrap) return;
+  if (typeof ZXing==='undefined'){ showToast('Leitor de código de barras não carregou (sem internet?). Use o leitor físico ou digite.',5000); return; }
+  wrap.style.display='block';
+  wrap.innerHTML='<div style="position:relative;border-radius:10px;overflow:hidden;background:#111">'+
+    '<video id="inv-cam-video" style="width:100%;max-height:170px;aspect-ratio:3/1;object-fit:cover;display:block" autoplay playsinline muted></video>'+
+    '<div style="position:absolute;left:8%;right:8%;top:50%;height:2px;background:rgba(255,198,0,.85);box-shadow:0 0 8px rgba(255,198,0,.8)"></div>'+
+    '<div id="inv-cam-msg" style="position:absolute;left:8px;bottom:6px;color:#fff;font-size:11px;font-weight:600;text-shadow:0 1px 2px #000">Aponte pro código de barras</div>'+
+  '</div>';
+  var hints=new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128]);
+  var reader=new ZXing.BrowserMultiFormatReader(hints);
+  _camFixa=reader; _atualizarBtnCamFixa();
+  reader.decodeFromConstraints({video:{facingMode:'environment'}},'inv-cam-video',function(result){
+    if (!result||_camFixa!==reader) return;
+    var val=result.getText(), agora=Date.now();
+    // Exige a mesma leitura 2x seguidas (em até 1,2 s) antes de aceitar: corta leitura errada da câmera
+    if (!(_camFixaCand.val===val&&agora-_camFixaCand.t<1200)) { _camFixaCand={val:val,t:agora}; return; }
+    if (val===_camFixaUltimo.val&&agora-_camFixaUltimo.t<2500) return; // mesma etiqueta ainda na frente da câmera
+    _camFixaUltimo={val:val,t:agora}; _camFixaCand={val:'',t:0};
+    var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
+    if (!ei||ei.disabled) return;
+    // Item anterior ainda esperando a Qtd: fecha com a Qtd que está e segue pro novo
+    if (ei.value.trim()&&document.activeElement===qi) registrarBipagem();
+    _bipSom('ok');
+    ei.value=val; ei.dispatchEvent(new Event('input'));
+    var m=document.getElementById('inv-cam-msg'); if(m){ m.textContent='Lido: '+val; setTimeout(function(){ if(m) m.textContent='Aponte pro código de barras'; },1500); }
+    _eanEnterKey();
+  }).catch(function(err){ _pararCamFixa(); localStorage.setItem(_CAM_FIXA_KEY,'0'); showToast('Câmera indisponível: '+(err.message||err)); });
+}
+function _pararCamFixa(){
+  if (_camFixa){ try{ _camFixa.reset(); }catch(e){} _camFixa=null; }
+  var wrap=document.getElementById('inv-cam-fixa'); if(wrap){ wrap.innerHTML=''; wrap.style.display='none'; }
+  _atualizarBtnCamFixa();
+}
+
 // ── Gerar QR codes dos endereços para impressão ───────────────────────────
 function gerarQREnderecos() {
   if (!_invAtivo) return;
@@ -14550,7 +14603,7 @@ function _editarIdColetor() {
 
 // ── Override renderColeta — ID coletor + modoFila picker ──────────────────
 function renderColeta() {
-  pararQRScan();
+  pararQRScan(); _pararCamFixa();
   var wrap=document.getElementById('inv-coleta-wrap'); if(!wrap) return;
   var u=S.currentUser;
   if (!u) { wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">Faça login.</div>'; return; }
@@ -14632,13 +14685,14 @@ function renderColeta() {
             '🏗 Pallet '+(palletOn?'ON':'—')+
           '</button>'+
         '</div>'+
+        '<div id="inv-cam-fixa" style="display:none;margin-bottom:10px"></div>'+
         '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+
           '<div style="flex:1;min-width:200px">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">EAN / Código de Barras</label>'+
             '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" disabled placeholder="Carregando endereço..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
             '<div id="inv-desc-preview" style="font-size:12px;margin-top:5px;min-height:18px"></div>'+
           '</div>'+
-          '<button type="button" onclick="iniciarScanEAN(\'inv-ean-input\')" title="Ler código de barras com a câmera" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
+          '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
             '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)"/></div>'+
           '<div id="inv-fator-wrap" style="width:62px;'+(palletOn?'':'display:none')+'">'+
@@ -14710,6 +14764,7 @@ function renderColeta() {
     });
   }
   _carregarUltimasBipagens(inv.id,end,rodada,modo);
+  if (!concluido&&_camFixaLigada()) setTimeout(_iniciarCamFixa,400);
 }
 
 // ── Override finalizarRodada — modal de confirmação com resumo ───────────

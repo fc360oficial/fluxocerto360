@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '369';
+var BUILD = '370';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14603,7 +14603,7 @@ function _editarIdColetor() {
 
 // ── Override renderColeta — ID coletor + modoFila picker ──────────────────
 function renderColeta() {
-  pararQRScan(); _pararCamFixa();
+  pararQRScan(); _pararCamFixa(); _descFixa(false);
   var wrap=document.getElementById('inv-coleta-wrap'); if(!wrap) return;
   var u=S.currentUser;
   if (!u) { wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">Faça login.</div>'; return; }
@@ -14694,10 +14694,10 @@ function renderColeta() {
           '</div>'+
           '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
-            '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)"/></div>'+
+            '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_descFixa(true)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
           '<div id="inv-fator-wrap" style="width:62px;'+(palletOn?'':'display:none')+'">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd Emb</label>'+
-            '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()"/></div>'+
+            '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()" onfocus="_descFixa(true)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
           '<button onclick="registrarBipagem()" style="padding:13px 22px;background:#FFC600;color:#111;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Registrar</button>'+
         '</div>'+
         '<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">'+
@@ -15609,6 +15609,14 @@ function voltarInvLista() {
 }
 
 // ── _eanEnterKey — Enter no campo EAN: vai pra qty se reconhecido ─────────
+
+// Faixa fixa acima do teclado com o produto lido, visível enquanto a Qtd está focada (a tela rola e o texto de cima some).
+function _descFixa(mostrar){
+  var el=document.getElementById('inv-desc-fixo');
+  if(!el){ el=document.createElement('div'); el.id='inv-desc-fixo'; el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:1500;background:#fff8e1;border-top:3px solid #FFC600;padding:10px 14px;font-size:15px;font-weight:700;color:#111;box-shadow:0 -4px 16px rgba(0,0,0,.15);display:none;line-height:1.3'; document.body.appendChild(el); }
+  var pr=document.getElementById('inv-desc-preview'); var txt=pr?pr.textContent.trim():'';
+  if(mostrar&&txt){ el.textContent=txt+' — informe a quantidade'; el.style.display='block'; } else { el.style.display='none'; }
+}
 function _eanEnterKey(deScanner) {
   var ei=document.getElementById('inv-ean-input'); if(!ei) return;
   var val=ei.value.trim();
@@ -15729,6 +15737,7 @@ function _registrarResolvido(lido, res, qtyTotal, fator) {
   var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent='';
   var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
   _renderUltimasBipagens(_bipsLocais.slice(0,20), inv.id);
+  _descFixa(false);
   if(ei) ei.focus();
 }
 function _abrirPickerMultiplos(lista, lido) {

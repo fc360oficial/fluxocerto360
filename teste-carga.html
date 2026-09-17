@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FC360 — Teste de carga do Inventário</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="lib/inv-bip-core.js"></script>
+<style>
+  body{font-family:system-ui,sans-serif;padding:16px;max-width:1100px;margin:auto;background:#fafafa;color:#222}
+  h2{margin:0 0 4px} .sub{color:#666;font-size:13px;margin-bottom:16px}
+  input,select{padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:14px}
+  button{padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;margin-right:6px}
+  button.p{background:#FFC600;border-color:#FFC600} button.r{color:#c0392b;border-color:#c0392b}
+  table{border-collapse:collapse;width:100%;background:#fff;margin-top:10px}
+  td,th{border:1px solid #e5e5e5;padding:5px 8px;font-size:13px;text-align:right} th:first-child,td:first-child{text-align:left}
+  .ok{color:#1a5c34;font-weight:700} .err{color:#c0392b;font-weight:700}
+  #resumo{font-size:15px;padding:10px 12px;background:#fff;border:1px solid #e5e5e5;border-radius:8px;margin-top:12px}
+  #log{font-family:monospace;font-size:12px;background:#111;color:#eee;padding:8px;height:180px;overflow:auto;margin-top:12px;border-radius:8px;white-space:pre-wrap}
+  .cfg{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px;font-size:14px}
+</style>
+</head>
+<body>
+<h2>Teste de carga — Inventário</h2>
+<div class="sub">Só no tenant de desenvolvimento (<b>fluxocerto</b>). Simula N coletores gravando bipagens pelo mesmo caminho do app real (set sem esperar o servidor).</div>
+
+<div id="login">
+  <input id="em" placeholder="e-mail" autocomplete="username">
+  <input id="pw" type="password" placeholder="senha" autocomplete="current-password">
+  <button class="p" onclick="login()">Entrar</button>
+</div>
+
+<div id="painel" style="display:none">
+  <div class="cfg">
+    Coletores <input id="nCol" type="number" value="10" style="width:60px">
+    Bipagens por coletor <input id="nBip" type="number" value="5000" style="width:80px">
+    Catálogo (itens) <input id="nCat" type="number" value="50000" style="width:80px">
+    Ritmo <select id="ritmo"><option value="0">máximo</option><option value="1000">1 a cada 1 s</option><option value="3000">1 a cada 3 s (real)</option></select>
+  </div>
+  <button onclick="criar()">1. Criar inventário + catálogo</button>
+  <button class="p" onclick="rodar()">2. Rodar carga</button>
+  <button onclick="parar()">Parar</button>
+  <button class="r" onclick="limpar()">3. Limpar tudo</button>
+  <div id="resumo">Aguardando…</div>
+  <table id="tab"></table>
+  <div id="log"></div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyAIOroUpio0sSBzTuhUqyJxz5bV7PX4KLw",
+  authDomain: "economico-gestao.firebaseapp.com",
+  projectId: "economico-gestao",
+  storageBucket: "economico-gestao.firebasestorage.app",
+  messagingSenderId: "650620659681",
+  appId: "1:650620659681:web:4ca84bdb330d028e9f14a0"
+});
+var db=firebase.firestore(), auth=firebase.auth();
+var invId=null, workers=[], rodando=false, t0=0, catIdx=null, catItens=[], me=null, timer=null;
+var $=function(id){ return document.getElementById(id); };
+
+function log(m){ var l=$('log'); l.textContent+=new Date().toLocaleTimeString('pt-BR')+'  '+m+'\n'; l.scrollTop=l.scrollHeight; }
+
+function login(){
+  var email=$('em').value.trim();
+  auth.signInWithEmailAndPassword(email,$('pw').value).then(function(){
+    return db.collection('usuarios').where('email','==',email).get();
+  }).then(function(s){
+    var d=s.docs[0]&&s.docs[0].data();
+    if(!d||d.clienteId!=='fluxocerto'){ alert('Esta página só funciona com usuário do tenant fluxocerto.'); auth.signOut(); return; }
+    me=d; $('login').style.display='none'; $('painel').style.display='';
+    log('Logado como '+(d.nome||email)+' (fluxocerto)');
+    return db.collection('inv_inventarios').where('clienteId','==','fluxocerto').where('status','==','aberto').get().then(function(s2){
+      s2.docs.forEach(function(x){ if((x.data().nome||'').indexOf('CARGA')===0){ invId=x.id; log('Inventário de carga já existente: '+x.id+' ('+x.data().nome+')'); } });
+    });
+  }).catch(function(e){ alert(e.message); });
+}
+
+function ean13(n){ var s='789'+String(n).padStart(9,'0'); var sum=0; for(var i=0;i<12;i++) sum+=(+s[i])*(i%2?3:1); return s+((10-sum%10)%10); }
+
+function criar(){
+  if(invId&&!confirm('Já existe um inventário de carga ('+invId+'). Criar outro mesmo assim?')) return;
+  var nCat=+$('nCat').value, ends=[]; for(var i=1;i<=100;i++) ends.push(String(i));
+  log('Criando inventário com 100 endereços…');
+  db.collection('inv_inventarios').add({
+    nome:'CARGA '+new Date().toLocaleString('pt-BR'), loja:'', status:'aberto', tipo:'geral', clienteId:'fluxocerto',
+    criadoEm:firebase.firestore.FieldValue.serverTimestamp(), criadoPor:me.id||'', enderecos:ends, atribuicoes:{},
+    modoFila:true, fila:{}, totalBipagens:0, setores:['ESTOQUE','LOJA'], modoOrganizacao:'setores_end', meta:98
+  }).then(function(ref){
+    invId=ref.id; log('Inventário criado: '+invId);
+    var itens=[]; for(var i=1;i<=nCat;i++) itens.push({c:'C'+String(i).padStart(6,'0'), e:(i%10<7)?ean13(i):'', d:'PRODUTO TESTE '+i, u:'UN', q:i%50});
+    var blocos=InvCore.montarBlocos(itens,1000), p=Promise.resolve(), tb=performance.now();
+    blocos.forEach(function(b,n){
+      p=p.then(function(){ return db.collection('inv_catalogo_blocos').doc(invId+'_'+n).set({invId:invId,clienteId:'fluxocerto',n:n,itens:b}); })
+        .then(function(){ if((n+1)%10===0||n+1===blocos.length) log('catálogo: bloco '+(n+1)+'/'+blocos.length); return new Promise(function(r){ setTimeout(r,120); }); });
+    });
+    return p.then(function(){ log('Catálogo pronto: '+nCat.toLocaleString('pt-BR')+' itens em '+blocos.length+' blocos, '+Math.round((performance.now()-tb)/1000)+' s.'); });
+  }).then(function(){ log('Abra o FC360 (tenant fluxocerto) → Inventário → CARGA pra acompanhar o dashboard.'); })
+    .catch(function(e){ log('ERRO ao criar: '+(e.code||'')+' '+e.message); });
+}
+
+function carregarCatalogo(){
+  var t=performance.now();
+  return db.collection('inv_catalogo_blocos').where('invId','==',invId).get().then(function(s){
+    var itens=[]; s.docs.sort(function(a,b){ return a.data().n-b.data().n; }).forEach(function(d){ itens=itens.concat(d.data().itens||[]); });
+    catItens=itens; catIdx=InvCore.criarCatalogo(itens);
+    log('Catálogo carregado no cliente: '+itens.length.toLocaleString('pt-BR')+' itens em '+Math.round(performance.now()-t)+' ms ('+s.size+' leituras)');
+  });
+}
+
+function worker(id, nBip, ritmo, ends){
+  var st={id:id,env:0,conf:0,pend:0,err:0,lat:[],end:null,seq:0,ultErro:''}; workers.push(st);
+  var nome='T'+id+' - Robô';
+  function slot(concluido){
+    var d={userId:me.id||'',coletorId:'T'+id,nome:nome,setor:'ESTOQUE',concluido:concluido};
+    if(concluido) d.concluidoEm=firebase.firestore.FieldValue.serverTimestamp(); else d.desde=firebase.firestore.FieldValue.serverTimestamp();
+    return d;
+  }
+  function proximoEnd(){
+    var e=ends.shift(); if(!e){ st.end=null; return Promise.resolve(null); }
+    st.end=e; st.seq=1;
+    return db.collection('inv_inventarios').doc(invId).update(new firebase.firestore.FieldPath('fila',e), slot(false))
+      .then(function(){ return e; })
+      .catch(function(er){ st.err++; st.ultErro='fila: '+(er.code||er.message); log('T'+id+' ERRO ao entrar no endereço '+e+': '+(er.code||er.message)); return e; });
+  }
+  function fecharEnd(){
+    if(!st.end) return Promise.resolve();
+    var e=st.end;
+    return db.collection('inv_inventarios').doc(invId).update(new firebase.firestore.FieldPath('fila',e), slot(true))
+      .catch(function(er){ st.err++; st.ultErro='finalizar: '+(er.code||er.message); log('T'+id+' ERRO ao finalizar '+e+': '+(er.code||er.message)); });
+  }
+  function bip(){
+    if(!rodando||st.env>=nBip) return fecharEnd();
+    if(st.seq>500) return fecharEnd().then(proximoEnd).then(function(e){ return e?bip():null; });
+    var it=catItens[Math.floor(Math.random()*catItens.length)];
+    var lido=it.e||it.c, res=InvCore.resolverCodigo(catIdx,lido); if(res&&res.multiplos) res=res.multiplos[0];
+    var doc={invId:invId,loja:'',clienteId:'fluxocerto',endereco:st.end,seq:st.seq++,ean:lido,codigo:res?res.codigo:'',qty:1+Math.floor(Math.random()*5),
+      rodada:1,modo:'colaboracao',setor:'ESTOQUE',coletorId:'T'+id,coletorNome:nome,ts:firebase.firestore.FieldValue.serverTimestamp()};
+    if(!res) doc.naoCadastrado=true;
+    var t=performance.now(); st.env++; st.pend++;
+    db.collection('inv_bipagens').doc().set(doc).then(function(){ st.conf++; st.pend--; st.lat.push(performance.now()-t); })
+      .catch(function(e){ st.err++; st.pend--; st.ultErro=e.code||e.message; log('T'+id+' ERRO bipagem: '+(e.code||e.message)); });
+    return new Promise(function(r){ setTimeout(r, ritmo||0); }).then(bip);
+  }
+  return proximoEnd().then(function(e){ return e?bip():null; });
+}
+
+function rodar(){
+  if(!invId){ alert('Crie o inventário primeiro (botão 1).'); return; }
+  if(rodando){ alert('Já está rodando.'); return; }
+  var nCol=+$('nCol').value, nBip=+$('nBip').value, ritmo=+$('ritmo').value;
+  carregarCatalogo().then(function(){
+    workers=[]; rodando=true; t0=Date.now();
+    var ends=[]; for(var i=1;i<=100;i++) ends.push(String(i));
+    log('Iniciando '+nCol+' coletores × '+nBip.toLocaleString('pt-BR')+' bipagens, ritmo '+(ritmo?ritmo+' ms':'máximo')+'…');
+    if(timer) clearInterval(timer); timer=setInterval(render,500);
+    var ps=[]; for(var w=1;w<=nCol;w++) ps.push(worker(w,nBip,ritmo,ends));
+    return Promise.all(ps);
+  }).then(function(){
+    log('Todos os coletores terminaram de ENVIAR. Aguardando confirmações do servidor…');
+    var chk=setInterval(function(){
+      var pend=workers.reduce(function(a,w){ return a+w.pend; },0);
+      if(pend===0){ clearInterval(chk); rodando=false; render(); log('CONCLUÍDO em '+Math.round((Date.now()-t0)/1000)+' s.'); verificarNoServidor(); }
+    },500);
+  }).catch(function(e){ log('ERRO: '+(e.code||'')+' '+e.message); rodando=false; });
+}
+
+function verificarNoServidor(){
+  auth.currentUser.getIdToken().then(function(tok){
+    return fetch('https://firestore.googleapis.com/v1/projects/economico-gestao/databases/(default)/documents:runAggregationQuery',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+      body:JSON.stringify({structuredAggregationQuery:{aggregations:[{count:{},alias:'n'}],structuredQuery:{from:[{collectionId:'inv_bipagens'}],where:{fieldFilter:{field:{fieldPath:'invId'},op:'EQUAL',value:{stringValue:invId}}}}}})});
+  }).then(function(r){ return r.json(); }).then(function(j){
+    var n=parseInt(j[0].result.aggregateFields.n.integerValue), env=workers.reduce(function(a,w){ return a+w.env; },0);
+    log('Contagem no servidor (count): '+n.toLocaleString('pt-BR')+' bipagens · enviadas '+env.toLocaleString('pt-BR')+' → '+(n===env?'BATE ✓':'DIVERGE ✗'));
+  }).catch(function(e){ log('count() falhou: '+(e.code||e.message)); });
+}
+
+function parar(){ rodando=false; log('Parado pelo usuário.'); }
+
+function p95(a){ if(!a.length) return 0; var s=a.slice().sort(function(x,y){ return x-y; }); return s[Math.floor(s.length*0.95)]; }
+function media(a){ return a.length?a.reduce(function(x,y){ return x+y; },0)/a.length:0; }
+
+function render(){
+  var el=Math.max(1,Date.now()-t0), tot={env:0,conf:0,pend:0,err:0,lat:[]};
+  var rows=workers.map(function(w){
+    tot.env+=w.env; tot.conf+=w.conf; tot.pend+=w.pend; tot.err+=w.err; tot.lat=tot.lat.concat(w.lat);
+    return '<tr><td>T'+w.id+(w.end?' (end '+w.end+')':'')+'</td><td>'+w.env+'</td><td class="ok">'+w.conf+'</td><td>'+w.pend+'</td><td class="'+(w.err?'err':'')+'">'+w.err+'</td><td>'+(w.env/(el/1000)).toFixed(1)+'</td><td>'+media(w.lat).toFixed(0)+'</td><td>'+p95(w.lat).toFixed(0)+'</td><td style="text-align:left;color:#c0392b;font-size:11px">'+w.ultErro+'</td></tr>';
+  }).join('');
+  $('tab').innerHTML='<tr><th>Coletor</th><th>Enviadas</th><th>Confirmadas</th><th>Pendentes</th><th>Erros</th><th>bip/s</th><th>lat média ms</th><th>lat p95 ms</th><th>último erro</th></tr>'+rows;
+  $('resumo').innerHTML='<b>'+tot.conf.toLocaleString('pt-BR')+'</b> confirmadas de '+tot.env.toLocaleString('pt-BR')+' enviadas · pendentes '+tot.pend+' · erros <span class="err">'+tot.err+'</span> · '+(tot.env/(el/1000)).toFixed(1)+' bip/s no total · '+Math.round(el/1000)+' s · ack p95 '+p95(tot.lat).toFixed(0)+' ms (média '+media(tot.lat).toFixed(0)+' ms)';
+}
+
+function limpar(){
+  if(!invId||!confirm('Apagar o inventário de carga, todas as bipagens e o catálogo?')) return;
+  rodando=false;
+  function delQ(col){ return db.collection(col).where('invId','==',invId).limit(400).get().then(function(s){ if(s.empty) return; var b=db.batch(); s.docs.forEach(function(d){ b.delete(d.ref); }); return b.commit().then(function(){ log(col+': -'+s.size); return delQ(col); }); }); }
+  delQ('inv_bipagens').then(function(){ return delQ('inv_catalogo_blocos'); }).then(function(){ return db.collection('inv_inventarios').doc(invId).delete(); })
+    .then(function(){ log('Tudo limpo.'); invId=null; workers=[]; render(); }).catch(function(e){ log('ERRO ao limpar: '+(e.code||e.message)); });
+}
+</script>
+</body>
+</html>

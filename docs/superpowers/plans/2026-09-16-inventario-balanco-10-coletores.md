@@ -683,4 +683,25 @@ Substituir o comentário `/* copiar o firebaseConfig ... */` pelo objeto real de
 
 ## Resultado do teste de carga
 
-(preencher na Task 8, Step 3)
+Rodado em 2026-09-16 22:44–22:58, tenant fluxocerto, uma aba do Chrome no PC (servidor local), plano Blaze.
+
+| Medida | Resultado |
+|---|---|
+| Catálogo sintético | 50.000 itens gravados em 50 blocos em 29 s |
+| Catálogo carregado no cliente | 50.000 itens em 1,6 s (50 leituras) |
+| Bipagens | 50.000 enviadas, 50.000 confirmadas, 0 erros |
+| Contagem no servidor (agregação REST) | 50.000 (bate) |
+| Vazão de uma aba só | ~65 a 70 bipagens/s sustentado (278/s no pico inicial) |
+| Ack p95 / média | 67 s / 35 s — fila do SDK numa aba só no ritmo máximo, não latência do servidor |
+| Slots da fila (100 endereços, entrar/finalizar) | 0 erros de contenção |
+| Lista de inventários com contagem | ok, ao vivo |
+| Dashboard admin: conectar | 0,7 s |
+| Dashboard admin: receber as 50.000 bipagens no listener | 61 s (meta era < 10 s) — 50k docs ≈ 12 MB; num balanço real de 10–20 mil fica em 15–25 s, e só na primeira abertura |
+
+Achado no caminho: o SDK compat 10.12 não expõe `Query.count()`; a contagem passou a usar `runAggregationQuery` via REST com o token do usuário (commit cb403d3).
+
+Ressalva: o teste mede o servidor e o caminho de gravação. Não reproduz 10 aparelhos com Wi-Fi ruim — cada celular tem seu próprio pipeline, então a vazão real por aparelho é bem maior que 1/10 disso. O teste em 2 celulares reais com leitor Bluetooth (Task 9, Step 3) fica com o Tiago.
+
+Pendência aberta: dashboard admin com dezenas de milhares de bipagens demora na primeira carga. Opção futura: agregados por endereço/coletor mantidos por Cloud Function ou resumo periódico, fora deste escopo.
+
+Screenshot: `docs/superpowers/plans/2026-09-16-teste-carga-resultado.png`.

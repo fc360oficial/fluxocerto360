@@ -168,8 +168,11 @@ function rodar(){
 }
 
 function verificarNoServidor(){
-  db.collection('inv_bipagens').where('invId','==',invId).count().get().then(function(s){
-    var n=s.data().count, env=workers.reduce(function(a,w){ return a+w.env; },0);
+  auth.currentUser.getIdToken().then(function(tok){
+    return fetch('https://firestore.googleapis.com/v1/projects/economico-gestao/databases/(default)/documents:runAggregationQuery',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+      body:JSON.stringify({structuredAggregationQuery:{aggregations:[{count:{},alias:'n'}],structuredQuery:{from:[{collectionId:'inv_bipagens'}],where:{fieldFilter:{field:{fieldPath:'invId'},op:'EQUAL',value:{stringValue:invId}}}}}})});
+  }).then(function(r){ return r.json(); }).then(function(j){
+    var n=parseInt(j[0].result.aggregateFields.n.integerValue), env=workers.reduce(function(a,w){ return a+w.env; },0);
     log('Contagem no servidor (count): '+n.toLocaleString('pt-BR')+' bipagens · enviadas '+env.toLocaleString('pt-BR')+' → '+(n===env?'BATE ✓':'DIVERGE ✗'));
   }).catch(function(e){ log('count() falhou: '+(e.code||e.message)); });
 }

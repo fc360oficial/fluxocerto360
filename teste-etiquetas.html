@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FC360 — Etiquetas de teste (bazar)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;padding:20px;background:#fff;color:#111}
+  h1{font-size:20px;margin:0 0 4px}.sub{color:#666;font-size:13px;margin-bottom:18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+  .card{border:1.5px solid #ddd;border-radius:12px;padding:14px;page-break-inside:avoid}
+  .n{display:inline-block;background:#FFC600;font-weight:800;border-radius:6px;padding:2px 8px;font-size:12px;margin-bottom:6px}
+  .desc{font-weight:700;font-size:14px}.cod{font-family:monospace;color:#555;font-size:12px;margin:2px 0 6px}
+  .esp{font-size:12px;color:#1a5c34;background:#f0faf5;border-radius:8px;padding:6px 8px;margin-top:8px}
+  .esp.a{color:#b38600;background:#fff8e1}.esp.r{color:#c0392b;background:#fdecea}
+  svg{width:100%;max-width:280px;height:auto}
+  @media print{body{padding:8mm}.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<h1>Etiquetas de teste — catálogo do bazar</h1>
+<div class="sub">Bipe com a câmera do app ou com o leitor Bluetooth, na ordem. Cada cartão diz o que tem que acontecer. Pode imprimir (Ctrl+P) ou bipar direto da tela do computador.</div>
+<div class="grid" id="grid"></div>
+<script>
+// [código lido, formato, descrição, o que deve acontecer, classe]
+var itens=[
+  ['7812081100004','EAN13','1 · MOUSE SEM FIO 2.4G WEIBO','Bip. Mostra a descrição e pula pra Qtd.','ok'],
+  ['7899335409663','EAN13','2 · (B) BACIA MULTIUSO 17 L PP','Bip. Descrição e pula pra Qtd.','ok'],
+  ['7899335409670','EAN13','3 · (B) BACIA MULTIUSO 28 L PP','Bip. Descrição e pula pra Qtd.','ok'],
+  ['7899335409687','EAN13','4 · (B) BACIA MULTIUSO 40 L PP','Bip. Descrição e pula pra Qtd.','ok'],
+  ['7899335402978','EAN13','5 · (B) BALDE 15 L PP REC','Bip. Descrição e pula pra Qtd.','ok'],
+  ['7899335403272','EAN13','6 · (B) BANQUETA ADULTO PP REC','Bip. Descrição e pula pra Qtd. Coloque Qtd 3.','ok'],
+  ['56','CODE128','56 · 2 UN DE PANO DE CHAO (sem EAN no cadastro)','Código interno em barras. Bip, descrição e pula pra Qtd (leitor manda Enter; sem Enter, espera um instante e pula sozinho).','ok'],
+  ['MO-A148-11','CODE128','94 · ALICATE ATAMO (referência no lugar do EAN)','Resolve pelo código 94 e mostra ALICATE.','ok'],
+  ['7898604340230','CODE128','325 e 3246 · BOLA DE FUTEBOL (mesmo EAN em 2 cadastros; dígito verificador errado no ERP, por isso em Code 128)','Abre a escolha entre 325 e 3246. Toque em um.','a'],
+  ['7891234567895','EAN13','EAN que NÃO existe no catálogo','Bip duplo de alerta, aviso "Não cadastrado", registra com marca NC.','r'],
+  ['7899335403272','EAN13','6 de novo · BANQUETA (repetido de propósito)','Bipe 3 vezes seguidas sem parar, sem tocar na Qtd: têm que aparecer 3 linhas na lista.','a'],
+  ['7812081100004','EAN13','1 de novo · MOUSE, com Qtd focada','Depois de bipar este, NÃO dê Enter: bipe o próximo cartão direto. O mouse fecha com Qtd 1 e o próximo entra no campo.','a']
+];
+function ean13(s){ s=String(s).replace(/\D/g,'').slice(0,12); var sum=0; for(var i=0;i<12;i++) sum+=(+s[i])*(i%2?3:1); return s+((10-sum%10)%10); }
+var g=document.getElementById('grid');
+itens.forEach(function(it,i){
+  var val=it[1]==='EAN13'?ean13(it[0]):it[0];
+  var card=document.createElement('div'); card.className='card';
+  card.innerHTML='<span class="n">'+(i+1)+'</span><div class="desc">'+it[2]+'</div><div class="cod">'+val+'</div><svg id="b'+i+'"></svg><div class="esp '+it[4]+'">'+it[3]+'</div>';
+  g.appendChild(card);
+  try{ JsBarcode('#b'+i, val, {format:it[1], displayValue:true, fontSize:14, height:70, margin:6}); }catch(e){ document.getElementById('b'+i).outerHTML='<div style="color:#c00">erro: '+e.message+'</div>'; }
+});
+</script>
+</body>
+</html>

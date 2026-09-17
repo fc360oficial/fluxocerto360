@@ -14696,8 +14696,8 @@ function renderDashboardRealtime(bips) {
     'divergente':'<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#fdecea;color:#c0392b">⚠ Divergente</span>'
   };
   // Alerta 100% concluído
-  if (endsConcl===enderecos.length&&enderecos.length>0&&inv.status==='aberto'&&!_inv100pctAlerted[invId]) {
-    _inv100pctAlerted[invId]=true;
+  if (endsConcl===enderecos.length&&enderecos.length>0&&inv.status==='aberto'&&!_inv100pctAlerted[inv.id]) {
+    _inv100pctAlerted[inv.id]=true;
     _alertar100pct();
   }
   // Meta de acurácia

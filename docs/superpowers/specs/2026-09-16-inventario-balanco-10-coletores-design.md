@@ -5,6 +5,10 @@ Cliente alvo: loja de bazar (pratos, baldes, copos), itens com código interno d
 Coletores: celular Android, câmera (ZXing) e leitor Bluetooth (keyboard wedge, envia Enter).
 Login: um único usuário compartilhado com perfil `coletor`; a pessoa se distingue pelo ID de Coletor gravado no aparelho. Inventário sempre em Modo Fila.
 
+## Arquivo real do cliente
+
+Template de mercadorias do ERP (xlsx, 4.395 itens): código interno numérico de 1 a 4 dígitos, 526 itens sem EAN, 21 com referência no lugar do EAN, 1 EAN repetido em 2 códigos, coluna estoque com 3 decimais. TXT gerado em `Downloads/catalogo_bazar_fc360.txt` no formato `CODIGO;EAN;DESCRICAO;UN;ESTOQUE`. O importador precisa aceitar exatamente esse arquivo.
+
 ## Contexto (o que motivou)
 
 Auditoria de 2026-09-16 do módulo (app.js ~12440–15790) e leitura do Firestore de produção:
@@ -56,7 +60,7 @@ Fora do escopo: regras do Firestore (vivem no Console), quantidade decimal, layo
 ## 3. Catálogo com código interno + EAN
 
 ### Modelo
-- Coleção nova `inv_catalogo_blocos/{invId}_{n}`: `{invId, clienteId, n, itens: [{c, e, d, u}]}` com até 1.000 itens por doc (c = código interno, e = EAN, d = descrição, u = unidade). ~60–150 KB por doc, abaixo do limite de 1 MB.
+- Coleção nova `inv_catalogo_blocos/{invId}_{n}`: `{invId, clienteId, n, itens: [{c, e, d, u}]}` com até 1.000 itens por doc (c = código interno, e = EAN, d = descrição, u = unidade, q = estoque do sistema, opcional). ~60–150 KB por doc, abaixo do limite de 1 MB.
 - `inv_catalogo` (1 doc/item) deixa de ser escrita. Leitura mantém fallback: se não há blocos, lê a coleção antiga (inventários já criados). `_limparSubcolecoes` e a exclusão de cliente passam a apagar as duas.
 - Mapa em memória por inventário: `_catCache[invId] = {porCodigo: {}, porEan: {}, total}`. `porEan` usa `_normEan`. Cache também em `localStorage`? Não: 50 mil itens × ~40 bytes = 2 MB, cabe, mas a persistência do Firestore já guarda os 50 docs em IndexedDB; a leitura seguinte com rede vai ao servidor (50 leituras, rápido). Sem cache extra.
 
@@ -65,13 +69,13 @@ Fora do escopo: regras do Firestore (vivem no Console), quantidade decimal, layo
 1. `porCodigo[lido]` exato.
 2. `porEan[_normEan(lido)]`.
 3. Se `lido` tem 12 dígitos, tenta `porEan['0'+lido]` normalizado (UPC-A).
-Retorna `{codigo, ean, desc, un}` ou `null`.
+Retorna `{codigo, ean, desc, un}` ou `null`. Se o EAN resolve pra mais de um código (caso real: 7898604340230 → 325 e 3246), abre um picker com os códigos e descrições e o coletor escolhe; a bipagem grava o código escolhido.
 
 Bipagem grava `codigo` (interno, resolvido), `ean` (o que foi lido) e `naoCadastrado: true` quando não resolveu. Descrição do catálogo não é copiada na bipagem (resolve na leitura), exceto sem-EAN.
 
 ### Importador
 - Lê TXT/CSV (`;`, `|`, tab ou `,` detectado na 1ª linha), ISO-8859-1 com fallback UTF-8 se aparecer `�`.
-- Modal de mapeamento: 4 selects (Código interno, EAN, Descrição, Unidade) pré-preenchidos por heurística: cabeçalho contendo `cod`, `ean`/`barra`, `desc`, `un`; sem cabeçalho, coluna com 8/13/14 dígitos = EAN, coluna numérica curta = código. Mostra 3 linhas de prévia. Só Código ou EAN é obrigatório (pelo menos um).
+- Modal de mapeamento: 5 selects (Código interno, EAN, Descrição, Unidade, Estoque do sistema — opcional) pré-preenchidos por heurística: cabeçalho contendo `cod`, `ean`/`barra`, `desc`, `un`; sem cabeçalho, coluna com 8/13/14 dígitos = EAN, coluna numérica curta = código. Mostra 3 linhas de prévia. Só Código ou EAN é obrigatório (pelo menos um).
 - Grava em lotes de blocos com pausa/retry (reaproveita `_commitComRetry`). Reenviar apaga blocos anteriores antes.
 - Status mostra "N produtos · X com EAN · Y só código".
 

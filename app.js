@@ -13200,6 +13200,8 @@ function removerColetorEnd(invId,end,userId) {
 
 // ── Sobrescrever funções fase 1 (agora com suporte fase 2) ────────
 
+// Campo EAN só abre depois que o sequencial do endereço chegou (evita seq duplicado).
+function _liberarCampoEan(){ var ei=document.getElementById('inv-ean-input'); if(ei){ ei.disabled=false; ei.placeholder='Bipe ou digite o código...'; ei.focus(); } }
 function _carregarUltimasBipagens(invId,endereco,rodada,modo) {
   db.collection('inv_bipagens').where('invId','==',invId).where('endereco','==',endereco).get().then(function(snap){
     var bips=snap.docs.map(function(d){ return d.data(); });
@@ -13209,7 +13211,8 @@ function _carregarUltimasBipagens(invId,endereco,rodada,modo) {
     _bipsLocais=bips.slice(0,50);
     var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
     _renderUltimasBipagens(_bipsLocais.slice(0,20),invId);
-  }).catch(function(e){ console.error('_carregarUltimasBipagens',e); _nextSeq=1; _bipsLocais=[]; _renderUltimasBipagens([],invId); });
+    _liberarCampoEan();
+  }).catch(function(e){ console.error('_carregarUltimasBipagens',e); _nextSeq=Date.now()%100000000; _bipsLocais=[]; _renderUltimasBipagens([],invId); _liberarCampoEan(); });
 }
 
 // ── Exportação ERP com template configurável ──────────────────────────────
@@ -14429,7 +14432,7 @@ function renderColeta() {
         '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+
           '<div style="flex:1;min-width:200px">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">EAN / Código de Barras</label>'+
-            '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Bipe ou digite o código..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
+            '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" disabled placeholder="Carregando endereço..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
             '<div id="inv-desc-preview" style="font-size:12px;margin-top:5px;min-height:18px"></div>'+
           '</div>'+
           '<button type="button" onclick="iniciarScanEAN(\'inv-ean-input\')" title="Ler código de barras com a câmera" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+

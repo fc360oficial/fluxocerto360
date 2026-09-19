@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '392';
+var BUILD = '393';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1769,15 +1769,22 @@ function finalizarLogin(found) {
       loadResultadosFromFirebase(function(){ updateDash(); });
     }
     // buildCLTabs só após planilhas diárias carregadas para que _planilhaTemplates esteja populado.
-    // limparPlanosAntigos() roda aqui dentro (não antes, não em fetch próprio)
-    // pra reusar este único load de planos e nunca decidir o que limpar em
-    // cima de cache local desatualizado (ver comentário na função).
+    // Rodam em PARALELO com loadPlanosFromFirebase (não mais encadeados): a
+    // coleção 'planos' já passou de 2.800 documentos (todo o histórico desde
+    // ago/2026) e baixá-la inteira antes de montar as abas do Checklist
+    // deixava a entrada no Checklist/Planos de Ação travada em rede de loja
+    // (achado 19/09/26 — lojas "não entravam" no app). buildCLTabs() só
+    // depende de _planilhaTemplates (de loadPlanilhasDiarias), não de planos.
+    loadPlanilhasDiarias(function() {
+      buildCLTabs();
+      renderAlertaPlanos();
+    });
+    // limparPlanosAntigos() continua reusando ESTE load de planos (não um
+    // fetch próprio) pra nunca decidir o que limpar em cima de cache local
+    // desatualizado (ver comentário na função) — só isso ainda espera o load.
     loadPlanosFromFirebase(function() {
       limparPlanosAntigos();
-      loadPlanilhasDiarias(function() {
-        buildCLTabs();
-        renderAlertaPlanos();
-      });
+      renderAlertaPlanos();
     });
     var hoje = new Date();
     var dEl = document.getElementById('cl-data-hoje');

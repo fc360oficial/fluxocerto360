@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '388';
+var BUILD = '389';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14344,7 +14344,7 @@ function _renderSelecaoEndereco(inv, bipCount) {
     var quem,bg;
     var concl=false;
     if (slot&&!slot.concluido) {
-      quem='<span style="font-size:11px;color:#b38600;font-weight:600">👤 '+slot.nome+' — em andamento</span>';
+      quem='<span style="font-size:11px;color:#b38600;font-weight:600">👤 '+_slotNomes(slot,', ')+' — em andamento</span>';
       bg='background:#fffbe8;';
     } else if (slot&&slot.concluido) {
       quem='<span style="font-size:11px;color:#1a5c34;font-weight:600">✓ '+slot.nome+' — finalizado'+(cnt.total?' · '+cnt.total+' bip':'')+'</span>';
@@ -14402,6 +14402,19 @@ function selecionarEnderecoFila(invId, endereco) {
   _mostrarSetorPicker(invId, found);
 }
 
+// ── Modo Fila com VÁRIOS coletores por endereço ─────────────────────────────
+// slot = { setor, desde, concluido, coletores:{ chave:{userId,coletorId,nome,desde,concluido,concluidoEm} }, + campos antigos (userId/coletorId/nome) do 1º coletor }
+// Slot antigo (sem `coletores`) continua funcionando: é lido como lista de 1.
+function _slotKey(colId){ return String(colId||'').replace(/[.~*\/\[\]]/g,'_')||'x'; }
+function _slotColetores(slot){
+  if(!slot) return [];
+  if(slot.coletores&&Object.keys(slot.coletores).length) return Object.keys(slot.coletores).map(function(k){ return Object.assign({key:k},slot.coletores[k]); });
+  if(slot.coletorId||slot.userId) return [{key:_slotKey(slot.coletorId||slot.userId),coletorId:slot.coletorId,userId:slot.userId,nome:slot.nome,desde:slot.desde,concluido:!!slot.concluido}];
+  return [];
+}
+function _slotAtivos(slot){ return _slotColetores(slot).filter(function(c){ return !c.concluido; }); }
+function _slotMeu(slot,colId,uid){ return _slotColetores(slot).find(function(c){ return colId ? String(c.coletorId)===String(colId) : c.userId===uid; })||null; }
+function _slotNomes(slot,sep,marca){ return _slotColetores(slot).map(function(c){ return (c.nome||c.coletorId||'?')+(c.concluido?(marca||' ✓'):''); }).join(sep||', '); }
 function _mostrarSetorPicker(invId, endereco) {
   // No modo Só Setores, o endereço já é o setor — confirma direto
   var inv2=(S.invsCache||[]).find(function(i){ return i.id===invId; });
@@ -14446,30 +14459,51 @@ function _confirmarSetorFila(invId, found, setor) {
   var u=S.currentUser;
   var coletorId=_getIdColetor(), nomeColetor=_getNomeColetor();
   var displayNome=coletorId+(nomeColetor?' - '+nomeColetor:'');
-  db.collection('inv_inventarios').doc(invId).update(
-    new firebase.firestore.FieldPath('fila',found),
-    {userId:u.id,coletorId:coletorId,nome:displayNome,setor:setor,desde:firebase.firestore.FieldValue.serverTimestamp(),concluido:false}
-  ).then(function(){
-    _filaEndAtual={invId:invId,endereco:found,setor:setor};
-    // Garante que o inv está marcado no localStorage para a verificação de troca de inventário
+  var inv=(S.invsCache||[]).find(function(i){ return i.id===invId; });
+  var slot=(inv&&inv.fila||{})[found]||null;
+  var key=_slotKey(coletorId||(u&&u.id));
+  // Já tem outro coletor ativo aqui? Pergunta antes de entrar junto.
+  var outros=_slotAtivos(slot).filter(function(c){ return c.key!==key; });
+  if (outros.length && !confirm('Já tem '+outros.length+' coletor'+(outros.length>1?'es':'')+' neste endereço ('+outros.map(function(c){ return c.nome||c.coletorId; }).join(', ')+').\nEntrar junto e contar em paralelo?')) return;
+  var entrada={userId:u?u.id:'',coletorId:coletorId,nome:displayNome,desde:firebase.firestore.FieldValue.serverTimestamp(),concluido:false};
+  var ref=db.collection('inv_inventarios').doc(invId), p;
+  if (!slot) {
+    var novo={userId:entrada.userId,coletorId:coletorId,nome:displayNome,setor:setor,desde:entrada.desde,concluido:false,coletores:{}}; novo.coletores[key]=entrada;
+    p=ref.update(new firebase.firestore.FieldPath('fila',found), novo);
+  } else {
+    // Slot antigo sem lista: converte o 1º coletor pra lista antes de adicionar o novo
+    var lista={}; _slotColetores(slot).forEach(function(c){ lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:!!c.concluido}; if(c.concluidoEm) lista[c.key].concluidoEm=c.concluidoEm; });
+    lista[key]=entrada;
+    p=ref.update(
+      new firebase.firestore.FieldPath('fila',found,'coletores'), lista,
+      new firebase.firestore.FieldPath('fila',found,'concluido'), false,
+      new firebase.firestore.FieldPath('fila',found,'setor'), slot.setor||setor
+    );
+  }
+  p.then(function(){
+    _filaEndAtual={invId:invId,endereco:found,setor:(slot&&slot.setor)||setor};
     if (!localStorage.getItem(_COLETOR_INV_KEY)) localStorage.setItem(_COLETOR_INV_KEY, invId);
     loadInventariosFromFirebase(function(){ renderColeta(); });
   }).catch(function(e){ alert('Erro ao entrar no endereço: '+e.message); });
 }
-
 function liberarEnderecoFila(invId, endereco) {
   var inv = (S.invsCache||[]).find(function(i){ return i.id===invId; });
   var slot = inv && inv.fila && inv.fila[endereco];
-  // Só remove o slot da fila se o endereço ainda estiver em andamento.
-  // Se já estiver concluído, mantém o registro para o painel de gestão.
-  if (!slot || !slot.concluido) {
-    db.collection('inv_inventarios').doc(invId).update(
-      new firebase.firestore.FieldPath('fila',endereco), firebase.firestore.FieldValue.delete()
-    ).catch(function(){});
-  }
   _filaEndAtual=null;
+  if (!slot || slot.concluido) return; // concluído fica registrado pro painel
+  var key=_slotKey(_getIdColetor()||(S.currentUser&&S.currentUser.id));
+  var restantes=_slotColetores(slot).filter(function(c){ return c.key!==key; });
+  var ref=db.collection('inv_inventarios').doc(invId);
+  if (!restantes.length) { ref.update(new firebase.firestore.FieldPath('fila',endereco), firebase.firestore.FieldValue.delete()).catch(function(){}); return; }
+  var lista={}; restantes.forEach(function(c){ lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:!!c.concluido}; if(c.concluidoEm) lista[c.key].concluidoEm=c.concluidoEm; });
+  var primeiro=restantes[0];
+  ref.update(
+    new firebase.firestore.FieldPath('fila',endereco,'coletores'), lista,
+    new firebase.firestore.FieldPath('fila',endereco,'userId'), primeiro.userId||'',
+    new firebase.firestore.FieldPath('fila',endereco,'coletorId'), primeiro.coletorId||'',
+    new firebase.firestore.FieldPath('fila',endereco,'nome'), primeiro.nome||''
+  ).catch(function(){});
 }
-
 // ── QR Code Scanner ───────────────────────────────────────────────────────
 function iniciarQRScanEndereco(invId) {
   var wrap=document.getElementById('qr-scan-wrap'); if(!wrap) return;
@@ -14690,7 +14724,8 @@ function _encontrarAtribuicao() {
   if (filaInv) {
     if (_filaEndAtual&&_filaEndAtual.invId===filaInv.id) {
       var slot=(filaInv.fila||{})[_filaEndAtual.endereco]||{};
-      return {inv:filaInv,endereco:_filaEndAtual.endereco,rodada:1,modo:'colaboracao',concluido:!!(slot.concluido&&slot.userId===uid)};
+      var meu=_slotMeu(slot,_getIdColetor(),uid);
+      return {inv:filaInv,endereco:_filaEndAtual.endereco,rodada:1,modo:'colaboracao',concluido:!!(slot.concluido||(meu&&meu.concluido))};
     }
     return {inv:filaInv,endereco:null,rodada:1,modo:'colaboracao',concluido:false};
   }
@@ -14835,7 +14870,7 @@ function renderColeta() {
   if (filaInv&&(!_filaEndAtual||_filaEndAtual.invId!==filaInv.id)) {
     // Auto-restaura sessão após F5: se o usuário tem slot ativo na fila, retoma direto
     var filaMap=filaInv.fila||{}, myColId=_getIdColetor();
-    var myEnd=Object.keys(filaMap).find(function(e){ var s=filaMap[e]; return s&&!s.concluido&&(s.coletorId===myColId||(s.userId===u.id&&!myColId)); });
+    var myEnd=Object.keys(filaMap).find(function(e){ var s=filaMap[e]; if(!s||s.concluido) return false; var meu=_slotMeu(s,myColId,u.id); return !!(meu&&!meu.concluido); });
     if (myEnd) { _filaEndAtual={invId:filaInv.id,endereco:myEnd,setor:(filaMap[myEnd]||{}).setor||''}; }
     else {
     db.collection('inv_inventarios').doc(filaInv.id).get().then(function(snap){
@@ -15055,15 +15090,22 @@ function _confirmarFinalizarRodada() {
     var _dispNome=_colId+(_colNome?' - '+_colNome:'');
     var _existing=(inv.fila||{})[end]||{};
     var _setor=(_filaEndAtual&&_filaEndAtual.setor)||_existing.setor||'';
+    var _key=_slotKey(_colId||(_u&&_u.id)), _agora=firebase.firestore.FieldValue.serverTimestamp();
+    var _lista={}; _slotColetores(_existing).forEach(function(c){ _lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:!!c.concluido}; if(c.concluidoEm) _lista[c.key].concluidoEm=c.concluidoEm; });
+    if(!_lista[_key]) _lista[_key]={userId:_u?_u.id:'',coletorId:_colId,nome:_dispNome,desde:_agora,concluido:false};
+    _lista[_key].concluido=true; _lista[_key].concluidoEm=_agora;
+    var _todos=Object.keys(_lista).every(function(k){ return _lista[k].concluido; });
+    var _prim=_lista[Object.keys(_lista)[0]];
     var _fullSlot={
-      userId:_existing.userId||(_u?_u.id:''),
-      coletorId:_existing.coletorId||_colId,
-      nome:_existing.nome||_dispNome,
+      userId:_existing.userId||_prim.userId||'',
+      coletorId:_existing.coletorId||_prim.coletorId||_colId,
+      nome:_existing.nome||_prim.nome||_dispNome,
       setor:_setor,
-      desde:_existing.desde||firebase.firestore.FieldValue.serverTimestamp(),
-      concluido:true,
-      concluidoEm:firebase.firestore.FieldValue.serverTimestamp()
+      desde:_existing.desde||_agora,
+      coletores:_lista,
+      concluido:_todos
     };
+    if (_todos) _fullSlot.concluidoEm=_agora;
     db.collection('inv_inventarios').doc(invId).update(
       new firebase.firestore.FieldPath('fila',end), _fullSlot
     ).then(function(){
@@ -15132,7 +15174,7 @@ function renderDashboardRealtime(bips) {
     if (isModoFila) {
       modo='colaboracao';
       var slot=filaMap[end];
-      colTxt=slot?slot.nome+(slot.concluido?' ✓':''):'—';
+      colTxt=slot?_slotNomes(slot,', '):'—';
       if (!slot){ status='sem-coletor'; endsSemCol++; }
       else if (slot.concluido){ status='concluido'; endsConcl++; }
       else if (total>0) status='em-andamento';
@@ -15228,7 +15270,7 @@ function gerarRelPDF() {
       var modo,colTxt,status,endBips=bips.filter(function(b){ return b.endereco===e; }).length;
       if (isModoFila) {
         modo='Fila'; var slot=filaMap[e];
-        colTxt=slot?slot.nome+(slot.concluido?' ok':''):'-';
+        colTxt=slot?(_slotNomes(slot,', ',' ok')||'-'):'-';
         status=slot?(slot.concluido?'Concluido':'Em andamento'):'Pendente';
       } else {
         var atrib=_normalizeAtrib((inv.atribuicoes||{})[e]);
@@ -15518,7 +15560,7 @@ function renderInvEnderecos() {
     var filaMap=inv.fila||{};
     tbody.innerHTML=enderecos.map(function(end){
       var slot=filaMap[end];
-      var colTxt=slot?slot.nome:'<span style="color:var(--t3)">—</span>';
+      var colTxt=slot&&_slotColetores(slot).length?_slotColetores(slot).map(function(c){ return '<div>'+(c.nome||c.coletorId||'?')+(c.concluido?' <span style="color:#1a5c34;font-weight:700">✓</span>':'')+'</div>'; }).join(''):'<span style="color:var(--t3)">—</span>';
       var status=!slot?'sem-coletor':slot.concluido?'concluido':'aguardando';
       var safeEnd=end.replace(/'/g,"\\'");
       var reabrirBtn=isAberto&&isAdmin&&slot&&slot.concluido?'<button class="btn btn-s btn-sm" onclick="reabrirEndereco(\''+invId+'\',\''+safeEnd+'\')" style="color:var(--r);border-color:var(--r)">↩ Reabrir</button>':'';
@@ -15590,8 +15632,10 @@ function reabrirEndereco(invId, endereco) {
   if (inv.modoFila) {
     var slot=(inv.fila||{})[endereco];
     if (!slot) return;
+    var lista={}; _slotColetores(slot).forEach(function(c){ lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:false}; });
     db.collection('inv_inventarios').doc(invId).update(
-      new firebase.firestore.FieldPath('fila',endereco,'concluido'), false
+      new firebase.firestore.FieldPath('fila',endereco,'concluido'), false,
+      new firebase.firestore.FieldPath('fila',endereco,'coletores'), lista
     ).then(function(){
       loadInventariosFromFirebase(function(){ renderInvEnderecos(); });
     }).catch(function(e){ alert('Erro: '+e.message); });

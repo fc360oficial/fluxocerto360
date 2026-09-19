@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '373';
+var BUILD = '374';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15641,8 +15641,8 @@ function _eanEnterKey(deScanner) {
   if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); }
 }
 // Enquanto uma decisão está aberta (código curto / EAN duplicado), leitor, câmera e teclado ficam bloqueados.
-function _decisaoAberta(){ return !!(document.getElementById('modal-curto')||document.getElementById('modal-multi')); }
-document.addEventListener('keydown', function(ev){ if(_decisaoAberta()){ ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
+function _decisaoAberta(){ return !!(document.getElementById('modal-curto')||document.getElementById('modal-multi')||document.getElementById('modal-dup')); }
+document.addEventListener('keydown', function(ev){ if(_decisaoAberta()){ if(ev.target&&ev.target.id==='dup-qty-input') return; ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
 function _abrirConfirmaCurto(val,r){
   var m=document.getElementById('modal-curto'); if(m) m.remove();
   _bipSom('alerta');
@@ -15726,8 +15726,16 @@ function registrarBipagem() {
   if (res&&res.multiplos){ _abrirPickerMultiplos(res.multiplos, lido); return; }
   _registrarResolvido(lido, res, qty*fator, fator);
 }
-function _registrarResolvido(lido, res, qtyTotal, fator) {
+function _registrarResolvido(lido, res, qtyTotal, fator, pularDup) {
   var inv=_invColetaAtual.inv, end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao';
+  // Código já coletado em qualquer endereço → aviso com opção de somar. Sequencial (mesmo produto da última bipagem) grava direto.
+  if (!pularDup && !_dupMesmoProduto(_bipsLocais[0], lido, res)) {
+    _checarJaColetado(inv.id, lido, res).then(function(prev){
+      if (prev && prev.total>0) _abrirModalJaColetado(lido, res, qtyTotal, fator, prev);
+      else _registrarResolvido(lido, res, qtyTotal, fator, true);
+    });
+    return;
+  }
   var cat=_catCache[inv.id]||null, hasCat=!!(cat&&cat.total);
   var bip={invId:inv.id,loja:inv.loja||'',endereco:end,seq:_nextSeq,ean:lido,codigo:res?res.codigo:'',qty:qtyTotal,rodada:rodada,modo:modo,
     setor:(_filaEndAtual&&_filaEndAtual.setor)||'',coletorId:_getIdColetor(),coletorNome:_getNomeColetor()||_getIdColetor(),ts:firebase.firestore.FieldValue.serverTimestamp()};
@@ -15744,6 +15752,62 @@ function _registrarResolvido(lido, res, qtyTotal, fator) {
   _renderUltimasBipagens(_bipsLocais.slice(0,20), inv.id);
   _descFixa(false);
   if(ei) ei.focus();
+}
+// ── Código já coletado (qualquer endereço) → aviso + somar ─────────────────
+function _dupChave(lido,res){ return res&&res.codigo ? 'c:'+res.codigo : 'e:'+String(lido).trim(); }
+function _dupMesmoProduto(bip,lido,res){ if(!bip) return false; var k=_dupChave(lido,res); return (bip.codigo?'c:'+bip.codigo:'e:'+bip.ean)===k; }
+// Consulta pequena (1 produto) com teto de 1,5 s: sem rede, segue gravando sem aviso — a contagem nunca trava.
+function _checarJaColetado(invId, lido, res) {
+  var q=db.collection('inv_bipagens').where('invId','==',invId);
+  q = (res&&res.codigo) ? q.where('codigo','==',res.codigo) : q.where('ean','==',String(lido).trim()).where('codigo','==','');
+  var consulta=q.get().then(function(snap){
+    var total=0, locais={};
+    snap.docs.forEach(function(d){ var b=d.data(); var qn=Number(b.qty)||0; total+=qn; var k=(b.endereco||'?')+'|'+(b.coletorNome||b.coletorId||'?'); locais[k]=(locais[k]||0)+qn; });
+    var lista=Object.keys(locais).map(function(k){ var p=k.split('|'); return {endereco:p[0],coletor:p[1],qty:locais[k]}; }).sort(function(a,b){ return b.qty-a.qty; });
+    return {total:total, locais:lista, linhas:snap.size};
+  }).catch(function(){ return null; });
+  var teto=new Promise(function(r){ setTimeout(function(){ r(null); },1500); });
+  return Promise.race([consulta,teto]);
+}
+var _dupCtx=null, _dupAbertoTs=0;
+function _abrirModalJaColetado(lido,res,qtyTotal,fator,prev){
+  var m=document.getElementById('modal-dup'); if(m) m.remove();
+  _dupCtx={lido:lido,res:res,fator:fator,prev:prev}; _dupAbertoTs=Date.now();
+  _bipSom('alerta');
+  var qtdTela=Math.max(1,Math.round(qtyTotal/(fator||1)));
+  var titulo=res?('<b style="font-family:monospace">'+res.codigo+'</b> · '+(res.desc||'')):('<b style="font-family:monospace">'+lido+'</b> · não cadastrado');
+  var vis=prev.locais.slice(0,5), resto=prev.locais.length-vis.length;
+  var lista=vis.map(function(l){ return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray2)"><span>End. <b>'+l.endereco+'</b> <span style="color:var(--t3)">· '+l.coletor+'</span></span><b>'+l.qty+' un</b></div>'; }).join('')+(resto>0?'<div style="font-size:12px;color:var(--t3);padding:6px 0">mais '+resto+' local(is)</div>':'');
+  var html='<div id="modal-dup" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2300;display:flex;align-items:flex-end;justify-content:center">'+
+    '<div style="background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px">'+
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#b38600;margin-bottom:4px">Código já coletado neste inventário</div>'+
+    '<div style="font-size:15px;font-weight:700;margin-bottom:6px">'+titulo+'</div>'+
+    '<div style="font-size:22px;font-weight:800;margin-bottom:8px">Já coletado: '+prev.total+' un <span style="font-size:12px;font-weight:600;color:var(--t3)">('+prev.linhas+' bipagem'+(prev.linhas===1?'':'s')+')</span></div>'+
+    '<div style="max-height:160px;overflow:auto;margin-bottom:12px">'+lista+'</div>'+
+    '<label style="display:block;font-size:12px;font-weight:700;color:var(--t2);margin-bottom:4px">Quantidade nova (será somada)</label>'+
+    '<input id="dup-qty-input" type="number" inputmode="numeric" min="1" value="'+qtdTela+'" onkeydown="return _dupQtyKeydown(event)" style="width:100%;padding:13px 10px;border:2px solid var(--y);border-radius:10px;font-size:22px;text-align:center;font-family:inherit;margin-bottom:12px"/>'+
+    '<div style="display:flex;gap:10px">'+
+      '<button onclick="_cancelarJaColetado()" style="flex:1;padding:13px;background:#fff;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-weight:700;font-family:inherit">Cancelar</button>'+
+      '<button onclick="_somarJaColetado()" style="flex:2;padding:13px;background:var(--y);color:#111;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit">+ Somar ao que já tem</button>'+
+    '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+  setTimeout(function(){ var i=document.getElementById('dup-qty-input'); if(i){ i.focus(); i.select(); } },80);
+}
+function _dupQtyKeydown(ev){
+  if (ev.key==='Enter'||ev.keyCode===13){ ev.preventDefault(); if(Date.now()-_dupAbertoTs<400) return false; _somarJaColetado(); return false; }
+  return true;
+}
+function _cancelarJaColetado(){
+  var m=document.getElementById('modal-dup'); if(m) m.remove(); _dupCtx=null;
+  var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input'), pr=document.getElementById('inv-desc-preview');
+  if(ei) ei.value=''; if(qi) qi.value='1'; if(pr) pr.textContent=''; _descFixa(false); if(ei) ei.focus();
+}
+function _somarJaColetado(){
+  var c=_dupCtx; if(!c) return;
+  var i=document.getElementById('dup-qty-input'); var nova=Math.max(1,parseInt(i&&i.value)||1);
+  var m=document.getElementById('modal-dup'); if(m) m.remove(); _dupCtx=null;
+  _registrarResolvido(c.lido, c.res, nova*(c.fator||1), c.fator||1, true);
+  showToast('Somado. Total agora: '+(c.prev.total+nova*(c.fator||1))+' un', 3500);
 }
 function _abrirPickerMultiplos(lista, lido) {
   var html='<div id="modal-multi" onclick="if(event.target===this)_cancelarMultiplo()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2300;display:flex;align-items:flex-end;justify-content:center">'+

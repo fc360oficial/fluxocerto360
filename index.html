@@ -1222,6 +1222,7 @@
             <div class="tab" onclick="switchInvTab('coletores',this)">Coletores ●</div>
             <div class="tab" onclick="switchInvTab('dashboard',this)">Dashboard ●</div>
             <div class="tab" onclick="switchInvTab('bipagens',this)">Bipagens</div>
+            <div class="tab" onclick="switchInvTab('monitor',this)">Monitor</div>
             <div class="tab" onclick="switchInvTab('auditoria',this)">Auditoria</div>
             <div class="tab" onclick="switchInvTab('exportar',this)">Exportar</div>
           </div>
@@ -1322,6 +1323,12 @@
           </div>
 
           <!-- Tab Bipagens -->
+          <!-- Tab Monitor: soma das bipagens por produto -->
+          <div id="inv-tab-monitor" style="display:none;margin-top:14px">
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px">Monitor — itens contados</div>
+            <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Soma das bipagens por produto: quantidade total, onde foi contado, custo unitário e custo contado.</p>
+            <div id="inv-resumo-wrap"></div>
+          </div>
           <div id="inv-tab-bipagens" style="display:none;margin-top:14px">
             <!-- Filtros -->
             <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1340,7 +1347,6 @@
             </div>
             <!-- Botões Correção + PDF -->
             <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <button id="bip-btn-resumo" onclick="toggleResumoBipagens()" style="padding:9px 20px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--t2);display:flex;align-items:center;gap:6px">Σ Resumo por produto</button>
               <button id="bip-btn-correcao" onclick="toggleCorrecaoBipagem()" style="padding:9px 20px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--t2);display:flex;align-items:center;gap:6px">✏ Correção de Bipagem</button>
               <button onclick="gerarPDFBipagens()" style="padding:9px 20px;background:#FFC600;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:#111;display:flex;align-items:center;gap:6px">📄 Relatório de Bipagens PDF</button>
             </div>
@@ -1351,8 +1357,6 @@
                 <tbody id="inv-bip-tbody"></tbody></table>
               </div>
             </div>
-            <!-- Resumo somado por produto -->
-            <div id="inv-bip-sub-resumo" style="display:none"><div id="inv-resumo-wrap"></div></div>
             <!-- Formulário de Correção -->
             <div id="inv-bip-sub-correcao" style="display:none">
               <div id="inv-correcao-wrap"></div>
@@ -2146,7 +2150,7 @@
 <script src="client.js"></script>
 <script src="qrcode-generator.min.js"></script>
 <script src="lib/inv-bip-core.js?v=5"></script>
-<script src="app.js?v=385" defer></script>
+<script src="app.js?v=386" defer></script>
 
 
 </body>

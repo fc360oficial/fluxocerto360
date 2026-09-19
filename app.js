@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '385';
+var BUILD = '386';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -13040,22 +13040,6 @@ function renderInvBipagens(filtroEnd, filtroCol, filtroSetor) {
 }
 
 // ── Resumo por produto (soma das bipagens) ────────────────────────────────
-function _fecharResumoView(){
-  var w=document.getElementById('inv-bip-sub-resumo'), t=document.getElementById('inv-bip-tabela-wrap'), b=document.getElementById('bip-btn-resumo');
-  if(w) w.style.display='none'; if(t) t.style.display='';
-  if(b){ b.style.background='#fff'; b.style.color='var(--t2)'; b.style.border='2px solid var(--gray2)'; }
-}
-function toggleResumoBipagens(){
-  var w=document.getElementById('inv-bip-sub-resumo'); if(!w) return;
-  if (w.style.display!=='none'){ _fecharResumoView(); return; }
-  // fecha a correção se estiver aberta
-  var corrWrap=document.getElementById('inv-bip-sub-correcao'); if(corrWrap&&corrWrap.style.display!=='none') toggleCorrecaoBipagem();
-  var t=document.getElementById('inv-bip-tabela-wrap'), b=document.getElementById('bip-btn-resumo');
-  if(t) t.style.display='none'; w.style.display='';
-  if(b){ b.style.background='var(--y)'; b.style.color='#111'; b.style.border='2px solid var(--y)'; }
-  window._resumoSort=window._resumoSort||{col:'valor',dir:-1}; window._resumoBusca=''; window._resumoLimite=500;
-  renderResumoBipagens(true);
-}
 var _resumoCache=null;
 function renderResumoBipagens(recarregar){
   if(!_invAtivo) return;
@@ -13106,7 +13090,6 @@ function _renderResumoTabela(){
       '<span style="font-size:11px;color:var(--t3)">'+linhas.length.toLocaleString('pt-BR')+' linhas</span>'+
       '<button class="btn btn-s btn-sm" onclick="renderResumoBipagens(true)">↻ Atualizar</button>'+
       '<button class="btn btn-s btn-sm" onclick="_exportarResumoCsv()">⬇ Excel</button>'+
-      '<button class="btn btn-s btn-sm" onclick="_fecharResumoView()">✕ Fechar</button>'+
     '</div>'+
     '<div style="overflow-x:auto;max-height:70vh;overflow-y:auto"><table style="min-width:960px"><thead><tr>'+th('Código','codigo')+th('EAN','ean')+th('Descrição','desc')+th('Qtd total','qty',1)+th('Bipagens','bips',1)+th('Endereços (qtd)','endsTxt')+th('Coletores','colsTxt')+th('Custo unit.','custo',1)+th('Custo contado','valor',1)+'</tr></thead><tbody>'+
       (rows||'<tr><td colspan="9" style="color:var(--t3)">Nenhuma bipagem.</td></tr>')+
@@ -13135,7 +13118,6 @@ function toggleCorrecaoBipagem() {
     if(tabelaWrap) tabelaWrap.style.display='';
     if(btn){ btn.style.background='#fff'; btn.style.color='var(--t2)'; btn.style.borderColor='var(--gray2)'; }
   } else {
-    _fecharResumoView();
     if(corrWrap) corrWrap.style.display='';
     if(tabelaWrap) tabelaWrap.style.display='none';
     if(btn){ btn.style.background='var(--y)'; btn.style.color='#111'; btn.style.border='2px solid var(--y)'; }
@@ -13144,7 +13126,6 @@ function toggleCorrecaoBipagem() {
 }
 
 function _fecharCorrecaoView() {
-  _fecharResumoView();
   var corrWrap=document.getElementById('inv-bip-sub-correcao');
   var tabelaWrap=document.getElementById('inv-bip-tabela-wrap');
   var btn=document.getElementById('bip-btn-correcao');
@@ -15643,7 +15624,7 @@ function switchInvTab(tab,btn) {
   // Lógica original
   document.querySelectorAll('#inv-detalhe-tabs .tab').forEach(function(t){ t.classList.remove('on'); });
   if (btn) btn.classList.add('on');
-  ['enderecos','coletores','dashboard','bipagens','auditoria','exportar'].forEach(function(t){ var el=document.getElementById('inv-tab-'+t); if(el) el.style.display=t===tab?'block':'none'; });
+  ['enderecos','coletores','dashboard','bipagens','monitor','auditoria','exportar'].forEach(function(t){ var el=document.getElementById('inv-tab-'+t); if(el) el.style.display=t===tab?'block':'none'; });
   if (tab!=='dashboard') _pararDashboardRealtime();
   if (tab!=='enderecos') _pararEnderecosRealtime();
   if (tab==='enderecos') _iniciarEnderecosRealtime(_invAtivo.id);
@@ -15651,6 +15632,7 @@ function switchInvTab(tab,btn) {
   if (tab==='dashboard') _iniciarDashboardRealtime(_invAtivo.id);
   if (tab==='bipagens'){ var f=document.getElementById('inv-bip-filter'); var sf=document.getElementById('inv-bip-setor-filter'); renderInvBipagens(f&&f.value||null,null,sf&&sf.value||null); }
   if (tab==='auditoria') renderTrilhaAuditoria(_invAtivo.id);
+  if (tab==='monitor'){ window._resumoSort=window._resumoSort||{col:'valor',dir:-1}; window._resumoLimite=500; renderResumoBipagens(true); }
 }
 
 function renderInvColetores() {

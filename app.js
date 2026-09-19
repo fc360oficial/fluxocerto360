@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '382';
+var BUILD = '383';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5270,6 +5270,8 @@ function _renderResultadoBalanco() {
   var th=function(label,col,right){ var on=srt&&srt.col===col; return '<th onclick="_resOrdenar(\''+col+'\')" title="Clique pra ordenar" style="cursor:pointer;user-select:none;white-space:nowrap'+(right?';text-align:right':'')+(on?';color:var(--t)':'')+'">'+label+(on?(srt.dir<0?' ▼':' ▲'):'')+'</th>'; };
   var tile=function(lbl,val,cor){ return '<div style="flex:1;min-width:150px;background:var(--gray);border-radius:10px;padding:10px 12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3)">'+lbl+'</div><div style="font-size:18px;font-weight:800;color:'+(cor||'var(--t)')+'">'+val+'</div></div>'; };
   var liquido=t.sobraVal-t.faltaVal;
+  var sub=function(txt){ return '<div style="font-size:10px;font-weight:500;color:var(--t3);margin-top:3px;line-height:1.3">'+txt+'</div>'; };
+  var val=function(v){ return '<div style="font-size:13px;font-weight:700;margin-top:2px;white-space:nowrap">'+_fmtBRL(v)+'</div>'; };
   var rows=linhas.slice(0,lim).map(function(l){
     var cor=l.dif>0?'#1a5c34':l.dif<0?'#c0392b':'var(--t3)';
     return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+(l.bips>1?' <span title="Produto bipado '+l.bips+' vezes'+(l.ends>1?' em '+l.ends+' endereços':'')+'" style="display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700;background:#fff8e1;color:#b38600;margin-left:4px;vertical-align:middle">×'+l.bips+' bip'+(l.ends>1?' · '+l.ends+' end.':'')+'</span>':'')+'</td>'+
@@ -5282,9 +5284,14 @@ function _renderResultadoBalanco() {
     tilesEnd=tile('Endereço',endSel)+tile('Produtos no endereço',base.length.toLocaleString('pt-BR'))+tile('Unidades contadas aqui',(+unEnd.toFixed(3)).toLocaleString('pt-BR'))+tile('Custo contado aqui',_fmtBRL(valEnd),'#1a5c34')+tile('Divergentes (loja)',divEnd.toLocaleString('pt-BR'),'#b38600'); }
   wrap.innerHTML=
     (endSel?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tilesEnd+'</div>':'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
-      tile('Produtos',t.itens.toLocaleString('pt-BR'))+tile('Divergentes',t.divergentes.toLocaleString('pt-BR'),'#b38600')+
-      tile('Sobra',(+t.sobraUn.toFixed(2)).toLocaleString('pt-BR')+' un<div style="font-size:13px;font-weight:700;margin-top:2px;white-space:nowrap">'+_fmtBRL(t.sobraVal)+'</div>','#1a5c34')+tile('Falta',(+t.faltaUn.toFixed(2)).toLocaleString('pt-BR')+' un<div style="font-size:13px;font-weight:700;margin-top:2px;white-space:nowrap">'+_fmtBRL(t.faltaVal)+'</div>','#c0392b')+
-      tile('Resultado a custo',_fmtBRL(liquido),liquido<0?'#c0392b':'#1a5c34')+
+      tile('Coletados',(t.coletados||0).toLocaleString('pt-BR')+' <span style="font-size:12px;font-weight:600;color:var(--t3)">de '+t.itens.toLocaleString('pt-BR')+'</span>'+sub('produtos com pelo menos 1 bipagem'))+
+      tile('Custo contado',_fmtBRL(t.contadoVal||0)+sub((+(t.contadoUn||0).toFixed(2)).toLocaleString('pt-BR')+' un contadas × custo do produto'),'#1a5c34')+
+      tile('Custo sistema',_fmtBRL(t.sistemaVal||0)+sub((+(t.sistemaUn||0).toFixed(2)).toLocaleString('pt-BR')+' un no sistema × custo'),'var(--t2)')+
+      tile('Divergentes',t.divergentes.toLocaleString('pt-BR')+sub('coletados com contagem ≠ sistema'),'#b38600')+
+      tile('Sobra',(+t.sobraUn.toFixed(2)).toLocaleString('pt-BR')+' un'+val(t.sobraVal)+sub('contado a MAIS que o sistema'),'#1a5c34')+
+      tile('Falta',(+t.faltaUn.toFixed(2)).toLocaleString('pt-BR')+' un'+val(t.faltaVal)+sub('contado a MENOS que o sistema'),'#c0392b')+
+      tile('Resultado a custo',_fmtBRL(liquido)+sub('sobra − falta, só produtos coletados'),liquido<0?'#c0392b':'#1a5c34')+
+      (t.naoColetados?tile('Não coletados',(t.naoColetados||0).toLocaleString('pt-BR')+' produtos'+val(t.naoColetadosVal)+sub('têm estoque no sistema e nenhuma bipagem; fora do resultado até serem contados'),'#6b6b6b'):'')+
     '</div>')+
     (t.semCusto?'<div style="font-size:11px;color:#b38600;margin-bottom:8px">'+t.semCusto+' produto(s) divergente(s) sem custo no catálogo — não entram nos valores em R$.</div>':'')+
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+

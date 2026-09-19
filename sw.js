@@ -1,6 +1,6 @@
-// Fluxo Certo 360 — Service Worker v226
+// Fluxo Certo 360 — Service Worker v227
 // Atualiza este numero de versao sempre que publicar novos arquivos
-var CACHE_NAME = 'cahu360-v390';
+var CACHE_NAME = 'cahu360-v392';
 
 // Arquivos críticos: sempre buscados da rede (nunca do cache)
 var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
@@ -8,8 +8,8 @@ var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
 var SHELL_ASSETS = [
   './',
   './index.html',
-  './app.js?v=358',
-  './style.css?v=358',
+  './app.js?v=392',
+  './style.css?v=392',
   './logo.png',
   './icon-192.png',
   './icon-512.png',
@@ -80,12 +80,18 @@ self.addEventListener('fetch', function(event) {
   var urlPath = url.split('?')[0];
   var isNetworkFirst = urlPath.endsWith('/') || NETWORK_FIRST.some(function(f) { return urlPath.endsWith(f); });
   if (isNetworkFirst) {
-    // cache:'reload' forca o navegador a ignorar o Cache-Control: max-age=600
-    // do GitHub Pages e buscar sempre um app.js/index.html frescos da rede —
-    // sem isso, publicar 2+ builds em menos de 10min faz o app continuar
-    // servindo a versao antiga do cache HTTP local mesmo em "network-first".
+    // cache:'no-cache' forca o navegador a SEMPRE revalidar com o servidor
+    // (ignora o Cache-Control: max-age=600 do GitHub Pages), mas por meio de
+    // uma requisicao condicional (If-None-Match/If-Modified-Since) — se o
+    // arquivo nao mudou, o servidor responde 304 e o navegador reusa o corpo
+    // ja baixado, sem re-transferir os ~930KB do app.js de novo. Resolve o
+    // mesmo problema que 'reload' resolvia (publicar 2+ builds em menos de
+    // 10min sem ficar preso ao cache HTTP local), mas sem forcar download
+    // completo em toda carga — 'reload' ignorava a validacao e sempre baixava
+    // o arquivo inteiro de novo, deixando o login lento no 4G/wifi da loja
+    // mesmo quando nada tinha mudado desde a ultima visita (achado 19/09/26).
     event.respondWith(
-      fetch(event.request, {cache: 'reload'}).then(function(resp) {
+      fetch(event.request, {cache: 'no-cache'}).then(function(resp) {
         if (resp && resp.ok) {
           var clone = resp.clone();
           caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });

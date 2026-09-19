@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '374';
+var BUILD = '375';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14762,7 +14762,7 @@ function renderColeta() {
           pr.textContent='📦 '+r.codigo+' · '+r.desc+(r.un?' — '+r.un:'');
           pr.style.color='var(--g)';
           // Código interno curto: espera o Enter (leitor manda Enter). EAN completo: pula pra Qtd na hora.
-          if (eanCompleto) { var qi=document.getElementById('inv-qty-input'); if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } }
+          if (eanCompleto) { var qi=document.getElementById('inv-qty-input'); if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } _dupAoLer(val,r); }
         } else if (eanCompleto) {
           pr.textContent='⚠ Não cadastrado — será registrado com marcação'; pr.style.color='var(--r)';
         } else {
@@ -15639,6 +15639,7 @@ function _eanEnterKey(deScanner) {
   }
   var qi=document.getElementById('inv-qty-input');
   if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); }
+  if (r&&!r.multiplos) _dupAoLer(val,r);
 }
 // Enquanto uma decisão está aberta (código curto / EAN duplicado), leitor, câmera e teclado ficam bloqueados.
 function _decisaoAberta(){ return !!(document.getElementById('modal-curto')||document.getElementById('modal-multi')||document.getElementById('modal-dup')); }
@@ -15661,7 +15662,7 @@ function _abrirConfirmaCurto(val,r){
 function _confirmaCurto(ok){
   var m=document.getElementById('modal-curto'); if(m) m.remove();
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
-  if (ok){ if(qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } return; }
+  if (ok){ if(qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } var _cv=ei?ei.value.trim():''; var _inv=_invColetaAtual?_invColetaAtual.inv:null; var _cat=_inv?(_catCache[_inv.id]||null):null; var _cr=(_cat&&_cat.total)?InvCore.resolverCodigo(_cat,_cv):null; if(_cr&&!_cr.multiplos) _dupAoLer(_cv,_cr); return; }
   if (ei){ ei.value=''; var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent=''; ei.focus(); }
 }
 
@@ -15729,7 +15730,7 @@ function registrarBipagem() {
 function _registrarResolvido(lido, res, qtyTotal, fator, pularDup) {
   var inv=_invColetaAtual.inv, end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao';
   // Código já coletado em qualquer endereço → aviso com opção de somar. Sequencial (mesmo produto da última bipagem) grava direto.
-  if (!pularDup && !_dupMesmoProduto(_bipsLocais[0], lido, res)) {
+  if (!pularDup && _dupChecadoChave!==_dupChave(lido,res) && !_dupMesmoProduto(_bipsLocais[0], lido, res)) {
     _checarJaColetado(inv.id, lido, res).then(function(prev){
       if (prev && prev.total>0) _abrirModalJaColetado(lido, res, qtyTotal, fator, prev);
       else _registrarResolvido(lido, res, qtyTotal, fator, true);
@@ -15741,7 +15742,7 @@ function _registrarResolvido(lido, res, qtyTotal, fator, pularDup) {
     setor:(_filaEndAtual&&_filaEndAtual.setor)||'',coletorId:_getIdColetor(),coletorNome:_getNomeColetor()||_getIdColetor(),ts:firebase.firestore.FieldValue.serverTimestamp()};
   if(fator>1) bip.fator=fator;
   if(hasCat&&!res) bip.naoCadastrado=true;
-  _nextSeq++;
+  _nextSeq++; _dupChecadoChave=null;
   _gravarBipagemLocal(bip);
   _bipsLocais.unshift(bip); if(_bipsLocais.length>50) _bipsLocais.length=50;
   _bipSom(bip.naoCadastrado?'alerta':'ok');
@@ -15769,7 +15770,21 @@ function _checarJaColetado(invId, lido, res) {
   var teto=new Promise(function(r){ setTimeout(function(){ r(null); },1500); });
   return Promise.race([consulta,teto]);
 }
-var _dupCtx=null, _dupAbertoTs=0;
+var _dupCtx=null, _dupAbertoTs=0, _dupChecadoChave=null;
+// Na LEITURA (não no Enter): se o produto já tem contagem em qualquer endereço e não é sequencial, abre o aviso com a caixa de quantidade.
+function _dupAoLer(lido,res){
+  if(!_invColetaAtual||!res) return;
+  var chave=_dupChave(lido,res); _dupChecadoChave=chave;
+  if(_dupMesmoProduto(_bipsLocais[0],lido,res)) return;
+  _checarJaColetado(_invColetaAtual.inv.id,lido,res).then(function(prev){
+    if(!prev||!(prev.total>0)) return;
+    var ei=document.getElementById('inv-ean-input');
+    if(!ei||ei.value.trim()!==String(lido).trim()||_dupChecadoChave!==chave||_decisaoAberta()) return; // já registrou ou trocou de código
+    var qi=document.getElementById('inv-qty-input'), fi=document.getElementById('inv-fator-input');
+    var qty=parseInt(qi&&qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
+    _abrirModalJaColetado(lido,res,qty*fator,fator,prev);
+  });
+}
 function _abrirModalJaColetado(lido,res,qtyTotal,fator,prev){
   var m=document.getElementById('modal-dup'); if(m) m.remove();
   _dupCtx={lido:lido,res:res,fator:fator,prev:prev}; _dupAbertoTs=Date.now();
@@ -15798,7 +15813,7 @@ function _dupQtyKeydown(ev){
   return true;
 }
 function _cancelarJaColetado(){
-  var m=document.getElementById('modal-dup'); if(m) m.remove(); _dupCtx=null;
+  var m=document.getElementById('modal-dup'); if(m) m.remove(); _dupCtx=null; _dupChecadoChave=null;
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input'), pr=document.getElementById('inv-desc-preview');
   if(ei) ei.value=''; if(qi) qi.value='1'; if(pr) pr.textContent=''; _descFixa(false); if(ei) ei.focus();
 }

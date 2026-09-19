@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '372';
+var BUILD = '373';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14342,7 +14342,7 @@ function iniciarScanEAN(inputId) {
   _eanCodeReader = reader;
   reader.decodeFromConstraints({video:{facingMode:'environment'}}, 'ean-scan-video', function(result){
     if (result && _eanCodeReader === reader) {
-      _bipSom('ok');
+      _bipSom('leitura');
       var val = result.getText();
       pararScanEAN();
       var inp = document.getElementById(inputId);
@@ -14404,7 +14404,7 @@ function _iniciarCamFixa(){
     if (!ei||ei.disabled) return;
     // Item anterior ainda esperando a Qtd: fecha com a Qtd que está e segue pro novo
     if (ei.value.trim()&&document.activeElement===qi) registrarBipagem();
-    _bipSom('ok');
+    _bipSom('leitura');
     ei.value=val; ei.dispatchEvent(new Event('input'));
     var m=document.getElementById('inv-cam-msg'); if(m){ m.textContent='Lido: '+val; setTimeout(function(){ if(m) m.textContent='Aponte pro código de barras'; },1500); }
     _eanEnterKey(true);
@@ -14515,7 +14515,8 @@ document.addEventListener('touchstart', function(){ _bipCtxGet(); }, {once:true,
 document.addEventListener('click', function(){ _bipCtxGet(); }, {once:true});
 function _bipSom(tipo) {
   var ctx=_bipCtxGet(); if(!ctx) return;
-  var seq = tipo==='erro' ? [[300,250]] : tipo==='alerta' ? [[600,90],[600,90]] : [[1200,80]];
+  // leitura = bipe curto (código entrou); ok = dois tons subindo (bipagem GRAVADA) — soam diferentes de propósito
+  var seq = tipo==='erro' ? [[300,250]] : tipo==='alerta' ? [[600,90],[600,90]] : tipo==='leitura' ? [[1200,60]] : [[880,70],[1320,120]];
   var t=ctx.currentTime;
   seq.forEach(function(p){
     var o=ctx.createOscillator(), g=ctx.createGain();

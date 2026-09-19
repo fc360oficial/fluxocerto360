@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '386';
+var BUILD = '387';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5285,9 +5285,9 @@ function _renderResultadoBalanco() {
     tilesEnd=tile('Endereço',endSel)+tile('Produtos no endereço',base.length.toLocaleString('pt-BR'))+tile('Unidades contadas aqui',(+unEnd.toFixed(3)).toLocaleString('pt-BR'))+tile('Custo contado aqui',_fmtBRL(valEnd),'#1a5c34')+tile('Divergentes (loja)',divEnd.toLocaleString('pt-BR'),'#b38600'); }
   wrap.innerHTML=
     (endSel?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tilesEnd+'</div>':'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
-      tile('Estoque no sistema',(+(t.sistemaUn||0).toFixed(2)).toLocaleString('pt-BR')+' un'+val(t.sistemaVal||0)+sub('quantidade do sistema × custo'),'var(--t2)')+
-      tile('Contado',(+(t.contadoUn||0).toFixed(2)).toLocaleString('pt-BR')+' un'+val(t.contadoVal||0)+sub('quantidade contada × custo'),'#1a5c34')+
-      tile('Diferença',(difUn>0?'+':'')+(+difUn.toFixed(2)).toLocaleString('pt-BR')+' un'+val(difVal)+sub('contado − sistema'),difVal<0?'#c0392b':'#1a5c34')+
+      tile('Custo sistema',_fmtBRL(t.sistemaVal||0)+sub('estoque do sistema × custo'),'var(--t2)')+
+      tile('Custo contado',_fmtBRL(t.contadoVal||0)+sub('quantidade contada × custo'),'#1a5c34')+
+      tile('Diferença',_fmtBRL(difVal)+sub('contado − sistema'),difVal<0?'#c0392b':'#1a5c34')+
     '</div>')+
     '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+(t.coletados||0).toLocaleString('pt-BR')+' de '+t.itens.toLocaleString('pt-BR')+' produtos com bipagem'+(t.naoColetados?' · '+t.naoColetados.toLocaleString('pt-BR')+' com estoque no sistema ainda sem contagem ('+_fmtBRL(t.naoColetadosVal)+')':'')+(t.semCusto?' · '+t.semCusto+' sem custo no catálogo, fora dos R$':'')+'</div>'+
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+

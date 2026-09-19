@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '370';
+var BUILD = '371';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14761,7 +14761,7 @@ function renderColeta() {
           pr.textContent='📦 '+r.codigo+' · '+r.desc+(r.un?' — '+r.un:'');
           pr.style.color='var(--g)';
           // Código interno curto: espera o Enter (leitor manda Enter). EAN completo: pula pra Qtd na hora.
-          if (eanCompleto) { var qi=document.getElementById('inv-qty-input'); if (qi){ qi.focus(); qi.select(); } }
+          if (eanCompleto) { var qi=document.getElementById('inv-qty-input'); if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } }
         } else if (eanCompleto) {
           pr.textContent='⚠ Não cadastrado — será registrado com marcação'; pr.style.color='var(--r)';
         } else {
@@ -15637,7 +15637,7 @@ function _eanEnterKey(deScanner) {
     if (deScanner&&r&&!r.multiplos&&/^\d{1,4}$/.test(val)){ _abrirConfirmaCurto(val,r); return; }
   }
   var qi=document.getElementById('inv-qty-input');
-  if (qi){ qi.focus(); qi.select(); }
+  if (qi){ if(deScanner) _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); }
 }
 // Enquanto uma decisão está aberta (código curto / EAN duplicado), leitor, câmera e teclado ficam bloqueados.
 function _decisaoAberta(){ return !!(document.getElementById('modal-curto')||document.getElementById('modal-multi')); }
@@ -15660,7 +15660,7 @@ function _abrirConfirmaCurto(val,r){
 function _confirmaCurto(ok){
   var m=document.getElementById('modal-curto'); if(m) m.remove();
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
-  if (ok){ if(qi){ qi.focus(); qi.select(); } return; }
+  if (ok){ if(qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } return; }
   if (ei){ ei.value=''; var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent=''; ei.focus(); }
 }
 
@@ -15668,7 +15668,11 @@ function _confirmaCurto(ok){
 // Leitor Bluetooth (keyboard wedge) pode disparar um código novo enquanto a Qtd está focada:
 // detecta a rajada, registra a bipagem anterior com a Qtd que estava e joga o código novo no EAN.
 var _rajadaQty = InvCore.criarDetectorRajada(100, 4);
+// Instante em que a Qtd recebeu foco por causa de uma leitura. O leitor Bluetooth manda Enter como sufixo
+// depois do último dígito; como o EAN completo já pulou o foco pra Qtd, esse Enter cairia aqui e gravaria com Qtd 1.
+var _qtyFocoScanTs = 0;
 function _qtyKeydown(ev) {
+  if (ev.key==='Enter' && Date.now()-_qtyFocoScanTs<300) { ev.preventDefault(); return false; }
   if (ev.key==='Enter') { ev.preventDefault(); if(_getModoPallet()){ var fi=document.getElementById('inv-fator-input'); if(fi){fi.focus();fi.select();} } else registrarBipagem(); return false; }
   if (ev.key && ev.key.length===1) {
     var buf=_rajadaQty.tecla(ev.key, Date.now());

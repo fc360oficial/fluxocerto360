@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '393';
+var BUILD = '394';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1701,6 +1701,23 @@ function finalizarLogin(found) {
   S.role = found.perfil;
   S.currentUser = found;
   try { sessionStorage.setItem('eco_session', JSON.stringify(found)); } catch(e) {}
+  // Destravamento de emergência (link ?resetenvio=1): remove SÓ os registros
+  // de hoje deste operador do cache local de resultados, sem apagar as
+  // respostas já preenchidas (eco_clstate_*) — usado quando o envio ficou
+  // marcado como feito localmente mas nunca chegou no servidor (achado
+  // 19/09/26, ver comentário em confirmarEnviar). Opt-in via URL, nunca roda
+  // sozinho.
+  if (new URLSearchParams(location.search).get('resetenvio') === '1') {
+    try {
+      var _hojeReset = new Date().toLocaleDateString('pt-BR');
+      var _resetLista = getAllResultados().filter(function(r){
+        return !(r.operador === found.nome && (r.dataHora||'').indexOf(_hojeReset) === 0);
+      });
+      S.resultadosCache = _resetLista;
+      localStorage.setItem(RESKEY, JSON.stringify(_resetLista));
+      showToast('🔓 Envio de hoje liberado — as respostas continuam preenchidas, é só enviar de novo.', 6000);
+    } catch(e) {}
+  }
   // Aplica nova senha pendente definida pelo admin
   if (found._fbNewPass) {
     var unsub = firebase.auth().onAuthStateChanged(function(fbUser) {
@@ -3676,28 +3693,52 @@ function confirmarEnviar(assinatura) {
     itens:snapshot, feitos:feitos, total:total, pct:pct,
     reprovado:reprovado, assinatura:assinatura||null
   };
-  var lista = getAllResultados();
-  // Se já existe envio hoje do mesmo checklist pelo mesmo operador, marca o anterior como resetado
-  var _hojeReenv = new Date().toLocaleDateString('pt-BR');
-  var _opAtual = S.currentUser ? S.currentUser.nome : '--';
-  lista = lista.map(function(r) {
-    if (r.checklistId === clId && (r.dataHora||'').indexOf(_hojeReenv) === 0
-        && r.operador === _opAtual && !r.resetado) {
-      db.collection('resultados').doc(r.id).update({ resetado: true }).catch(function(){});
-      return Object.assign({}, r, { resetado: true });
-    }
-    return r;
-  });
-  // Salva sem assinatura no cache local (base64 enorme estoura localStorage)
-  var resParaCache = Object.assign({}, res, {assinatura: null});
-  lista.push(resParaCache);
-  S.resultadosCache = lista;
-  try { localStorage.setItem(RESKEY, JSON.stringify(lista)); } catch(e) {}
-  // Salva com assinatura apenas no Firebase
-  db.collection('resultados').doc(res.id).set(res).catch(function(err){
+  // IMPORTANTE (achado 19/09/26): o checklist só pode ser marcado como
+  // "já enviado hoje" (jaEnviouHoje) DEPOIS que o Firestore confirmar a
+  // gravação — nunca antes. Antes desta correção, a tela era travada em
+  // somente-leitura e o toast verde de sucesso aparecia na hora, mesmo que
+  // o db.set() abaixo estivesse falhando silenciosamente (rede ruim da
+  // loja): duas lojas fizeram o checklist inteiro, viram "enviado com
+  // sucesso" e o dado nunca chegou no servidor — e a tela travada nem
+  // deixava tentar de novo. Agora: mostra "Enviando..." primeiro; só grava
+  // no cache local (o que ativa jaEnviouHoje e trava a tela) e mostra
+  // sucesso de verdade DEPOIS que o Firestore confirmar; se falhar, mantém
+  // editável e mostra erro claro com instrução de tentar de novo.
+  showToast('📤 Enviando checklist...');
+  var _avisoDemoraTimer = setTimeout(function(){
+    showToast('⏳ Ainda enviando — verifique sua conexão. Não feche o app.');
+  }, 12000);
+  db.collection('resultados').doc(res.id).set(res).then(function() {
+    clearTimeout(_avisoDemoraTimer);
+    var lista = getAllResultados();
+    // Se já existe envio hoje do mesmo checklist pelo mesmo operador, marca o anterior como resetado
+    var _hojeReenv = new Date().toLocaleDateString('pt-BR');
+    var _opAtual = S.currentUser ? S.currentUser.nome : '--';
+    lista = lista.map(function(r) {
+      if (r.checklistId === clId && (r.dataHora||'').indexOf(_hojeReenv) === 0
+          && r.operador === _opAtual && !r.resetado) {
+        db.collection('resultados').doc(r.id).update({ resetado: true }).catch(function(){});
+        return Object.assign({}, r, { resetado: true });
+      }
+      return r;
+    });
+    // Salva sem assinatura no cache local (base64 enorme estoura localStorage)
+    var resParaCache = Object.assign({}, res, {assinatura: null});
+    lista.push(resParaCache);
+    S.resultadosCache = lista;
+    try { localStorage.setItem(RESKEY, JSON.stringify(lista)); } catch(e) {}
+    _finalizarEnvioCL(clId, cl, label, pct, reprovado, snapshot, setor);
+  }).catch(function(err){
+    clearTimeout(_avisoDemoraTimer);
     console.error('Erro ao salvar resultado no Firebase:', err);
-    showToast('⚠️ Resultado salvo localmente — sincronizará quando houver conexão');
+    showToast('❌ NÃO enviou — sem conexão com o servidor. O checklist continua aberto, tente enviar de novo assim que a internet voltar.');
   });
+  return;
+}
+
+// Passos finais do envio que só devem acontecer DEPOIS de confirmar que o
+// resultado foi gravado no Firestore (ver comentário em confirmarEnviar).
+function _finalizarEnvioCL(clId, cl, label, pct, reprovado, snapshot, setor) {
   // Salva contagens de planilha com TTL (expiram na meia-noite)
   var meianoite = proximaMeiaNoite();
   var hoje = new Date().toISOString().slice(0, 10);

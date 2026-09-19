@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '387';
+var BUILD = '388';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5279,6 +5279,7 @@ function _renderResultadoBalanco() {
       '<td style="text-align:right;white-space:nowrap">'+(l.sistema==null?'—':l.sistema)+'</td><td style="text-align:right;font-weight:700;white-space:nowrap">'+l.contado+(l.contadoTotal!=null&&l.contadoTotal!==l.contado?'<div style="font-size:10px;font-weight:600;color:var(--t3)">de '+l.contadoTotal+' no total</div>':'')+'</td><td style="text-align:right;font-weight:800;white-space:nowrap;color:'+cor+'">'+(l.dif==null?'—':(l.dif>0?'+':'')+l.dif)+'</td>'+
       '<td style="text-align:right;white-space:nowrap;color:var(--t2)">'+(l.valorSistema==null?'—':_fmtBRL(l.valorSistema))+'</td><td style="text-align:right;font-weight:700;white-space:nowrap">'+(l.valorContado==null?'—':_fmtBRL(l.valorContado))+'</td><td style="text-align:right;white-space:nowrap;color:'+cor+'">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td></tr>';
   }).join('');
+  window._resPrintCache={linhas:linhas, sub:(_resultadoCache.invNome||'')+(endSel?' · Endereço '+endSel:' · Todos os endereços')+(soDiv?' · só divergentes':'')+(busca?' · busca "'+busca+'"':''), resumo:endSel?[]:[['Custo sistema',_fmtBRL(t.sistemaVal||0)],['Custo contado',_fmtBRL(t.contadoVal||0)],['Diferença',_fmtBRL(difVal)]]};
   var tilesEnd='';
   if (endSel) { var unEnd=base.reduce(function(a,l){ return a+(l.contado||0); },0), valEnd=base.reduce(function(a,l){ return a+(l.valorContado||0); },0);
     var divEnd=base.filter(function(l){ return l.dif; }).length;
@@ -5295,6 +5296,7 @@ function _renderResultadoBalanco() {
       '<label style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px"><input type="checkbox" id="res-so-div" '+(soDiv?'checked':'')+' onchange="_renderResultadoBalanco()"> Só divergentes</label>'+
       '<input id="res-busca" placeholder="Buscar código ou descrição" value="'+busca.replace(/"/g,'&quot;')+'" oninput="window._resLimite=300;_renderResultadoBalanco()" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit">'+
       '<span style="font-size:11px;color:var(--t3)">'+linhas.length.toLocaleString('pt-BR')+' linhas</span>'+
+      '<button class="btn btn-s btn-sm" onclick="_imprimirResultadoPdf()">📄 PDF</button>'+
       '<button class="btn btn-s btn-sm" onclick="_exportarResultadoCsv()">⬇ CSV</button>'+
     '</div>'+
     '<div style="overflow-x:auto;max-height:70vh;overflow-y:auto"><table style="min-width:960px"><thead><tr>'+th('Código','codigo')+th('EAN','ean')+th('Descrição','desc')+th('Qtd Sistema','sistema',1)+th('Qtd Contado','contado',1)+th('Divergência','dif',1)+th('Custo Sistema','valorSistema',1)+th('Custo Contado','valorContado',1)+th('Dif. R$','valor',1)+'</tr></thead><tbody>'+
@@ -5316,6 +5318,50 @@ function _htmlEnderecosRecontar(r) {
   return '<div style="margin-top:18px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px">Endereços pra recontar (estimativa)</div>'+
     '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">A divergência de cada produto é distribuída entre os endereços onde ele foi bipado, na proporção do que foi contado em cada um. Quanto maior o valor, mais vale recontar.</div>'+
     '<div style="overflow-x:auto"><table><thead><tr><th>Endereço</th><th>Coletor</th><th style="text-align:right">Itens diverg.</th><th style="text-align:right">Unid. estim.</th><th style="text-align:right">Impacto</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+// Impressão A4 isolada (iframe) com logo — usada por Resultado e Monitor. cols=[{t:'Título',r:true}], rows=[[celula,...]] já escapadas.
+function _imprimirTabelaA4(titulo, sub, resumo, cols, rows, frameId) {
+  var logoUrl=new URL('logo.png',location.href).href;
+  var agora=new Date(), dh=agora.toLocaleDateString('pt-BR')+' '+String(agora.getHours()).padStart(2,'0')+':'+String(agora.getMinutes()).padStart(2,'0');
+  var esc=function(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]; }); };
+  var thead='<tr>'+cols.map(function(c){ return '<th'+(c.r?' class="r"':'')+'>'+esc(c.t)+'</th>'; }).join('')+'</tr>';
+  var tbody=rows.map(function(r){ return '<tr>'+r.map(function(v,i){ return '<td class="'+(cols[i].r?'r ':'')+(cols[i].m?'m':'')+'">'+v+'</td>'; }).join('')+'</tr>'; }).join('');
+  var tiles=(resumo||[]).map(function(x){ return '<div class="tile"><div class="lbl">'+esc(x[0])+'</div><div class="val">'+esc(x[1])+'</div></div>'; }).join('');
+  var css='@page{size:A4 landscape;margin:10mm}body{font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#111;margin:0;font-size:10px}'+
+    'header{display:flex;align-items:center;gap:14px;border-bottom:3px solid #FFC600;padding-bottom:8px;margin-bottom:8px}header img{height:40px}header .t{flex:1}.h1{font-size:18px;font-weight:800}.h2{font-size:11px;color:#555}'+
+    '.tiles{display:flex;gap:8px;margin-bottom:10px}.tile{flex:1;background:#f5f5f5;border-radius:8px;padding:6px 10px}.tile .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#777}.tile .val{font-size:15px;font-weight:800}'+
+    'table{width:100%;border-collapse:collapse}th{background:#fff4c2;font-size:9px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:4px;border-bottom:1.5px solid #e0c65a}th.r{text-align:right}'+
+    'td{padding:3px 4px;border-bottom:1px solid #ddd;vertical-align:middle}tr:nth-child(even) td{background:#fafafa}td.r{text-align:right;white-space:nowrap}td.m{font-family:monospace;font-size:9.5px;white-space:nowrap}thead{display:table-header-group}tr{page-break-inside:avoid}';
+  var html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+esc(titulo)+'</title>'+
+    '<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet"><style>'+css+'</style></head><body>'+
+    '<header><img src="'+logoUrl+'" alt=""><div class="t"><div class="h1">'+esc(titulo)+'</div><div class="h2">'+esc(sub)+' · gerado em '+dh+'</div></div></header>'+
+    (tiles?'<div class="tiles">'+tiles+'</div>':'')+
+    '<table><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></body></html>';
+  var antigo=document.getElementById(frameId); if(antigo) antigo.parentNode.removeChild(antigo);
+  var frame=document.createElement('iframe'); frame.id=frameId; frame.setAttribute('aria-hidden','true');
+  frame.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(frame);
+  var doc=frame.contentWindow.document; doc.open(); doc.write(html); doc.close();
+  var imprimiu=false;
+  var disparar=function(){ if(imprimiu) return; imprimiu=true; try{ frame.contentWindow.focus(); frame.contentWindow.print(); }catch(e){ showToast('Não foi possível abrir a impressão: '+e.message); } };
+  var img=doc.querySelector('header img');
+  if (img&&!img.complete){ img.onload=img.onerror=function(){ setTimeout(disparar,150); }; } else setTimeout(disparar,150);
+  setTimeout(disparar,2500);
+}
+var _escHtml=function(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]; }); };
+// PDF do Resultado: mesmas linhas, filtro, endereço e ordenação da tela.
+function _imprimirResultadoPdf(){
+  var c=window._resPrintCache; if(!c) return;
+  var cols=[{t:'Código',m:1},{t:'EAN',m:1},{t:'Descrição'},{t:'Qtd Sistema',r:1},{t:'Qtd Contado',r:1},{t:'Divergência',r:1},{t:'Custo Sistema',r:1},{t:'Custo Contado',r:1},{t:'Dif. R$',r:1}];
+  var rows=c.linhas.map(function(l){ return [_escHtml(l.codigo||'—'),_escHtml(l.ean||''),_escHtml(l.desc)+(l.nc?' <b>NC</b>':''),l.sistema==null?'—':l.sistema,l.contado+(l.contadoTotal!=null&&l.contadoTotal!==l.contado?' <small>(de '+l.contadoTotal+')</small>':''),l.dif==null?'—':(l.dif>0?'+':'')+l.dif,l.valorSistema==null?'—':_fmtBRL(l.valorSistema),l.valorContado==null?'—':_fmtBRL(l.valorContado),l.valor==null?'—':_fmtBRL(l.valor)]; });
+  _imprimirTabelaA4('Resultado: Contado × Sistema', c.sub, c.resumo, cols, rows, 'res-print-frame');
+}
+// PDF do Monitor: mesmas linhas, busca e ordenação da tela.
+function _imprimirResumoPdf(){
+  var c=window._resumoPrintCache; if(!c) return;
+  var cols=[{t:'Código',m:1},{t:'EAN',m:1},{t:'Descrição'},{t:'Qtd total',r:1},{t:'Bipagens',r:1},{t:'Endereços (qtd)'},{t:'Coletores'},{t:'Custo unit.',r:1},{t:'Custo contado',r:1}];
+  var rows=c.linhas.map(function(l){ return [_escHtml(l.codigo||'—'),_escHtml(l.ean||''),_escHtml(l.desc)+(l.nc?' <b>NC</b>':'')+(l.corr?' <small>corr. '+(l.corr>0?'+':'')+l.corr+'</small>':''),(+l.qty.toFixed(3)).toLocaleString('pt-BR'),l.bips,_escHtml(l.endsTxt||'—'),_escHtml(l.colsTxt||'—'),l.custo==null?'—':_fmtBRL(l.custo),l.valor==null?'—':_fmtBRL(l.valor)]; });
+  _imprimirTabelaA4('Monitor — itens contados', c.sub, c.resumo, cols, rows, 'resumo-print-frame');
 }
 // Clique no cabeçalho: 1º clique maior→menor, 2º menor→maior.
 function _resOrdenar(col){
@@ -13076,6 +13122,7 @@ function _renderResumoTabela(){
   var totUn=linhas.reduce(function(a,l){ return a+l.qty; },0), totVal=linhas.reduce(function(a,l){ return a+(l.valor||0); },0), semCusto=linhas.filter(function(l){ return l.valor==null&&l.qty; }).length;
   var th=function(label,col,right){ var on=srt.col===col; return '<th onclick="_resumoOrdenar(\''+col+'\')" title="Clique pra ordenar" style="cursor:pointer;user-select:none;white-space:nowrap'+(right?';text-align:right':'')+(on?';color:var(--t)':'')+'">'+label+(on?(srt.dir<0?' ▼':' ▲'):'')+'</th>'; };
   var tile=function(lbl,val,cor){ return '<div style="flex:1;min-width:150px;background:var(--gray);border-radius:10px;padding:10px 12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3)">'+lbl+'</div><div style="font-size:20px;font-weight:800;margin-top:2px;color:'+(cor||'var(--t)')+'">'+val+'</div></div>'; };
+  window._resumoPrintCache={linhas:linhas, sub:(c.invNome||'')+(busca?' · busca "'+busca+'"':''), resumo:[['Produtos',linhas.length.toLocaleString('pt-BR')],['Unidades contadas',(+totUn.toFixed(3)).toLocaleString('pt-BR')],['Custo contado',_fmtBRL(totVal)],['Bipagens',c.totalBips.toLocaleString('pt-BR')]]};
   var rows=linhas.slice(0,lim).map(function(l){
     return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+(l.corr?' <span title="inclui correção de '+(l.corr>0?'+':'')+l.corr+'" style="font-size:10px;color:#b38600;font-weight:700">corr. '+(l.corr>0?'+':'')+l.corr+'</span>':'')+'</td>'+
       '<td style="text-align:right;font-weight:800;white-space:nowrap">'+(+l.qty.toFixed(3)).toLocaleString('pt-BR')+'</td><td style="text-align:right;white-space:nowrap">'+l.bips+'</td><td style="font-size:11px;color:var(--t2)">'+(l.endsTxt||'—')+'</td><td style="font-size:11px;color:var(--t3)">'+(l.colsTxt||'—')+'</td>'+
@@ -13089,6 +13136,7 @@ function _renderResumoTabela(){
       '<input id="resumo-busca" placeholder="Buscar código, EAN ou descrição" value="'+(window._resumoBusca||'').replace(/"/g,'&quot;')+'" oninput="window._resumoBusca=this.value;window._resumoLimite=500;_renderResumoTabela();var i=document.getElementById(\'resumo-busca\');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length);}" style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit"/>'+
       '<span style="font-size:11px;color:var(--t3)">'+linhas.length.toLocaleString('pt-BR')+' linhas</span>'+
       '<button class="btn btn-s btn-sm" onclick="renderResumoBipagens(true)">↻ Atualizar</button>'+
+      '<button class="btn btn-s btn-sm" onclick="_imprimirResumoPdf()">📄 PDF</button>'+
       '<button class="btn btn-s btn-sm" onclick="_exportarResumoCsv()">⬇ Excel</button>'+
     '</div>'+
     '<div style="overflow-x:auto;max-height:70vh;overflow-y:auto"><table style="min-width:960px"><thead><tr>'+th('Código','codigo')+th('EAN','ean')+th('Descrição','desc')+th('Qtd total','qty',1)+th('Bipagens','bips',1)+th('Endereços (qtd)','endsTxt')+th('Coletores','colsTxt')+th('Custo unit.','custo',1)+th('Custo contado','valor',1)+'</tr></thead><tbody>'+

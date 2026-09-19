@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '371';
+var BUILD = '372';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15637,7 +15637,7 @@ function _eanEnterKey(deScanner) {
     if (deScanner&&r&&!r.multiplos&&/^\d{1,4}$/.test(val)){ _abrirConfirmaCurto(val,r); return; }
   }
   var qi=document.getElementById('inv-qty-input');
-  if (qi){ if(deScanner) _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); }
+  if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); }
 }
 // Enquanto uma decisão está aberta (código curto / EAN duplicado), leitor, câmera e teclado ficam bloqueados.
 function _decisaoAberta(){ return !!(document.getElementById('modal-curto')||document.getElementById('modal-multi')); }
@@ -15672,7 +15672,7 @@ var _rajadaQty = InvCore.criarDetectorRajada(100, 4);
 // depois do último dígito; como o EAN completo já pulou o foco pra Qtd, esse Enter cairia aqui e gravaria com Qtd 1.
 var _qtyFocoScanTs = 0;
 function _qtyKeydown(ev) {
-  if (ev.key==='Enter' && Date.now()-_qtyFocoScanTs<300) { ev.preventDefault(); return false; }
+  if ((ev.key==='Enter'||ev.keyCode===13) && Date.now()-_qtyFocoScanTs<400) { ev.preventDefault(); return false; } // ninguém confirma Qtd em <0,4 s depois do pulo: é o sufixo do leitor
   if (ev.key==='Enter') { ev.preventDefault(); if(_getModoPallet()){ var fi=document.getElementById('inv-fator-input'); if(fi){fi.focus();fi.select();} } else registrarBipagem(); return false; }
   if (ev.key && ev.key.length===1) {
     var buf=_rajadaQty.tecla(ev.key, Date.now());

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '375';
+var BUILD = '376';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5252,7 +5252,7 @@ function _renderResultadoBalanco() {
   var liquido=t.sobraVal-t.faltaVal;
   var rows=linhas.slice(0,lim).map(function(l){
     var cor=l.dif>0?'#1a5c34':l.dif<0?'#c0392b':'var(--t3)';
-    return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+'</td>'+
+    return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+(l.bips>1?' <span title="Produto bipado '+l.bips+' vezes'+(l.ends>1?' em '+l.ends+' endereços':'')+'" style="display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700;background:#fff8e1;color:#b38600;margin-left:4px;vertical-align:middle">×'+l.bips+' bip'+(l.ends>1?' · '+l.ends+' end.':'')+'</span>':'')+'</td>'+
       '<td style="text-align:right">'+(l.sistema==null?'—':l.sistema)+'</td><td style="text-align:right;font-weight:700">'+l.contado+'</td><td style="text-align:right;font-weight:800;color:'+cor+'">'+(l.dif==null?'—':(l.dif>0?'+':'')+l.dif)+'</td><td style="text-align:right;color:'+cor+'">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td></tr>';
   }).join('');
   wrap.innerHTML=
@@ -5290,9 +5290,9 @@ function _htmlEnderecosRecontar(r) {
 }
 function _exportarResultadoCsv() {
   if (!_resultadoCache) return;
-  var lines=['CODIGO;EAN;DESCRICAO;UN;SISTEMA;CONTADO;DIFERENCA;CUSTO;VALOR;NAO_CADASTRADO'];
+  var lines=['CODIGO;EAN;DESCRICAO;UN;SISTEMA;CONTADO;DIFERENCA;CUSTO;VALOR;NAO_CADASTRADO;BIPAGENS;ENDERECOS'];
   var f=function(v){ return v==null?'':String(v).replace('.',','); };
-  _resultadoCache.r.linhas.forEach(function(l){ lines.push([l.codigo,l.ean,l.desc.replace(/;/g,' '),l.un,f(l.sistema),f(l.contado),f(l.dif),f(l.custo),f(l.valor==null?null:+l.valor.toFixed(2)),l.nc?'SIM':''].join(';')); });
+  _resultadoCache.r.linhas.forEach(function(l){ lines.push([l.codigo,l.ean,l.desc.replace(/;/g,' '),l.un,f(l.sistema),f(l.contado),f(l.dif),f(l.custo),f(l.valor==null?null:+l.valor.toFixed(2)),l.nc?'SIM':'',l.bips||0,l.ends||0].join(';')); });
   var blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url;
   a.download=(_resultadoCache.invNome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_resultado.csv'; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); },2000);
@@ -13758,6 +13758,7 @@ function abrirModalNovoInv() {
   var ateEl=document.getElementById('ninv-end-ate'); if(ateEl) ateEl.value='';
   var cb = document.getElementById('ninv-modoFila');
   if (cb) cb.checked = true;
+  var cbSeq = document.getElementById('ninv-sequencial'); if (cbSeq) cbSeq.checked = false;
   var se = document.getElementById('ninv-setores'); if (se) se.value = 'ESTOQUE,LOJA';
   var me = document.getElementById('ninv-meta'); if (me) me.value = '98';
   // Reset tipo para Geral
@@ -13815,6 +13816,8 @@ function criarInventario() {
   var endStr = document.getElementById('ninv-enderecos').value.trim();
   var cbEl = document.getElementById('ninv-modoFila');
   var modoFila = !!(cbEl && cbEl.checked);
+  var seqEl = document.getElementById('ninv-sequencial');
+  var sequencial = !!(seqEl && seqEl.checked);
   var tipo = (document.querySelector('input[name="ninv-tipo"]:checked')||{}).value||'geral';
   var modoOrg = (document.querySelector('input[name="ninv-modoOrg"]:checked')||{}).value||'setores_end';
   var setoresRaw = (document.getElementById('ninv-setores')||{}).value||'ESTOQUE,LOJA';
@@ -13846,6 +13849,7 @@ function criarInventario() {
     criadoPor: S.currentUser ? S.currentUser.id : '',
     enderecos: enderecos, atribuicoes: {},
     modoFila: modoFila, fila: {},
+    sequencial: sequencial,
     totalBipagens: 0,
     setores: setores,
     modoOrganizacao: modoOrg,
@@ -13908,7 +13912,7 @@ function renderInvList() {
   wrap.innerHTML = invs.map(function(inv){
     var endCount=(inv.enderecos||[]).length;
     var dataStr=inv.criadoEm?new Date(inv.criadoEm.seconds*1000).toLocaleDateString('pt-BR'):'--';
-    var filaTag=inv.modoFila?'<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#e8f4ff;color:#1a5c9c;margin-left:6px;vertical-align:middle">FILA</span>':'';
+    var filaTag=(inv.modoFila?'<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#e8f4ff;color:#1a5c9c;margin-left:6px;vertical-align:middle">FILA</span>':'')+(inv.sequencial?'<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#fff8e1;color:#b38600;margin-left:6px;vertical-align:middle">SEQUENCIAL</span>':'');
     var tipoTag=_invTipoTag(inv.tipo);
     return '<div class="card" style="margin-bottom:12px">'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'+
@@ -15729,8 +15733,8 @@ function registrarBipagem() {
 }
 function _registrarResolvido(lido, res, qtyTotal, fator, pularDup) {
   var inv=_invColetaAtual.inv, end=_invColetaAtual.endereco, rodada=_invColetaAtual.rodada||1, modo=_invColetaAtual.modo||'colaboracao';
-  // Código já coletado em qualquer endereço → aviso com opção de somar. Sequencial (mesmo produto da última bipagem) grava direto.
-  if (!pularDup && _dupChecadoChave!==_dupChave(lido,res) && !_dupMesmoProduto(_bipsLocais[0], lido, res)) {
+  // Código já coletado em qualquer endereço → aviso com opção de somar, salvo balanço marcado como Sequencial na criação.
+  if (!pularDup && !inv.sequencial && _dupChecadoChave!==_dupChave(lido,res)) {
     _checarJaColetado(inv.id, lido, res).then(function(prev){
       if (prev && prev.total>0) _abrirModalJaColetado(lido, res, qtyTotal, fator, prev);
       else _registrarResolvido(lido, res, qtyTotal, fator, true);
@@ -15758,7 +15762,7 @@ function _registrarResolvido(lido, res, qtyTotal, fator, pularDup) {
 function _dupChave(lido,res){ return res&&res.codigo ? 'c:'+res.codigo : 'e:'+String(lido).trim(); }
 function _dupMesmoProduto(bip,lido,res){ if(!bip) return false; var k=_dupChave(lido,res); return (bip.codigo?'c:'+bip.codigo:'e:'+bip.ean)===k; }
 // Consulta pequena (1 produto) com teto de 1,5 s: sem rede, segue gravando sem aviso — a contagem nunca trava.
-function _checarJaColetado(invId, lido, res) {
+function _checarJaColetado(invId, lido, res, semTeto) {
   var q=db.collection('inv_bipagens').where('invId','==',invId);
   q = (res&&res.codigo) ? q.where('codigo','==',res.codigo) : q.where('ean','==',String(lido).trim()).where('codigo','==','');
   var consulta=q.get().then(function(snap){
@@ -15767,6 +15771,7 @@ function _checarJaColetado(invId, lido, res) {
     var lista=Object.keys(locais).map(function(k){ var p=k.split('|'); return {endereco:p[0],coletor:p[1],qty:locais[k]}; }).sort(function(a,b){ return b.qty-a.qty; });
     return {total:total, locais:lista, linhas:snap.size};
   }).catch(function(){ return null; });
+  if (semTeto) return consulta;
   var teto=new Promise(function(r){ setTimeout(function(){ r(null); },1500); });
   return Promise.race([consulta,teto]);
 }
@@ -15775,8 +15780,8 @@ var _dupCtx=null, _dupAbertoTs=0, _dupChecadoChave=null;
 function _dupAoLer(lido,res){
   if(!_invColetaAtual||!res) return;
   var chave=_dupChave(lido,res); _dupChecadoChave=chave;
-  if(_dupMesmoProduto(_bipsLocais[0],lido,res)) return;
-  _checarJaColetado(_invColetaAtual.inv.id,lido,res).then(function(prev){
+  if(_invColetaAtual.inv.sequencial) return; // balanço sequencial: repetir é o normal, sem aviso (a Auditoria marca)
+  _checarJaColetado(_invColetaAtual.inv.id,lido,res,true).then(function(prev){
     if(!prev||!(prev.total>0)) return;
     var ei=document.getElementById('inv-ean-input');
     if(!ei||ei.value.trim()!==String(lido).trim()||_dupChecadoChave!==chave||_decisaoAberta()) return; // já registrou ou trocou de código

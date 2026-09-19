@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '390';
+var BUILD = '391';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -44,33 +44,54 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
 
 // ── Verificação de modo anônimo / privado ─────────────────────────────────
 (function(){
-  function _mostrarAvisoAnonimo(motivo) {
+  function _mostrarAvisoAnonimo(motivo, ehCotaCheia) {
     var el = document.createElement('div');
     el.id = 'aviso-anonimo';
     el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:24px';
+    var titulo = ehCotaCheia ? 'Armazenamento do aparelho cheio' : 'Modo Privado Detectado';
+    var explicacao = ehCotaCheia
+      ? 'O espaço de armazenamento do navegador neste aparelho está cheio (não é aba anônima). Bipagens feitas sem internet <strong>podem ser perdidas</strong> até liberar espaço.'
+      : 'O app de inventário <strong>não funciona em aba anônima ou privada</strong>. Neste modo o armazenamento local é bloqueado e as bipagens realizadas sem internet <strong>serão perdidas</strong>.';
+    var comoResolver = ehCotaCheia
+      ? '1. Feche outros apps/abas abertos<br>' +
+        '2. No navegador, limpe dados de navegação antigos (Configurações &gt; Privacidade)<br>' +
+        '3. Recarregue esta página'
+      : '1. Feche esta aba<br>' +
+        '2. Abra uma aba normal (não privada)<br>' +
+        '3. Acesse o app novamente';
     el.innerHTML =
       '<div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:400px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4)">' +
         '<div style="font-size:48px;margin-bottom:12px">🚫</div>' +
-        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;color:#c0392b">Modo Privado Detectado</div>' +
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;color:#c0392b">' + titulo + '</div>' +
         '<div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:20px">' +
-          'O app de inventário <strong>não funciona em aba anônima ou privada</strong>. ' +
-          'Neste modo o armazenamento local é bloqueado e as bipagens realizadas sem internet <strong>serão perdidas</strong>.' +
+          explicacao +
           '<br><br><span style="font-size:12px;color:#888">Motivo técnico: ' + motivo + '</span>' +
         '</div>' +
         '<div style="background:#fff3e0;border-radius:10px;padding:14px;margin-bottom:20px;text-align:left">' +
           '<div style="font-size:13px;font-weight:700;color:#e65100;margin-bottom:6px">Como resolver:</div>' +
-          '<div style="font-size:13px;color:#555;line-height:1.6">' +
-            '1. Feche esta aba<br>' +
-            '2. Abra uma aba normal (não privada)<br>' +
-            '3. Acesse o app novamente' +
-          '</div>' +
+          '<div style="font-size:13px;color:#555;line-height:1.6">' + comoResolver + '</div>' +
         '</div>' +
         '<button onclick="document.getElementById(\'aviso-anonimo\').remove()" ' +
           'style="width:100%;padding:13px;background:#c0392b;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">' +
-          'Entendi — continuar mesmo assim (não recomendado)' +
+          'Entendi — continuar mesmo assim' +
         '</button>' +
       '</div>';
     document.body.appendChild(el);
+  }
+
+  // Libera espaço de emergência: os backups de foto (eco_foto_bk_*) são só
+  // cópia de segurança pra reenvio, não dado principal — podem ser apagados
+  // sem perder nada que já tenha sido confirmado no servidor.
+  function _liberarEspacoEmergencia() {
+    try {
+      var chaves = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('eco_foto_bk_') === 0) chaves.push(k);
+      }
+      chaves.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
+      return chaves.length > 0;
+    } catch(e) { return false; }
   }
 
   // Teste 1: localStorage
@@ -78,7 +99,17 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
     localStorage.setItem('_fc360_chk', '1');
     localStorage.removeItem('_fc360_chk');
   } catch(e) {
-    setTimeout(function(){ _mostrarAvisoAnonimo('localStorage bloqueado'); }, 500);
+    // Cota esgotada (comum quando fotos de backup acumulam no dia) não é modo
+    // privado de verdade: tenta liberar espaço e testar de novo antes de alarmar.
+    var ehCota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+    if (ehCota && _liberarEspacoEmergencia()) {
+      try {
+        localStorage.setItem('_fc360_chk', '1');
+        localStorage.removeItem('_fc360_chk');
+        return; // liberou espaço e voltou a funcionar — não alarma ninguém
+      } catch(e2) { /* continua e mostra aviso abaixo */ }
+    }
+    setTimeout(function(){ _mostrarAvisoAnonimo(ehCota ? 'armazenamento cheio (QuotaExceededError)' : 'localStorage bloqueado', ehCota); }, 500);
     return;
   }
 

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '377';
+var BUILD = '378';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5253,7 +5253,8 @@ function _renderResultadoBalanco() {
   var rows=linhas.slice(0,lim).map(function(l){
     var cor=l.dif>0?'#1a5c34':l.dif<0?'#c0392b':'var(--t3)';
     return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+(l.bips>1?' <span title="Produto bipado '+l.bips+' vezes'+(l.ends>1?' em '+l.ends+' endereços':'')+'" style="display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700;background:#fff8e1;color:#b38600;margin-left:4px;vertical-align:middle">×'+l.bips+' bip'+(l.ends>1?' · '+l.ends+' end.':'')+'</span>':'')+'</td>'+
-      '<td style="text-align:right">'+(l.sistema==null?'—':l.sistema)+'</td><td style="text-align:right;font-weight:700">'+l.contado+'</td><td style="text-align:right;font-weight:800;color:'+cor+'">'+(l.dif==null?'—':(l.dif>0?'+':'')+l.dif)+'</td><td style="text-align:right;color:'+cor+'">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td></tr>';
+      '<td style="text-align:right">'+(l.sistema==null?'—':l.sistema)+'</td><td style="text-align:right;font-weight:700">'+l.contado+'</td><td style="text-align:right;font-weight:800;color:'+cor+'">'+(l.dif==null?'—':(l.dif>0?'+':'')+l.dif)+'</td>'+
+      '<td style="text-align:right;color:var(--t2)">'+(l.valorSistema==null?'—':_fmtBRL(l.valorSistema))+'</td><td style="text-align:right;font-weight:700">'+(l.valorContado==null?'—':_fmtBRL(l.valorContado))+'</td><td style="text-align:right;color:'+cor+'">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td></tr>';
   }).join('');
   wrap.innerHTML=
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
@@ -5268,9 +5269,9 @@ function _renderResultadoBalanco() {
       '<span style="font-size:11px;color:var(--t3)">'+linhas.length.toLocaleString('pt-BR')+' linhas</span>'+
       '<button class="btn btn-s btn-sm" onclick="_exportarResultadoCsv()">⬇ CSV</button>'+
     '</div>'+
-    '<div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table><thead><tr><th>Código</th><th>EAN</th><th>Descrição</th><th style="text-align:right">Sistema</th><th style="text-align:right">Contado</th><th style="text-align:right">Diferença</th><th style="text-align:right">Valor</th></tr></thead><tbody>'+
-      (rows||'<tr><td colspan="7" style="color:var(--t3)">Nada a mostrar.</td></tr>')+
-      (linhas.length>lim?'<tr><td colspan="7" style="text-align:center;padding:10px"><button class="btn btn-s btn-sm" onclick="window._resLimite=(window._resLimite||300)+1000;_renderResultadoBalanco()">Mostrar mais ('+(linhas.length-lim).toLocaleString('pt-BR')+' restantes)</button></td></tr>':'')+
+    '<div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table><thead><tr><th>Código</th><th>EAN</th><th>Descrição</th><th style="text-align:right">Qtd Sistema</th><th style="text-align:right">Qtd Contado</th><th style="text-align:right">Divergência</th><th style="text-align:right">Custo Sistema</th><th style="text-align:right">Custo Contado</th><th style="text-align:right">Dif. R$</th></tr></thead><tbody>'+
+      (rows||'<tr><td colspan="9" style="color:var(--t3)">Nada a mostrar.</td></tr>')+
+      (linhas.length>lim?'<tr><td colspan="9" style="text-align:center;padding:10px"><button class="btn btn-s btn-sm" onclick="window._resLimite=(window._resLimite||300)+1000;_renderResultadoBalanco()">Mostrar mais ('+(linhas.length-lim).toLocaleString('pt-BR')+' restantes)</button></td></tr>':'')+
     '</tbody></table></div>'+
     _htmlEnderecosRecontar(r);
 }
@@ -5290,9 +5291,9 @@ function _htmlEnderecosRecontar(r) {
 }
 function _exportarResultadoCsv() {
   if (!_resultadoCache) return;
-  var lines=['CODIGO;EAN;DESCRICAO;UN;SISTEMA;CONTADO;DIFERENCA;CUSTO;VALOR;NAO_CADASTRADO;BIPAGENS;ENDERECOS'];
+  var lines=['CODIGO;EAN;DESCRICAO;UN;QTD_SISTEMA;QTD_CONTADO;DIVERGENCIA;CUSTO_UNIT;CUSTO_SISTEMA;CUSTO_CONTADO;DIF_RS;NAO_CADASTRADO;BIPAGENS;ENDERECOS'];
   var f=function(v){ return v==null?'':String(v).replace('.',','); };
-  _resultadoCache.r.linhas.forEach(function(l){ lines.push([l.codigo,l.ean,l.desc.replace(/;/g,' '),l.un,f(l.sistema),f(l.contado),f(l.dif),f(l.custo),f(l.valor==null?null:+l.valor.toFixed(2)),l.nc?'SIM':'',l.bips||0,l.ends||0].join(';')); });
+  _resultadoCache.r.linhas.forEach(function(l){ lines.push([l.codigo,l.ean,l.desc.replace(/;/g,' '),l.un,f(l.sistema),f(l.contado),f(l.dif),f(l.custo),f(l.valorSistema==null?null:+l.valorSistema.toFixed(2)),f(l.valorContado==null?null:+l.valorContado.toFixed(2)),f(l.valor==null?null:+l.valor.toFixed(2)),l.nc?'SIM':'',l.bips||0,l.ends||0].join(';')); });
   var blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url;
   a.download=(_resultadoCache.invNome||'inventario').replace(/[^a-z0-9]/gi,'_')+'_resultado.csv'; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); },2000);

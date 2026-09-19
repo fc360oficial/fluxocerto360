@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '380';
+var BUILD = '381';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5257,13 +5257,24 @@ function _renderResultadoBalanco() {
     base.sort(function(a,b){ return (b.valorContado||0)-(a.valorContado||0); });
   }
   var linhas=base.filter(function(l){ if(soDiv&&!(l.dif)&&!l.nc) return false; if(busca&&(l.codigo+' '+l.ean+' '+l.desc).toLowerCase().indexOf(busca)<0) return false; return true; });
+  var srt=window._resSort;
+  if (srt&&srt.col) {
+    var txt=(srt.col==='codigo'||srt.col==='ean'||srt.col==='desc');
+    linhas=linhas.slice().sort(function(a,b){
+      var x=a[srt.col], y=b[srt.col];
+      if (txt) return String(x||'').localeCompare(String(y||''),'pt-BR',{numeric:true})*srt.dir;
+      if (x==null&&y==null) return 0; if (x==null) return 1; if (y==null) return -1; // vazios sempre no fim
+      return (x-y)*srt.dir;
+    });
+  }
+  var th=function(label,col,right){ var on=srt&&srt.col===col; return '<th onclick="_resOrdenar(\''+col+'\')" title="Clique pra ordenar" style="cursor:pointer;user-select:none;white-space:nowrap'+(right?';text-align:right':'')+(on?';color:var(--t)':'')+'">'+label+(on?(srt.dir<0?' ▼':' ▲'):'')+'</th>'; };
   var tile=function(lbl,val,cor){ return '<div style="flex:1;min-width:120px;background:var(--gray);border-radius:10px;padding:10px 12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3)">'+lbl+'</div><div style="font-size:18px;font-weight:800;color:'+(cor||'var(--t)')+'">'+val+'</div></div>'; };
   var liquido=t.sobraVal-t.faltaVal;
   var rows=linhas.slice(0,lim).map(function(l){
     var cor=l.dif>0?'#1a5c34':l.dif<0?'#c0392b':'var(--t3)';
     return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+(l.bips>1?' <span title="Produto bipado '+l.bips+' vezes'+(l.ends>1?' em '+l.ends+' endereços':'')+'" style="display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700;background:#fff8e1;color:#b38600;margin-left:4px;vertical-align:middle">×'+l.bips+' bip'+(l.ends>1?' · '+l.ends+' end.':'')+'</span>':'')+'</td>'+
-      '<td style="text-align:right">'+(l.sistema==null?'—':l.sistema)+'</td><td style="text-align:right;font-weight:700">'+l.contado+'</td><td style="text-align:right;font-weight:800;color:'+cor+'">'+(l.dif==null?'—':(l.dif>0?'+':'')+l.dif)+'</td>'+
-      '<td style="text-align:right;color:var(--t2)">'+(l.valorSistema==null?'—':_fmtBRL(l.valorSistema))+'</td><td style="text-align:right;font-weight:700">'+(l.valorContado==null?'—':_fmtBRL(l.valorContado))+'</td><td style="text-align:right;color:'+cor+'">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td></tr>';
+      '<td style="text-align:right;white-space:nowrap">'+(l.sistema==null?'—':l.sistema)+'</td><td style="text-align:right;font-weight:700;white-space:nowrap">'+l.contado+'</td><td style="text-align:right;font-weight:800;white-space:nowrap;color:'+cor+'">'+(l.dif==null?'—':(l.dif>0?'+':'')+l.dif)+'</td>'+
+      '<td style="text-align:right;white-space:nowrap;color:var(--t2)">'+(l.valorSistema==null?'—':_fmtBRL(l.valorSistema))+'</td><td style="text-align:right;font-weight:700;white-space:nowrap">'+(l.valorContado==null?'—':_fmtBRL(l.valorContado))+'</td><td style="text-align:right;white-space:nowrap;color:'+cor+'">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td></tr>';
   }).join('');
   var tilesEnd='';
   if (endSel) { var unEnd=base.reduce(function(a,l){ return a+(l.contado||0); },0), valEnd=base.reduce(function(a,l){ return a+(l.valorContado||0); },0);
@@ -5282,7 +5293,7 @@ function _renderResultadoBalanco() {
       '<span style="font-size:11px;color:var(--t3)">'+linhas.length.toLocaleString('pt-BR')+' linhas</span>'+
       '<button class="btn btn-s btn-sm" onclick="_exportarResultadoCsv()">⬇ CSV</button>'+
     '</div>'+
-    '<div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table><thead><tr><th>Código</th><th>EAN</th><th>Descrição</th><th style="text-align:right">Qtd Sistema</th><th style="text-align:right">Qtd Contado</th><th style="text-align:right">Divergência</th><th style="text-align:right">Custo Sistema</th><th style="text-align:right">Custo Contado</th><th style="text-align:right">Dif. R$</th></tr></thead><tbody>'+
+    '<div style="overflow-x:auto;max-height:70vh;overflow-y:auto"><table style="min-width:960px"><thead><tr>'+th('Código','codigo')+th('EAN','ean')+th('Descrição','desc')+th('Qtd Sistema','sistema',1)+th('Qtd Contado','contado',1)+th('Divergência','dif',1)+th('Custo Sistema','valorSistema',1)+th('Custo Contado','valorContado',1)+th('Dif. R$','valor',1)+'</tr></thead><tbody>'+
       (rows||'<tr><td colspan="9" style="color:var(--t3)">Nada a mostrar.</td></tr>')+
       (linhas.length>lim?'<tr><td colspan="9" style="text-align:center;padding:10px"><button class="btn btn-s btn-sm" onclick="window._resLimite=(window._resLimite||300)+1000;_renderResultadoBalanco()">Mostrar mais ('+(linhas.length-lim).toLocaleString('pt-BR')+' restantes)</button></td></tr>':'')+
     '</tbody></table></div>'+
@@ -5301,6 +5312,12 @@ function _htmlEnderecosRecontar(r) {
   return '<div style="margin-top:18px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px">Endereços pra recontar (estimativa)</div>'+
     '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">A divergência de cada produto é distribuída entre os endereços onde ele foi bipado, na proporção do que foi contado em cada um. Quanto maior o valor, mais vale recontar.</div>'+
     '<div style="overflow-x:auto"><table><thead><tr><th>Endereço</th><th>Coletor</th><th style="text-align:right">Itens diverg.</th><th style="text-align:right">Unid. estim.</th><th style="text-align:right">Impacto</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+// Clique no cabeçalho: 1º clique maior→menor, 2º menor→maior.
+function _resOrdenar(col){
+  var s=window._resSort;
+  window._resSort=(s&&s.col===col)?{col:col,dir:-s.dir}:{col:col,dir:-1};
+  window._resLimite=300; _renderResultadoBalanco();
 }
 function _exportarResultadoCsv() {
   if (!_resultadoCache) return;

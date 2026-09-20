@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '402';
+var BUILD = '403';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15963,6 +15963,9 @@ function _descFixa(mostrar, keypad){
     }
   }
   if (el._posFixa) el._posFixa();
+  // Se a tela de coleta for trocada (Mudar Endereço, Próximo etc.) com a faixa aberta, some junto.
+  if (el._chk) { clearInterval(el._chk); el._chk=null; }
+  if (mostrar) el._chk=setInterval(function(){ if(!document.getElementById('inv-qty-input')){ clearInterval(el._chk); el._chk=null; el.style.display='none'; _kpAlvo='qty'; } }, 300);
   var pr=document.getElementById('inv-desc-preview'); var txt=pr?pr.textContent.trim():'';
   var txtEl=document.getElementById('inv-desc-fixo-txt'), kp=document.getElementById('inv-desc-fixo-kp');
   if(mostrar&&(txt||keypad==='ean')){

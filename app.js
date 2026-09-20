@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '404';
+var BUILD = '405';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -14706,11 +14706,13 @@ function _iniciarCamFixa(){
   '</div>';
   var hints=new Map();
   hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128]);
-  var reader=new ZXing.BrowserMultiFormatReader(hints);
+  // 80 ms entre tentativas (padrão da lib é 500 ms — com a dupla leitura exigida abaixo dava >1 s por item)
+  var reader=new ZXing.BrowserMultiFormatReader(hints, 80);
+  try { reader.timeBetweenDecodingAttempts=80; } catch(e){}
   _camFixa=reader; _atualizarBtnCamFixa();
-  reader.decodeFromConstraints({video:{facingMode:'environment'}},'inv-cam-video',function(result){
-    if (!result||_camFixa!==reader||_decisaoAberta()) return;
-    var val=result.getText(), agora=Date.now();
+  var leu=function(val){
+    if (_camFixa!==reader||_decisaoAberta()||!val) return;
+    var agora=Date.now();
     // Exige a mesma leitura 2x seguidas (em até 1,2 s) antes de aceitar: corta leitura errada da câmera
     if (!(_camFixaCand.val===val&&agora-_camFixaCand.t<1200)) { _camFixaCand={val:val,t:agora}; return; }
     if (val===_camFixaUltimo.val&&agora-_camFixaUltimo.t<2500) return; // mesma etiqueta ainda na frente da câmera
@@ -14723,9 +14725,40 @@ function _iniciarCamFixa(){
     ei.value=val; ei.dispatchEvent(new Event('input'));
     var m=document.getElementById('inv-cam-msg'); if(m){ m.textContent='Lido: '+val; setTimeout(function(){ if(m) m.textContent='Aponte pro código de barras'; },1500); }
     _eanEnterKey(true);
-  }).catch(function(err){ _pararCamFixa(); localStorage.setItem(_CAM_FIXA_KEY,'0'); showToast('Câmera indisponível: '+(err.message||err)); });
+  };
+  // 720p + foco contínuo: no padrão (640x480, sem pedir foco) o EAN chega borrado e o ZXing fica tentando.
+  var constraints={video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720},focusMode:'continuous'}};
+  reader.decodeFromConstraints(constraints,'inv-cam-video',function(result){ if(result) leu(result.getText()); })
+  .then(function(){ _afinarCamFixa(reader); })
+  .catch(function(err){ _pararCamFixa(); localStorage.setItem(_CAM_FIXA_KEY,'0'); showToast('Câmera indisponível: '+(err.message||err)); });
+  // Leitor nativo do navegador (ML Kit) em PARALELO, quando existir: lê em ~1 frame. O ZXing continua
+  // rodando, então se o nativo não devolver nada (aparelho sem o módulo) nada muda.
+  if ('BarcodeDetector' in window) {
+    try {
+      var det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']}), ocupado=false;
+      _camFixaDetTimer=setInterval(function(){
+        var v=document.getElementById('inv-cam-video');
+        if (_camFixa!==reader){ clearInterval(_camFixaDetTimer); _camFixaDetTimer=null; return; }
+        if (ocupado||!v||v.readyState<2) return;
+        ocupado=true;
+        det.detect(v).then(function(codes){ ocupado=false; if(codes&&codes.length) leu(codes[0].rawValue); }).catch(function(){ ocupado=false; });
+      }, 120);
+    } catch(e){}
+  }
+}
+var _camFixaDetTimer=null;
+// Depois que o stream abre: liga foco contínuo e um zoom leve (EAN pequeno fica legível de mais longe).
+function _afinarCamFixa(reader){
+  try {
+    var track=reader.stream&&reader.stream.getVideoTracks&&reader.stream.getVideoTracks()[0]; if(!track) return;
+    var cap=track.getCapabilities?track.getCapabilities():{}, adv=[];
+    if (cap.focusMode&&cap.focusMode.indexOf('continuous')>=0) adv.push({focusMode:'continuous'});
+    if (cap.zoom&&cap.zoom.max>=1.5) adv.push({zoom:Math.min(cap.zoom.max, Math.max(cap.zoom.min||1, 1.5))});
+    if (adv.length) track.applyConstraints({advanced:adv}).catch(function(){});
+  } catch(e){}
 }
 function _pararCamFixa(){
+  if (_camFixaDetTimer){ clearInterval(_camFixaDetTimer); _camFixaDetTimer=null; }
   if (_camFixa){ try{ _camFixa.reset(); }catch(e){} _camFixa=null; }
   var wrap=document.getElementById('inv-cam-fixa'); if(wrap){ wrap.innerHTML=''; wrap.style.display='none'; }
   _atualizarBtnCamFixa();

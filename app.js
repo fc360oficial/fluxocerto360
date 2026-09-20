@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '396';
+var BUILD = '397';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15007,7 +15007,10 @@ function renderColeta() {
           '<div style="flex:1;min-width:200px">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">EAN / Código de Barras</label>'+
             '<div id="inv-desc-preview" style="font-size:13px;font-weight:600;margin-bottom:6px;min-height:20px"></div>'+
-            '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" disabled placeholder="Carregando endereço..." style="width:100%;padding:13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
+            '<div style="position:relative">'+
+              '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" disabled placeholder="Carregando endereço..." style="width:100%;padding:13px 44px 13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
+              '<button type="button" onclick="_limparEan()" title="Apagar código lido errado" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:8px;border:1.5px solid var(--gray2);background:#fff;font-size:16px;line-height:1;color:var(--t2);cursor:pointer">✕</button>'+
+            '</div>'+
           '</div>'+
           '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
@@ -15945,32 +15948,41 @@ function _descFixa(mostrar, keypad){
   var el=document.getElementById('inv-desc-fixo');
   if(!el){
     el=document.createElement('div'); el.id='inv-desc-fixo';
-    el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:1500;background:#fff8e1;border-top:3px solid #FFC600;padding:10px 14px 14px;box-shadow:0 -4px 16px rgba(0,0,0,.15);display:none';
+    el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:1500;background:#fff8e1;border-top:3px solid #FFC600;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(0,0,0,.15);display:none;max-height:70vh;overflow:auto';
     el.innerHTML='<div id="inv-desc-fixo-txt" style="font-size:15px;font-weight:700;color:#111;line-height:1.3;margin-bottom:8px"></div>'+
-      '<div id="inv-desc-fixo-kp" style="display:none;grid-template-columns:repeat(4,1fr);gap:6px"></div>';
+      '<div id="inv-desc-fixo-kp" style="display:none"></div>';
     document.body.appendChild(el);
     _montarKeypadQty();
   }
   var pr=document.getElementById('inv-desc-preview'); var txt=pr?pr.textContent.trim():'';
   var txtEl=document.getElementById('inv-desc-fixo-txt'), kp=document.getElementById('inv-desc-fixo-kp');
-  if(mostrar&&txt){ if(txtEl) txtEl.textContent=txt+' — informe a quantidade'; el.style.display='block'; if(kp) kp.style.display=keypad?'grid':'none'; }
+  if(mostrar&&txt){ if(txtEl) txtEl.textContent=txt+' — informe a quantidade'; el.style.display='block'; if(kp) kp.style.display=keypad?'block':'none'; }
   else { el.style.display='none'; }
 }
 function _montarKeypadQty(){
   var wrap=document.getElementById('inv-desc-fixo-kp'); if(!wrap) return;
-  var btns=['1','2','3','4','5','6','7','8','9','⌫','0','✓'];
-  wrap.innerHTML=btns.map(function(b){
-    var isOk=(b==='✓');
-    return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="padding:14px 0;border-radius:10px;border:1.5px solid var(--gray2);background:'+(isOk?'var(--y)':'#fff')+';color:'+(isOk?'#111':'var(--t)')+';font-size:19px;font-weight:800;font-family:inherit">'+b+'</button>';
+  var digitos=['1','2','3','4','5','6','7','8','9','⌫','0','C'];
+  var gradeHtml=digitos.map(function(b){
+    return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="padding:14px 0;border-radius:10px;border:1.5px solid var(--gray2);background:#fff;color:var(--t);font-size:19px;font-weight:800;font-family:inherit">'+b+'</button>';
   }).join('');
+  wrap.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">'+gradeHtml+'</div>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="width:100%;padding:16px 0;border-radius:10px;border:none;background:var(--y);color:#111;font-size:17px;font-weight:800;font-family:inherit">✓ ENTER — Registrar</button>';
 }
 // Primeiro toque depois de focar/selecionar substitui o valor (como digitar por cima do texto selecionado).
 function _kpQty(b){
   var qi=document.getElementById('inv-qty-input'); if(!qi) return;
-  if(b==='✓'){ registrarBipagem(); return; }
+  if(b==='ENTER'){ registrarBipagem(); return; }
+  if(b==='C'){ qi.value=''; qi.dataset.limpo='1'; return; }
   if(b==='⌫'){ qi.value=qi.value.slice(0,-1); qi.dataset.limpo='1'; return; }
   if(qi.dataset.limpo!=='1'){ qi.value=''; qi.dataset.limpo='1'; }
   qi.value=(qi.value+b).replace(/^0+(?=\d)/,'');
+}
+// Botão ✕ ao lado do EAN: apaga o código lido errado sem depender de teclado (o campo não abre
+// o teclado do SO por causa do leitor Bluetooth, então esse era o único jeito de corrigir).
+function _limparEan(){
+  var ei=document.getElementById('inv-ean-input'); if(!ei||ei.disabled) return;
+  ei.value=''; var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent='';
+  ei.focus();
 }
 function _eanEnterKey(deScanner) {
   var ei=document.getElementById('inv-ean-input'); if(!ei) return;

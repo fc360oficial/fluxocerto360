@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '401';
+var BUILD = '402';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15953,7 +15953,16 @@ function _descFixa(mostrar, keypad){
       '<div id="inv-desc-fixo-kp" style="display:none"></div>';
     document.body.appendChild(el);
     _montarKeypadQty();
+    // Barra do Gboard em modo "teclado físico" (leitor Bluetooth) fica por cima de bottom:0 sem
+    // encolher o layout — ancora a faixa no fim da viewport VISUAL, que desconta essa barra.
+    if (window.visualViewport) {
+      var _posFixa=function(){ var vv=window.visualViewport; el.style.bottom=Math.max(0, window.innerHeight-(vv.height+vv.offsetTop))+'px'; };
+      window.visualViewport.addEventListener('resize', _posFixa);
+      window.visualViewport.addEventListener('scroll', _posFixa);
+      el._posFixa=_posFixa;
+    }
   }
+  if (el._posFixa) el._posFixa();
   var pr=document.getElementById('inv-desc-preview'); var txt=pr?pr.textContent.trim():'';
   var txtEl=document.getElementById('inv-desc-fixo-txt'), kp=document.getElementById('inv-desc-fixo-kp');
   if(mostrar&&(txt||keypad==='ean')){

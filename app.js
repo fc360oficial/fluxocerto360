@@ -15078,7 +15078,7 @@ function renderColeta() {
           pr.textContent='📦 '+r.codigo+' · '+r.desc+(r.un?' — '+r.un:'');
           pr.style.color='var(--g)';
           // Código interno curto: espera o Enter (leitor manda Enter). EAN completo: pula pra Qtd na hora.
-          if (eanCompleto) { var qi=document.getElementById('inv-qty-input'); if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } _dupAoLer(val,r); }
+          if (eanCompleto) { var qi=document.getElementById('inv-qty-input'); _focoQtyTeclado(qi); _dupAoLer(val,r); }
         } else if (eanCompleto) {
           pr.textContent='⚠ Não cadastrado — será registrado com marcação'; pr.style.color='var(--r)';
         } else {
@@ -15964,7 +15964,7 @@ function _eanEnterKey(deScanner) {
     if (deScanner&&r&&!r.multiplos&&/^\d{1,4}$/.test(val)){ _abrirConfirmaCurto(val,r); return; }
   }
   var qi=document.getElementById('inv-qty-input');
-  if (qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); }
+  _focoQtyTeclado(qi);
   if (r&&!r.multiplos) _dupAoLer(val,r);
 }
 // Enquanto uma decisão está aberta (código curto / EAN duplicado), leitor, câmera e teclado ficam bloqueados.
@@ -15988,7 +15988,7 @@ function _abrirConfirmaCurto(val,r){
 function _confirmaCurto(ok){
   var m=document.getElementById('modal-curto'); if(m) m.remove();
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
-  if (ok){ if(qi){ _qtyFocoScanTs=Date.now(); qi.focus(); qi.select(); } var _cv=ei?ei.value.trim():''; var _inv=_invColetaAtual?_invColetaAtual.inv:null; var _cat=_inv?(_catCache[_inv.id]||null):null; var _cr=(_cat&&_cat.total)?InvCore.resolverCodigo(_cat,_cv):null; if(_cr&&!_cr.multiplos) _dupAoLer(_cv,_cr); return; }
+  if (ok){ _focoQtyTeclado(qi); var _cv=ei?ei.value.trim():''; var _inv=_invColetaAtual?_invColetaAtual.inv:null; var _cat=_inv?(_catCache[_inv.id]||null):null; var _cr=(_cat&&_cat.total)?InvCore.resolverCodigo(_cat,_cv):null; if(_cr&&!_cr.multiplos) _dupAoLer(_cv,_cr); return; }
   if (ei){ ei.value=''; var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent=''; ei.focus(); }
 }
 
@@ -15999,6 +15999,16 @@ var _rajadaQty = InvCore.criarDetectorRajada(100, 4);
 // Instante em que a Qtd recebeu foco por causa de uma leitura. O leitor Bluetooth manda Enter como sufixo
 // depois do último dígito; como o EAN completo já pulou o foco pra Qtd, esse Enter cairia aqui e gravaria com Qtd 1.
 var _qtyFocoScanTs = 0;
+// Pula pra Qtd depois de um bip: focus() disparado por JS logo após a "digitação" do leitor Bluetooth
+// costuma não reabrir o teclado no Android (o sistema trata o leitor como teclado físico conectado).
+// Alternar readOnly força o SO a reconsiderar o campo como recém-editável e reabrir o teclado.
+function _focoQtyTeclado(qi) {
+  if (!qi) return;
+  _qtyFocoScanTs = Date.now();
+  qi.focus(); qi.select();
+  qi.readOnly = true;
+  setTimeout(function(){ qi.readOnly = false; qi.focus(); qi.select(); }, 60);
+}
 function _qtyKeydown(ev) {
   if ((ev.key==='Enter'||ev.keyCode===13) && Date.now()-_qtyFocoScanTs<400) { ev.preventDefault(); return false; } // ninguém confirma Qtd em <0,4 s depois do pulo: é o sufixo do leitor
   if (ev.key==='Enter') { ev.preventDefault(); if(_getModoPallet()){ var fi=document.getElementById('inv-fator-input'); if(fi){fi.focus();fi.select();} } else registrarBipagem(); return false; }

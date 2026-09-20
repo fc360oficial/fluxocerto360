@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '395';
+var BUILD = '396';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15011,10 +15011,10 @@ function renderColeta() {
           '</div>'+
           '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
-            '<input id="inv-qty-input" type="number" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_descFixa(true)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
+            '<input id="inv-qty-input" type="number" inputmode="none" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_descFixa(true,true)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
           '<div id="inv-fator-wrap" style="width:62px;'+(palletOn?'':'display:none')+'">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd Emb</label>'+
-            '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()" onfocus="_descFixa(true)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
+            '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()" onfocus="_descFixa(true,false)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
           '<button onclick="registrarBipagem()" style="padding:13px 22px;background:#FFC600;color:#111;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Registrar</button>'+
         '</div>'+
         '<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">'+
@@ -15937,12 +15937,40 @@ function voltarInvLista() {
 
 // ── _eanEnterKey — Enter no campo EAN: vai pra qty se reconhecido ─────────
 
-// Faixa fixa acima do teclado com o produto lido, visível enquanto a Qtd está focada (a tela rola e o texto de cima some).
-function _descFixa(mostrar){
+// Faixa fixa embaixo com o produto lido + teclado numérico próprio pra Qtd.
+// O leitor Bluetooth (teclado físico via HID) faz o Android suprimir o teclado virtual mesmo
+// depois de focus() via JS — não dá pra forçar isso de forma confiável, então a Qtd usa
+// inputmode="none" (não abre teclado do SO) e esse teclado próprio garante a digitação sempre.
+function _descFixa(mostrar, keypad){
   var el=document.getElementById('inv-desc-fixo');
-  if(!el){ el=document.createElement('div'); el.id='inv-desc-fixo'; el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:1500;background:#fff8e1;border-top:3px solid #FFC600;padding:10px 14px;font-size:15px;font-weight:700;color:#111;box-shadow:0 -4px 16px rgba(0,0,0,.15);display:none;line-height:1.3'; document.body.appendChild(el); }
+  if(!el){
+    el=document.createElement('div'); el.id='inv-desc-fixo';
+    el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:1500;background:#fff8e1;border-top:3px solid #FFC600;padding:10px 14px 14px;box-shadow:0 -4px 16px rgba(0,0,0,.15);display:none';
+    el.innerHTML='<div id="inv-desc-fixo-txt" style="font-size:15px;font-weight:700;color:#111;line-height:1.3;margin-bottom:8px"></div>'+
+      '<div id="inv-desc-fixo-kp" style="display:none;grid-template-columns:repeat(4,1fr);gap:6px"></div>';
+    document.body.appendChild(el);
+    _montarKeypadQty();
+  }
   var pr=document.getElementById('inv-desc-preview'); var txt=pr?pr.textContent.trim():'';
-  if(mostrar&&txt){ el.textContent=txt+' — informe a quantidade'; el.style.display='block'; } else { el.style.display='none'; }
+  var txtEl=document.getElementById('inv-desc-fixo-txt'), kp=document.getElementById('inv-desc-fixo-kp');
+  if(mostrar&&txt){ if(txtEl) txtEl.textContent=txt+' — informe a quantidade'; el.style.display='block'; if(kp) kp.style.display=keypad?'grid':'none'; }
+  else { el.style.display='none'; }
+}
+function _montarKeypadQty(){
+  var wrap=document.getElementById('inv-desc-fixo-kp'); if(!wrap) return;
+  var btns=['1','2','3','4','5','6','7','8','9','⌫','0','✓'];
+  wrap.innerHTML=btns.map(function(b){
+    var isOk=(b==='✓');
+    return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="padding:14px 0;border-radius:10px;border:1.5px solid var(--gray2);background:'+(isOk?'var(--y)':'#fff')+';color:'+(isOk?'#111':'var(--t)')+';font-size:19px;font-weight:800;font-family:inherit">'+b+'</button>';
+  }).join('');
+}
+// Primeiro toque depois de focar/selecionar substitui o valor (como digitar por cima do texto selecionado).
+function _kpQty(b){
+  var qi=document.getElementById('inv-qty-input'); if(!qi) return;
+  if(b==='✓'){ registrarBipagem(); return; }
+  if(b==='⌫'){ qi.value=qi.value.slice(0,-1); qi.dataset.limpo='1'; return; }
+  if(qi.dataset.limpo!=='1'){ qi.value=''; qi.dataset.limpo='1'; }
+  qi.value=(qi.value+b).replace(/^0+(?=\d)/,'');
 }
 function _eanEnterKey(deScanner) {
   var ei=document.getElementById('inv-ean-input'); if(!ei) return;
@@ -15999,15 +16027,14 @@ var _rajadaQty = InvCore.criarDetectorRajada(100, 4);
 // Instante em que a Qtd recebeu foco por causa de uma leitura. O leitor Bluetooth manda Enter como sufixo
 // depois do último dígito; como o EAN completo já pulou o foco pra Qtd, esse Enter cairia aqui e gravaria com Qtd 1.
 var _qtyFocoScanTs = 0;
-// Pula pra Qtd depois de um bip: focus() disparado por JS logo após a "digitação" do leitor Bluetooth
-// costuma não reabrir o teclado no Android (o sistema trata o leitor como teclado físico conectado).
-// Alternar readOnly força o SO a reconsiderar o campo como recém-editável e reabrir o teclado.
+// Pula pra Qtd depois de um bip. A Qtd usa inputmode="none" (não depende do teclado do SO,
+// que o Android suprime depois da "digitação" do leitor Bluetooth) — quem digita é o
+// teclado numérico próprio (_montarKeypadQty), mostrado por _descFixa(true,true) no onfocus.
 function _focoQtyTeclado(qi) {
   if (!qi) return;
   _qtyFocoScanTs = Date.now();
+  qi.dataset.limpo = '';
   qi.focus(); qi.select();
-  qi.readOnly = true;
-  setTimeout(function(){ qi.readOnly = false; qi.focus(); qi.select(); }, 60);
 }
 function _qtyKeydown(ev) {
   if ((ev.key==='Enter'||ev.keyCode===13) && Date.now()-_qtyFocoScanTs<400) { ev.preventDefault(); return false; } // ninguém confirma Qtd em <0,4 s depois do pulo: é o sufixo do leitor
@@ -16083,7 +16110,7 @@ function _registrarResolvido(lido, res, qtyTotal, fator, pularDup) {
   _bipsLocais.unshift(bip); if(_bipsLocais.length>50) _bipsLocais.length=50;
   _bipSom(bip.naoCadastrado?'alerta':'ok');
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input'), fi=document.getElementById('inv-fator-input');
-  if(ei) ei.value=''; if(qi) qi.value='1'; if(fi) fi.value='1';
+  if(ei) ei.value=''; if(qi){ qi.value='1'; qi.dataset.limpo=''; } if(fi) fi.value='1';
   var pr=document.getElementById('inv-desc-preview'); if(pr) pr.textContent='';
   var sl=document.getElementById('inv-seq-label'); if(sl) sl.textContent='Próx. seq: '+_nextSeq;
   _renderUltimasBipagens(_bipsLocais.slice(0,20), inv.id);
@@ -16152,7 +16179,7 @@ function _dupQtyKeydown(ev){
 function _cancelarJaColetado(){
   var m=document.getElementById('modal-dup'); if(m) m.remove(); _dupCtx=null; _dupChecadoChave=null;
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input'), pr=document.getElementById('inv-desc-preview');
-  if(ei) ei.value=''; if(qi) qi.value='1'; if(pr) pr.textContent=''; _descFixa(false); if(ei) ei.focus();
+  if(ei) ei.value=''; if(qi){ qi.value='1'; qi.dataset.limpo=''; } if(pr) pr.textContent=''; _descFixa(false); if(ei) ei.focus();
 }
 function _somarJaColetado(){
   var c=_dupCtx; if(!c) return;

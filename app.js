@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '403';
+var BUILD = '404';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -16083,18 +16083,25 @@ function _focoQtyTeclado(qi) {
 }
 // Foco na Qtd: mostra só a faixa com o produto e espera o teclado nativo. Se em 450 ms a viewport
 // visual não encolheu (teclado do Android não abriu — leitor Bluetooth pareado), abre o teclado próprio.
-var _qtyFocoChk = 0;
+var _qtyFocoChk = 0, _qtyH0 = 0;
 function _qtyFocado() {
-  var vv = window.visualViewport, h0 = vv ? vv.height : window.innerHeight;
+  var vv = window.visualViewport; _qtyH0 = vv ? vv.height : window.innerHeight;
   _descFixa(true, false);
   var id = ++_qtyFocoChk;
   setTimeout(function(){
     if (id !== _qtyFocoChk) return;
     var a = document.activeElement; if (!a || a.id !== 'inv-qty-input') return;
-    var h1 = vv ? vv.height : window.innerHeight;
-    if (h0 - h1 < 120) _descFixa(true, true);
-  }, 450);
+    if (_tecladoNativoAberto()) return;
+    _descFixa(true, true);
+  }, 600);
 }
+function _tecladoNativoAberto(){ var vv=window.visualViewport; return (_qtyH0 - (vv ? vv.height : window.innerHeight)) >= 120; }
+// Pela câmera o teclado do Android pode abrir depois da checagem: quando abrir, o próprio sai da frente.
+if (window.visualViewport) window.visualViewport.addEventListener('resize', function(){
+  var a=document.activeElement; if(!a||a.id!=='inv-qty-input'||_kpAlvo!=='qty') return;
+  var kp=document.getElementById('inv-desc-fixo-kp'); if(!kp||kp.style.display==='none') return;
+  if (_tecladoNativoAberto()) _descFixa(true, false);
+});
 function _qtyKeydown(ev) {
   if ((ev.key==='Enter'||ev.keyCode===13) && Date.now()-_qtyFocoScanTs<400) { ev.preventDefault(); return false; } // ninguém confirma Qtd em <0,4 s depois do pulo: é o sufixo do leitor
   if (ev.key==='Enter') { ev.preventDefault(); if(_getModoPallet()){ var fi=document.getElementById('inv-fator-input'); if(fi){fi.focus();fi.select();} } else registrarBipagem(); return false; }

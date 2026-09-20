@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '398';
+var BUILD = '399';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15008,16 +15008,17 @@ function renderColeta() {
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">EAN / Código de Barras</label>'+
             '<div id="inv-desc-preview" style="font-size:13px;font-weight:600;margin-bottom:6px;min-height:20px"></div>'+
             '<div style="position:relative">'+
-              '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" disabled placeholder="Carregando endereço..." style="width:100%;padding:13px 44px 13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
+              '<input id="inv-ean-input" type="text" inputmode="numeric" autocomplete="off" disabled placeholder="Carregando endereço..." style="width:100%;padding:13px 84px 13px 14px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;font-family:monospace;letter-spacing:1px" onkeydown="if(event.key===\'Enter\')_eanEnterKey()"/>'+
+              '<button type="button" onmousedown="event.preventDefault()" onclick="_teclarEan()" title="Digitar o código pelo teclado do app" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);width:34px;height:32px;border-radius:8px;border:1.5px solid var(--gray2);background:#fff;font-size:16px;line-height:1;color:var(--t2);cursor:pointer">⌨</button>'+
               '<button type="button" onclick="_limparEan()" title="Apagar código lido errado" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:8px;border:1.5px solid var(--gray2);background:#fff;font-size:16px;line-height:1;color:var(--t2);cursor:pointer">✕</button>'+
             '</div>'+
           '</div>'+
           '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
-            '<input id="inv-qty-input" type="number" inputmode="none" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_descFixa(true,true)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
+            '<input id="inv-qty-input" type="number" inputmode="none" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_descFixa(true,true)" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
           '<div id="inv-fator-wrap" style="width:62px;'+(palletOn?'':'display:none')+'">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd Emb</label>'+
-            '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()" onfocus="_descFixa(true,false)" onblur="setTimeout(function(){ var a=document.activeElement; if(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\')) _descFixa(false); },80)"/></div>'+
+            '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()" onfocus="_descFixa(true,false)" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
           '<button onclick="registrarBipagem()" style="padding:13px 22px;background:#FFC600;color:#111;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Registrar</button>'+
         '</div>'+
         '<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">'+
@@ -15956,9 +15957,15 @@ function _descFixa(mostrar, keypad){
   }
   var pr=document.getElementById('inv-desc-preview'); var txt=pr?pr.textContent.trim():'';
   var txtEl=document.getElementById('inv-desc-fixo-txt'), kp=document.getElementById('inv-desc-fixo-kp');
-  if(mostrar&&txt){ if(txtEl) txtEl.textContent=txt+' — informe a quantidade'; el.style.display='block'; if(kp) kp.style.display=keypad?'block':'none'; }
-  else { el.style.display='none'; }
+  if(mostrar&&(txt||keypad==='ean')){
+    _kpAlvo = keypad==='ean' ? 'ean' : 'qty';
+    if(txtEl) txtEl.textContent = _kpAlvo==='ean' ? 'Digite o código de barras e toque em ENTER' : txt+' — informe a quantidade';
+    var enterBtn=document.getElementById('inv-kp-enter'); if(enterBtn) enterBtn.textContent = _kpAlvo==='ean' ? '✓ ENTER — Confirmar código' : '✓ ENTER — Registrar';
+    el.style.display='block'; if(kp) kp.style.display=keypad?'block':'none';
+  } else { el.style.display='none'; _kpAlvo='qty'; }
 }
+// Alvo do teclado próprio: 'qty' (padrão, abre sozinho no foco da Qtd) ou 'ean' (sob demanda pelo botão ⌨).
+var _kpAlvo='qty';
 function _montarKeypadQty(){
   var wrap=document.getElementById('inv-desc-fixo-kp'); if(!wrap) return;
   // ENTER em cima e grade de 4 colunas: a barra do Gboard/navegação cobre o fim da tela, então o
@@ -15967,17 +15974,30 @@ function _montarKeypadQty(){
   var gradeHtml=digitos.map(function(b){
     return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="padding:11px 0;border-radius:10px;border:1.5px solid var(--gray2);background:#fff;color:var(--t);font-size:19px;font-weight:800;font-family:inherit">'+b+'</button>';
   }).join('');
-  wrap.innerHTML='<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="width:100%;padding:14px 0;margin-bottom:8px;border-radius:10px;border:none;background:var(--y);color:#111;font-size:17px;font-weight:800;font-family:inherit">✓ ENTER — Registrar</button>'+
+  wrap.innerHTML='<div style="display:flex;gap:6px;margin-bottom:8px">'+
+      '<button type="button" id="inv-kp-enter" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="flex:1;padding:14px 0;border-radius:10px;border:none;background:var(--y);color:#111;font-size:17px;font-weight:800;font-family:inherit">✓ ENTER — Registrar</button>'+
+      '<button type="button" onmousedown="event.preventDefault()" onclick="_descFixa(false)" title="Fechar teclado" style="width:52px;border-radius:10px;border:1.5px solid var(--gray2);background:#fff;color:var(--t2);font-size:18px;font-weight:800;font-family:inherit">✕</button>'+
+    '</div>'+
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'+gradeHtml+'</div>';
+}
+// Botão ⌨ do EAN: abre o teclado próprio apontando pro código de barras (digitar manual ou corrigir leitura).
+function _teclarEan(){
+  var ei=document.getElementById('inv-ean-input'); if(!ei||ei.disabled) return;
+  ei.dataset.limpo='1'; ei.focus();
+  _descFixa(true,'ean');
 }
 // Primeiro toque depois de focar/selecionar substitui o valor (como digitar por cima do texto selecionado).
 function _kpQty(b){
-  var qi=document.getElementById('inv-qty-input'); if(!qi) return;
-  if(b==='ENTER'){ registrarBipagem(); return; }
-  if(b==='C'){ qi.value=''; qi.dataset.limpo='1'; return; }
-  if(b==='⌫'){ qi.value=qi.value.slice(0,-1); qi.dataset.limpo='1'; return; }
-  if(qi.dataset.limpo!=='1'){ qi.value=''; qi.dataset.limpo='1'; }
-  qi.value=(qi.value+b).replace(/^0+(?=\d)/,'');
+  var alvo=document.getElementById(_kpAlvo==='ean'?'inv-ean-input':'inv-qty-input'); if(!alvo) return;
+  if(b==='ENTER'){ if(_kpAlvo==='ean'){ _eanEnterKey(); } else { registrarBipagem(); } return; }
+  if(b==='C'){ alvo.value=''; alvo.dataset.limpo='1'; }
+  else if(b==='⌫'){ alvo.value=alvo.value.slice(0,-1); alvo.dataset.limpo='1'; }
+  else {
+    if(alvo.dataset.limpo!=='1'){ alvo.value=''; alvo.dataset.limpo='1'; }
+    alvo.value = _kpAlvo==='ean' ? alvo.value+b : (alvo.value+b).replace(/^0+(?=\d)/,'');
+  }
+  // O EAN tem listener de 'input' (preview do produto, pulo pra Qtd em EAN completo): dispara igual ao digitar.
+  if(_kpAlvo==='ean') alvo.dispatchEvent(new Event('input',{bubbles:true}));
 }
 // Botão ✕ ao lado do EAN: apaga o código lido errado sem depender de teclado (o campo não abre
 // o teclado do SO por causa do leitor Bluetooth, então esse era o único jeito de corrigir).

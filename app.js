@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '408';
+var BUILD = '409';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15109,7 +15109,7 @@ function renderColeta() {
           '</div>'+
           '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
-            '<input id="inv-qty-input" type="number" inputmode="numeric" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_qtyFocado()" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
+            '<input id="inv-qty-input" type="text" inputmode="decimal" autocomplete="off" value="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_qtyFocado()" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
           '<div id="inv-fator-wrap" style="width:62px;'+(palletOn?'':'display:none')+'">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd Emb</label>'+
             '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()" onfocus="_descFixa(true,false)" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
@@ -16082,7 +16082,7 @@ function _montarKeypadQty(){
     tecla('1')+tecla('2')+tecla('3')+tecla('⌫',cinza)+
     tecla('4')+tecla('5')+tecla('6')+tecla('C',cinza)+
     tecla('7')+tecla('8')+tecla('9')+'<button type="button" id="inv-kp-enter" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="'+base+'grid-row:span 2;height:auto;background:#1a73e8;color:#fff;font-size:26px">↵</button>'+
-    '<button type="button" onmousedown="event.preventDefault()" onclick="_descFixa(false)" title="Fechar" style="'+base+cinza+'font-size:18px">⌄</button>'+tecla('0')+'<span></span>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="_descFixa(false)" title="Fechar" style="'+base+cinza+'font-size:18px">⌄</button>'+tecla('0')+tecla(',')+
   '</div>';
 }
 // Botão ⌨ do EAN: abre o teclado próprio apontando pro código de barras (digitar manual ou corrigir leitura).
@@ -16093,12 +16093,20 @@ function _teclarEan(){
   ei.dataset.limpo='1'; ei.focus();
   _descFixa(true,'ean');
 }
+// Quantidade decimal (produto de peso): aceita vírgula ou ponto, 3 casas, mínimo 0,001; vazio/inválido = 1.
+function _qtdNum(v){ var n=parseFloat(String(v==null?'':v).trim().replace(',','.')); if(!(n>0)) return 1; return Math.round(n*1000)/1000; }
+function _qtdFmt(n){ return String(_qtdNum(n)).replace('.',','); }
 // Primeiro toque depois de focar/selecionar substitui o valor (como digitar por cima do texto selecionado).
 function _kpQty(b){
   var alvo=document.getElementById(_kpAlvo==='ean'?'inv-ean-input':'inv-qty-input'); if(!alvo) return;
   if(b==='ENTER'){ if(_kpAlvo==='ean'){ _eanEnterKey(); } else { registrarBipagem(); } return; }
   if(b==='C'){ alvo.value=''; alvo.dataset.limpo='1'; }
   else if(b==='⌫'){ alvo.value=alvo.value.slice(0,-1); alvo.dataset.limpo='1'; }
+  else if(b===','){
+    if(_kpAlvo==='ean') return;
+    if(alvo.dataset.limpo!=='1'){ alvo.value='0'; alvo.dataset.limpo='1'; }
+    if(!/[,.]/.test(alvo.value)) alvo.value=(alvo.value||'0')+',';
+  }
   else {
     if(alvo.dataset.limpo!=='1'){ alvo.value=''; alvo.dataset.limpo='1'; }
     alvo.value = _kpAlvo==='ean' ? alvo.value+b : (alvo.value+b).replace(/^0+(?=\d)/,'');
@@ -16246,9 +16254,8 @@ function registrarBipagem() {
   var ei=document.getElementById('inv-ean-input'), qi=document.getElementById('inv-qty-input');
   if (!ei||!qi) return;
   var fi=document.getElementById('inv-fator-input');
-  var lido=ei.value.trim(), qty=parseInt(qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
+  var lido=ei.value.trim(), qty=_qtdNum(qi.value), fator=fi?Math.max(1,parseInt(fi.value)||1):1;
   if (!lido){ ei.focus(); return; }
-  if (qty<1) qty=1;
   var coletorId=_getIdColetor();
   if (!coletorId){ _editarIdColetor(); return; }
   var inv=_invColetaAtual.inv;
@@ -16313,7 +16320,7 @@ function _dupAoLer(lido,res){
     var ei=document.getElementById('inv-ean-input');
     if(!ei||ei.value.trim()!==String(lido).trim()||_dupChecadoChave!==chave||_decisaoAberta()) return; // já registrou ou trocou de código
     var qi=document.getElementById('inv-qty-input'), fi=document.getElementById('inv-fator-input');
-    var qty=parseInt(qi&&qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
+    var qty=_qtdNum(qi&&qi.value), fator=fi?Math.max(1,parseInt(fi.value)||1):1;
     _abrirModalJaColetado(lido,res,qty*fator,fator,prev);
   });
 }
@@ -16321,7 +16328,7 @@ function _abrirModalJaColetado(lido,res,qtyTotal,fator,prev){
   var m=document.getElementById('modal-dup'); if(m) m.remove();
   _dupCtx={lido:lido,res:res,fator:fator,prev:prev}; _dupAbertoTs=Date.now();
   _bipSom('alerta');
-  var qtdTela=Math.max(1,Math.round(qtyTotal/(fator||1)));
+  var qtdTela=_qtdFmt(_qtdNum(qtyTotal/(fator||1)));
   var titulo=res?('<b style="font-family:monospace">'+res.codigo+'</b> · '+(res.desc||'')):('<b style="font-family:monospace">'+lido+'</b> · não cadastrado');
   var vis=prev.locais.slice(0,5), resto=prev.locais.length-vis.length;
   var lista=vis.map(function(l){ return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray2)"><span>End. <b>'+l.endereco+'</b> <span style="color:var(--t3)">· '+l.coletor+'</span></span><b>'+l.qty+' un</b></div>'; }).join('')+(resto>0?'<div style="font-size:12px;color:var(--t3);padding:6px 0">mais '+resto+' local(is)</div>':'');
@@ -16332,7 +16339,7 @@ function _abrirModalJaColetado(lido,res,qtyTotal,fator,prev){
     '<div style="font-size:22px;font-weight:800;margin-bottom:8px">Já coletado: '+prev.total+' un <span style="font-size:12px;font-weight:600;color:var(--t3)">('+prev.linhas+' bipagem'+(prev.linhas===1?'':'s')+')</span></div>'+
     '<div style="max-height:160px;overflow:auto;margin-bottom:12px">'+lista+'</div>'+
     '<label style="display:block;font-size:12px;font-weight:700;color:var(--t2);margin-bottom:4px">Quantidade nova (será somada)</label>'+
-    '<input id="dup-qty-input" type="number" inputmode="numeric" min="1" value="'+qtdTela+'" onkeydown="return _dupQtyKeydown(event)" style="width:100%;padding:13px 10px;border:2px solid var(--y);border-radius:10px;font-size:22px;text-align:center;font-family:inherit;margin-bottom:12px"/>'+
+    '<input id="dup-qty-input" type="text" inputmode="decimal" autocomplete="off" value="'+qtdTela+'" onkeydown="return _dupQtyKeydown(event)" style="width:100%;padding:13px 10px;border:2px solid var(--y);border-radius:10px;font-size:22px;text-align:center;font-family:inherit;margin-bottom:12px"/>'+
     '<div style="display:flex;gap:10px">'+
       '<button onclick="_cancelarJaColetado()" style="flex:1;padding:13px;background:#fff;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-weight:700;font-family:inherit">Cancelar</button>'+
       '<button onclick="_somarJaColetado()" style="flex:2;padding:13px;background:var(--y);color:#111;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit">+ Somar ao que já tem</button>'+
@@ -16351,10 +16358,10 @@ function _cancelarJaColetado(){
 }
 function _somarJaColetado(){
   var c=_dupCtx; if(!c) return;
-  var i=document.getElementById('dup-qty-input'); var nova=Math.max(1,parseInt(i&&i.value)||1);
+  var i=document.getElementById('dup-qty-input'); var nova=_qtdNum(i&&i.value);
   var m=document.getElementById('modal-dup'); if(m) m.remove(); _dupCtx=null;
   _registrarResolvido(c.lido, c.res, nova*(c.fator||1), c.fator||1, true);
-  showToast('Somado. Total agora: '+(c.prev.total+nova*(c.fator||1))+' un', 3500);
+  showToast('Somado. Total agora: '+_qtdFmt(c.prev.total+nova*(c.fator||1))+' un', 3500);
 }
 function _abrirPickerMultiplos(lista, lido) {
   var html='<div id="modal-multi" onclick="if(event.target===this)_cancelarMultiplo()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2300;display:flex;align-items:flex-end;justify-content:center">'+
@@ -16370,7 +16377,7 @@ function _cancelarMultiplo(){ var m=document.getElementById('modal-multi'); if(m
 function _escolherMultiplo(i) {
   var m=document.getElementById('modal-multi'); if(m) m.remove();
   var qi=document.getElementById('inv-qty-input'), fi=document.getElementById('inv-fator-input');
-  var qty=parseInt(qi&&qi.value)||1, fator=fi?Math.max(1,parseInt(fi.value)||1):1;
+  var qty=_qtdNum(qi&&qi.value), fator=fi?Math.max(1,parseInt(fi.value)||1):1;
   _registrarResolvido(window._multiLido, window._multiLista[i], qty*fator, fator);
 }
 
@@ -16606,9 +16613,8 @@ function _avulsaSelInv(invId) {
 function registrarBipagemAvulsa() {
   var ei=document.getElementById('avulsa-ean-input'), qi=document.getElementById('avulsa-qty-input');
   if (!ei||!qi) return;
-  var ean=ei.value.trim(), qty=parseInt(qi.value)||1;
+  var ean=ei.value.trim(), qty=_qtdNum(qi.value);
   if (!ean){ ei.focus(); return; }
-  if (qty<1) qty=1;
   var coletorId=_getIdColetor();
   if (!coletorId){ _editarIdColetor(); return; }
   if (!_avulsaInvId) return;

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '400';
+var BUILD = '401';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15959,7 +15959,6 @@ function _descFixa(mostrar, keypad){
   if(mostrar&&(txt||keypad==='ean')){
     _kpAlvo = keypad==='ean' ? 'ean' : 'qty';
     if(txtEl) txtEl.textContent = _kpAlvo==='ean' ? 'Digite o código de barras e toque em ENTER' : txt+' — informe a quantidade';
-    var enterBtn=document.getElementById('inv-kp-enter'); if(enterBtn) enterBtn.textContent = _kpAlvo==='ean' ? '✓ ENTER — Confirmar código' : '✓ ENTER — Registrar';
     el.style.display='block'; if(kp) kp.style.display=keypad?'block':'none';
   } else { el.style.display='none'; _kpAlvo='qty'; }
 }
@@ -15969,19 +15968,22 @@ function _montarKeypadQty(){
   var wrap=document.getElementById('inv-desc-fixo-kp'); if(!wrap) return;
   // ENTER em cima e grade de 4 colunas: a barra do Gboard/navegação cobre o fim da tela, então o
   // que importa fica no topo da faixa e o teclado inteiro cabe sem rolar.
-  var digitos=['1','2','3','⌫','4','5','6','C','7','8','9','0'];
-  var gradeHtml=digitos.map(function(b){
-    return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="padding:11px 0;border-radius:10px;border:1.5px solid var(--gray2);background:#fff;color:var(--t);font-size:19px;font-weight:800;font-family:inherit">'+b+'</button>';
-  }).join('');
-  wrap.innerHTML='<div style="display:flex;gap:6px;margin-bottom:8px">'+
-      '<button type="button" id="inv-kp-enter" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="flex:1;padding:14px 0;border-radius:10px;border:none;background:var(--y);color:#111;font-size:17px;font-weight:800;font-family:inherit">✓ ENTER — Registrar</button>'+
-      '<button type="button" onmousedown="event.preventDefault()" onclick="_descFixa(false)" title="Fechar teclado" style="width:52px;border-radius:10px;border:1.5px solid var(--gray2);background:#fff;color:var(--t2);font-size:18px;font-weight:800;font-family:inherit">✕</button>'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'+gradeHtml+'</div>';
+  // Mesmo desenho do teclado numérico do Gboard: 3 colunas de dígitos + coluna de ação à direita.
+  var base='border:none;border-radius:6px;font-family:inherit;font-size:22px;font-weight:500;height:48px;box-shadow:0 1px 0 rgba(0,0,0,.25);';
+  function tecla(b,extra){ return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="'+base+(extra||'background:#fff;color:#202124')+'">'+b+'</button>'; }
+  var cinza='background:#c8ccd3;color:#202124;';
+  wrap.innerHTML='<div style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:48px;gap:6px;background:#dfe3e8;padding:8px;margin:0 -14px calc(-10px - env(safe-area-inset-bottom,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))">'+
+    tecla('1')+tecla('2')+tecla('3')+tecla('⌫',cinza)+
+    tecla('4')+tecla('5')+tecla('6')+tecla('C',cinza)+
+    tecla('7')+tecla('8')+tecla('9')+'<button type="button" id="inv-kp-enter" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="'+base+'grid-row:span 2;height:auto;background:#1a73e8;color:#fff;font-size:26px">↵</button>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="_descFixa(false)" title="Fechar" style="'+base+cinza+'font-size:18px">⌄</button>'+tecla('0')+'<span></span>'+
+  '</div>';
 }
 // Botão ⌨ do EAN: abre o teclado próprio apontando pro código de barras (digitar manual ou corrigir leitura).
 function _teclarEan(){
   var ei=document.getElementById('inv-ean-input'); if(!ei||ei.disabled) return;
+  var el=document.getElementById('inv-desc-fixo');
+  if(el&&el.style.display==='block'&&_kpAlvo==='ean'){ _descFixa(false); return; }
   ei.dataset.limpo='1'; ei.focus();
   _descFixa(true,'ean');
 }

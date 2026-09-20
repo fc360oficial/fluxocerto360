@@ -1,6 +1,6 @@
 // Fluxo Certo 360 — Service Worker v228
 // Atualiza este numero de versao sempre que publicar novos arquivos
-var CACHE_NAME = 'cahu360-v406';
+var CACHE_NAME = 'cahu360-v407';
 
 // Arquivos críticos: sempre buscados da rede (nunca do cache)
 var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
@@ -8,8 +8,8 @@ var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
 var SHELL_ASSETS = [
   './',
   './index.html',
-  './app.js?v=406',
-  './style.css?v=406',
+  './app.js?v=407',
+  './style.css?v=407',
   './logo.png',
   './icon-192.png',
   './icon-512.png',
@@ -90,16 +90,23 @@ self.addEventListener('fetch', function(event) {
     // completo em toda carga — 'reload' ignorava a validacao e sempre baixava
     // o arquivo inteiro de novo, deixando o login lento no 4G/wifi da loja
     // mesmo quando nada tinha mudado desde a ultima visita (achado 19/09/26).
+    // Safari rejeita fetch(request, init) quando request.mode === 'navigate' (TypeError) — no iPhone
+    // isso caia no catch e, sem cache ainda, a pagina abria em branco. Pra navegacao monta a
+    // requisicao pela URL; e se ainda assim falhar e nao houver cache, tenta o fetch puro.
+    var req = event.request.mode === 'navigate'
+      ? new Request(event.request.url, {cache: 'no-cache', credentials: 'same-origin'})
+      : new Request(event.request, {cache: 'no-cache'});
     event.respondWith(
-      fetch(event.request, {cache: 'no-cache'}).then(function(resp) {
+      fetch(req).then(function(resp) {
         if (resp && resp.ok) {
           var clone = resp.clone();
           caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
         }
         return resp;
       }).catch(function() {
-        // Offline: usa cache como fallback
-        return caches.match(event.request);
+        return caches.match(event.request).then(function(cached) {
+          return cached || fetch(event.request);
+        });
       })
     );
     return;

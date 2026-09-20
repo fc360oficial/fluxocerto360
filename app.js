@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '397';
+var BUILD = '398';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15961,12 +15961,14 @@ function _descFixa(mostrar, keypad){
 }
 function _montarKeypadQty(){
   var wrap=document.getElementById('inv-desc-fixo-kp'); if(!wrap) return;
-  var digitos=['1','2','3','4','5','6','7','8','9','⌫','0','C'];
+  // ENTER em cima e grade de 4 colunas: a barra do Gboard/navegação cobre o fim da tela, então o
+  // que importa fica no topo da faixa e o teclado inteiro cabe sem rolar.
+  var digitos=['1','2','3','⌫','4','5','6','C','7','8','9','0'];
   var gradeHtml=digitos.map(function(b){
-    return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="padding:14px 0;border-radius:10px;border:1.5px solid var(--gray2);background:#fff;color:var(--t);font-size:19px;font-weight:800;font-family:inherit">'+b+'</button>';
+    return '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\''+b+'\')" style="padding:11px 0;border-radius:10px;border:1.5px solid var(--gray2);background:#fff;color:var(--t);font-size:19px;font-weight:800;font-family:inherit">'+b+'</button>';
   }).join('');
-  wrap.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">'+gradeHtml+'</div>'+
-    '<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="width:100%;padding:16px 0;border-radius:10px;border:none;background:var(--y);color:#111;font-size:17px;font-weight:800;font-family:inherit">✓ ENTER — Registrar</button>';
+  wrap.innerHTML='<button type="button" onmousedown="event.preventDefault()" onclick="_kpQty(\'ENTER\')" style="width:100%;padding:14px 0;margin-bottom:8px;border-radius:10px;border:none;background:var(--y);color:#111;font-size:17px;font-weight:800;font-family:inherit">✓ ENTER — Registrar</button>'+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'+gradeHtml+'</div>';
 }
 // Primeiro toque depois de focar/selecionar substitui o valor (como digitar por cima do texto selecionado).
 function _kpQty(b){

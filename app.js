@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '405';
+var BUILD = '406';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -16116,9 +16116,16 @@ function _focoQtyTeclado(qi) {
 }
 // Foco na Qtd: mostra só a faixa com o produto e espera o teclado nativo. Se em 450 ms a viewport
 // visual não encolheu (teclado do Android não abriu — leitor Bluetooth pareado), abre o teclado próprio.
-var _qtyFocoChk = 0, _qtyH0 = 0;
+var _qtyFocoChk = 0;
+// Maior altura visível já vista (sem teclado). Comparar com o momento do foco não serve: pela câmera o
+// teclado do Android já está aberto no campo do código quando a Qtd recebe o foco.
+var _vvMax = 0;
+function _vvAtualizarMax(){ var vv=window.visualViewport; var h=vv?vv.height:window.innerHeight; if(h>_vvMax) _vvMax=h; }
+_vvAtualizarMax();
+if (window.visualViewport) window.visualViewport.addEventListener('resize', _vvAtualizarMax);
+window.addEventListener('orientationchange', function(){ _vvMax=0; setTimeout(_vvAtualizarMax,600); });
 function _qtyFocado() {
-  var vv = window.visualViewport; _qtyH0 = vv ? vv.height : window.innerHeight;
+  _vvAtualizarMax();
   _descFixa(true, false);
   var id = ++_qtyFocoChk;
   setTimeout(function(){
@@ -16128,7 +16135,7 @@ function _qtyFocado() {
     _descFixa(true, true);
   }, 600);
 }
-function _tecladoNativoAberto(){ var vv=window.visualViewport; return (_qtyH0 - (vv ? vv.height : window.innerHeight)) >= 120; }
+function _tecladoNativoAberto(){ var vv=window.visualViewport; return (_vvMax - (vv ? vv.height : window.innerHeight)) >= 120; }
 // Pela câmera o teclado do Android pode abrir depois da checagem: quando abrir, o próprio sai da frente.
 if (window.visualViewport) window.visualViewport.addEventListener('resize', function(){
   var a=document.activeElement; if(!a||a.id!=='inv-qty-input'||_kpAlvo!=='qty') return;

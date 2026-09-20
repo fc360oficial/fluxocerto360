@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '399';
+var BUILD = '400';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -15015,7 +15015,7 @@ function renderColeta() {
           '</div>'+
           '<button type="button" id="inv-cam-btn" onclick="_toggleCamFixa()" title="Ligar câmera (fica aberta pra ler em sequência)" style="padding:13px 16px;background:#fff;border:2px solid var(--gray2);border-radius:10px;font-size:18px;cursor:pointer">📷</button>'+
           '<div style="width:80px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd</label>'+
-            '<input id="inv-qty-input" type="number" inputmode="none" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_descFixa(true,true)" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
+            '<input id="inv-qty-input" type="number" inputmode="numeric" value="1" min="1" style="width:100%;padding:13px 10px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="return _qtyKeydown(event)" onfocus="_qtyFocado()" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
           '<div id="inv-fator-wrap" style="width:62px;'+(palletOn?'':'display:none')+'">'+
             '<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);display:block;margin-bottom:6px">Qtd Emb</label>'+
             '<input id="inv-fator-input" type="number" value="1" min="1" style="width:100%;padding:13px 8px;border:2px solid var(--gray2);border-radius:10px;font-size:16px;text-align:center;font-family:inherit" onkeydown="if(event.key===\'Enter\')registrarBipagem()" onfocus="_descFixa(true,false)" onblur="setTimeout(function(){ var a=document.activeElement; if(_kpAlvo!==\'ean\'&&(!a||(a.id!==\'inv-qty-input\'&&a.id!==\'inv-fator-input\'))) _descFixa(false); },80)"/></div>'+
@@ -15942,9 +15942,8 @@ function voltarInvLista() {
 // ── _eanEnterKey — Enter no campo EAN: vai pra qty se reconhecido ─────────
 
 // Faixa fixa embaixo com o produto lido + teclado numérico próprio pra Qtd.
-// O leitor Bluetooth (teclado físico via HID) faz o Android suprimir o teclado virtual mesmo
-// depois de focus() via JS — não dá pra forçar isso de forma confiável, então a Qtd usa
-// inputmode="none" (não abre teclado do SO) e esse teclado próprio garante a digitação sempre.
+// Teclado nativo do Android é o padrão. Com leitor Bluetooth pareado (teclado físico via HID) o
+// Android suprime o teclado virtual e focus() via JS não reabre — aí, e só aí, entra o teclado próprio.
 function _descFixa(mostrar, keypad){
   var el=document.getElementById('inv-desc-fixo');
   if(!el){
@@ -16061,14 +16060,26 @@ var _rajadaQty = InvCore.criarDetectorRajada(100, 4);
 // Instante em que a Qtd recebeu foco por causa de uma leitura. O leitor Bluetooth manda Enter como sufixo
 // depois do último dígito; como o EAN completo já pulou o foco pra Qtd, esse Enter cairia aqui e gravaria com Qtd 1.
 var _qtyFocoScanTs = 0;
-// Pula pra Qtd depois de um bip. A Qtd usa inputmode="none" (não depende do teclado do SO,
-// que o Android suprime depois da "digitação" do leitor Bluetooth) — quem digita é o
-// teclado numérico próprio (_montarKeypadQty), mostrado por _descFixa(true,true) no onfocus.
+// Pula pra Qtd depois de um bip; o onfocus (_qtyFocado) decide se precisa do teclado próprio.
 function _focoQtyTeclado(qi) {
   if (!qi) return;
   _qtyFocoScanTs = Date.now();
   qi.dataset.limpo = '';
   qi.focus(); qi.select();
+}
+// Foco na Qtd: mostra só a faixa com o produto e espera o teclado nativo. Se em 450 ms a viewport
+// visual não encolheu (teclado do Android não abriu — leitor Bluetooth pareado), abre o teclado próprio.
+var _qtyFocoChk = 0;
+function _qtyFocado() {
+  var vv = window.visualViewport, h0 = vv ? vv.height : window.innerHeight;
+  _descFixa(true, false);
+  var id = ++_qtyFocoChk;
+  setTimeout(function(){
+    if (id !== _qtyFocoChk) return;
+    var a = document.activeElement; if (!a || a.id !== 'inv-qty-input') return;
+    var h1 = vv ? vv.height : window.innerHeight;
+    if (h0 - h1 < 120) _descFixa(true, true);
+  }, 450);
 }
 function _qtyKeydown(ev) {
   if ((ev.key==='Enter'||ev.keyCode===13) && Date.now()-_qtyFocoScanTs<400) { ev.preventDefault(); return false; } // ninguém confirma Qtd em <0,4 s depois do pulo: é o sufixo do leitor

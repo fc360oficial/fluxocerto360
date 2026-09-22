@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '410';
+var BUILD = '411';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -3711,20 +3711,26 @@ function confirmarEnviar(assinatura) {
   db.collection('resultados').doc(res.id).set(res).then(function() {
     clearTimeout(_avisoDemoraTimer);
     var lista = getAllResultados();
-    // Se já existe envio hoje do mesmo checklist pelo mesmo operador, marca o anterior como resetado
+    // Se já existe envio hoje do mesmo checklist pelo mesmo operador, marca o anterior como resetado.
+    // O `r.id !== res.id` é obrigatório: o onSnapshot de `resultados` (iniciarResultadosRealtime)
+    // dispara na hora do set() por latency compensation, então o resultado recém-criado JÁ está
+    // dentro de S.resultadosCache quando este .then() roda — sem essa guarda ele casa com os
+    // próprios critérios e marca a si mesmo como resetado, sumindo de toda a retaguarda
+    // (que filtra !r.resetado) e destravando a tela como se nunca tivesse sido enviado.
     var _hojeReenv = new Date().toLocaleDateString('pt-BR');
     var _opAtual = S.currentUser ? S.currentUser.nome : '--';
     lista = lista.map(function(r) {
-      if (r.checklistId === clId && (r.dataHora||'').indexOf(_hojeReenv) === 0
+      if (r.id !== res.id && r.checklistId === clId && (r.dataHora||'').indexOf(_hojeReenv) === 0
           && r.operador === _opAtual && !r.resetado) {
         db.collection('resultados').doc(r.id).update({ resetado: true }).catch(function(){});
         return Object.assign({}, r, { resetado: true });
       }
       return r;
     });
-    // Salva sem assinatura no cache local (base64 enorme estoura localStorage)
+    // Salva sem assinatura no cache local (base64 enorme estoura localStorage).
+    // Mesmo motivo acima: só adiciona se o listener ainda não tiver trazido este doc.
     var resParaCache = Object.assign({}, res, {assinatura: null});
-    lista.push(resParaCache);
+    if (!lista.some(function(r){ return r.id === res.id; })) lista.push(resParaCache);
     S.resultadosCache = lista;
     try { localStorage.setItem(RESKEY, JSON.stringify(lista)); } catch(e) {}
     _finalizarEnvioCL(clId, cl, label, pct, reprovado, snapshot, setor);

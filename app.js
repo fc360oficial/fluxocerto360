@@ -906,18 +906,62 @@ function saveResultados(list) {
   localStorage.setItem(RESKEY, JSON.stringify(list));
 }
 
+// ── Janela de carga dos resultados (spec 2026-09-23) ──────────────────────
+// Login e listener só trazem os últimos RES_JANELA_DIAS dias (consulta num
+// campo só, `dateISO`, sem índice composto). Meses anteriores entram sob
+// demanda via garantirResultadosDesde() e ficam em _resAntigos, que é
+// mesclado ao snapshot da janela toda vez que o listener dispara.
+var RES_JANELA_DIAS = 30;
+var _resCarregadoDesde = null;   // ISO do primeiro dia já carregado (janela ou mais antigo)
+var _resAntigos = [];            // docs anteriores à janela, buscados sob demanda (já enxugados)
+
+function _resJanelaInicio() {
+  return ResultadosCore.janelaISO(RES_JANELA_DIAS);
+}
+
+function _resAplicarLista(docsData) {
+  var myClient = (S.currentUser && S.currentUser.clienteId) || '';
+  var list = docsData
+    .filter(function(r){ return (r.clienteId || 'economico') === myClient; })
+    .map(ResultadosCore.enxugar);
+  list = ResultadosCore.mesclarPorId(_resAntigos, list);
+  S.resultadosCache = list;
+  try { localStorage.setItem(RESKEY, JSON.stringify(list)); } catch(e){}
+  return list;
+}
+
+// Busca no servidor um período anterior ao que já está em memória e chama cb.
+// Se o período pedido já está coberto, chama cb na hora.
+function garantirResultadosDesde(deISO, cb) {
+  var desde = _resCarregadoDesde || _resJanelaInicio();
+  if (!ResultadosCore.precisaCarregar(deISO, desde)) { if (cb) cb(); return; }
+  showToast('⏳ Carregando período anterior...');
+  db.collection('resultados')
+    .where('dateISO', '>=', deISO).where('dateISO', '<', desde)
+    .get({source: 'server'})
+    .then(function(snap){
+      var myClient = (S.currentUser && S.currentUser.clienteId) || '';
+      var novos = snap.docs.map(function(d){ return d.data(); })
+        .filter(function(r){ return (r.clienteId || 'economico') === myClient; })
+        .map(ResultadosCore.enxugar);
+      _resAntigos = ResultadosCore.mesclarPorId(_resAntigos, novos);
+      _resCarregadoDesde = deISO;
+      S.resultadosCache = ResultadosCore.mesclarPorId(_resAntigos, S.resultadosCache || []);
+      if (cb) cb();
+    })
+    .catch(function(err){
+      console.error('garantirResultadosDesde:', err);
+      showToast('❌ Não foi possível carregar o período anterior. Verifique a conexão.');
+      if (cb) cb();
+    });
+}
+
 function loadResultadosFromFirebase(callback) {
   var doFetch = function() {
-    db.collection('resultados').get({source: 'server'}).then(function(snap){
-      var myClient = (S.currentUser && S.currentUser.clienteId) || '';
-      var list = snap.docs.map(function(d){return d.data();})
-        .filter(function(r){ return (r.clienteId || 'economico') === myClient; });
-      list.sort(function(a,b){return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1;});
-      S.resultadosCache = list;
-      try {
-        var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
-        localStorage.setItem(RESKEY, JSON.stringify(semAssina));
-      } catch(e){}
+    var desde = _resJanelaInicio();
+    if (!_resCarregadoDesde || _resCarregadoDesde > desde) _resCarregadoDesde = desde;
+    db.collection('resultados').where('dateISO', '>=', desde).get({source: 'server'}).then(function(snap){
+      _resAplicarLista(snap.docs.map(function(d){ return d.data(); }));
       if (callback) callback();
     }).catch(function(err){
       try { S.resultadosCache = JSON.parse(localStorage.getItem(RESKEY)||'[]'); } catch(e){ S.resultadosCache=[]; }
@@ -1024,16 +1068,15 @@ function _pedirPermissaoNotificacao() {
 function iniciarResultadosRealtime() {
   if (_resultadosUnsub) _resultadosUnsub();
   _firstResultSnapshot = true;
-  _resultadosUnsub = db.collection('resultados').onSnapshot(function(snap) {
-    var myClient = (S.currentUser && S.currentUser.clienteId) || '';
-    var list = snap.docs.map(function(d){ return d.data(); })
-      .filter(function(r){ return (r.clienteId || 'economico') === myClient; });
-    list.sort(function(a,b){ return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1; });
-    S.resultadosCache = list;
-    try {
-      var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
-      localStorage.setItem(RESKEY, JSON.stringify(semAssina));
-    } catch(e){}
+  var desde = _resJanelaInicio();
+  if (!_resCarregadoDesde || _resCarregadoDesde > desde) _resCarregadoDesde = desde;
+  // Só a janela de 30 dias, e SÓ docs confirmados pelo servidor: com
+  // hasPendingWrites o Firestore entrega o doc na hora do set() (latency
+  // compensation) e a tela dizia "já enviado" antes de o envio existir no
+  // servidor — era assim que checklist "enviado" sumia da retaguarda.
+  _resultadosUnsub = db.collection('resultados').where('dateISO', '>=', desde).onSnapshot(function(snap) {
+    var confirmados = ResultadosCore.filtrarConfirmados(snap.docs);
+    var list = _resAplicarLista(confirmados.map(function(d){ return d.data(); }));
 
     // Notificar sobre novos checklists (ignora snapshot inicial)
     if (!_firstResultSnapshot) {
@@ -1885,16 +1928,10 @@ function finalizarLogin(found) {
       });
       S.customCLsCache = list;
     }),
-    db.collection('resultados').get().then(function(snap){
-      var myClientRes = (S.currentUser && S.currentUser.clienteId) || '';
-      var list = snap.docs.map(function(d){return d.data();})
-        .filter(function(r){ return (r.clienteId || 'economico') === myClientRes; });
-      list.sort(function(a,b){return (a.dataHora||'')<(b.dataHora||'')?-1:1;});
-      S.resultadosCache = list;
-      try {
-        var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
-        localStorage.setItem(RESKEY, JSON.stringify(semAssina));
-      } catch(e){}
+    // Só a janela de 30 dias (spec 2026-09-23) — antes baixava a coleção inteira no login.
+    db.collection('resultados').where('dateISO', '>=', _resJanelaInicio()).get().then(function(snap){
+      if (!_resCarregadoDesde || _resCarregadoDesde > _resJanelaInicio()) _resCarregadoDesde = _resJanelaInicio();
+      _resAplicarLista(snap.docs.map(function(d){ return d.data(); }));
     }),
     (function(){
       var userId = found.id;
@@ -2282,13 +2319,10 @@ function sincronizarEstadoFirebase() {
       Object.assign(S.checkState || {}, fotosEmMemoria);
     });
 
-  var promiseResultados = db.collection('resultados').get().then(function(snap){
-    var myClientPR = (S.currentUser && S.currentUser.clienteId) || '';
-    var allResults = snap.docs.map(function(d){return d.data();})
-      .filter(function(r){ return (r.clienteId || 'economico') === myClientPR; });
-    allResults.sort(function(a,b){return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1;});
-    S.resultadosCache = allResults;
-    localStorage.setItem('eco_resultados', JSON.stringify(S.resultadosCache));
+  // Só a janela de 30 dias (spec 2026-09-23) — antes baixava a coleção inteira no login.
+  var promiseResultados = db.collection('resultados').where('dateISO', '>=', _resJanelaInicio()).get().then(function(snap){
+    if (!_resCarregadoDesde || _resCarregadoDesde > _resJanelaInicio()) _resCarregadoDesde = _resJanelaInicio();
+    _resAplicarLista(snap.docs.map(function(d){ return d.data(); }));
   }).catch(function(){});
 
   Promise.all([promiseState, promiseResultados]).then(function(){
@@ -3000,14 +3034,16 @@ function confirmarReset() {
 
   // Fetch from Firebase directly to get fresh results
   var hoje = new Date().toLocaleDateString('pt-BR');
+  // Só os docs de hoje (campo único, sem índice): antes buscava TODO o histórico
+  // desse checklist (centenas de docs com foto embutida) só pra filtrar o dia.
   db.collection('resultados')
-    .where('checklistId','==',pendingResetClId)
+    .where('dateISO','>=',getLocalDate())
     .get()
     .then(function(snap){
       var usuariosEnviaram = [];
       snap.docs.forEach(function(doc){
         var r = doc.data();
-        if (r.dataHora && r.dataHora.indexOf(hoje)===0 && !r.resetado) {
+        if (r.checklistId===pendingResetClId && r.dataHora && r.dataHora.indexOf(hoje)===0 && !r.resetado) {
           var jaAdded = usuariosEnviaram.some(function(u){return u.nome===r.operador;});
           if (!jaAdded) usuariosEnviaram.push({nome:r.operador, perfil:r.perfil, pct:r.pct});
         }
@@ -3708,7 +3744,17 @@ function confirmarEnviar(assinatura) {
   var _avisoDemoraTimer = setTimeout(function(){
     showToast('⏳ Ainda enviando — verifique sua conexão. Não feche o app.');
   }, 12000);
-  db.collection('resultados').doc(res.id).set(res).then(function() {
+  // Fotos e assinatura NÃO vão dentro do doc de `resultados` (spec 2026-09-23):
+  // cada imagem vira um doc em `resultados_fotos` e o resultado guarda só as
+  // refs. Tudo num batch atômico — ou grava resultado + fotos, ou nada.
+  // Antes disso a coleção tinha 534 docs / 165 MB e cada login baixava tudo.
+  var sep = ResultadosCore.separarFotos(res);
+  var batch = db.batch();
+  sep.fotos.forEach(function(f) {
+    batch.set(db.collection(ResultadosCore.COLECAO_FOTOS).doc(f.id), f.data);
+  });
+  batch.set(db.collection('resultados').doc(sep.doc.id), sep.doc);
+  batch.commit().then(function() {
     clearTimeout(_avisoDemoraTimer);
     var lista = getAllResultados();
     // Se já existe envio hoje do mesmo checklist pelo mesmo operador, marca o anterior como resetado.
@@ -3727,9 +3773,10 @@ function confirmarEnviar(assinatura) {
       }
       return r;
     });
-    // Salva sem assinatura no cache local (base64 enorme estoura localStorage).
-    // Mesmo motivo acima: só adiciona se o listener ainda não tiver trazido este doc.
-    var resParaCache = Object.assign({}, res, {assinatura: null});
+    // Cache recebe o doc já sem imagens (sep.doc). O listener só entrega docs
+    // confirmados pelo servidor (filtrarConfirmados), então aqui pode ser que
+    // ele ainda não tenha trazido este — por isso o push condicional.
+    var resParaCache = sep.doc;
     if (!lista.some(function(r){ return r.id === res.id; })) lista.push(resParaCache);
     S.resultadosCache = lista;
     try { localStorage.setItem(RESKEY, JSON.stringify(lista)); } catch(e) {}
@@ -4118,7 +4165,26 @@ function renderCLGrid() {
 // ===========================================
 // CENTRAL DE RESULTADOS
 // ===========================================
+// Primeiro dia do período pedido pelos filtros da Central (ISO) ou '' se
+// não dá pra saber (sem filtro de data/mês = fica só com o que já carregou).
+function _centralPeriodoInicioISO() {
+  var dtIni = (document.getElementById('cf-dt-ini')||{}).value||'';
+  if (dtIni) return dtIni;
+  var mesSel = (document.getElementById('cf-mes-sel')||{}).value||'';
+  if (mesSel) {
+    var p = mesSel.split('-');
+    return p[0] + '-' + String(parseInt(p[1])).padStart(2, '0') + '-01';
+  }
+  return '';
+}
+
 function renderCentral() {
+  // Mês/data anterior à janela carregada? Busca sob demanda e volta aqui.
+  var _deISO = _centralPeriodoInicioISO();
+  if (ResultadosCore.precisaCarregar(_deISO, _resCarregadoDesde || _resJanelaInicio())) {
+    garantirResultadosDesde(_deISO, renderCentral);
+    return;
+  }
   var resultados = getResultados();
   var fs = (document.getElementById('cf-setor')||{}).value||'';
   var fo = (document.getElementById('cf-op')||{}).value||'';
@@ -4180,10 +4246,43 @@ function renderCentral() {
   }).join('');
 }
 
+// Fotos ficam fora do cache (spec 2026-09-23). Ao abrir o detalhe, busca:
+//  - doc novo (refs): os docs de `resultados_fotos` daquele resultado;
+//  - doc antigo enxugado (_semFotos): o próprio doc inteiro em `resultados`.
+// Resultado hidratado fica em memória pra não buscar de novo na mesma sessão.
+var _fotosCache = {};
+function hidratarFotos(r, cb) {
+  if (!r) { cb(r); return; }
+  if (_fotosCache[r.id]) { cb(_fotosCache[r.id]); return; }
+  var temRef = !!r.assinaturaRef || (r.itens||[]).some(function(it){
+    return it.fotoAntesRef || it.fotoDepoisRef || (it.fotosMultiRef && it.fotosMultiRef.length);
+  });
+  var pronto = function(h){ _fotosCache[r.id] = h; cb(h); };
+  if (r._semFotos) {
+    db.collection('resultados').doc(r.id).get().then(function(doc){
+      pronto(doc.exists ? doc.data() : r);
+    }).catch(function(err){ console.error('hidratarFotos (doc antigo):', err); cb(r); });
+  } else if (temRef) {
+    db.collection(ResultadosCore.COLECAO_FOTOS).where('resultadoId', '==', r.id).get().then(function(snap){
+      pronto(ResultadosCore.montarFotosHidratadas(r, snap.docs.map(function(d){ return d.data(); })));
+    }).catch(function(err){ console.error('hidratarFotos (refs):', err); cb(r); });
+  } else {
+    cb(r);
+  }
+}
+
 function verDetalhe(id) {
   var resultados = getResultados();
   var r = resultados.find(function(x){ return x.id === id; });
   if (!r) return;
+  var precisaBuscar = !_fotosCache[r.id] && (r._semFotos || r.assinaturaRef || (r.itens||[]).some(function(it){
+    return it.fotoAntesRef || it.fotoDepoisRef || (it.fotosMultiRef && it.fotosMultiRef.length);
+  }));
+  if (precisaBuscar) showToast('📷 Carregando fotos...');
+  hidratarFotos(r, _renderDetalhe);
+}
+
+function _renderDetalhe(r) {
   var todasFotos = [];
   (r.itens||[]).forEach(function(item){
     if (item.fotoAntes) todasFotos.push({src:item.fotoAntes, label:'ANTES — '+item.texto});
@@ -4376,7 +4475,7 @@ function exportarDetalhePDF() {
   });
   var itensNormais = (r.itens||[]).filter(function(it){ return (it.tipo||'checkbox') !== 'planilha'; });
   var itensPlanilha = (r.itens||[]).filter(function(it){ return it.tipo === 'planilha'; });
-  var fotoCount = (r.itens||[]).reduce(function(n,it){ return n+(it.fotoAntes?1:0)+(it.fotoDepois?1:0)+(it.fotosMulti?it.fotosMulti.length:0); },0);
+  var fotoCount = (r.itens||[]).reduce(function(n,it){ return n+ResultadosCore.contarFotos(it); },0);
 
   // ── Seção: itens normais ──
   var itensHtml = itensNormais.length ? itensNormais.map(function(item){
@@ -8707,6 +8806,14 @@ function getResultadosFiltradosDia() {
 }
 
 function renderRelChecklist() {
+  // Mês anterior à janela carregada? Busca sob demanda e volta aqui.
+  if (_relMesSel) {
+    var _deISO = _relMesSel.ano + '-' + String(_relMesSel.mes).padStart(2, '0') + '-01';
+    if (ResultadosCore.precisaCarregar(_deISO, _resCarregadoDesde || _resJanelaInicio())) {
+      garantirResultadosDesde(_deISO, renderRelChecklist);
+      return;
+    }
+  }
   var resultados = getResultadosFiltradosMes();
   var totalEnv = resultados.length;
   var totalComp = resultados.filter(function(r){return r.pct===100;}).length;
@@ -9058,7 +9165,7 @@ function renderRelExecutivo() {
   var ops = [];
   res.forEach(function(r){if(ops.indexOf(r.operador)<0) ops.push(r.operador);});
   var fotos = 0;
-  res.forEach(function(r){(r.itens||[]).forEach(function(it){if(it.fotoAntes)fotos++;if(it.fotoDepois)fotos++;if(it.fotosMulti)fotos+=it.fotosMulti.length;});});
+  res.forEach(function(r){(r.itens||[]).forEach(function(it){ fotos += ResultadosCore.contarFotos(it); });});
   var ocorr = res.filter(function(r){return r.pct<100;}).length;
 
   document.getElementById('exec-total').textContent = total;
@@ -9230,18 +9337,12 @@ function renderRelRanking(_skipFetch) {
   if (!_skipFetch) {
     var loadingEl = document.getElementById('rank-gerencia-tbody');
     if (loadingEl) loadingEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#888">Carregando...</td></tr>';
-    db.collection('resultados').get({source: 'server'}).then(function(snap) {
-      var myClientRk = (S.currentUser && S.currentUser.clienteId) || '';
-      var list = snap.docs.map(function(d){ return d.data(); })
-        .filter(function(r){ return (r.clienteId || 'economico') === myClientRk; });
-      list.sort(function(a,b){ return (a.dataHora||'') < (b.dataHora||'') ? -1 : 1; });
-      S.resultadosCache = list;
-      try {
-        var semAssina = list.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
-        localStorage.setItem(RESKEY, JSON.stringify(semAssina));
-      } catch(e){}
-      renderRelRanking(true);
-    }).catch(function(){ renderRelRanking(true); });
+    // Mês/ano do ranking: garante que esse período está em memória (busca sob
+    // demanda se for anterior à janela de 30 dias) — antes baixava a coleção inteira.
+    var _rkAno = parseInt(anoEl && anoEl.value ? anoEl.value : agora.getFullYear());
+    var _rkMes = mesEl && mesEl.value !== '' ? parseInt(mesEl.value) : agora.getMonth();
+    var _rkDeISO = _rkAno + '-' + String(_rkMes + 1).padStart(2, '0') + '-01';
+    garantirResultadosDesde(_rkDeISO, function(){ renderRelRanking(true); });
     return;
   }
 
@@ -9347,8 +9448,7 @@ function renderRelRanking(_skipFetch) {
     if (Array.isArray(r.itens)) {
       r.itens.forEach(function(item){
         if (!item.foto || item.foto === 'none' || item.foto === false) return;
-        var temFoto = !!(item.fotoDepois || item.fotoAntes || (item.fotosMulti && item.fotosMulti.length));
-        if (!temFoto) lojaMap[loja].semFoto++;
+        if (!ResultadosCore.itemTemFoto(item)) lojaMap[loja].semFoto++;
       });
     }
   });
@@ -12098,6 +12198,15 @@ function switchRelCorpTab(sub, btn) {
 }
 
 function renderRelCorporativoTab() {
+  // Período dos selects mês/ano anterior à janela carregada? Busca sob demanda.
+  var _mesC = document.getElementById('corp-mes') ? document.getElementById('corp-mes').value : '';
+  var _anoC = parseInt(document.getElementById('corp-ano') ? document.getElementById('corp-ano').value : new Date().getFullYear());
+  var _deISO = _mesC !== '' ? (_anoC + '-' + String(parseInt(_mesC) + 1).padStart(2, '0') + '-01') : (_anoC + '-01-01');
+  if (_corpSubAtivo === 'tendencia') _deISO = ResultadosCore.janelaISO(_tendPeriod || 30);
+  if (ResultadosCore.precisaCarregar(_deISO, _resCarregadoDesde || _resJanelaInicio())) {
+    garantirResultadosDesde(_deISO, renderRelCorporativoTab);
+    return;
+  }
   if (_corpSubAtivo==='adesao')       renderAdesao();
   else if (_corpSubAtivo==='tendencia')   renderTendencia();
   else if (_corpSubAtivo==='naoconf')     renderNaoConformRecorrente();
@@ -12197,6 +12306,12 @@ function setTendPeriod(dias, btn) {
 }
 
 function renderTendencia() {
+  // 60/90 dias passam da janela de 30 carregada no login: busca sob demanda.
+  var _deISO = ResultadosCore.janelaISO(_tendPeriod || 30);
+  if (ResultadosCore.precisaCarregar(_deISO, _resCarregadoDesde || _resJanelaInicio())) {
+    garantirResultadosDesde(_deISO, renderTendencia);
+    return;
+  }
   var res = getResultados();
   var period = _tendPeriod || 30;
   var now = new Date();

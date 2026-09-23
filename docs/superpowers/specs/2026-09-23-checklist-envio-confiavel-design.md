@@ -13,7 +13,7 @@
 ## Decisões (Tiago, 23/09)
 
 1. Fotos e assinatura saem do doc e vão para uma coleção separada `resultados_fotos` no Firestore (Storage não existe no projeto; não ativar).
-2. Janela de carga no login: 30 dias. Meses anteriores buscados sob demanda.
+2. Janela de carga no login: 7 dias (era 30; Tiago reduziu em 23/09 pra aliviar o celular). Meses anteriores buscados sob demanda.
 3. Docs antigos não são migrados. Continuam abrindo normal e saem da janela com o tempo.
 4. Nada é publicado no cliente sem autorização; código fica na main local com BUILD novo.
 

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '416';
+var BUILD = '417';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -911,7 +911,7 @@ function saveResultados(list) {
 // campo só, `dateISO`, sem índice composto). Meses anteriores entram sob
 // demanda via garantirResultadosDesde() e ficam em _resAntigos, que é
 // mesclado ao snapshot da janela toda vez que o listener dispara.
-var RES_JANELA_DIAS = 30;
+var RES_JANELA_DIAS = 7;   // Tiago (23/09/26): 1 semana no celular; o resto vem sob demanda
 var _resCarregadoDesde = null;   // ISO do primeiro dia já carregado (janela ou mais antigo)
 var _resAntigos = [];            // docs anteriores à janela, buscados sob demanda (já enxugados)
 

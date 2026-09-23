@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '415';
+var BUILD = '416';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -5440,7 +5440,9 @@ function _renderResultadoBalanco() {
     base=r.linhas.filter(function(l){ return mapa[l.key]!=null; }).map(function(l){ var q=mapa[l.key]; return Object.assign({}, l, {contado:q, contadoTotal:l.contado, valorContado:(l.custo!=null?q*l.custo:null)}); });
     base.sort(function(a,b){ return (b.valorContado||0)-(a.valorContado||0); });
   }
-  var linhas=base.filter(function(l){ if(soDiv&&!(l.dif)&&!l.nc) return false; if(busca&&(l.codigo+' '+l.ean+' '+l.desc).toLowerCase().indexOf(busca)<0) return false; return true; });
+  // Só divergentes = produto CONTADO cuja contagem difere do sistema (ou NC). Quem ainda não foi
+  // bipado não é divergência, é pendência — mora em 'Itens Não Coletados'.
+  var linhas=base.filter(function(l){ if(soDiv&&!l.nc&&(!l.dif||!l.contado)) return false; if(busca&&(l.codigo+' '+l.ean+' '+l.desc).toLowerCase().indexOf(busca)<0) return false; return true; });
   var srt=window._resSort;
   if (srt&&srt.col) {
     var txt=(srt.col==='codigo'||srt.col==='ean'||srt.col==='desc');
@@ -5477,7 +5479,7 @@ function _renderResultadoBalanco() {
     '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+(t.coletados||0).toLocaleString('pt-BR')+' de '+t.itens.toLocaleString('pt-BR')+' produtos com bipagem'+(t.naoColetados?' · '+t.naoColetados.toLocaleString('pt-BR')+' com estoque no sistema ainda sem contagem ('+_fmtBRL(t.naoColetadosVal)+')':'')+(t.semCusto?' · '+t.semCusto+' sem custo no catálogo, fora dos R$':'')+'</div>'+
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+
       '<select id="res-endereco" onchange="window._resLimite=300;_renderResultadoBalanco()" style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;background:#fff"><option value="">Todos os endereços</option>'+endsDisp.map(function(e){ return '<option value="'+e+'"'+(e===endSel?' selected':'')+'>Endereço '+e+'</option>'; }).join('')+'</select>'+
-      '<label style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px"><input type="checkbox" id="res-so-div" '+(soDiv?'checked':'')+' onchange="_renderResultadoBalanco()"> Só divergentes</label>'+
+      '<label style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px"><input type="checkbox" id="res-so-div" '+(soDiv?'checked':'')+' onchange="_renderResultadoBalanco()" title="Contados com quantidade diferente do sistema (não coletados ficam de fora)"> Só divergentes</label>'+
       '<input id="res-busca" placeholder="Buscar código ou descrição" value="'+busca.replace(/"/g,'&quot;')+'" oninput="window._resLimite=300;_renderResultadoBalanco()" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:12px;font-family:inherit">'+
       '<span style="font-size:11px;color:var(--t3)">'+linhas.length.toLocaleString('pt-BR')+' linhas</span>'+
       '<button class="btn btn-s btn-sm" onclick="_imprimirResultadoPdf()">📄 PDF</button>'+

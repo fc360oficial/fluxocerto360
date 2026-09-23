@@ -17,6 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.3/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <link rel="stylesheet" href="style.css?v=410"/>
 </head>
@@ -1535,6 +1536,7 @@
       <label>Unidade<br><select id="cat-map-un" style="width:100%"></select></label>
       <label>Estoque do sistema (opcional)<br><select id="cat-map-estoque" style="width:100%"></select></label>
       <label>Custo unitário (opcional)<br><select id="cat-map-custo" style="width:100%"></select></label>
+      <label>Preço de venda (opcional)<br><select id="cat-map-venda" style="width:100%"></select></label>
       <label style="display:flex;align-items:center;gap:6px;margin-top:16px"><input type="checkbox" id="cat-map-header"> 1ª linha é cabeçalho</label>
     </div>
     <div class="modal-err" id="cat-map-err" style="margin-top:8px"></div>
@@ -2149,7 +2151,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="client.js"></script>
 <script src="qrcode-generator.min.js"></script>
-<script src="lib/inv-bip-core.js?v=5"></script>
+<script src="lib/inv-bip-core.js?v=6"></script>
 <script>
 // Painel de erros na tela (?debug=1): iPhone/Chrome iOS nao tem console acessivel na loja.
 (function(){
@@ -2174,7 +2176,7 @@
   setInterval(function(){ if(box) log('INFO','vivo, tela='+(document.querySelector('.page.on,.view.on')||{}).id); },15000);
 })();
 </script>
-<script src="app.js?v=411" defer></script>
+<script src="app.js?v=412" defer></script>
 
 
 </body>

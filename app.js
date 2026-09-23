@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '413';
+var BUILD = '414';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -13346,7 +13346,7 @@ function _renderResumoTabela(){
   window._resumoPrintCache={linhas:linhas, sub:sub, end:end, resumo:[['Produtos',linhas.length.toLocaleString('pt-BR')],['Unidades contadas',(+totUn.toFixed(3)).toLocaleString('pt-BR')],['Custo contado',_fmtBRL(totVal)],['Venda contada',_fmtBRL(totVenda)],['Bipagens',totBips.toLocaleString('pt-BR')]]};
   var rows=linhas.slice(0,lim).map(function(l){
     return '<tr'+(l.nc?' style="background:#fff8f4"':'')+'><td style="font-family:monospace;font-size:12px">'+(l.codigo||'—')+'</td><td style="font-family:monospace;font-size:11px">'+(l.ean||'')+'</td><td style="font-size:12px">'+l.desc+(l.nc?' <b style="color:#e65100;font-size:10px">NC</b>':'')+(l.corr?' <span title="inclui correção de '+(l.corr>0?'+':'')+l.corr+'" style="color:#b38600;font-size:10px;font-weight:700">corr.</span>':'')+'</td>'+
-      '<td style="text-align:right;font-weight:800;white-space:nowrap">'+(+l.qty.toFixed(3)).toLocaleString('pt-BR')+(l.qtyTotal!=null&&l.qtyTotal!==l.qty?' <small style="color:var(--t3);font-weight:400">de '+(+l.qtyTotal.toFixed(3)).toLocaleString('pt-BR')+'</small>':'')+'</td><td style="text-align:right;white-space:nowrap">'+l.bips+'</td><td style="font-size:11px;color:var(--t2)">'+(l.endsTxt||'—')+'</td><td style="font-size:11px;color:var(--t3)">'+(l.colsTxt||'—')+'</td>'+
+      '<td style="text-align:right;font-weight:800;white-space:nowrap">'+(+l.qty.toFixed(3)).toLocaleString('pt-BR')+(l.qtyTotal!=null&&l.qtyTotal!==l.qty?' <small style="color:var(--t3);font-weight:400">de '+(+l.qtyTotal.toFixed(3)).toLocaleString('pt-BR')+'</small>':'')+'</td><td style="text-align:right;white-space:nowrap">'+l.bips+'</td><td style="font-size:11px;color:var(--t2);max-width:170px">'+(l.endsTxt||'—')+'</td><td style="font-size:11px;color:var(--t3);max-width:110px">'+(l.colsTxt||'—')+'</td>'+
       '<td style="text-align:right;white-space:nowrap;color:var(--t2)">'+(l.custo==null?'—':_fmtBRL(l.custo))+'</td><td style="text-align:right;font-weight:700;white-space:nowrap">'+(l.valor==null?'—':_fmtBRL(l.valor))+'</td>'+
       '<td style="text-align:right;white-space:nowrap;color:var(--t2)">'+(l.venda==null?'—':_fmtBRL(l.venda))+'</td><td style="text-align:right;font-weight:700;white-space:nowrap;color:#1a3c9c">'+(l.valorVenda==null?'—':_fmtBRL(l.valorVenda))+'</td></tr>';
   }).join('');
@@ -13363,7 +13363,7 @@ function _renderResumoTabela(){
       '<button class="btn btn-s btn-sm" onclick="_imprimirResumoPdf()">📄 PDF</button>'+
       '<button class="btn btn-s btn-sm" onclick="_exportarResumoXlsx()">⬇ Excel</button>'+
     '</div>'+
-    '<div style="overflow-x:auto;max-height:70vh;overflow-y:auto"><table style="min-width:1160px"><thead><tr>'+th('Código','codigo')+th('EAN','ean')+th('Descrição','desc')+th('Qtd total','qty',1)+th('Bipagens','bips',1)+th('Endereços (qtd)','endsTxt')+th('Coletores','colsTxt')+th('Custo unit.','custo',1)+th('Custo contado','valor',1)+th('Preço venda','venda',1)+th('Venda contada','valorVenda',1)+'</tr></thead><tbody>'+
+    '<div style="max-height:70vh;overflow-y:auto"><table style="width:100%;table-layout:auto;font-size:12px"><thead><tr>'+th('Código','codigo')+th('EAN','ean')+th('Descrição','desc')+th('Qtd','qty',1)+th('Bips','bips',1)+th('Endereços (qtd)','endsTxt')+th('Coletores','colsTxt')+th('Custo unit.','custo',1)+th('Custo contado','valor',1)+th('Preço venda','venda',1)+th('Venda contada','valorVenda',1)+'</tr></thead><tbody>'+
       (rows||'<tr><td colspan="11" style="color:var(--t3)">Nenhuma bipagem.</td></tr>')+
       (linhas.length>lim?'<tr><td colspan="11" style="text-align:center;padding:10px"><button class="btn btn-s btn-sm" onclick="window._resumoLimite=(window._resumoLimite||500)+1000;_renderResumoTabela()">Mostrar mais ('+(linhas.length-lim).toLocaleString('pt-BR')+')</button></td></tr>':'')+
     '</tbody></table></div></div>';

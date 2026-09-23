@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '414';
+var BUILD = '415';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -13329,8 +13329,13 @@ function _resumoLinhasFiltradas(){
   var linhas=c.linhas;
   if (end) linhas=linhas.filter(function(l){ return l.ends[end]; }).map(function(l){ var q=l.ends[end]; return Object.assign({},l,{qty:q,qtyTotal:l.qty,bips:l.endsBips[end]||0,corr:0,endsTxt:end+' ('+q+')',colsTxt:Object.keys(l.endsCols[end]||{}).join(', '),valor:(l.custo!=null)?q*l.custo:null,valorVenda:(l.venda!=null)?q*l.venda:null}); });
   if (busca) linhas=linhas.filter(function(l){ return (l.codigo+' '+l.ean+' '+l.desc).toLowerCase().indexOf(busca)>=0; });
+  // Tag clicada no aviso amarelo: só os sem custo / só os sem preço de venda
+  var so=window._resumoSo||'';
+  if (so==='semCusto') linhas=linhas.filter(function(l){ return l.valor==null&&l.qty; });
+  else if (so==='semVenda') linhas=linhas.filter(function(l){ return l.valorVenda==null&&l.qty; });
   return linhas;
 }
+function _resumoSoToggle(v){ window._resumoSo=(window._resumoSo===v)?'':v; window._resumoLimite=500; _renderResumoTabela(); }
 function _renderResumoTabela(){
   var wrap=document.getElementById('inv-resumo-wrap'), c=_resumoCache; if(!wrap||!c) return;
   var busca=(window._resumoBusca||''), end=window._resumoEnd||'', srt=window._resumoSort||{col:'valor',dir:-1}, lim=window._resumoLimite||500;
@@ -13338,7 +13343,8 @@ function _renderResumoTabela(){
   var txt=(srt.col==='codigo'||srt.col==='ean'||srt.col==='desc'||srt.col==='endsTxt'||srt.col==='colsTxt');
   linhas.sort(function(a,b){ var x=a[srt.col], y=b[srt.col]; if(txt) return String(x||'').localeCompare(String(y||''),'pt-BR',{numeric:true})*srt.dir; if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1; return (x-y)*srt.dir; });
   var totUn=linhas.reduce(function(a,l){ return a+l.qty; },0), totVal=linhas.reduce(function(a,l){ return a+(l.valor||0); },0), totVenda=linhas.reduce(function(a,l){ return a+(l.valorVenda||0); },0);
-  var semCusto=linhas.filter(function(l){ return l.valor==null&&l.qty; }).length, semVenda=linhas.filter(function(l){ return l.valorVenda==null&&l.qty; }).length;
+  var soAtivo=window._resumoSo||'', base=soAtivo?(function(){ var k=window._resumoSo; window._resumoSo=''; var r=_resumoLinhasFiltradas(); window._resumoSo=k; return r; })():linhas;
+  var semCusto=base.filter(function(l){ return l.valor==null&&l.qty; }).length, semVenda=base.filter(function(l){ return l.valorVenda==null&&l.qty; }).length;
   var totBips=end?linhas.reduce(function(a,l){ return a+l.bips; },0):c.totalBips;
   var th=function(label,col,right){ var on=srt.col===col; return '<th onclick="_resumoOrdenar(\''+col+'\')" title="Clique pra ordenar" style="cursor:pointer;user-select:none;white-space:nowrap'+(right?';text-align:right':'')+(on?';color:var(--t)':'')+'">'+label+(on?(srt.dir<0?' ▼':' ▲'):'')+'</th>'; };
   var tile=function(lbl,val,cor){ return '<div style="flex:1;min-width:150px;background:var(--gray);border-radius:10px;padding:10px 12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3)">'+lbl+'</div><div style="font-size:20px;font-weight:800;margin-top:2px;color:'+(cor||'var(--t)')+'">'+val+'</div></div>'; };
@@ -13354,7 +13360,10 @@ function _renderResumoTabela(){
   wrap.innerHTML=
     '<div class="card">'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tile('Produtos',linhas.length.toLocaleString('pt-BR'))+tile('Unidades contadas',(+totUn.toFixed(3)).toLocaleString('pt-BR'))+tile('Custo contado',_fmtBRL(totVal),'#1a5c34')+tile('Venda contada',_fmtBRL(totVenda),'#1a3c9c')+tile('Bipagens',totBips.toLocaleString('pt-BR'),'var(--t2)')+'</div>'+
-    (semCusto||semVenda?'<div style="font-size:11px;color:#b38600;margin-bottom:8px">'+(semCusto?semCusto+' produto(s) sem custo no catálogo — fora do custo. ':'')+(semVenda?semVenda+' produto(s) sem preço de venda no catálogo — fora da venda.':'')+'</div>':'')+
+    (semCusto||semVenda||soAtivo?'<div style="font-size:11px;color:#b38600;margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+      (semCusto?'<button onclick="_resumoSoToggle(\'semCusto\')" title="Mostrar só esses" style="border:1.5px solid #b38600;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;'+(soAtivo==='semCusto'?'background:#b38600;color:#fff':'background:#fff8e1;color:#b38600')+'">'+semCusto+' sem custo no catálogo'+(soAtivo==='semCusto'?' ✕':'')+'</button>':'')+
+      (semVenda?'<button onclick="_resumoSoToggle(\'semVenda\')" title="Mostrar só esses" style="border:1.5px solid #b38600;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;'+(soAtivo==='semVenda'?'background:#b38600;color:#fff':'background:#fff8e1;color:#b38600')+'">'+semVenda+' sem preço de venda'+(soAtivo==='semVenda'?' ✕':'')+'</button>':'')+
+      (soAtivo?'<span>mostrando só esses — clique de novo pra voltar</span>':'<span>fora do R$ — clique pra ver quais são</span>')+'</div>':'')+
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+
       '<input id="resumo-busca" placeholder="Buscar código, EAN ou descrição" value="'+busca.replace(/"/g,'&quot;')+'" oninput="window._resumoBusca=this.value;window._resumoLimite=500;_renderResumoTabela();var i=document.getElementById(\'resumo-busca\');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length);}" style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit"/>'+
       selEnd+

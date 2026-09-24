@@ -4243,7 +4243,8 @@ function renderCentral() {
       +'<td><strong>'+r.checklistNome+'</strong></td>'
       +'<td>'+r.setor+'</td>'
       +'<td>'+r.operador+'</td>'
-      +'<td><span class="st '+(PCLS[r.perfil]||'st-ok')+'">'+(PLABEL[r.perfil]||r.perfil)+'</span></td>'
+      +'<td><span class="st '+(PCLS[r.perfil]||'st-ok')+'">'+(PLABEL[r.perfil]||r.perfil)+'</span>'
+      +(r.manual?' <span class="st st-warn" title="Lançado por '+_escHtml(r.lancadoPor||'?')+' em '+_escHtml(r.lancadoEm||'')+'">Manual</span>':'')+'</td>'
       +'<td><span class="st '+st+'">'+pctLabel+'</span></td>'
       +'<td style="font-size:12px">'+r.feitos+'/'+r.total+'</td>'
       +'<td><button class="btn btn-s btn-sm" onclick="verDetalhe(\''+r.id+'\')">Ver</button></td>'
@@ -4574,6 +4575,7 @@ function exportarDetalhePDF() {
     +'<h1>'+r.checklistNome+'</h1>'
     +'<p>'+r.dataHora+(r.loja?' &nbsp;|&nbsp; '+r.loja:'')+'</p>'
     +'<p>Operador: <strong>'+r.operador+'</strong> &nbsp;|&nbsp; '+( PLABEL[r.perfil]||r.perfil)+' &nbsp;|&nbsp; <span class="status-pill">'+statusTxt+'</span></p>'
+    +(r.manual?'<p style="color:#b45309">Lançamento manual por <strong>'+(r.lancadoPor||'?')+'</strong> em '+(r.lancadoEm||'')+'</p>':'')
     +'</div></div>'
 
     +'<div class="meta">'

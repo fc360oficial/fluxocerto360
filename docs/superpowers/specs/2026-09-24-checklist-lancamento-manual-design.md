@@ -59,7 +59,7 @@ E devolve o objeto no formato do `res` de `enviarChecklist` (app.js ~3730):
 
 ```
 id, checklistId, checklistNome, setor,
-operador, perfil: 'operator', loja, clienteId,
+operador, perfil: <perfil do usuário selecionado, ou 'operator'>, loja, clienteId,
 dataHora: 'DD/MM/AAAA 00:00', dateISO,
 itens: [{texto, obs, foto, tipo, resposta, justificativa:'', fotoAntes:null, fotoDepois:null, fotosMulti:null, feito, critico, prazoPlano, produtos:null, emPlano:false}],
 feitos, total, pct, reprovado, assinatura: null,

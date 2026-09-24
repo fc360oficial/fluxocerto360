@@ -5423,7 +5423,7 @@ function calcularResultadoBalanco() {
     var r=InvCore.calcularResultado(cat,bips,inv.resolucoes||{});
     _resultadoCache={r:r,invNome:inv.nome};
     _renderResultadoBalanco();
-  }); });
+  }); },true);
 }
 function _renderResultadoBalanco() {
   var wrap=document.getElementById('inv-resultado-wrap'); if(!wrap||!_resultadoCache) return;
@@ -13305,7 +13305,7 @@ function renderResumoBipagens(recarregar){
         if(!g){ g=grupos[key]={key:key,codigo:it?it.c:(b.codigo||''),ean:it?it.e:(b.codigo?'':b.ean),desc:it?it.d:'(não cadastrado)',un:it?it.u:'',custo:(it&&it.k!=null)?Number(it.k):null,venda:(it&&it.v!=null)?Number(it.v):null,nc:!it&&hasCat,qty:0,bips:0,corr:0,ends:{},endsBips:{},endsCols:{},cols:{}}; }
         var q=Number(b.qty)||0; g.qty+=q;
         var quem=b.coletorNome||b.coletorId||'';
-        if (b.modo==='correcao'||b.endereco==='_CORRECAO') g.corr+=q;
+        if (b.modo==='correcao'||b.endereco==='_CORRECAO') { g.corr+=q; if(b.endereco&&b.endereco!=='_CORRECAO') g.ends[b.endereco]=(g.ends[b.endereco]||0)+q; }
         else {
           g.bips++; if(quem) g.cols[quem]=1;
           if(b.endereco){ g.ends[b.endereco]=(g.ends[b.endereco]||0)+q; g.endsBips[b.endereco]=(g.endsBips[b.endereco]||0)+1; if(quem){ g.endsCols[b.endereco]=g.endsCols[b.endereco]||{}; g.endsCols[b.endereco][quem]=1; } }
@@ -13317,7 +13317,7 @@ function renderResumoBipagens(recarregar){
       _resumoCache={invId:inv.id,invNome:inv.nome,linhas:linhas,totalBips:bips.length,enderecos:Object.keys(todosEnds).sort(ordEnd)};
       if (window._resumoEnd&&_resumoCache.enderecos.indexOf(window._resumoEnd)<0) window._resumoEnd='';
       _renderResumoTabela();
-    }); });
+    }); },!!recarregar);
     return;
   }
   _renderResumoTabela();

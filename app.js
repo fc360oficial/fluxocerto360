@@ -1859,6 +1859,11 @@ function finalizarLogin(found) {
     // setado só pelo beforeunload de Inventário (mais abaixo neste arquivo) pra
     // não perder uma contagem em andamento se o app fechar de repente.
     var lastPage = sessionStorage.getItem('eco_last_page') || localStorage.getItem('eco_forcar_restauracao');
+    // O flag é de uso único: consumido aqui em QUALQUER caminho (desktop
+    // inclusive). Antes só o ramo mobile apagava — no PC ele ficava pra sempre
+    // no localStorage e todo login caía em Inventário em vez do Dashboard
+    // (bug relatado pelo Tiago em 24/09/26 no fc360-economico).
+    try { localStorage.removeItem('eco_forcar_restauracao'); } catch (e) {}
     // Super Admin: vai direto para painel de clientes
     if (S.role === 'superadmin') {
       nav('clientes', document.getElementById('nav-clientes'));
@@ -1874,7 +1879,6 @@ function finalizarLogin(found) {
     // sendo o jeito de voltar pra capa de propósito a qualquer momento.
     if (window.innerWidth <= 768) {
       if (lastPage) {
-        try { localStorage.removeItem('eco_forcar_restauracao'); } catch (e) {}
         nav(lastPage, document.querySelector('.sb-item[onclick*="\''+lastPage+'\'"]'));
         return;
       }
@@ -1978,6 +1982,7 @@ function doLogout() {
   sessionStorage.removeItem('eco_session');
   sessionStorage.removeItem('eco_last_page');
   localStorage.removeItem('inv_detalhe_state');
+  localStorage.removeItem('eco_forcar_restauracao');
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('app').style.display='none';
   document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active');});

@@ -130,3 +130,91 @@ test('mesclarPorId: novos substituem pelo id, resto é mantido, ordenado por dat
   assert.deepEqual(m.map(x => x.id), ['c', 'a', 'b']);
   assert.equal(m[1].pct, 100);
 });
+
+// ── montarResultadoManual (spec 2026-09-24-checklist-lancamento-manual) ──
+function clExemplo() {
+  return {
+    id: 'cl9', nome: 'Abertura', setor: 'Loja',
+    itens: [
+      { t: 'Ligar luzes', obs: '', foto: false, tipo: 'checkbox', critico: false, prazoPlano: 72 },
+      { t: 'Foto da fachada', obs: 'frente', foto: 'antes_depois', tipo: 'checkbox', critico: false, prazoPlano: 72 },
+      { t: 'Gondola ok?', obs: '', foto: false, tipo: 'simNao', critico: true, prazoPlano: 48 },
+      { t: 'Conferir troco', obs: '', foto: false, tipo: 'checkbox', critico: false, prazoPlano: 72 }
+    ]
+  };
+}
+function optsManual(marcados) {
+  return {
+    cl: clExemplo(), marcados: marcados,
+    operador: 'Maria', perfil: 'operator', loja: 'Cahu', clienteId: 'economico',
+    dateISO: '2026-09-07', autor: 'Tiago',
+    agora: new Date(2026, 8, 24, 9, 5), genId: function () { return 'id_manual_1'; }
+  };
+}
+
+test('montarResultadoManual: 3 de 4 feitos -> pct 75, marcado como manual', () => {
+  const doc = RC.montarResultadoManual(optsManual([true, true, 'sim', false]));
+  assert.equal(doc.id, 'id_manual_1');
+  assert.equal(doc.checklistId, 'cl9');
+  assert.equal(doc.checklistNome, 'Abertura');
+  assert.equal(doc.setor, 'Loja');
+  assert.equal(doc.operador, 'Maria');
+  assert.equal(doc.perfil, 'operator');
+  assert.equal(doc.loja, 'Cahu');
+  assert.equal(doc.clienteId, 'economico');
+  assert.equal(doc.dateISO, '2026-09-07');
+  assert.equal(doc.dataHora, '07/09/2026 00:00');
+  assert.equal(doc.feitos, 3);
+  assert.equal(doc.total, 4);
+  assert.equal(doc.pct, 75);
+  assert.equal(doc.reprovado, false);
+  assert.equal(doc.assinatura, null);
+  assert.equal(doc.manual, true);
+  assert.equal(doc.lancadoPor, 'Tiago');
+  assert.equal(doc.lancadoEm, '24/09/2026 09:05');
+  assert.equal(doc.itens.length, 4);
+});
+
+test('montarResultadoManual: simNao conta feito só no sim', () => {
+  assert.equal(RC.montarResultadoManual(optsManual([false, false, 'sim', false])).feitos, 1);
+  assert.equal(RC.montarResultadoManual(optsManual([false, false, 'nao', false])).feitos, 0);
+  assert.equal(RC.montarResultadoManual(optsManual([false, false, null, false])).feitos, 0);
+  const d = RC.montarResultadoManual(optsManual([false, false, 'nao', false]));
+  assert.equal(d.itens[2].resposta, 'nao');
+  assert.equal(d.itens[0].resposta, null);
+});
+
+test('montarResultadoManual: crítico não feito reprova', () => {
+  assert.equal(RC.montarResultadoManual(optsManual([true, true, 'nao', true])).reprovado, true);
+  assert.equal(RC.montarResultadoManual(optsManual([true, true, null, true])).reprovado, true);
+  assert.equal(RC.montarResultadoManual(optsManual([true, true, 'sim', true])).reprovado, false);
+});
+
+test('montarResultadoManual: nada marcado e checklist vazio', () => {
+  const zero = RC.montarResultadoManual(optsManual([false, false, null, false]));
+  assert.equal(zero.pct, 0);
+  assert.equal(zero.feitos, 0);
+  const o = optsManual([]); o.cl.itens = [];
+  const vazio = RC.montarResultadoManual(o);
+  assert.equal(vazio.total, 0);
+  assert.equal(vazio.pct, 0);
+  assert.equal(vazio.reprovado, false);
+});
+
+test('montarResultadoManual: itens sem foto e no formato do envio', () => {
+  const doc = RC.montarResultadoManual(optsManual([true, true, 'sim', true]));
+  doc.itens.forEach(function (it) {
+    assert.equal(it.fotoAntes, null);
+    assert.equal(it.fotoDepois, null);
+    assert.equal(it.fotosMulti, null);
+    assert.equal(it.produtos, null);
+    assert.equal(it.emPlano, false);
+    assert.equal(it.justificativa, '');
+  });
+  assert.deepEqual(Object.keys(doc.itens[1]).sort(),
+    ['critico','emPlano','feito','foto','fotoAntes','fotoDepois','fotosMulti','justificativa','obs','prazoPlano','produtos','resposta','texto','tipo']);
+  assert.equal(doc.itens[1].foto, 'antes_depois');
+  assert.equal(doc.itens[1].feito, true);
+  assert.equal(doc.itens[2].critico, true);
+  assert.equal(doc.itens[2].prazoPlano, 48);
+});

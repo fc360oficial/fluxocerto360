@@ -9560,7 +9560,7 @@ function renderRelRankExtrato() {
         var pts = calcPontos(sent.pct);
         pontosObtidos += pts;
         clEnviados++;
-        detalhe.push({nome:cl.nome, pct:sent.pct, pts:pts, ok:true});
+        detalhe.push({nome:cl.nome+(sent.manual?' (manual)':''), pct:sent.pct, pts:pts, ok:true});
       } else {
         clPerdidos++;
         detalhe.push({nome:cl.nome, pct:null, pts:0, ok:false});
@@ -9598,7 +9598,9 @@ function renderRelRankExtrato() {
     rows.push({d:d, dow:diaSemana, clEnviados:clEnviados, clEsp:clEsp.length, clPerdidos:clPerdidos,
                pts:pontosObtidos, maxDia:maxDia, pontosPerdidos:pontosPerdidos,
                status:status, bgRow:bgRow, detalhe:detalhe,
-               resultIds:resDia.map(function(ri){return ri.id;}).filter(Boolean)});
+               resultIds:resDia.map(function(ri){return ri.id;}).filter(Boolean),
+               idsPerdidos:clEsp.filter(function(cl){ return !resDia.some(function(r){ return r.checklistId===cl.id; }); }).map(function(cl){ return cl.id; }),
+               passado:dataDia <= new Date()});
   }
 
   var aprov = totalMaximo ? Math.round(totalPontos/totalMaximo*100) : 0;
@@ -9659,6 +9661,7 @@ function renderRelRankExtrato() {
       +'<td style="padding:8px 10px;text-align:right">'+perdPtsStr+'</td>'
       +'<td style="padding:8px 10px;text-align:center;font-size:15px">'+r.status
       +(S.role==='admin'&&r.resultIds&&r.resultIds.length?' <button onclick="excluirResultadoDia(\''+r.resultIds.join(',')+'\')" style="font-size:10px;padding:1px 5px;border:1px solid var(--r);color:var(--r);background:transparent;border-radius:4px;cursor:pointer;vertical-align:middle;margin-left:3px" title="Excluir do ranking">×</button>':'')
+      +(S.role==='admin'&&r.passado&&r.idsPerdidos&&r.idsPerdidos.length?' <button onclick="abrirModalLancamentoManual('+anoSel+','+mesSel+','+r.d+',\''+lojaSel.replace(/'/g,"\\'")+'\',\''+r.idsPerdidos.join(',')+'\')" style="font-size:10px;padding:1px 6px;border:1px solid var(--g);color:var(--g);background:transparent;border-radius:4px;cursor:pointer;vertical-align:middle;margin-left:3px" title="Lançar checklist feito no papel">＋ Lançar</button>':'')
       +'</td>'
       +'</tr>';
   });
@@ -9691,6 +9694,118 @@ function excluirResultadoDia(idsStr) {
     localStorage.setItem(RESKEY, JSON.stringify(semAssina));
   } catch(e){}
   renderRelRanking();
+}
+
+// ── Lançamento manual de checklist feito no papel (spec 2026-09-24) ──
+var _lm = { ano:0, mes:0, dia:0, loja:'', dateISO:'' };
+
+function abrirModalLancamentoManual(ano, mes, dia, loja, idsStr) {
+  if (S.role !== 'admin') return;
+  var ids = String(idsStr||'').split(',').filter(Boolean);
+  var cls = getCustomCLs().filter(function(cl){ return ids.indexOf(cl.id) >= 0; });
+  if (!cls.length) { showToast('Nenhum checklist pendente nesse dia.'); return; }
+  _lm = { ano:ano, mes:mes, dia:dia, loja:loja,
+          dateISO: ano+'-'+String(mes+1).padStart(2,'0')+'-'+String(dia).padStart(2,'0') };
+  document.getElementById('lm-data').value = String(dia).padStart(2,'0')+'/'+String(mes+1).padStart(2,'0')+'/'+ano;
+  document.getElementById('lm-loja').value = loja;
+  document.getElementById('lm-checklist').innerHTML = cls.map(function(cl){
+    return '<option value="'+_escHtml(cl.id)+'">'+_escHtml(cl.nome)+'</option>';
+  }).join('');
+  var ops = getUsers().filter(function(u){
+    return u.ativo !== false && u.nome && (u.loja||'').trim().toLowerCase() === loja.toLowerCase();
+  }).sort(function(a,b){ return a.nome.localeCompare(b.nome); });
+  document.getElementById('lm-operador').innerHTML = '<option value="">Selecione...</option>'
+    + ops.map(function(u){ return '<option value="'+_escHtml(u.id)+'">'+_escHtml(u.nome)+'</option>'; }).join('');
+  _lmRenderItens();
+  document.getElementById('modal-cl-manual').style.display = 'flex';
+}
+
+function _lmChecklistAtual() {
+  var id = document.getElementById('lm-checklist').value;
+  return getCustomCLs().find(function(cl){ return cl.id === id; }) || null;
+}
+
+function _lmRenderItens() {
+  var cl = _lmChecklistAtual();
+  var el = document.getElementById('lm-itens');
+  if (!cl) { el.innerHTML = ''; _lmAtualizarRodape(); return; }
+  el.innerHTML = (cl.itens||[]).map(function(item, idx){
+    var tipo = item.tipo || 'checkbox';
+    var legenda = (item.foto && item.foto !== 'none') ? '<span style="font-size:11px;color:var(--t3)"> · sem foto (papel)</span>' : '';
+    var critico = item.critico ? ' <b style="color:var(--r);font-size:10px">CRÍTICO</b>' : '';
+    var linha = '<div style="padding:8px 12px;border-bottom:1px solid var(--gray2);display:flex;align-items:center;gap:10px;font-size:13px">';
+    if (tipo === 'simNao') {
+      linha += '<span style="flex:1">'+_escHtml(item.t)+critico+legenda+'</span>'
+        + '<label style="cursor:pointer"><input type="radio" name="lm-sn-'+idx+'" value="sim" onchange="_lmAtualizarRodape()"> Sim</label>'
+        + '<label style="cursor:pointer"><input type="radio" name="lm-sn-'+idx+'" value="nao" onchange="_lmAtualizarRodape()"> Não</label>';
+    } else {
+      linha += '<label style="flex:1;cursor:pointer;display:flex;align-items:center;gap:8px"><input type="checkbox" class="lm-chk" data-idx="'+idx+'" onchange="_lmAtualizarRodape()"> <span>'+_escHtml(item.t)+critico+legenda+'</span></label>';
+    }
+    return linha + '</div>';
+  }).join('') || '<div style="padding:12px;color:var(--t3);font-size:12px">Checklist sem itens.</div>';
+  _lmAtualizarRodape();
+}
+
+function _lmLerMarcados() {
+  var cl = _lmChecklistAtual();
+  if (!cl) return [];
+  return (cl.itens||[]).map(function(item, idx){
+    if ((item.tipo||'checkbox') === 'simNao') {
+      var r = document.querySelector('input[name="lm-sn-'+idx+'"]:checked');
+      return r ? r.value : null;
+    }
+    var c = document.querySelector('.lm-chk[data-idx="'+idx+'"]');
+    return !!(c && c.checked);
+  });
+}
+
+function _lmMontarDoc() {
+  var cl = _lmChecklistAtual();
+  var opEl = document.getElementById('lm-operador');
+  var op = getUsers().find(function(u){ return u.id === opEl.value; });
+  return ResultadosCore.montarResultadoManual({
+    cl: cl, marcados: _lmLerMarcados(),
+    operador: op ? op.nome : '', perfil: op ? (op.perfil || 'operator') : 'operator',
+    loja: _lm.loja, clienteId: (S.currentUser && S.currentUser.clienteId) || '',
+    dateISO: _lm.dateISO, autor: (S.currentUser && S.currentUser.nome) || null,
+    agora: new Date(), genId: genId
+  });
+}
+
+function _lmAtualizarRodape() {
+  var el = document.getElementById('lm-rodape');
+  var cl = _lmChecklistAtual();
+  if (!cl) { el.textContent = ''; return; }
+  var d = _lmMontarDoc();
+  el.textContent = 'Concluído: '+d.feitos+' de '+d.total+' itens · '+d.pct+'% · +'+calcPontos(d.pct)+' pontos'+(d.reprovado?' · REPROVADO (crítico não feito)':'');
+}
+
+function salvarLancamentoManual() {
+  if (S.role !== 'admin') return;
+  var cl = _lmChecklistAtual();
+  if (!cl) { showToast('Selecione o checklist.'); return; }
+  if (!document.getElementById('lm-operador').value) { showToast('Selecione o operador.'); return; }
+  var jaTem = getResultados().some(function(r){
+    return !r.resetado && r.checklistId === cl.id && r.dateISO === _lm.dateISO
+      && ((r.loja||'').trim().toLowerCase() === _lm.loja.toLowerCase());
+  });
+  if (jaTem) { showToast('Já existe envio desse checklist nesse dia.'); return; }
+  var doc = _lmMontarDoc();
+  showToast('📤 Lançando...');
+  db.collection('resultados').doc(doc.id).set(doc).then(function(){
+    document.getElementById('modal-cl-manual').style.display = 'none';
+    // O listener de 30 dias pode já ter trazido este doc (latency
+    // compensation) — só adiciona se ainda não está no cache.
+    if (!S.resultadosCache.some(function(r){ return r.id === doc.id; })) S.resultadosCache.push(doc);
+    try {
+      var semAssina = S.resultadosCache.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
+      localStorage.setItem(RESKEY, JSON.stringify(semAssina));
+    } catch(e){}
+    showToast('Lançado: '+cl.nome+' · '+doc.operador+' · '+doc.pct+'% (+'+calcPontos(doc.pct)+')');
+    renderRelRankExtrato();
+  }).catch(function(e){
+    showToast('Erro ao lançar: '+(e && e.message ? e.message : e));
+  });
 }
 
 // Clona elemento substituindo <canvas> por <img> com o conteúdo desenhado

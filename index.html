@@ -712,6 +712,27 @@
         <div style="font-size:13px;color:#6b7280;margin-top:4px">Toque na tela pra fechar</div>
       </div>
 
+      <div class="modal-bg" id="modal-cl-manual" style="display:none">
+        <div class="modal-box" style="width:520px;max-width:95vw;max-height:92vh;overflow-y:auto">
+          <div class="modal-title">Lançar checklist feito no papel</div>
+          <div style="font-size:12px;color:var(--t3);margin:-10px 0 14px">Use quando a loja fez o checklist mas não enviou pelo app. Fica registrado como lançamento manual no seu nome.</div>
+          <div style="display:flex;gap:10px;margin-bottom:12px">
+            <div class="fg" style="flex:1"><label>Data</label><input id="lm-data" readonly style="background:#f3f4f6"></div>
+            <div class="fg" style="flex:1"><label>Loja</label><input id="lm-loja" readonly style="background:#f3f4f6"></div>
+          </div>
+          <div class="fg" style="margin-bottom:12px"><label>Checklist</label><select id="lm-checklist" onchange="_lmRenderItens()"></select></div>
+          <div class="fg" style="margin-bottom:12px"><label>Operador (quem fez)</label><select id="lm-operador"></select></div>
+          <div class="fg" style="margin-bottom:4px"><label>Itens feitos</label>
+            <div id="lm-itens" style="border:1px solid var(--gray2);border-radius:8px;max-height:40vh;overflow-y:auto"></div>
+          </div>
+          <div id="lm-rodape" style="font-size:13px;font-weight:700;margin:10px 0 14px;color:var(--t2)"></div>
+          <div class="btn-row">
+            <button class="btn btn-p" onclick="salvarLancamentoManual()">Lançar</button>
+            <button class="btn btn-s" onclick="document.getElementById('modal-cl-manual').style.display='none'">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
       <div class="modal-bg" id="modal-visita-manual" style="display:none">
         <div class="modal-box" style="width:420px;max-width:95vw">
           <div class="modal-title">Registrar visita</div>
@@ -2152,7 +2173,7 @@
 <script src="client.js"></script>
 <script src="qrcode-generator.min.js"></script>
 <script src="lib/inv-bip-core.js?v=7"></script>
-<script src="lib/resultados-core.js?v=1"></script>
+<script src="lib/resultados-core.js?v=2"></script>
 <script>
 // Painel de erros na tela (?debug=1): iPhone/Chrome iOS nao tem console acessivel na loja.
 (function(){

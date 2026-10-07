@@ -1,0 +1,15 @@
+name: Check BUILD consistency
+# Falha (e avisa quem fez o push) se app.js, version.json, index.html e sw.js
+# estiverem com números de BUILD diferentes. Ver scripts/check-build.js.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar BUILD nos 4 arquivos
+        run: node scripts/check-build.js

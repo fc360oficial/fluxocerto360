@@ -218,3 +218,36 @@ test('montarResultadoManual: itens sem foto e no formato do envio', () => {
   assert.equal(doc.itens[2].critico, true);
   assert.equal(doc.itens[2].prazoPlano, 48);
 });
+
+test('dateISODe: usa dateISO, cai pra dataHora dd/mm/aaaa nos legados', () => {
+  assert.equal(RC.dateISODe({ dateISO: '2026-10-03', dataHora: '03/10/2026 09:00' }), '2026-10-03');
+  assert.equal(RC.dateISODe({ dataHora: '28/09/2026 17:10' }), '2026-09-28');
+  assert.equal(RC.dateISODe({}), '');
+  assert.equal(RC.dateISODe(null), '');
+});
+
+test('foraDaJanela: devolve só o que ficou antes da janela nova (sessão aberta por dias)', () => {
+  const lista = [
+    { id: 'a', dateISO: '2026-09-30', dataHora: '30/09/2026 08:00' },
+    { id: 'b', dateISO: '2026-10-04', dataHora: '04/10/2026 08:00' },
+    { id: 'c', dateISO: '2026-10-05', dataHora: '05/10/2026 08:00' },
+    { id: 'd', dataHora: '02/10/2026 08:00' },
+    { id: 'e' }
+  ];
+  assert.deepEqual(RC.foraDaJanela(lista, '2026-10-05').map(r => r.id), ['a', 'b', 'd']);
+  assert.deepEqual(RC.foraDaJanela(lista, '2026-09-30').map(r => r.id), []);
+  assert.deepEqual(RC.foraDaJanela(lista, ''), []);
+  assert.deepEqual(RC.foraDaJanela(null, '2026-10-05'), []);
+});
+
+test('janela avançou: mesclar os recuados em antigos mantém o mês inteiro no cache', () => {
+  // login em 30/09 (janela 7d = 23/09); em 12/10 a janela vira 05/10
+  const cacheLogin = [
+    { id: 'x', dateISO: '2026-10-01', dataHora: '01/10/2026 08:00' },
+    { id: 'y', dateISO: '2026-10-06', dataHora: '06/10/2026 08:00' }
+  ];
+  const novaJanela = [{ id: 'y', dateISO: '2026-10-06', dataHora: '06/10/2026 08:00' }, { id: 'z', dateISO: '2026-10-12', dataHora: '12/10/2026 08:00' }];
+  const antigos = RC.mesclarPorId([], RC.foraDaJanela(cacheLogin, '2026-10-05'));
+  const cache = RC.mesclarPorId(antigos, novaJanela);
+  assert.deepEqual(cache.map(r => r.id), ['x', 'y', 'z']);
+});

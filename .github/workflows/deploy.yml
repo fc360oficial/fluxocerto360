@@ -20,6 +20,8 @@ jobs:
           git fetch base main
           git checkout base/main -- .
           git checkout HEAD -- .github/
+      - name: Verify base BUILD is consistent (app.js = version.json = index.html = sw.js)
+        run: node scripts/check-build.js
       - name: Restore client identity and push
         run: |
           cp /tmp/client_backup.js client.js

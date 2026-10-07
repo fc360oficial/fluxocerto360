@@ -1,0 +1,7 @@
+#!/bin/sh
+# Bloqueia commit com BUILD desalinhado entre app.js / version.json / index.html / sw.js.
+# Ativar uma vez por clone:  git config core.hooksPath .githooks
+# Só roda quando algum desses arquivos está no commit.
+if git diff --cached --name-only | grep -qE '^(app\.js|version\.json|index\.html|sw\.js)$'; then
+  node scripts/check-build.js || { echo; echo "Commit bloqueado. Rode: node scripts/bump-build.js"; exit 1; }
+fi

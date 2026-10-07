@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '424';
+var BUILD = '425';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -895,8 +895,10 @@ function getResultados() {
 // Pendentes, Operadores ativos, Equipe), Pendências, Resumo do dia e Imprimir Dashboard
 // (Tiago, 07/10/26: "só o que foi enviado mesmo; o manual não deveria aparecer ali").
 // Ranking/Extrato e Central de Resultados continuam mostrando, com etiqueta "manual".
+// Envio feito com o login de ADMIN (perfil 'admin') também fica fora: admin não é
+// operador, é teste — e o ranking já não conta admin (perfilReal).
 function semManuais(lista) {
-  return (lista || []).filter(function(r){ return !r.manual; });
+  return (lista || []).filter(function(r){ return !r.manual && r.perfil !== 'admin'; });
 }
 
 // Acesso bruto (sem filtro) — uso interno para salvar
@@ -4261,9 +4263,33 @@ function renderCentral() {
       +(r.manual?' <span class="st st-warn" title="Lançado por '+_escHtml(r.lancadoPor||'?')+' em '+_escHtml(r.lancadoEm||'')+'">Manual</span>':'')+'</td>'
       +'<td><span class="st '+st+'">'+pctLabel+'</span></td>'
       +'<td style="font-size:12px">'+r.feitos+'/'+r.total+'</td>'
-      +'<td><button class="btn btn-s btn-sm" onclick="verDetalhe(\''+r.id+'\')">Ver</button></td>'
+      +'<td style="white-space:nowrap"><button class="btn btn-s btn-sm" onclick="verDetalhe(\''+r.id+'\')">Ver</button>'
+      +(S.role==='admin'&&!r.resetado?' <button onclick="excluirResultadoCentral(\''+r.id+'\')" style="font-size:11px;padding:2px 7px;border:1px solid var(--r);color:var(--r);background:transparent;border-radius:4px;cursor:pointer;vertical-align:middle" title="Excluir este envio das estatísticas e do ranking (fica na lista com ↺)">×</button>':'')
+      +'</td>'
       +'</tr>';
   }).join('');
+}
+
+// Exclui UM envio das estatísticas (Dashboard, Resumo, ranking) marcando resetado:true —
+// mesma regra do × do Extrato, mas por linha. O × do Extrato apaga todos os envios do
+// dia daquela loja de uma vez (inclusive o real); aqui o admin escolhe qual.
+// (Tiago, 07/10/26: envios de teste feitos com o login da loja inflando o Dashboard.)
+function excluirResultadoCentral(id) {
+  if (S.role !== 'admin') return;
+  var r = (S.resultadosCache || []).find(function(x){ return x.id === id; });
+  if (!r) return;
+  if (!confirm('Excluir "'+r.checklistNome+'" de '+r.operador+' ('+r.dataHora+') das estatísticas e do ranking?')) return;
+  db.collection('resultados').doc(id).update({ resetado: true }).catch(function(){ showToast('❌ Não foi possível gravar a exclusão. Verifique a conexão.'); });
+  var _marcar = function(x){ return x.id === id ? Object.assign({}, x, { resetado: true }) : x; };
+  S.resultadosCache = (S.resultadosCache || []).map(_marcar);
+  _resAntigos = _resAntigos.map(_marcar);
+  try {
+    var semAssina = S.resultadosCache.map(function(x){ return x.assinatura ? Object.assign({},x,{assinatura:null}) : x; });
+    localStorage.setItem(RESKEY, JSON.stringify(semAssina));
+  } catch(e){}
+  showToast('Envio excluído das estatísticas.');
+  renderCentral();
+  updateDash();
 }
 
 // Fotos ficam fora do cache (spec 2026-09-23). Ao abrir o detalhe, busca:

@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '421';
+var BUILD = '422';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -919,8 +919,13 @@ function _resJanelaInicio() {
   return ResultadosCore.janelaISO(RES_JANELA_DIAS);
 }
 
-function _resAplicarLista(docsData) {
+function _resAplicarLista(docsData, desdeISO) {
   var myClient = (S.currentUser && S.currentUser.clienteId) || '';
+  // O que já estava em memória e ficou antes desta janela (sessão aberta há
+  // dias, janela avançou) vai pra _resAntigos em vez de sumir — sem isso o
+  // Ranking do mês perdia os envios entre a janela do login e a de hoje.
+  var recuados = ResultadosCore.foraDaJanela(S.resultadosCache, desdeISO);
+  if (recuados.length) _resAntigos = ResultadosCore.mesclarPorId(_resAntigos, recuados);
   var list = docsData
     .filter(function(r){ return (r.clienteId || 'economico') === myClient; })
     .map(ResultadosCore.enxugar);
@@ -961,7 +966,7 @@ function loadResultadosFromFirebase(callback) {
     var desde = _resJanelaInicio();
     if (!_resCarregadoDesde || _resCarregadoDesde > desde) _resCarregadoDesde = desde;
     db.collection('resultados').where('dateISO', '>=', desde).get({source: 'server'}).then(function(snap){
-      _resAplicarLista(snap.docs.map(function(d){ return d.data(); }));
+      _resAplicarLista(snap.docs.map(function(d){ return d.data(); }), desde);
       if (callback) callback();
     }).catch(function(err){
       try { S.resultadosCache = JSON.parse(localStorage.getItem(RESKEY)||'[]'); } catch(e){ S.resultadosCache=[]; }
@@ -1076,7 +1081,7 @@ function iniciarResultadosRealtime() {
   // servidor — era assim que checklist "enviado" sumia da retaguarda.
   _resultadosUnsub = db.collection('resultados').where('dateISO', '>=', desde).onSnapshot(function(snap) {
     var confirmados = ResultadosCore.filtrarConfirmados(snap.docs);
-    var list = _resAplicarLista(confirmados.map(function(d){ return d.data(); }));
+    var list = _resAplicarLista(confirmados.map(function(d){ return d.data(); }), desde);
 
     // Notificar sobre novos checklists (ignora snapshot inicial)
     if (!_firstResultSnapshot) {
@@ -9687,10 +9692,14 @@ function excluirResultadoDia(idsStr) {
   ids.forEach(function(id) {
     db.collection('resultados').doc(id).update({ resetado: true }).catch(function(){});
   });
-  S.resultadosCache = S.resultadosCache.map(function(r) {
+  var _marcarResetado = function(r) {
     if (ids.indexOf(r.id) >= 0) return Object.assign({}, r, { resetado: true });
     return r;
-  });
+  };
+  S.resultadosCache = S.resultadosCache.map(_marcarResetado);
+  // _resAntigos é mesclado de volta ao cache em toda recarga — sem marcar aqui,
+  // o envio excluído voltava ao ranking no próximo snapshot.
+  _resAntigos = _resAntigos.map(_marcarResetado);
   try {
     var semAssina = S.resultadosCache.map(function(r){ return r.assinatura ? Object.assign({},r,{assinatura:null}) : r; });
     localStorage.setItem(RESKEY, JSON.stringify(semAssina));

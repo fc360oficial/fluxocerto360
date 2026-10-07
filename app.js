@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '423';
+var BUILD = '424';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -890,6 +890,15 @@ function getResultados() {
   return filterResultadosByLoja(S.resultadosCache || []);
 }
 
+// Lançamentos manuais (checklist feito no papel, lançado pelo admin — spec 2026-09-24)
+// NÃO entram nas estatísticas de envio do dia: Dashboard (Checklists hoje, Conformidade,
+// Pendentes, Operadores ativos, Equipe), Pendências, Resumo do dia e Imprimir Dashboard
+// (Tiago, 07/10/26: "só o que foi enviado mesmo; o manual não deveria aparecer ali").
+// Ranking/Extrato e Central de Resultados continuam mostrando, com etiqueta "manual".
+function semManuais(lista) {
+  return (lista || []).filter(function(r){ return !r.manual; });
+}
+
 // Acesso bruto (sem filtro) — uso interno para salvar
 function getAllResultados() {
   return S.resultadosCache || [];
@@ -1180,7 +1189,7 @@ function abrirPendentes() {
   var isManager = u && (u.perfil === 'admin' || u.perfil === 'gerencia' || u.perfil === 'supervisor');
   var todos = isManager ? getCustomCLs() : getChecklistsObrigatoriosHoje();
   var hoje = new Date().toLocaleDateString('pt-BR');
-  var resultados = getResultados();
+  var resultados = semManuais(getResultados());
   var resultadosHoje = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hoje) === 0 && !r.resetado; });
   var pendencias = getPendencias();
   var lista = document.getElementById('pendentes-lista');
@@ -8401,7 +8410,7 @@ function updateDash() {
   var ontemDate = new Date(agora); ontemDate.setDate(ontemDate.getDate()-1);
   var ontemStr = ontemDate.toLocaleDateString('pt-BR');
 
-  var resultados = getResultados();
+  var resultados = semManuais(getResultados());
   var resultadosHoje = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hojeStr)===0 && !r.resetado; });
   var resultadosOntem = resultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(ontemStr)===0 && !r.resetado; });
 
@@ -8856,7 +8865,7 @@ function renderRelChecklist() {
   }
 
   // Resumo do dia - usa filtro selecionado
-  var resultadosHoje = getResultadosFiltradosDia().filter(function(r){return !r.resetado;});
+  var resultadosHoje = semManuais(getResultadosFiltradosDia()).filter(function(r){return !r.resetado;});
   var _pcl = ['operator','prevencao','gerencia'];
   var users = getUsers().filter(function(u){return u.ativo && u.checklistAtivo!==false && _pcl.indexOf(u.perfil)!==-1;});
   var resumoDiv = document.getElementById('rel-resumo-dia');
@@ -9897,7 +9906,7 @@ function exportarRelatorioSupervisor() {
   var PLABEL = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção'};
 
   // ── Dados base ──────────────────────────────────────────────────────────────
-  var todosResultados = getResultados();
+  var todosResultados = semManuais(getResultados());
   var resultadosHoje  = todosResultados.filter(function(r){ return r.dataHora && r.dataHora.indexOf(hojeStr)===0 && !r.resetado; });
 
   var ontemDate = new Date(agora); ontemDate.setDate(ontemDate.getDate()-1);
@@ -12172,7 +12181,7 @@ function _renderRelatorios_unused() {
 
   // ── E: Resumo do dia ──
   var hoje2 = hoje;
-  var resultadosHoje = resultados.filter(function(r){return r.dataHora && r.dataHora.indexOf(hoje2)===0 && !r.resetado;});
+  var resultadosHoje = semManuais(resultados).filter(function(r){return r.dataHora && r.dataHora.indexOf(hoje2)===0 && !r.resetado;});
   var _pcl2 = ['operator','prevencao','gerencia'];
   var users = getUsers().filter(function(u){return u.ativo && u.checklistAtivo!==false && _pcl2.indexOf(u.perfil)!==-1;});
   var resumoDiv = document.getElementById('rel-resumo-dia');

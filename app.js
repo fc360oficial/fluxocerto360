@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '425';
+var BUILD = '426';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1092,6 +1092,7 @@ function iniciarResultadosRealtime() {
   // servidor — era assim que checklist "enviado" sumia da retaguarda.
   _resultadosUnsub = db.collection('resultados').where('dateISO', '>=', desde).onSnapshot(function(snap) {
     var confirmados = ResultadosCore.filtrarConfirmados(snap.docs);
+    _envPendConfirmar(confirmados);
     var list = _resAplicarLista(confirmados.map(function(d){ return d.data(); }), desde);
 
     // Notificar sobre novos checklists (ignora snapshot inicial)
@@ -1951,7 +1952,7 @@ function finalizarLogin(found) {
     // Só a janela de 30 dias (spec 2026-09-23) — antes baixava a coleção inteira no login.
     db.collection('resultados').where('dateISO', '>=', _resJanelaInicio()).get().then(function(snap){
       if (!_resCarregadoDesde || _resCarregadoDesde > _resJanelaInicio()) _resCarregadoDesde = _resJanelaInicio();
-      _resAplicarLista(snap.docs.map(function(d){ return d.data(); }));
+      _resAplicarLista(ResultadosCore.filtrarConfirmados(snap.docs).map(function(d){ return d.data(); }));
     }),
     (function(){
       var userId = found.id;
@@ -1976,6 +1977,7 @@ function finalizarLogin(found) {
       carregarFotosFirebase(function(){
         iniciarApp();
         iniciarResultadosRealtime();
+        sincronizarEnviosPendentes();
       });
     });
   }).catch(function(err){
@@ -2343,7 +2345,7 @@ function sincronizarEstadoFirebase() {
   // Só a janela de 30 dias (spec 2026-09-23) — antes baixava a coleção inteira no login.
   var promiseResultados = db.collection('resultados').where('dateISO', '>=', _resJanelaInicio()).get().then(function(snap){
     if (!_resCarregadoDesde || _resCarregadoDesde > _resJanelaInicio()) _resCarregadoDesde = _resJanelaInicio();
-    _resAplicarLista(snap.docs.map(function(d){ return d.data(); }));
+    _resAplicarLista(ResultadosCore.filtrarConfirmados(snap.docs).map(function(d){ return d.data(); }));
   }).catch(function(){});
 
   Promise.all([promiseState, promiseResultados]).then(function(){
@@ -2721,7 +2723,14 @@ function buildCLBlock(cl) {
       + '<div style="font-size:12px;color:var(--r)">Um item crítico foi marcado como Não conforme. O envio registrará esta inspeção como REPROVADA.</div></div>'
       + '</div>'
     : '';
-  var envioBanner = jaConcluido
+  var envPend = envioPendente(cl.id);
+  var envioBanner = (jaConcluido && envPend)
+    ? '<div style="display:flex;align-items:center;gap:10px;background:#fff8e1;border:1px solid #f0c36d;border-radius:10px;padding:12px 16px;margin-bottom:14px">'
+      + '<span style="font-size:20px">⏳</span>'
+      + '<div><div style="font-size:13px;font-weight:600;color:#b45309">Enviando — aguardando internet</div>'
+      + '<div style="font-size:12px;color:#b45309">Seu envio das ' + ((envPend.em || '').split(' ').pop() || '--') + ' ainda não chegou ao servidor. Mantenha o app aberto com internet. Não precisa enviar de novo: os itens ficam travados até confirmar.</div></div>'
+      + '</div>'
+    : jaConcluido
     ? '<div style="display:flex;align-items:center;gap:10px;background:#e8f5ee;border:1px solid #a8d5b5;border-radius:10px;padding:12px 16px;margin-bottom:14px">'
       + '<span style="font-size:20px">✅</span>'
       + '<div><div style="font-size:13px;font-weight:600;color:var(--g)">Checklist já enviado hoje!</div>'
@@ -2746,7 +2755,7 @@ function buildCLBlock(cl) {
     + (clTurno ? '<span style="font-size:11px;padding:2px 9px;border-radius:20px;background:var(--gray);color:var(--t3)">' + clTurno + '</span>' : '')
     + '</div></div>'
     + '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
-    + (jaConcluido ? '<button class="btn btn-s btn-sm" disabled style="opacity:.5;cursor:not-allowed">Ja enviado</button>' : '<button class="btn btn-p btn-sm" onclick="enviarCL(\'' + clId + '\',\'' + clLabel.replace(/'/g, '') + '\')">Enviar</button>')
+    + (jaConcluido ? '<button class="btn btn-s btn-sm" disabled style="opacity:.5;cursor:not-allowed">' + (envPend ? 'Enviando...' : 'Ja enviado') + '</button>' : '<button class="btn btn-p btn-sm" onclick="enviarCL(\'' + clId + '\',\'' + clLabel.replace(/'/g, '') + '\')">Enviar</button>')
     + (S.role==='admin'||S.role==='supervisor' ? '<button class="btn btn-s btn-sm" onclick="abrirModalReset(\'' + clId + '\')" style="margin-top:4px">Resetar itens</button>' : '')
     + '</div></div>'
     + '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--gray);border-radius:8px;margin-bottom:14px">'
@@ -3545,7 +3554,79 @@ function loadPlanilhasDiarias(cb) {
   }).catch(function() { if (cb) cb(); });
 }
 
+// ── Envio pendente (BUILD 426, 08/10/26) ──────────────────────────────────
+// Com persistência offline, batch.commit() entra numa fila e a promise só
+// resolve quando o SERVIDOR confirma. Com internet ruim na loja isso leva
+// minutos — ou só acontece na próxima abertura do app. Enquanto isso a tela
+// ficava editável e o gerente tocava "Enviar" de novo: Muribeca mandou 5×
+// em 07/10 (14:44–14:49) e as 5 gravaram juntas às 15:22 quando a conexão
+// voltou; Jardim Jordão 2×. Se o app era recarregado antes da confirmação,
+// o .get() do login trazia o doc pendente do cache e a tela dizia "já
+// enviado hoje" — Cahu em 07/10 viu "enviado 13/13" e nada chegou ao
+// servidor. Agora: ao chamar commit() o checklist já fica travado como
+// "enviando, aguardando internet" (registro em localStorage, sobrevive a
+// recarga); só vira "já enviado" quando o servidor confirmar; no login,
+// waitForPendingWrites() espera a fila esvaziar e destrava.
+var ENV_PEND_KEY = 'cahu360_enviosPendentes';
+function _envPendLer() { try { return JSON.parse(localStorage.getItem(ENV_PEND_KEY) || '{}'); } catch(e) { return {}; } }
+function _envPendGravar(m) { try { localStorage.setItem(ENV_PEND_KEY, JSON.stringify(m)); } catch(e) {} }
+function _envPendChave(clId) { return (S.currentUser ? S.currentUser.id : 'guest') + '|' + clId + '|' + getLocalDate(); }
+function envioPendente(clId) { return _envPendLer()[_envPendChave(clId)] || null; }
+function _envPendMarcar(clId, resId) { var m = _envPendLer(); m[_envPendChave(clId)] = { id: resId, em: new Date().toLocaleString('pt-BR') }; _envPendGravar(m); }
+function _envPendLimpar(clId) { var m = _envPendLer(); delete m[_envPendChave(clId)]; _envPendGravar(m); }
+// Só o dia de hoje interessa (checklist é por dia); devolve o que sobrou.
+function _envPendPodar() {
+  var m = _envPendLer(), hoje = getLocalDate(), out = {};
+  Object.keys(m).forEach(function(k) { if (k.split('|')[2] === hoje) out[k] = m[k]; });
+  _envPendGravar(out);
+  return out;
+}
+// Listener trouxe docs confirmados pelo servidor: o que estava pendente e chegou, destrava.
+function _envPendConfirmar(docsConfirmados) {
+  var m = _envPendLer(), ids = {}, mudou = false;
+  (docsConfirmados || []).forEach(function(d) { ids[d.id] = true; });
+  Object.keys(m).forEach(function(k) { if (m[k] && ids[m[k].id]) { delete m[k]; mudou = true; } });
+  if (mudou) { _envPendGravar(m); if (typeof buildCLTabs === 'function') buildCLTabs(); }
+}
+// No login: espera a fila offline do Firestore (desta e de sessões anteriores) chegar ao servidor.
+function sincronizarEnviosPendentes() {
+  var pend = _envPendPodar();
+  var tinha = Object.keys(pend).length > 0;
+  var avisou = false;
+  var t = setTimeout(function() {
+    avisou = true;
+    showToast(tinha ? '⏳ Checklist de hoje ainda aguardando envio — mantenha o app aberto com internet.'
+                    : '⏳ Enviando dados pendentes do último acesso — mantenha o app aberto com internet.', 6000);
+  }, tinha ? 0 : 4000);
+  db.waitForPendingWrites().then(function() {
+    clearTimeout(t);
+    // 1,5 s pro listener de resultados entregar o doc recém-confirmado.
+    setTimeout(function() {
+      var ainda = _envPendPodar();
+      var cache = getAllResultados();
+      var perdidos = Object.keys(ainda).filter(function(k) {
+        return !cache.some(function(r) { return r.id === ainda[k].id; });
+      });
+      _envPendGravar({});
+      if (perdidos.length) showToast('⚠ O envio de hoje NÃO chegou ao servidor e o checklist foi destravado — confira os itens e envie de novo.', 9000);
+      else if (tinha || avisou) showToast('✅ Dados enviados — o servidor confirmou agora.');
+      if (typeof buildCLTabs === 'function') buildCLTabs();
+      var pp = document.getElementById('panel-plano');
+      if (pp && pp.classList.contains('active') && typeof renderPlanos === 'function') renderPlanos(planoFiltroAtual);
+    }, 1500);
+  }).catch(function() { clearTimeout(t); });
+}
+// Gravação que demora a ser confirmada pelo servidor (fila offline): avisa em vez de parecer salva.
+function _avisarSeDemorar(promise, msg, ms) {
+  var t = setTimeout(function() {
+    showToast(msg || '⏳ Ainda não chegou ao servidor — mantenha o app aberto com internet até confirmar.', 6000);
+  }, ms || 8000);
+  promise.then(function() { clearTimeout(t); }, function() { clearTimeout(t); });
+  return promise;
+}
+
 function jaEnviouHoje(clId) {
+  if (envioPendente(clId)) return true; // enviado, aguardando o servidor confirmar (BUILD 426)
   var hoje = new Date().toLocaleDateString('pt-BR');
   var operador = S.currentUser ? S.currentUser.nome : '--';
   var resultados = getResultados();
@@ -3763,12 +3844,17 @@ function confirmarEnviar(assinatura) {
   // editável e mostra erro claro com instrução de tentar de novo.
   showToast('📤 Enviando checklist...');
   var _avisoDemoraTimer = setTimeout(function(){
-    showToast('⏳ Ainda enviando — verifique sua conexão. Não feche o app.');
+    showToast('⏳ Ainda enviando — o checklist já ficou travado. Mantenha o app aberto com internet até confirmar; não precisa enviar de novo.', 6000);
   }, 12000);
   // Fotos e assinatura NÃO vão dentro do doc de `resultados` (spec 2026-09-23):
   // cada imagem vira um doc em `resultados_fotos` e o resultado guarda só as
   // refs. Tudo num batch atômico — ou grava resultado + fotos, ou nada.
   // Antes disso a coleção tinha 534 docs / 165 MB e cada login baixava tudo.
+  // Trava o checklist AGORA (BUILD 426): a fila offline pode levar minutos
+  // pra confirmar e, sem a trava, o gerente enviava de novo (duplicidade).
+  _envPendMarcar(clId, res.id);
+  var _blkPend = document.getElementById('cl-block-'+clId);
+  if (_blkPend) _blkPend.innerHTML = buildCLBlock(cl);
   var sep = ResultadosCore.separarFotos(res);
   var batch = db.batch();
   sep.fotos.forEach(function(f) {
@@ -3777,6 +3863,7 @@ function confirmarEnviar(assinatura) {
   batch.set(db.collection('resultados').doc(sep.doc.id), sep.doc);
   batch.commit().then(function() {
     clearTimeout(_avisoDemoraTimer);
+    _envPendLimpar(clId);
     var lista = getAllResultados();
     // Se já existe envio hoje do mesmo checklist pelo mesmo operador, marca o anterior como resetado.
     // O `r.id !== res.id` é obrigatório: o onSnapshot de `resultados` (iniciarResultadosRealtime)
@@ -3789,8 +3876,9 @@ function confirmarEnviar(assinatura) {
     lista = lista.map(function(r) {
       if (r.id !== res.id && r.checklistId === clId && (r.dataHora||'').indexOf(_hojeReenv) === 0
           && r.operador === _opAtual && !r.resetado) {
-        db.collection('resultados').doc(r.id).update({ resetado: true }).catch(function(){});
-        return Object.assign({}, r, { resetado: true });
+        // substituidoPor: a Central esconde o envio antigo (reenvio do mesmo dia)
+        db.collection('resultados').doc(r.id).update({ resetado: true, substituidoPor: res.id }).catch(function(){});
+        return Object.assign({}, r, { resetado: true, substituidoPor: res.id });
       }
       return r;
     });
@@ -3804,6 +3892,9 @@ function confirmarEnviar(assinatura) {
     _finalizarEnvioCL(clId, cl, label, pct, reprovado, snapshot, setor);
   }).catch(function(err){
     clearTimeout(_avisoDemoraTimer);
+    _envPendLimpar(clId);
+    var _blkErr = document.getElementById('cl-block-'+clId);
+    if (_blkErr) _blkErr.innerHTML = buildCLBlock(cl);
     console.error('Erro ao salvar resultado no Firebase:', err);
     showToast('❌ NÃO enviou — sem conexão com o servidor. O checklist continua aberto, tente enviar de novo assim que a internet voltar.');
   });
@@ -4207,6 +4298,8 @@ function renderCentral() {
     return;
   }
   var resultados = getResultados();
+  // Reenvio do mesmo checklist no dia (internet ruim): só o último aparece (BUILD 426)
+  resultados = resultados.filter(function(r){ return !r.substituidoPor; });
   var fs = (document.getElementById('cf-setor')||{}).value||'';
   var fo = (document.getElementById('cf-op')||{}).value||'';
   var opSel = document.getElementById('cf-op');
@@ -10417,7 +10510,7 @@ function confirmarStatusPlano() {
   _planosCache = list;
   try { localStorage.setItem(PLANO_KEY, JSON.stringify(list)); } catch(e) {}
   var _updFieldsStatus = Object.assign({}, extras, { status: novoStatus, historico: updatedPlano.historico });
-  db.collection('planos').doc(id).set(_updFieldsStatus, {merge:true}).then(function(){
+  _avisarSeDemorar(db.collection('planos').doc(id).set(_updFieldsStatus, {merge:true})).then(function(){
     var msgs = {andamento:'▶ Plano em andamento!', aberto:'🔄 Plano reaberto!'};
     showToast(msgs[novoStatus] || 'Status atualizado');
   }).catch(function(err){
@@ -10495,7 +10588,7 @@ function confirmarConclusaoPlano() {
     historico: updatedPlano.historico,
     conclusao: updatedPlano.conclusao
   };
-  db.collection('planos').doc(id).set(_updFieldsConcl, {merge:true}).then(function(){
+  _avisarSeDemorar(db.collection('planos').doc(id).set(_updFieldsConcl, {merge:true})).then(function(){
     showToast('✅ Plano resolvido!');
   }).catch(function(err){
     showToast('⚠ Firebase: ' + (err && err.code ? err.code : 'erro ao salvar'));

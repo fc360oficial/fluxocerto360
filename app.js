@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '426';
+var BUILD = '427';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -584,6 +584,81 @@ window.addEventListener('online',  atualizarStatusConexao);
 window.addEventListener('offline', atualizarStatusConexao);
 // Verifica na carga
 document.addEventListener('DOMContentLoaded', atualizarStatusConexao);
+
+// ── PWA: convite pra instalar o app (BUILD 427, 08/10/26) ──────────────────
+// Tiago: "não quero forçar, mais que apareça a msg — pra ele instalar e não
+// precisar ir lá nos 3 pontos". No celular aberto pelo navegador (não
+// instalado), depois do login aparece uma faixa com "Instalar": no Android
+// dispara o pedido nativo do Chrome (beforeinstallprompt); no iPhone mostra o
+// passo a passo (Compartilhar › Adicionar à Tela de Início). "Agora não"
+// silencia por 3 dias. Instalado = abre pelo ícone, janela própria, sem abas
+// (cada aba antiga é uma fila offline do Firestore a mais — ver BUILD 426).
+var _pwaInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault(); // segura o mini-infobar do Chrome; a faixa é nossa
+  _pwaInstallPrompt = e;
+  mostrarConviteInstalar();
+});
+window.addEventListener('appinstalled', function() {
+  _pwaInstallPrompt = null;
+  var el = document.getElementById('pwa-convite'); if (el) el.remove();
+  showToast('📲 App instalado! Abra pelo ícone Fluxo Certo 360 na tela inicial.');
+});
+function _pwaEstaInstalado() {
+  try { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch(e) { return false; }
+}
+function _pwaEhIOS() { return /iPhone|iPad|iPod/i.test(navigator.userAgent); }
+function _pwaEhCelular() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+function mostrarConviteInstalar() {
+  if (typeof S === 'undefined' || !S.currentUser) return;   // só depois do login
+  if (_pwaEstaInstalado() || !_pwaEhCelular()) return;
+  if (!_pwaInstallPrompt && !_pwaEhIOS()) return;           // Android sem o evento: Chrome não deixa instalar agora
+  try { var ate = parseInt(localStorage.getItem('cahu360_conviteInstalarAte') || '0', 10); if (ate > Date.now()) return; } catch(e) {}
+  if (document.getElementById('pwa-convite')) return;
+  var el = document.createElement('div');
+  el.id = 'pwa-convite';
+  el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:16px;z-index:9998;background:#fff;border:2px solid #FFC600;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.25);font-family:inherit;display:flex;align-items:center;gap:10px';
+  el.innerHTML = '<span style="font-size:28px">📲</span>'
+    + '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800;color:#1a1a1a">Instale o Fluxo Certo 360 no celular</div>'
+    + '<div style="font-size:12px;color:#555;line-height:1.35">Abre direto pelo ícone na tela inicial, sem abas e sempre na versão mais nova.</div></div>'
+    + '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
+    + '<button onclick="instalarPWA()" style="background:#1a7a4a;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer">Instalar</button>'
+    + '<button onclick="adiarConviteInstalar()" style="background:transparent;color:#777;border:0;font-size:12px;cursor:pointer">Agora não</button>'
+    + '</div>';
+  document.body.appendChild(el);
+}
+function adiarConviteInstalar() {
+  try { localStorage.setItem('cahu360_conviteInstalarAte', String(Date.now() + 3 * 24 * 60 * 60 * 1000)); } catch(e) {}
+  var el = document.getElementById('pwa-convite'); if (el) el.remove();
+}
+function fecharInstrucaoIOS() { var m = document.getElementById('pwa-ios-modal'); if (m) m.remove(); }
+function instalarPWA() {
+  var faixa = document.getElementById('pwa-convite');
+  if (_pwaInstallPrompt) {
+    var p = _pwaInstallPrompt; _pwaInstallPrompt = null;   // o evento só pode ser usado uma vez
+    p.prompt();
+    p.userChoice.then(function(r) {
+      if (r && r.outcome === 'accepted') { if (faixa) faixa.remove(); }
+      else showToast('Tudo bem — o convite volta a aparecer depois.');
+    }).catch(function(){});
+    if (faixa) faixa.remove();
+    return;
+  }
+  if (_pwaEhIOS()) {
+    if (faixa) faixa.remove();
+    var m = document.createElement('div');
+    m.id = 'pwa-ios-modal';
+    m.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:16px';
+    m.innerHTML = '<div style="background:#fff;border-radius:16px;padding:20px;max-width:420px;width:100%;font-family:inherit">'
+      + '<div style="font-size:16px;font-weight:800;margin-bottom:10px">📲 Instalar no iPhone</div>'
+      + '<ol style="font-size:14px;color:#333;line-height:1.6;padding-left:20px;margin:0 0 14px">'
+      + '<li>No Safari, toque em <b>Compartilhar</b> (quadrado com seta pra cima, embaixo da tela).</li>'
+      + '<li>Role e toque em <b>Adicionar à Tela de Início</b>.</li>'
+      + '<li>Toque em <b>Adicionar</b>. O ícone Fluxo Certo 360 aparece na tela inicial.</li></ol>'
+      + '<button onclick="fecharInstrucaoIOS()" style="width:100%;background:#1a7a4a;color:#fff;border:0;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Entendi</button></div>';
+    document.body.appendChild(m);
+  }
+}
 
 // ===========================================
 // DADOS BUILTIN DE CHECKLISTS
@@ -1822,6 +1897,7 @@ function finalizarLogin(found) {
 
   function iniciarApp() {
     limparContagensAntigas();
+    mostrarConviteInstalar(); // BUILD 427: faixa "Instale o app" no celular aberto pelo navegador
     // Load inv and perdas for this user/day
     loadInvFromFirebase(function(){
       loadPerdasFromFirebase(function(){

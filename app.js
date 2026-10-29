@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '427';
+var BUILD = '428';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -584,6 +584,83 @@ window.addEventListener('online',  atualizarStatusConexao);
 window.addEventListener('offline', atualizarStatusConexao);
 // Verifica na carga
 document.addEventListener('DOMContentLoaded', atualizarStatusConexao);
+
+// ── Avisos no login (BUILD 428, 29/10/26) ───────────────────────────────────
+// Tiago (29/10): "quero colocar avisos a partir de hoje, quando o pessoal das
+// lojas logarem, informando que a partir de 01/11 vamos ter perguntas pra ser
+// respondidas até as 11 horas (enviar foto do HOT e foto do AÇOUGUE); passando
+// disso a resposta não vai ser computada e não vai pontuar na loja".
+// Cada aviso tem janela de datas (inicio/fim inclusivos, AAAA-MM-DD), cliente
+// e perfis. Aparece depois do login como modal com "Entendi", 1× por dia por
+// aparelho (localStorage cahu360_avisoVisto_<id>). Além da lista fixa abaixo,
+// o doc clientes/<id> do Firestore pode ter um array `avisos` no mesmo
+// formato (campo `texto`, texto puro com quebras de linha) pra publicar um
+// aviso novo sem precisar de deploy.
+var AVISOS_LOGIN = [
+  {
+    id: 'fotos-hot-acougue-ate-11h',
+    clienteId: 'economico',
+    inicio: '2026-10-29',
+    fim: '2026-11-15',
+    perfis: ['gerencia', 'prevencao', 'supervisor', 'operator', 'admin'],
+    titulo: 'A partir de 01/11: fotos até as 11h',
+    html: '<p style="margin:0 0 12px">A partir do dia <b>01/11</b> o checklist vai ter perguntas que precisam ser respondidas <b>até as 11:00 da manhã</b>:</p>'
+      + '<div style="background:#fff8d6;border:1px solid #f0d860;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-weight:700">'
+      + '<div>📸 Enviar foto do HORTIFRUTI (HOT)</div>'
+      + '<div style="margin-top:6px">📸 Enviar foto do AÇOUGUE</div></div>'
+      + '<p style="margin:0 0 8px">⏰ Depois das <b>11:00</b> a resposta <b>não é computada</b> e <b>não pontua</b> para a loja.</p>'
+      + '<p style="margin:0;color:#555">Programe a equipe para tirar e enviar as fotos logo no início do turno.</p>'
+  }
+];
+function _avisoDataISOLocal(d) {
+  var m = d.getMonth() + 1, dia = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (dia < 10 ? '0' : '') + dia;
+}
+function _avisoEscape(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function _avisosLoginPendentes() {
+  if (typeof S === 'undefined' || !S.currentUser) return [];
+  var hoje = _avisoDataISOLocal(new Date());
+  var deployId = (window.FC360_CLIENT_ID || '').trim();
+  var cliente = (deployId && deployId !== 'universal' ? deployId : '') || S.currentUser.clienteId || '';
+  var extra = (S.clienteConfig && Array.isArray(S.clienteConfig.avisos)) ? S.clienteConfig.avisos : [];
+  return AVISOS_LOGIN.concat(extra).filter(function(a) {
+    if (!a || !a.id || a.ativo === false) return false;
+    if (a.clienteId && a.clienteId !== cliente) return false;
+    if (a.perfis && a.perfis.length && a.perfis.indexOf(S.role) < 0) return false;
+    if (a.inicio && hoje < a.inicio) return false;
+    if (a.fim && hoje > a.fim) return false;
+    try { if (localStorage.getItem('cahu360_avisoVisto_' + a.id) === hoje) return false; } catch(e) {}
+    return true;
+  });
+}
+function mostrarAvisosLogin() {
+  if (document.getElementById('aviso-login-modal')) return;
+  var lista = _avisosLoginPendentes();
+  if (!lista.length) return;
+  var a = lista[0];
+  var corpo = a.html ? a.html : _avisoEscape(a.texto).replace(/\n/g, '<br>');
+  var m = document.createElement('div');
+  m.id = 'aviso-login-modal';
+  m.setAttribute('data-aviso-id', a.id);
+  m.style.cssText = 'position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML = '<div style="background:#fff;border-radius:16px;padding:20px;box-sizing:border-box;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-size:28px">📢</span>'
+    + '<div style="font-size:16px;font-weight:800;color:#1a1a1a;line-height:1.2">' + _avisoEscape(a.titulo || 'Aviso') + '</div></div>'
+    + '<div style="font-size:14px;color:#333;line-height:1.5">' + corpo + '</div>'
+    + '<button onclick="fecharAvisoLogin()" style="width:100%;margin-top:16px;background:#1a7a4a;color:#fff;border:0;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Entendi</button></div>';
+  document.body.appendChild(m);
+}
+function fecharAvisoLogin() {
+  var m = document.getElementById('aviso-login-modal');
+  if (!m) return;
+  try { localStorage.setItem('cahu360_avisoVisto_' + m.getAttribute('data-aviso-id'), _avisoDataISOLocal(new Date())); } catch(e) {}
+  m.remove();
+  mostrarAvisosLogin(); // próximo aviso pendente, se houver
+}
 
 // ── PWA: convite pra instalar o app (BUILD 427, 08/10/26) ──────────────────
 // Tiago: "não quero forçar, mais que apareça a msg — pra ele instalar e não
@@ -1898,6 +1975,7 @@ function finalizarLogin(found) {
   function iniciarApp() {
     limparContagensAntigas();
     mostrarConviteInstalar(); // BUILD 427: faixa "Instale o app" no celular aberto pelo navegador
+    mostrarAvisosLogin();     // BUILD 428: aviso do dia (ex.: fotos HOT/Açougue até as 11h a partir de 01/11)
     // Load inv and perdas for this user/day
     loadInvFromFirebase(function(){
       loadPerdasFromFirebase(function(){

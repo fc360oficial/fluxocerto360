@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '429';
+var BUILD = '430';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -2512,6 +2512,20 @@ function sincronizarEstadoFirebase() {
   });
 }
 
+// ── Vigência por pergunta (BUILD 430, 29/10/26) ─────────────────────────────
+// Tiago (29/10): "essas perguntas só entram em vigor dia 01" (fotos do HOT e do
+// Açougue até as 11h). Item com `vigenciaInicio` ('AAAA-MM-DD', editor: "Vale a
+// partir de") não aparece pra loja nem entra na nota antes dessa data. O filtro
+// fica no getMyCLs, que é por onde a tela da loja, o progresso e o envio leem os
+// itens — os índices (fotos, hora da resposta) são do dia, então a lista
+// filtrada é consistente dentro do dia. Editor e lançamento manual veem tudo.
+function _itemVigente(item) {
+  var ini = item && item.vigenciaInicio;
+  if (!ini || !/^\d{4}-\d{2}-\d{2}$/.test(ini)) return true;
+  return getLocalDate() >= ini;
+}
+function _dataBR(iso) { var p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
+
 function getMyCLs() {
   var r = S.role;
   var base = [];
@@ -2525,7 +2539,7 @@ function getMyCLs() {
     if (cl.perfil==='todos') return true;
     return cl.perfil===r;
   }).map(function(cl){
-    return {id:cl.id,label:cl.nome,desc:cl.desc||cl.setor+' - '+(cl.turno||''),itens:cl.itens,setor:cl.setor};
+    return {id:cl.id,label:cl.nome,desc:cl.desc||cl.setor+' - '+(cl.turno||''),itens:(cl.itens||[]).filter(_itemVigente),setor:cl.setor};
   });
   return base.concat(custom);
 }
@@ -4245,6 +4259,8 @@ function _resetItemForm() {
   if (prazoEl) prazoEl.value = '72';
   var hlItemEl = document.getElementById('ncl-item-hora-limite');
   if (hlItemEl) hlItemEl.value = '';
+  var vgItemEl = document.getElementById('ncl-item-vigencia');
+  if (vgItemEl) vgItemEl.value = '';
   _editingItemIdx = null;
   var btn = document.getElementById('ncl-add-btn');
   if (btn) btn.textContent = '+ Adicionar';
@@ -4260,6 +4276,8 @@ function addItemNCL() {
   var criticoEl = document.getElementById('ncl-item-critico');
   var _hlItemEl = document.getElementById('ncl-item-hora-limite');
   var horaLimiteItem = (_hlItemEl && _hhmmParaMin(_hlItemEl.value) !== null) ? _hlItemEl.value : '';
+  var _vgItemEl = document.getElementById('ncl-item-vigencia');
+  var vigenciaItem = (_vgItemEl && /^\d{4}-\d{2}-\d{2}$/.test(_vgItemEl.value)) ? _vgItemEl.value : '';
   if (!txt) return;
 
   // Modo edição de item existente
@@ -4271,6 +4289,7 @@ function addItemNCL() {
     var prazoPlano = (tipo === 'simNao' && prazoPlanoEl) ? parseInt(prazoPlanoEl.value || '72') : 72;
     var updated = { t: txt, obs: obs, foto: foto, tipo: tipo, critico: critico, prazoPlano: prazoPlano };
     if (horaLimiteItem && tipo !== 'planilha') updated.horaLimite = horaLimiteItem;
+    if (vigenciaItem) updated.vigenciaInicio = vigenciaItem;
     if (fotoVal === 'multiplas') {
       var qtdEl0 = document.getElementById('ncl-foto-qtd');
       updated.fotoQtd = Math.max(1, Math.min(10, parseInt((qtdEl0 && qtdEl0.value) || '2')));
@@ -4317,6 +4336,7 @@ function addItemNCL() {
     var prazoPlano = (tipo === 'simNao' && prazoPlanoEl) ? parseInt(prazoPlanoEl.value || '72') : 72;
     var novoItem = { t: txt, obs: obs, foto: foto, tipo: tipo, critico: critico, prazoPlano: prazoPlano };
     if (horaLimiteItem) novoItem.horaLimite = horaLimiteItem;
+    if (vigenciaItem) novoItem.vigenciaInicio = vigenciaItem;
     if (fotoVal === 'multiplas') {
       var qtdElN = document.getElementById('ncl-foto-qtd');
       novoItem.fotoQtd = Math.max(1, Math.min(10, parseInt((qtdElN && qtdElN.value) || '2')));
@@ -4346,6 +4366,8 @@ function editItemNCL(idx) {
   if (prazoEl) prazoEl.value = item.prazoPlano || 72;
   var hlEditEl = document.getElementById('ncl-item-hora-limite');
   if (hlEditEl) hlEditEl.value = item.horaLimite || '';
+  var vgEditEl = document.getElementById('ncl-item-vigencia');
+  if (vgEditEl) vgEditEl.value = item.vigenciaInicio || '';
   var btn = document.getElementById('ncl-add-btn');
   if (btn) btn.textContent = '✔ Salvar';
   var cancel = document.getElementById('ncl-edit-cancel');
@@ -4381,6 +4403,7 @@ function renderNclItens() {
       +(item.foto && item.foto!=='none' ? '<div style="font-size:11px;color:var(--g);margin-top:2px">'+(item.foto==='antes_depois'?'📷📷 Foto antes e depois':item.foto==='multiplas'?'📷×'+(item.fotoQtd||2)+' Múltiplas fotos':'📷 Foto')+'</div>' : '')
       +(item.critico ? '<div style="font-size:11px;font-weight:700;color:var(--r);margin-top:2px">⚠️ Item Crítico — reprova a inspeção inteira</div>' : '')
       +(item.horaLimite ? '<div style="font-size:11px;font-weight:700;color:#b45309;margin-top:2px">⏰ Responder até '+item.horaLimite+' — depois não pontua</div>' : '')
+      +(item.vigenciaInicio ? '<div style="font-size:11px;font-weight:700;color:#2563eb;margin-top:2px">📅 Vale a partir de '+_dataBR(item.vigenciaInicio)+(_itemVigente(item)?'':' — ainda não aparece pra loja')+'</div>' : '')
       +'</div>'
       +(isEditing ? '' : '<button onclick="editItemNCL('+i+')" title="Editar item" style="background:none;border:none;color:var(--bl);cursor:pointer;font-size:15px;line-height:1;flex-shrink:0;padding:0 2px">✏</button>')
       +'<button onclick="removeItemNCL('+i+')" style="background:none;border:none;color:var(--r);cursor:pointer;font-size:16px;line-height:1;flex-shrink:0">✕</button>'

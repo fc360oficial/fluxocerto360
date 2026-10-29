@@ -1742,6 +1742,10 @@
           <span style="font-size:12px;font-weight:600;color:var(--t2);white-space:nowrap">Qtd de fotos:</span>
           <input type="number" id="ncl-foto-qtd" value="2" min="1" max="10" style="width:56px;padding:7px 8px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;text-align:center"/>
         </div>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#2563eb;white-space:nowrap" title="Opcional. Antes dessa data a pergunta não aparece pra loja e não entra na nota">
+          📅 Vale a partir de
+          <input type="date" id="ncl-item-vigencia" value="" style="padding:6px 8px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff"/>
+        </label>
         <label id="ncl-item-hora-limite-wrap" style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#b45309;white-space:nowrap" title="Opcional. Depois desse horário a pergunta trava na loja e não pontua (ex.: fotos do HOT e do Açougue até 11:00)">
           ⏰ Responder até
           <input type="time" id="ncl-item-hora-limite" value="" style="padding:6px 8px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;background:#fff"/>
@@ -2202,7 +2206,7 @@
   setInterval(function(){ if(box) log('INFO','vivo, tela='+(document.querySelector('.page.on,.view.on')||{}).id); },15000);
 })();
 </script>
-<script src="app.js?v=429" defer></script>
+<script src="app.js?v=430" defer></script>
 
 
 </body>

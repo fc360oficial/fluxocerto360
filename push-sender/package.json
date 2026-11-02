@@ -1,0 +1,11 @@
+{
+  "name": "fc360-push",
+  "private": true,
+  "description": "FC360 — envia avisos push com o app fechado (roda a cada 5 min no .254)",
+  "main": "fc360-push.js",
+  "dependencies": {
+    "dotenv": "^17.2.0",
+    "firebase-admin": "^14.1.0",
+    "web-push": "3.6.7"
+  }
+}

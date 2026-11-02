@@ -1,6 +1,6 @@
 // Fluxo Certo 360 — Service Worker v228
 // Atualiza este numero de versao sempre que publicar novos arquivos
-var CACHE_NAME = 'cahu360-v431';
+var CACHE_NAME = 'cahu360-v432';
 
 // Arquivos críticos: sempre buscados da rede (nunca do cache)
 var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
@@ -8,7 +8,7 @@ var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
 var SHELL_ASSETS = [
   './',
   './index.html',
-  './app.js?v=431',
+  './app.js?v=432',
   './style.css?v=410',
   './logo.png',
   './icon-192.png',
@@ -144,5 +144,19 @@ self.addEventListener('notificationclick', function(event) {
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(lista) {
     for (var i = 0; i < lista.length; i++) { if ('focus' in lista[i]) return lista[i].focus(); }
     if (self.clients.openWindow) return self.clients.openWindow('./');
+  }));
+});
+
+// BUILD 432: aviso enviado pelo servidor (fc360-push no .254) chega com o app fechado
+self.addEventListener('push', function(event) {
+  var d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : '' }; }
+  event.waitUntil(self.registration.showNotification(d.title || 'Fluxo Certo 360', {
+    body: d.body || '',
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    tag: d.tag || undefined,
+    renotify: !!d.tag,
+    data: { url: d.url || './' }
   }));
 });

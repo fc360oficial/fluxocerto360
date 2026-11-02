@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '430';
+var BUILD = '431';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -662,78 +662,173 @@ function fecharAvisoLogin() {
   mostrarAvisosLogin(); // próximo aviso pendente, se houver
 }
 
-// ── PWA: convite pra instalar o app (BUILD 427, 08/10/26) ──────────────────
-// Tiago: "não quero forçar, mais que apareça a msg — pra ele instalar e não
-// precisar ir lá nos 3 pontos". No celular aberto pelo navegador (não
-// instalado), depois do login aparece uma faixa com "Instalar": no Android
-// dispara o pedido nativo do Chrome (beforeinstallprompt); no iPhone mostra o
-// passo a passo (Compartilhar › Adicionar à Tela de Início). "Agora não"
-// silencia por 3 dias. Instalado = abre pelo ícone, janela própria, sem abas
-// (cada aba antiga é uma fila offline do Firestore a mais — ver BUILD 426).
+// ── PWA: "Deixe o celular pronto" — instalar + ligar avisos ───────────────
+// BUILD 427 (08/10/26) era uma faixa discreta silenciada por 3 dias. BUILD 431
+// (Tiago, 02/11: "faça eles instalar o app e ativar as notificações"): no
+// celular, depois do login, abre uma tela com os 2 passos e volta em TODO login
+// até os dois estarem feitos. Não bloqueia o checklist ("Agora não" fecha só
+// nesta sessão) — o navegador exige que a própria pessoa toque em Instalar e em
+// Permitir, e travar o app arriscaria o prazo das 11h.
+// Instalado = abre pelo ícone, janela própria, sem abas (cada aba antiga é uma
+// fila offline do Firestore a mais — ver BUILD 426) e o Android fecha menos o
+// app quando a câmera abre.
 var _pwaInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault(); // segura o mini-infobar do Chrome; a faixa é nossa
+  e.preventDefault(); // segura o mini-infobar do Chrome; a tela é nossa
   _pwaInstallPrompt = e;
   mostrarConviteInstalar();
 });
 window.addEventListener('appinstalled', function() {
   _pwaInstallPrompt = null;
-  var el = document.getElementById('pwa-convite'); if (el) el.remove();
-  showToast('📲 App instalado! Abra pelo ícone Fluxo Certo 360 na tela inicial.');
+  showToast('📲 App instalado! Daqui pra frente abra pelo ícone Fluxo Certo 360 na tela inicial.', 6000);
+  _registrarDispositivo();
+  mostrarConviteInstalar();
 });
 function _pwaEstaInstalado() {
   try { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch(e) { return false; }
 }
 function _pwaEhIOS() { return /iPhone|iPad|iPod/i.test(navigator.userAgent); }
 function _pwaEhCelular() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+function _notifEstado() { return ('Notification' in window) ? Notification.permission : 'sem-suporte'; }
+function _pwaPassosPendentes() {
+  var inst = _pwaEstaInstalado();
+  var notif = _notifEstado();
+  // iPhone só tem notificação com o app instalado (iOS 16.4+); antes disso não dá pra pedir
+  var notifAplica = notif !== 'sem-suporte';
+  return { instalar: !inst, avisos: notifAplica && notif !== 'granted', notif: notif, inst: inst, notifAplica: notifAplica };
+}
 function mostrarConviteInstalar() {
   if (typeof S === 'undefined' || !S.currentUser) return;   // só depois do login
-  if (_pwaEstaInstalado() || !_pwaEhCelular()) return;
-  if (!_pwaInstallPrompt && !_pwaEhIOS()) return;           // Android sem o evento: Chrome não deixa instalar agora
-  try { var ate = parseInt(localStorage.getItem('cahu360_conviteInstalarAte') || '0', 10); if (ate > Date.now()) return; } catch(e) {}
-  if (document.getElementById('pwa-convite')) return;
-  var el = document.createElement('div');
-  el.id = 'pwa-convite';
-  el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:16px;z-index:9998;background:#fff;border:2px solid #FFC600;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.25);font-family:inherit;display:flex;align-items:center;gap:10px';
-  el.innerHTML = '<span style="font-size:28px">📲</span>'
-    + '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800;color:#1a1a1a">Instale o Fluxo Certo 360 no celular</div>'
-    + '<div style="font-size:12px;color:#555;line-height:1.35">Abre direto pelo ícone na tela inicial, sem abas e sempre na versão mais nova.</div></div>'
-    + '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
-    + '<button onclick="instalarPWA()" style="background:#1a7a4a;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer">Instalar</button>'
-    + '<button onclick="adiarConviteInstalar()" style="background:transparent;color:#777;border:0;font-size:12px;cursor:pointer">Agora não</button>'
+  if (!_pwaEhCelular()) return;
+  var p = _pwaPassosPendentes();
+  var el = document.getElementById('pwa-convite');
+  if (!p.instalar && !p.avisos) {
+    if (el) { el.remove(); showToast('✅ Celular pronto: app instalado e avisos ligados.'); }
+    return;
+  }
+  try { if (sessionStorage.getItem('cahu360_conviteAdiado') === '1' && !el) return; } catch(e) {}
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'pwa-convite';
+    el.style.cssText = 'position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:12px;font-family:inherit';
+    document.body.appendChild(el);
+  }
+  function linha(icone, titulo, texto, feito, botao) {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;margin-bottom:10px;background:' + (feito ? '#eaf7ef' : '#f6f6f6') + '">'
+      + '<span style="font-size:26px;flex-shrink:0">' + icone + '</span>'
+      + '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800;color:#1a1a1a">' + titulo + '</div>'
+      + '<div style="font-size:12px;color:#555;line-height:1.35">' + texto + '</div></div>'
+      + (feito ? '<span style="flex-shrink:0;font-size:13px;font-weight:800;color:#1a7a4a">✓ Feito</span>' : botao)
+      + '</div>';
+  }
+  var btn = 'flex-shrink:0;background:#1a7a4a;color:#fff;border:0;border-radius:8px;padding:10px 14px;font-weight:800;font-size:13px;cursor:pointer';
+  var htmlInst = linha('📲', 'Instalar o app',
+    p.inst ? 'Abrindo pelo ícone na tela inicial.' : 'Fica um ícone na tela inicial. Abre em tela cheia, sem abas e mais rápido.',
+    p.inst, '<button onclick="instalarPWA()" style="' + btn + '">Instalar</button>');
+  var htmlNotif = '';
+  if (p.notifAplica) {
+    htmlNotif = linha('🔔', 'Ligar os avisos',
+      p.notif === 'granted' ? 'Você vai receber os avisos do Fluxo Certo 360.'
+        : p.notif === 'denied' ? 'Os avisos estão bloqueados neste celular. Toque em "Como liberar".'
+        : 'Lembrete de checklist atrasado e avisos da loja.',
+      p.notif === 'granted',
+      p.notif === 'denied'
+        ? '<button onclick="instrucaoLiberarAvisos()" style="' + btn + ';background:#b9770e">Como liberar</button>'
+        : '<button onclick="ativarAvisos()" style="' + btn + '">Ligar</button>');
+  } else if (_pwaEhIOS()) {
+    htmlNotif = linha('🔔', 'Ligar os avisos', 'No iPhone os avisos ficam disponíveis depois de instalar o app.', false,
+      '<span style="flex-shrink:0;font-size:11px;color:#999">depois</span>');
+  }
+  el.innerHTML = '<div style="background:#fff;border-radius:18px;padding:18px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    + '<div style="font-size:18px;font-weight:900;color:#1a1a1a;margin-bottom:4px">Deixe o celular pronto</div>'
+    + '<div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.4">Leva 1 minuto e faz o checklist rodar melhor neste celular.</div>'
+    + htmlInst + htmlNotif
+    + '<button onclick="adiarConviteInstalar()" style="width:100%;margin-top:4px;background:transparent;color:#888;border:0;padding:10px;font-size:13px;cursor:pointer">Agora não</button>'
     + '</div>';
-  document.body.appendChild(el);
 }
 function adiarConviteInstalar() {
-  try { localStorage.setItem('cahu360_conviteInstalarAte', String(Date.now() + 3 * 24 * 60 * 60 * 1000)); } catch(e) {}
+  try { sessionStorage.setItem('cahu360_conviteAdiado', '1'); } catch(e) {} // volta no próximo login
   var el = document.getElementById('pwa-convite'); if (el) el.remove();
+}
+function ativarAvisos() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(function(perm) {
+    _registrarDispositivo();
+    if (perm === 'granted') _mostrarNotificacao('🔔 Avisos ligados', { body: 'Pronto! O Fluxo Certo 360 vai te avisar por aqui.', icon: './icon-192.png', tag: 'avisos-ligados' });
+    mostrarConviteInstalar();
+  }).catch(function(){});
+}
+function _modalPwa(titulo, passos) {
+  fecharInstrucaoIOS();
+  var m = document.createElement('div');
+  m.id = 'pwa-ios-modal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:16px';
+  m.innerHTML = '<div style="background:#fff;border-radius:16px;padding:20px;max-width:420px;width:100%;font-family:inherit">'
+    + '<div style="font-size:16px;font-weight:800;margin-bottom:10px">' + titulo + '</div>'
+    + '<ol style="font-size:14px;color:#333;line-height:1.6;padding-left:20px;margin:0 0 14px">' + passos.map(function(t){ return '<li>' + t + '</li>'; }).join('') + '</ol>'
+    + '<button onclick="fecharInstrucaoIOS()" style="width:100%;background:#1a7a4a;color:#fff;border:0;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Entendi</button></div>';
+  document.body.appendChild(m);
+}
+function instrucaoLiberarAvisos() {
+  _modalPwa('🔔 Liberar os avisos', _pwaEstaInstalado() ? [
+    'Segure o dedo no ícone <b>Fluxo Certo 360</b> da tela inicial e toque em <b>Informações do app</b> (ⓘ).',
+    'Toque em <b>Notificações</b> e ligue a chave.',
+    'Volte pro app.'
+  ] : [
+    'Toque no <b>cadeado</b> (ou nos ajustes) ao lado do endereço, lá em cima.',
+    'Toque em <b>Permissões</b> › <b>Notificações</b> e escolha <b>Permitir</b>.',
+    'Recarregue a página.'
+  ]);
 }
 function fecharInstrucaoIOS() { var m = document.getElementById('pwa-ios-modal'); if (m) m.remove(); }
 function instalarPWA() {
-  var faixa = document.getElementById('pwa-convite');
   if (_pwaInstallPrompt) {
     var p = _pwaInstallPrompt; _pwaInstallPrompt = null;   // o evento só pode ser usado uma vez
     p.prompt();
     p.userChoice.then(function(r) {
-      if (r && r.outcome === 'accepted') { if (faixa) faixa.remove(); }
-      else showToast('Tudo bem — o convite volta a aparecer depois.');
+      if (!r || r.outcome !== 'accepted') showToast('Tudo bem — o convite volta no próximo login.');
     }).catch(function(){});
-    if (faixa) faixa.remove();
     return;
   }
   if (_pwaEhIOS()) {
-    if (faixa) faixa.remove();
-    var m = document.createElement('div');
-    m.id = 'pwa-ios-modal';
-    m.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:16px';
-    m.innerHTML = '<div style="background:#fff;border-radius:16px;padding:20px;max-width:420px;width:100%;font-family:inherit">'
-      + '<div style="font-size:16px;font-weight:800;margin-bottom:10px">📲 Instalar no iPhone</div>'
-      + '<ol style="font-size:14px;color:#333;line-height:1.6;padding-left:20px;margin:0 0 14px">'
-      + '<li>No Safari, toque em <b>Compartilhar</b> (quadrado com seta pra cima, embaixo da tela).</li>'
-      + '<li>Role e toque em <b>Adicionar à Tela de Início</b>.</li>'
-      + '<li>Toque em <b>Adicionar</b>. O ícone Fluxo Certo 360 aparece na tela inicial.</li></ol>'
-      + '<button onclick="fecharInstrucaoIOS()" style="width:100%;background:#1a7a4a;color:#fff;border:0;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Entendi</button></div>';
-    document.body.appendChild(m);
+    _modalPwa('📲 Instalar no iPhone', [
+      'No Safari, toque em <b>Compartilhar</b> (quadrado com seta pra cima, embaixo da tela).',
+      'Role e toque em <b>Adicionar à Tela de Início</b>.',
+      'Toque em <b>Adicionar</b>. O ícone Fluxo Certo 360 aparece na tela inicial.'
+    ]);
+    return;
+  }
+  // Android sem o pedido do Chrome: navegador que não oferece (Samsung Internet etc.)
+  // ou o app JÁ está instalado e a pessoa abriu pelo link
+  _modalPwa('📲 Instalar no celular', [
+    'Se já existe o ícone <b>Fluxo Certo 360</b> na tela inicial, feche esta página e abra sempre por ele.',
+    'Se não existe: toque no menu do navegador (<b>⋮</b> ou <b>≡</b>) e escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.',
+    'Confirme em <b>Instalar</b>. Depois abra pelo ícone.'
+  ]);
+}
+
+// Guarda no usuário como o celular dele abre o app (BUILD 431) — aparece em
+// Cadastro de Usuários pra saber quem ainda usa pelo navegador / sem avisos.
+function _registrarDispositivo() {
+  var u = S && S.currentUser;
+  if (!u || !u.id || !_pwaEhCelular()) return;
+  function gravar(modelo) {
+    var info = {
+      modo: _pwaEstaInstalado() ? 'app' : 'navegador',
+      avisos: _notifEstado(),
+      aparelho: modelo || '',
+      build: BUILD,
+      em: new Date().toISOString()
+    };
+    u.dispositivo = info;
+    db.collection('usuarios').doc(u.id).update({ dispositivo: info }).catch(function(){});
+  }
+  var m = navigator.userAgent.match(/Android[^;)]*;\s*([^;)]+?)(?:\s+Build\/[^;)]*)?[;)]/);
+  var doUA = m && m[1] !== 'K' ? m[1].trim() : (_pwaEhIOS() ? 'iPhone' : 'Android');
+  if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+    navigator.userAgentData.getHighEntropyValues(['model']).then(function(v) { gravar((v && v.model) || doUA); }).catch(function(){ gravar(doUA); });
+  } else {
+    gravar(doUA);
   }
 }
 
@@ -1213,21 +1308,33 @@ function _notificarNovoChecklist(r) {
 
   // Push notification do navegador (quando aba está minimizada/segundo plano)
   if (document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
-    try {
-      var notif = new Notification(titulo, {
-        body: corpo,
-        icon: './icon-192.png',
-        badge: './icon-192.png',
-        tag: 'checklist-' + (r.id||Date.now()),
-        renotify: true
-      });
-      notif.onclick = function(){ window.focus(); notif.close(); };
-    } catch(e){}
+    _mostrarNotificacao(titulo, {
+      body: corpo,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      tag: 'checklist-' + (r.id||Date.now()),
+      renotify: true
+    });
   }
+}
+
+// No Android o Chrome não aceita new Notification() — só pelo service worker.
+// Por isso nenhuma notificação chegava nos celulares até o BUILD 431.
+function _mostrarNotificacao(titulo, opts) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+  opts = opts || {};
+  function direto() { try { new Notification(titulo, opts); } catch(e) {} }
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(function(reg) { return reg.showNotification(titulo, opts); }).catch(direto);
+  } else {
+    direto();
+  }
+  return true;
 }
 
 function _pedirPermissaoNotificacao() {
   if (!('Notification' in window)) return;
+  if (_pwaEhCelular()) return; // no celular o pedido vem pela tela "Deixe o celular pronto" (precisa de toque)
   if (Notification.permission === 'default') {
     Notification.requestPermission();
   }
@@ -1404,15 +1511,14 @@ function notificarPendencias(pendencias) {
   var msg = atrasados.length === 1
     ? 'Checklist pendente: ' + atrasados[0].cl.nome
     : atrasados.length + ' checklists obrigatórios em atraso!';
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('⚠️ Fluxo Certo 360 — Pendências', {body: msg, icon: './logo.png'});
-  } else {
+  if (!_mostrarNotificacao('⚠️ Fluxo Certo 360 — Pendências', {body: msg, icon: './icon-192.png', tag: 'pendencias'})) {
     showToast('⚠️ ' + msg, 6000);
   }
 }
 
 // Solicita permissão de notificação (chamado no login de gerência/admin)
 function pedirPermissaoNotificacao() {
+  if (_pwaEhCelular()) return; // ver _pedirPermissaoNotificacao
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
@@ -1974,7 +2080,8 @@ function finalizarLogin(found) {
 
   function iniciarApp() {
     limparContagensAntigas();
-    mostrarConviteInstalar(); // BUILD 427: faixa "Instale o app" no celular aberto pelo navegador
+    setTimeout(mostrarConviteInstalar, 1500); // BUILD 431: "Deixe o celular pronto" (instalar + avisos)
+    _registrarDispositivo();
     mostrarAvisosLogin();     // BUILD 428: aviso do dia (ex.: fotos HOT/Açougue até as 11h a partir de 01/11)
     // Load inv and perdas for this user/day
     loadInvFromFirebase(function(){
@@ -2246,6 +2353,8 @@ function setupRole() {
   if (isAdmOrGer || isSup) {
     pedirPermissaoNotificacao();
     setTimeout(iniciarVerificacaoPeriodica, 3000);
+  } else if (r === 'operator' || r === 'prevencao') {
+    setTimeout(iniciarVerificacaoPeriodica, 3000); // BUILD 431: lembrete do checklist obrigatório atrasado
   }
   _atualizarBadgeNotificacoes();
 }
@@ -2638,7 +2747,7 @@ function buildCLBlock(cl) {
           // Estado 2: antes ok, aguardando DEPOIS
           var srcAntes = S.checkState[cl.id+'_foto_antes_'+i];
           fotoHtml = '<div style="flex-shrink:0">'
-            + '<img src="'+srcAntes+'" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);display:block;margin-bottom:4px;cursor:pointer" onclick="abrirFotoFull([{src:\''+srcAntes+'\',label:\'ANTES\'}],0);event.stopPropagation()" title="Foto ANTES enviada"/>'
+            + '<img src="'+srcAntes+'" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);display:block;margin-bottom:4px;cursor:pointer" onclick="_abrirFotoCL(\''+cl.id+'\','+i+',\'ad\',0);event.stopPropagation()" title="Foto ANTES enviada"/>'
             + '<label style="cursor:pointer;display:block" onclick="event.stopPropagation()">'
             + '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="salvarFotoTipo(\''+cl.id+'\','+i+',\'depois\',this)">'
             + '<span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;background:#fef9e7;border:1.5px solid #f0d060;color:var(--am);white-space:nowrap">Enviar foto DEPOIS</span>'
@@ -2651,11 +2760,11 @@ function buildCLBlock(cl) {
           var srcD = S.checkState[cl.id+'_foto_depois_'+i];
           fotoHtml = '<div style="flex-shrink:0;display:flex;gap:4px">'
             + '<div style="text-align:center">'
-            + '<img src="'+srcA+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="abrirFotoFull([{src:\''+srcA+'\',label:\'ANTES\'},{src:\''+srcD+'\',label:\'DEPOIS\'}],0);event.stopPropagation()"/>'
+            + '<img src="'+srcA+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="_abrirFotoCL(\''+cl.id+'\','+i+',\'ad\',0);event.stopPropagation()"/>'
             + '<div style="font-size:9px;color:var(--g);margin-top:1px">Antes</div>'
             + '</div>'
             + '<div style="text-align:center">'
-            + '<img src="'+srcD+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="abrirFotoFull([{src:\''+srcA+'\',label:\'ANTES\'},{src:\''+srcD+'\',label:\'DEPOIS\'}],1);event.stopPropagation()"/>'
+            + '<img src="'+srcD+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="_abrirFotoCL(\''+cl.id+'\','+i+',\'ad\',1);event.stopPropagation()"/>'
             + '<div style="font-size:9px;color:var(--g);margin-top:1px">Depois</div>'
             + '</div>'
             + '</div>';
@@ -2671,7 +2780,7 @@ function buildCLBlock(cl) {
           else thumbsArr.push(null);
         }
         var thumbsHtml = thumbsArr.map(function(src, fi) {
-          if (src) return '<img src="'+src+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="abrirFotoFull([{src:\''+src+'\',label:\'Foto '+(fi+1)+'\'}],0);event.stopPropagation()" title="Foto '+(fi+1)+'"/>';
+          if (src) return '<img src="'+src+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="_abrirFotoCL(\''+cl.id+'\','+i+',\'multi\','+fi+');event.stopPropagation()" title="Foto '+(fi+1)+'"/>';
           return '<div style="width:36px;height:36px;border-radius:6px;border:1.5px dashed var(--gray3);background:#f8f8f8;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--gray3)" title="Foto '+(fi+1)+' pendente">📷</div>';
         }).join('');
         var faltamM = fotoQtdM - tiradasM;
@@ -2702,7 +2811,7 @@ function buildCLBlock(cl) {
         } else {
           var srcF = S.checkState[cl.id+'_foto_depois_'+i] || S.checkState[cl.id+'_foto_'+i];
           fotoHtml = '<div style="flex-shrink:0">'
-            + '<img src="'+srcF+'" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="abrirFotoFull([{src:\''+srcF+'\',label:\'Foto\'}],0);event.stopPropagation()"/>'
+            + '<img src="'+srcF+'" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:2px solid var(--g2);cursor:pointer" onclick="_abrirFotoCL(\''+cl.id+'\','+i+',\'f\',0);event.stopPropagation()"/>'
             + '<div style="font-size:9px;color:var(--g);text-align:center;margin-top:2px">OK</div>'
             + '</div>';
         }
@@ -3093,6 +3202,65 @@ function salvarJustificativa(clId, idx, val) {
   saveCheckState();
 }
 
+// BUILD 431 (Tiago, 02/11: "pessoal tá fazendo o checklist e tá dando 'A página
+// deixou de responder'"). Antes, cada foto passava por um <img> que decodificava
+// o arquivo original da câmera (12–108 MP) na thread da tela só pra reduzir pra
+// 500px — vários segundos travados em celular fraco, 4x seguidas na pergunta de
+// 4 fotos. Agora createImageBitmap decodifica já reduzido e fora da tela;
+// aparelho sem suporte (ou que dê erro) cai no caminho antigo.
+var _FOTO_MAX = 500;
+function _comprimirFoto(file, cb) {
+  function desenhar(fonte, w, h) {
+    if (w > _FOTO_MAX) { h = Math.round(h*_FOTO_MAX/w); w = _FOTO_MAX; }
+    if (h > _FOTO_MAX) { w = Math.round(w*_FOTO_MAX/h); h = _FOTO_MAX; }
+    var canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(fonte, 0, 0, w, h);
+    var b64 = canvas.toDataURL('image/jpeg', 0.4);
+    canvas.width = canvas.height = 0; // libera o buffer do canvas
+    return b64;
+  }
+  function viaImg() {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function() {
+      var b64 = desenhar(img, img.width, img.height);
+      URL.revokeObjectURL(url); img.src = '';
+      cb(b64);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+  }
+  if (typeof createImageBitmap !== 'function') return viaImg();
+  // 2x o tamanho final: o decodificador já reduz, e o canvas acerta o lado maior em 500
+  createImageBitmap(file, { resizeWidth: _FOTO_MAX * 2, resizeQuality: 'medium', imageOrientation: 'from-image' })
+    .then(function(bmp) {
+      var b64 = desenhar(bmp, bmp.width, bmp.height);
+      if (bmp.close) bmp.close();
+      cb(b64);
+    })
+    .catch(function() { viaImg(); });
+}
+
+// Abre a foto do checklist em tela cheia lendo do checkState. Antes o base64
+// ia copiado dentro do onclick de cada miniatura (2–3x por foto), inflando o
+// HTML que é remontado a cada foto (BUILD 431).
+function _abrirFotoCL(clId, i, modo, pos) {
+  var cs = S.checkState, fotos = [];
+  if (modo === 'ad') {
+    if (cs[clId+'_foto_antes_'+i]) fotos.push({src: cs[clId+'_foto_antes_'+i], label: 'ANTES'});
+    if (cs[clId+'_foto_depois_'+i]) fotos.push({src: cs[clId+'_foto_depois_'+i], label: 'DEPOIS'});
+  } else if (modo === 'multi') {
+    if (cs[clId+'_foto_multi_'+i+'_'+pos]) fotos.push({src: cs[clId+'_foto_multi_'+i+'_'+pos], label: 'Foto '+(pos+1)});
+    pos = 0;
+  } else {
+    var f = cs[clId+'_foto_depois_'+i] || cs[clId+'_foto_'+i];
+    if (f) fotos.push({src: f, label: 'Foto'});
+  }
+  if (!fotos.length) return;
+  abrirFotoFull(fotos, Math.min(pos || 0, fotos.length - 1));
+}
+
 function salvarFoto(clId, idx, input) {
   salvarFotoTipo(clId, idx, 'depois', input);
 }
@@ -3103,19 +3271,8 @@ function salvarFotoTipo(clId, idx, tipo, input) {
   if (_clPrazoF && !_podeResponderNoPrazo(_clPrazoF, idx)) { input.value = ''; return; }
 
   // Comprimir imagem antes de salvar
-  var img = new Image();
-  var objectUrl = URL.createObjectURL(input.files[0]);
-  img.onload = function() {
-    var canvas = document.createElement('canvas');
-    var MAX = 500;
-    var w = img.width, h = img.height;
-    if (w > MAX) { h = Math.round(h*MAX/w); w = MAX; }
-    if (h > MAX) { w = Math.round(w*MAX/h); h = MAX; }
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var base64 = canvas.toDataURL('image/jpeg', 0.4);
-    URL.revokeObjectURL(objectUrl);
-    img.src = ''; // libera memória da imagem original
+  _comprimirFoto(input.files[0], function(base64) {
+    if (!base64) { input.value = ''; showToast('Não consegui ler essa foto. Tire de novo.'); return; }
 
     var fotoKey = clId+'_foto_'+tipo+'_'+idx;
     S.checkState[fotoKey] = base64;
@@ -3170,8 +3327,7 @@ function salvarFotoTipo(clId, idx, tipo, input) {
     var b = document.getElementById('cl-block-'+clId);
     if (b && cl) b.innerHTML = buildCLBlock(cl);
     updateDash();
-  };
-  img.src = objectUrl;
+  });
 }
 
 function salvarFotoMulti(clId, idx, input) {
@@ -3185,17 +3341,8 @@ function salvarFotoMulti(clId, idx, input) {
     if (!S.checkState[clId+'_foto_multi_'+idx+'_'+fi]) { slot = fi; break; }
   }
   if (slot < 0) { showToast('Todas as fotos já foram enviadas'); return; }
-  var img = new Image();
-  var objectUrl = URL.createObjectURL(input.files[0]);
-  img.onload = function() {
-    var canvas = document.createElement('canvas');
-    var MAX = 500; var w = img.width, h = img.height;
-    if (w > MAX) { h = Math.round(h*MAX/w); w = MAX; }
-    if (h > MAX) { w = Math.round(w*MAX/h); h = MAX; }
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var base64 = canvas.toDataURL('image/jpeg', 0.4);
-    URL.revokeObjectURL(objectUrl); img.src = '';
+  _comprimirFoto(input.files[0], function(base64) {
+    if (!base64) { input.value = ''; showToast('Não consegui ler essa foto. Tire de novo.'); return; }
     var fotoKey = clId+'_foto_multi_'+idx+'_'+slot;
     S.checkState[fotoKey] = base64;
     _registrarHoraResposta(clId, idx);
@@ -3215,8 +3362,7 @@ function salvarFotoMulti(clId, idx, input) {
     var b = document.getElementById('cl-block-'+clId);
     if (b) b.innerHTML = buildCLBlock(cl);
     updateDash();
-  };
-  img.src = objectUrl;
+  });
 }
 
 function updateCLProg(cl) {
@@ -8531,7 +8677,16 @@ function renderUsers() {
       : '<button class="btn btn-s btn-sm" onclick="editarUser(\''+u.id+'\')">Editar</button>'
         +'<button class="btn btn-s btn-sm" onclick="toggleAtivo(\''+u.id+'\')" style="'+(u.ativo?'color:var(--am)':'color:var(--g)')+'">'+(u.ativo?'Inativar':'Ativar')+'</button>'
         +'<button class="btn btn-d btn-sm" onclick="excluirUser(\''+u.id+'\')">Excluir</button>';
-    return '<tr><td><strong>'+u.nome+'</strong></td><td>'+u.email+'</td>'
+    var dv = u.dispositivo, dvHtml = '';
+    if (dv) {
+      var dvData = dv.em ? new Date(dv.em).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}) : '';
+      dvHtml = '<div style="font-size:11px;color:var(--t3);margin-top:2px">'
+        + (dv.modo === 'app' ? '📲 App' : '<span style="color:var(--r)">🌐 Navegador</span>')
+        + ' · ' + (dv.avisos === 'granted' ? '🔔 Avisos' : '<span style="color:var(--r)">🔕 Sem avisos</span>')
+        + (dv.aparelho ? ' · ' + String(dv.aparelho).replace(/</g, '&lt;') : '')
+        + (dvData ? ' · ' + dvData : '') + '</div>';
+    }
+    return '<tr><td><strong>'+u.nome+'</strong>'+dvHtml+'</td><td>'+u.email+'</td>'
       +'<td><span class="st '+(UPCLS[u.perfil]||'st-ok')+'">'+(UPLABEL[u.perfil]||u.perfil)+'</span></td>'
       +'<td>'+(u.loja||'-')+'</td>'
       +'<td>'+(u.setor||'-')+'</td>'

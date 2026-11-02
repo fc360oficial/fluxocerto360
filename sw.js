@@ -1,6 +1,6 @@
 // Fluxo Certo 360 — Service Worker v228
 // Atualiza este numero de versao sempre que publicar novos arquivos
-var CACHE_NAME = 'cahu360-v430';
+var CACHE_NAME = 'cahu360-v431';
 
 // Arquivos críticos: sempre buscados da rede (nunca do cache)
 var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
@@ -8,7 +8,7 @@ var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
 var SHELL_ASSETS = [
   './',
   './index.html',
-  './app.js?v=430',
+  './app.js?v=431',
   './style.css?v=410',
   './logo.png',
   './icon-192.png',
@@ -136,4 +136,13 @@ self.addEventListener('fetch', function(event) {
       });
     })
   );
+});
+
+// BUILD 431: tocar na notificação abre/foca o app
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(lista) {
+    for (var i = 0; i < lista.length; i++) { if ('focus' in lista[i]) return lista[i].focus(); }
+    if (self.clients.openWindow) return self.clients.openWindow('./');
+  }));
 });

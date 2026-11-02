@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '431';
+var BUILD = '432';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -754,6 +754,7 @@ function ativarAvisos() {
   if (!('Notification' in window)) return;
   Notification.requestPermission().then(function(perm) {
     _registrarDispositivo();
+    if (perm === 'granted') _inscreverPush();
     if (perm === 'granted') _mostrarNotificacao('🔔 Avisos ligados', { body: 'Pronto! O Fluxo Certo 360 vai te avisar por aqui.', icon: './icon-192.png', tag: 'avisos-ligados' });
     mostrarConviteInstalar();
   }).catch(function(){});
@@ -805,6 +806,38 @@ function instalarPWA() {
     'Se não existe: toque no menu do navegador (<b>⋮</b> ou <b>≡</b>) e escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.',
     'Confirme em <b>Instalar</b>. Depois abra pelo ícone.'
   ]);
+}
+
+// ── Push com o app fechado (BUILD 432, Tiago 02/11: "as notificações têm que
+// ser com o app fechado chegando no celular de todos"). Web Push padrão: o
+// celular se inscreve com a chave pública abaixo e a inscrição fica em
+// usuarios/{id}.push.<chave>; o serviço fc360-push no .254 (chave privada só lá)
+// envia. Reinscreve em todo login — se a lista de usuários for regravada por um
+// admin com cache velho, o próximo login do aparelho recoloca.
+var _VAPID_PUB = 'BLcYwIPJ6saR_JtA94yd38h3naMAPDLKKiAymNtVWry20Rcf1_uX83Zx4m-iYeaDWKteJa6C25r2b5-YZDUo_38';
+function _b64uParaBytes(t) {
+  t = t.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '=';
+  var r = atob(t), a = new Uint8Array(r.length);
+  for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i);
+  return a;
+}
+function _hashCurto(t) { var h = 5381; for (var i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return h.toString(36); }
+function _inscreverPush() {
+  var u = S && S.currentUser;
+  if (!u || !u.id || _notifEstado() !== 'granted' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  navigator.serviceWorker.ready.then(function(reg) {
+    return reg.pushManager.getSubscription().then(function(sub) {
+      return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _b64uParaBytes(_VAPID_PUB) });
+    });
+  }).then(function(sub) {
+    var j = sub.toJSON(), upd = {};
+    upd['push.p' + _hashCurto(j.endpoint)] = {
+      endpoint: j.endpoint, keys: j.keys,
+      aparelho: (u.dispositivo && u.dispositivo.aparelho) || '',
+      app: _pwaEstaInstalado(), em: new Date().toISOString()
+    };
+    return db.collection('usuarios').doc(u.id).update(upd);
+  }).catch(function(e) { console.log('push: inscrição falhou', e && e.message); });
 }
 
 // Guarda no usuário como o celular dele abre o app (BUILD 431) — aparece em
@@ -2082,6 +2115,7 @@ function finalizarLogin(found) {
     limparContagensAntigas();
     setTimeout(mostrarConviteInstalar, 1500); // BUILD 431: "Deixe o celular pronto" (instalar + avisos)
     _registrarDispositivo();
+    _inscreverPush();       // BUILD 432: push com o app fechado
     mostrarAvisosLogin();     // BUILD 428: aviso do dia (ex.: fotos HOT/Açougue até as 11h a partir de 01/11)
     // Load inv and perdas for this user/day
     loadInvFromFirebase(function(){

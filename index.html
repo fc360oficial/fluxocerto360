@@ -1874,10 +1874,12 @@
         <div id="env-bar-fill" style="height:100%;border-radius:4px;transition:width .3s;width:0%"></div>
       </div>
     </div>
-    <div style="font-size:13px;color:var(--t2);text-align:center;margin-bottom:18px">Deseja confirmar o envio para a central?</div>
-    <div style="display:flex;gap:10px;justify-content:center">
-      <button class="btn btn-p" onclick="abrirAssinatura()">✍ Assinar e Enviar</button>
-      <button class="btn btn-s" onclick="cancelarEnviar()">Cancelar</button>
+    <!-- Perguntas ainda sem resposta (BUILD 433) -->
+    <div id="env-faltando" style="display:none;margin-bottom:16px"></div>
+    <div style="font-size:13px;color:var(--t2);text-align:center;margin-bottom:18px" id="env-confirma">Deseja confirmar o envio para a central?</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-p" id="env-btn-enviar" onclick="abrirAssinatura()">✍ Assinar e Enviar</button>
+      <button class="btn btn-s" id="env-btn-cancelar" onclick="cancelarEnviar()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -2206,7 +2208,7 @@
   setInterval(function(){ if(box) log('INFO','vivo, tela='+(document.querySelector('.page.on,.view.on')||{}).id); },15000);
 })();
 </script>
-<script src="app.js?v=432" defer></script>
+<script src="app.js?v=433" defer></script>
 
 
 </body>

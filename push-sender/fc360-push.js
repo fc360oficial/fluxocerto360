@@ -1,9 +1,12 @@
 // FC360 — avisos push com o app fechado (BUILD 432, Tiago 02/11/26: "as
 // notificações têm que ser com o app fechado chegando no celular de todos").
 //
-// Roda UMA vez e sai — o Agendador de Tarefas do .254 chama a cada 5 minutos.
-// Lê o Firestore (mesma conta de serviço do etiquetas-api) e manda Web Push pras
-// inscrições em usuarios/{id}.push.<chave> (gravadas pelo app, _inscreverPush).
+// Processo CONTÍNUO (03/11/26): o projeto está no plano grátis (50 mil leituras/
+// dia) e reler tudo a cada 5 min gastaria ~150 mil/dia. Agora carrega cada
+// coleção uma vez por listener e depois só recebe o que muda; avalia os avisos a
+// cada minuto em memória. O Agendador do .254 (tarefa FC360Push, a cada 5 min)
+// só sobe o processo se ele tiver caído — instância já rodando = ignora.
+// Manda Web Push pras inscrições em usuarios/{id}.push.<chave> (_inscreverPush).
 //
 // Avisos:
 //  1. Loja: checklist obrigatório de hoje ainda não enviado, 30 min antes do
@@ -42,22 +45,56 @@ function hhmm(t) { const [h, m] = String(t || '').split(':'); return (+h || 0) *
 const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase(); // "Jardim Jordão" = "Jardim Jordao"
 const cliente = x => x.clienteId || 'economico'; // doc sem clienteId = Econômico (pré multi-tenant)
 
-const H = agoraLocal();
+let H = agoraLocal();
 const LOG_DIR = path.join(__dirname, 'data');
-const LOG = path.join(LOG_DIR, `enviados-${H.iso}.json`);
 fs.mkdirSync(LOG_DIR, { recursive: true });
-const enviados = fs.existsSync(LOG) ? JSON.parse(fs.readFileSync(LOG, 'utf8')) : {};
-for (const f of fs.readdirSync(LOG_DIR)) if (/^enviados-/.test(f) && f < `enviados-${isoLocal(new Date(Date.now() - 7 * 864e5))}`) fs.unlinkSync(path.join(LOG_DIR, f));
+let LOG = '', enviados = {};
+function abrirDia() {
+  LOG = path.join(LOG_DIR, `enviados-${H.iso}.json`);
+  enviados = fs.existsSync(LOG) ? JSON.parse(fs.readFileSync(LOG, 'utf8')) : {};
+  for (const f of fs.readdirSync(LOG_DIR)) if (/^enviados-/.test(f) && f < `enviados-${isoLocal(new Date(Date.now() - 7 * 864e5))}`) fs.unlinkSync(path.join(LOG_DIR, f));
+}
+abrirDia();
+
+// ── estado ao vivo (listeners: cobra a carga inicial e depois só o que muda) ──
+const E = { usuarios: new Map(), checklists: new Map(), resultados: new Map(), planos: new Map(), clientes: new Map(), repos: {} };
+function ouvir(nome, consulta) {
+  return new Promise(res => {
+    let primeiro = true;
+    const unsub = consulta.onSnapshot(snap => {
+      for (const ch of snap.docChanges()) {
+        if (ch.type === 'removed') E[nome].delete(ch.doc.id);
+        else E[nome].set(ch.doc.id, { id: ch.doc.id, _doc: ch.doc.id, ...ch.doc.data() });
+      }
+      if (primeiro) { primeiro = false; res(unsub); }
+    }, err => { console.error(new Date().toISOString(), 'listener', nome, err.code || err.message); process.exit(1); }); // o Agendador sobe de novo
+  });
+}
+let unsubResultados = null, diaResultados = '';
+async function ouvirResultadosDoDia() {
+  if (diaResultados === H.iso) return;
+  if (unsubResultados) unsubResultados();
+  E.resultados.clear();
+  diaResultados = H.iso;
+  unsubResultados = await ouvir('resultados', db.collection('resultados').where('dateISO', '==', H.iso));
+}
+let _avisosApp = {}, _avisosAppEm = 0;
 
 // fila: chave única → { usuarios[], titulo, corpo, tag }
-const fila = [];
+let fila = [];
 function avisar(chave, usuarios, titulo, corpo, tag) {
   if (enviados[chave] || !usuarios.length) return;
   fila.push({ chave, usuarios, titulo, corpo, tag });
 }
 
 async function avisosDoApp(clienteId, repos) {
-  // a lista fixa AVISOS_LOGIN mora no app.js publicado de cada cliente
+  // a lista fixa AVISOS_LOGIN mora no app.js publicado de cada cliente (HTTP, não gasta cota; 1x por hora)
+  if (Date.now() - _avisosAppEm < 3600e3 && _avisosApp[clienteId]) return _avisosApp[clienteId];
+  _avisosApp[clienteId] = await _baixarAvisosDoApp(clienteId, repos);
+  _avisosAppEm = Date.now();
+  return _avisosApp[clienteId];
+}
+async function _baixarAvisosDoApp(clienteId, repos) {
   const repo = clienteId === 'fluxocerto' ? 'fluxocerto360' : repos[clienteId];
   if (!repo) return [];
   try {
@@ -68,21 +105,18 @@ async function avisosDoApp(clienteId, repos) {
 }
 const textoPuro = h => String(h || '').replace(/<\/(div|p)>/g, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\n{2,}/g, '\n').trim();
 
-async function main() {
-  const [uSnap, clSnap, rSnap, pSnap, cSnap, reposDoc] = await Promise.all([
-    db.collection('usuarios').get(),
-    db.collection('checklists').get(),
-    db.collection('resultados').where('dateISO', '==', H.iso).get(),
-    db.collection('planos').where('status', 'in', ['aberto', 'andamento']).get(),
-    db.collection('clientes').get(),
-    db.collection('config').doc('repos').get()
-  ]);
-  const usuarios = uSnap.docs.map(d => ({ ...d.data(), _doc: d.id })).filter(u => u.ativo !== false);
-  const checklists = clSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const resultados = rSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => !r.resetado && !r.manual);
-  const planos = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const clientes = cSnap.docs.filter(d => d.data().ativo !== false).map(d => ({ id: d.id, ...d.data() }));
-  const repos = reposDoc.exists ? reposDoc.data() : {};
+async function tick() {
+  const antes = H.iso;
+  H = agoraLocal();
+  if (H.iso !== antes) abrirDia();
+  await ouvirResultadosDoDia();
+  fila = [];
+  const usuarios = [...E.usuarios.values()].filter(u => u.ativo !== false);
+  const checklists = [...E.checklists.values()];
+  const resultados = [...E.resultados.values()].filter(r => !r.resetado && !r.manual);
+  const planos = [...E.planos.values()];
+  const clientes = [...E.clientes.values()].filter(c => c.ativo !== false);
+  const repos = E.repos;
 
   for (const cli of clientes) {
     const us = usuarios.filter(u => cliente(u) === cli.id);
@@ -168,8 +202,31 @@ async function main() {
     }
     if (!DRY) enviados[item.chave] = new Date().toISOString();
   }
+  if (!fila.length) return;
   if (!DRY) fs.writeFileSync(LOG, JSON.stringify(enviados, null, 1));
   console.log(`${new Date().toISOString()} ${H.iso} ${String(Math.floor(H.min / 60)).padStart(2, '0')}h — ${fila.length} aviso(s), ${ok} entregue(s), ${falha} falha(s), ${removidas} inscrição(ões) removida(s)${DRY ? ' [DRY]' : ''}`);
 }
 
-main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+async function iniciar() {
+  const reposDoc = await db.collection('config').doc('repos').get();
+  E.repos = reposDoc.exists ? reposDoc.data() : {};
+  await Promise.all([
+    ouvir('usuarios', db.collection('usuarios')),
+    ouvir('checklists', db.collection('checklists')),
+    ouvir('planos', db.collection('planos').where('status', 'in', ['aberto', 'andamento'])),
+    ouvir('clientes', db.collection('clientes')),
+    ouvirResultadosDoDia()
+  ]);
+  console.log(`${new Date().toISOString()} iniciado — ${E.usuarios.size} usuários, ${E.checklists.size} checklists, ${E.planos.size} planos abertos, ${E.resultados.size} envios hoje${DRY ? ' [DRY]' : ''}`);
+  let rodando = false;
+  const ciclo = async () => {
+    if (rodando) return;
+    rodando = true;
+    try { await tick(); } catch (e) { console.error(new Date().toISOString(), 'tick', e.message); }
+    rodando = false;
+  };
+  await ciclo();
+  if (process.env.UMA_VEZ === '1') process.exit(0);
+  setInterval(ciclo, 60e3);
+}
+iniciar().catch(e => { console.error(new Date().toISOString(), e.code || '', e.message); process.exit(1); });

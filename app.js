@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '433';
+var BUILD = '434';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1206,8 +1206,12 @@ var RES_JANELA_DIAS = 7;   // Tiago (23/09/26): 1 semana no celular; o resto vem
 var _resCarregadoDesde = null;   // ISO do primeiro dia já carregado (janela ou mais antigo)
 var _resAntigos = [];            // docs anteriores à janela, buscados sob demanda (já enxugados)
 
+// BUILD 433 (03/11/26: Firestore estourou a cota grátis de 50 mil leituras/dia).
+// Operador/prevenção só precisam dos envios de HOJE (já enviou? pendências?);
+// histórico entra sob demanda via garantirResultadosDesde(). Gestor fica com 7 dias.
 function _resJanelaInicio() {
-  return ResultadosCore.janelaISO(RES_JANELA_DIAS);
+  var soHoje = S && (S.role === 'operator' || S.role === 'prevencao');
+  return ResultadosCore.janelaISO(soHoje ? 0 : RES_JANELA_DIAS);
 }
 
 function _resAplicarLista(docsData, desdeISO) {
@@ -1253,6 +1257,7 @@ function garantirResultadosDesde(deISO, cb) {
 }
 
 function loadResultadosFromFirebase(callback) {
+  if (_resultadosUnsub) { if (callback) callback(); return; } // BUILD 433: listener ativo = cache ao vivo
   var doFetch = function() {
     var desde = _resJanelaInicio();
     if (!_resCarregadoDesde || _resCarregadoDesde > desde) _resCarregadoDesde = desde;
@@ -1373,8 +1378,13 @@ function _pedirPermissaoNotificacao() {
   }
 }
 
-function iniciarResultadosRealtime() {
-  if (_resultadosUnsub) _resultadosUnsub();
+// BUILD 433: antes o login fazia get() da janela E abria este listener (que relê
+// tudo no 1º snapshot) — e Dashboard/Checklist faziam outro get() a cada abertura.
+// Agora o listener é a única leitura da janela; quem precisa esperar os dados
+// passa `aoCarregar`, chamado uma vez no 1º snapshot (ou no erro).
+function iniciarResultadosRealtime(aoCarregar) {
+  if (_resultadosUnsub) { if (aoCarregar) aoCarregar(); return; }
+  var _aoCarregar = aoCarregar || null;
   _firstResultSnapshot = true;
   var desde = _resJanelaInicio();
   if (!_resCarregadoDesde || _resCarregadoDesde > desde) _resCarregadoDesde = desde;
@@ -1417,8 +1427,11 @@ function iniciarResultadosRealtime() {
       var rankEl = document.getElementById('rel-cl-ranking');
       if (rankEl && rankEl.style.display !== 'none') renderRelRanking();
     }
+    if (_aoCarregar) { var cb = _aoCarregar; _aoCarregar = null; cb(); }
   }, function(err) {
     console.warn('Falha no listener de resultados:', err);
+    _resultadosUnsub = null;
+    if (_aoCarregar) { var cb = _aoCarregar; _aoCarregar = null; cb(); }
   });
 }
 
@@ -2244,11 +2257,8 @@ function finalizarLogin(found) {
       });
       S.customCLsCache = list;
     }),
-    // Só a janela de 30 dias (spec 2026-09-23) — antes baixava a coleção inteira no login.
-    db.collection('resultados').where('dateISO', '>=', _resJanelaInicio()).get().then(function(snap){
-      if (!_resCarregadoDesde || _resCarregadoDesde > _resJanelaInicio()) _resCarregadoDesde = _resJanelaInicio();
-      _resAplicarLista(ResultadosCore.filtrarConfirmados(snap.docs).map(function(d){ return d.data(); }));
-    }),
+    // BUILD 433: a janela vem do 1º snapshot do listener (antes: get() + listener = 2x as leituras)
+    new Promise(function(res){ iniciarResultadosRealtime(res); }),
     (function(){
       var userId = found.id;
       var hoje = getLocalDate();
@@ -2639,11 +2649,8 @@ function sincronizarEstadoFirebase() {
       Object.assign(S.checkState || {}, fotosEmMemoria);
     });
 
-  // Só a janela de 30 dias (spec 2026-09-23) — antes baixava a coleção inteira no login.
-  var promiseResultados = db.collection('resultados').where('dateISO', '>=', _resJanelaInicio()).get().then(function(snap){
-    if (!_resCarregadoDesde || _resCarregadoDesde > _resJanelaInicio()) _resCarregadoDesde = _resJanelaInicio();
-    _resAplicarLista(ResultadosCore.filtrarConfirmados(snap.docs).map(function(d){ return d.data(); }));
-  }).catch(function(){});
+  // BUILD 433: o listener de resultados já mantém o cache ao vivo — sem nova leitura
+  var promiseResultados = new Promise(function(res){ iniciarResultadosRealtime(res); });
 
   Promise.all([promiseState, promiseResultados]).then(function(){
     // Recarregar fotos do Firebase após sync (garante que fotos salvas estejam presentes)

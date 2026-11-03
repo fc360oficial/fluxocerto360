@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '434';
+var BUILD = '435';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -1207,10 +1207,13 @@ var _resCarregadoDesde = null;   // ISO do primeiro dia já carregado (janela ou
 var _resAntigos = [];            // docs anteriores à janela, buscados sob demanda (já enxugados)
 
 // BUILD 433 (03/11/26: Firestore estourou a cota grátis de 50 mil leituras/dia).
-// Operador/prevenção só precisam dos envios de HOJE (já enviou? pendências?);
-// histórico entra sob demanda via garantirResultadosDesde(). Gestor fica com 7 dias.
+// Loja (operador/prevenção/gerência) só baixa os envios de HOJE no login —
+// Tiago (03/11): "gerência também pode baixar só os envios de hoje" (hoje quem
+// usa são só os gerentes). Os 7 dias do Dashboard vêm 1x por sessão quando ele
+// abre (loadResultadosFromFirebase); o resto, sob demanda (garantirResultadosDesde).
+// Admin/supervisor seguem com 7 dias.
 function _resJanelaInicio() {
-  var soHoje = S && (S.role === 'operator' || S.role === 'prevencao');
+  var soHoje = S && (S.role === 'operator' || S.role === 'prevencao' || S.role === 'gerencia');
   return ResultadosCore.janelaISO(soHoje ? 0 : RES_JANELA_DIAS);
 }
 
@@ -1257,7 +1260,8 @@ function garantirResultadosDesde(deISO, cb) {
 }
 
 function loadResultadosFromFirebase(callback) {
-  if (_resultadosUnsub) { if (callback) callback(); return; } // BUILD 433: listener ativo = cache ao vivo
+  // Listener ativo = cache ao vivo; só falta (1x por sessão) o passado dos 7 dias do Dashboard
+  if (_resultadosUnsub) { garantirResultadosDesde(ResultadosCore.janelaISO(RES_JANELA_DIAS), callback); return; }
   var doFetch = function() {
     var desde = _resJanelaInicio();
     if (!_resCarregadoDesde || _resCarregadoDesde > desde) _resCarregadoDesde = desde;

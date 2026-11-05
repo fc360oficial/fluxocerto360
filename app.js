@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '438';
+var BUILD = '439';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -943,6 +943,11 @@ function loadCheckState() {
   } catch(e) { return {}; }
 }
 
+// BUILD 439 (04/11/26): a cota de ESCRITA (20 mil/dia) também estourou. Cada
+// toque no checklist gravava o estado inteiro no Firestore. Agora o localStorage
+// continua imediato (é dele que a tela restaura) e o servidor recebe no máximo
+// 1 gravação a cada 20 s — e sempre que o app sai da tela ou vai enviar.
+var _checkStateTimer = null, _checkStatePendente = null;
 function saveCheckState() {
   try {
     // Salvar no localStorage SEM fotos (evita quota exceeded)
@@ -952,16 +957,25 @@ function saveCheckState() {
       stateParaSalvar[k] = S.checkState[k];
     });
     localStorage.setItem(getStateKey(), JSON.stringify(stateParaSalvar));
-    var userId = S.currentUser ? S.currentUser.id : 'guest';
-    var today = getLocalDate();
-    db.collection('checkstates').doc(userId+'_'+today).set({
-      userId: userId,
-      date: today,
-      localDate: getLocalDate(),
-      state: JSON.stringify(stateParaSalvar)
-    }).catch(function(){});
+    _checkStatePendente = stateParaSalvar;
+    if (!_checkStateTimer) _checkStateTimer = setTimeout(_flushCheckState, 20000);
   } catch(e) {}
 }
+function _flushCheckState() {
+  if (_checkStateTimer) { clearTimeout(_checkStateTimer); _checkStateTimer = null; }
+  var st = _checkStatePendente; _checkStatePendente = null;
+  if (!st || !S.currentUser) return;
+  var userId = S.currentUser.id;
+  var today = getLocalDate();
+  db.collection('checkstates').doc(userId+'_'+today).set({
+    userId: userId,
+    date: today,
+    localDate: today,
+    state: JSON.stringify(st)
+  }).catch(function(){});
+}
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') _flushCheckState(); });
+window.addEventListener('pagehide', _flushCheckState);
 
 function loadCheckStateFromFirebase(callback) {
   var userId = S.currentUser ? S.currentUser.id : 'guest';
@@ -4274,6 +4288,7 @@ function confirmarEnviar(assinatura) {
   var clId = pendingEnviarId;
   var label = pendingEnviarLabel;
   if (!clId) return;
+  _flushCheckState(); // BUILD 439: estado pendente vai junto com o envio
   // Fecha o modal imediatamente para evitar duplo envio
   pendingEnviarId = null;
   pendingEnviarLabel = null;

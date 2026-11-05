@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '435';
+var BUILD = '436';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -82,16 +82,13 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
   // Libera espaço de emergência: os backups de foto (eco_foto_bk_*) são só
   // cópia de segurança pra reenvio, não dado principal — podem ser apagados
   // sem perder nada que já tenha sido confirmado no servidor.
+  // BUILD 436: NUNCA apaga os backups de HOJE — são as fotos que a loja tirou
+  // de manhã e ainda vai enviar à tarde (Tiago, 04/11: "tirou foto e depois
+  // sumiu"). Só os de outros dias, que já não servem pra nada.
   function _liberarEspacoEmergencia() {
-    try {
-      var chaves = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf('eco_foto_bk_') === 0) chaves.push(k);
-      }
-      chaves.forEach(function(k){ try { localStorage.removeItem(k); } catch(e){} });
-      return chaves.length > 0;
-    } catch(e) { return false; }
+    var d = new Date();
+    var hoje = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return _limparBackupsFotoOutrosDias(hoje);
   }
 
   // Teste 1: localStorage
@@ -987,8 +984,47 @@ function loadCheckStateFromFirebase(callback) {
   });
 }
 
+// BUILD 436: backup local da foto (a loja tira de manhã e envia à tarde — tem
+// que sobreviver ao app fechar, sem internet). O localStorage do Android tem
+// ~5 MB: antes de gravar, apaga os backups de outros dias; se mesmo assim não
+// couber, avisa que a foto ficou só na memória e no servidor.
+function _limparBackupsFotoOutrosDias(hoje) {
+  var apagou = false;
+  try {
+    Object.keys(localStorage).forEach(function(lk) {
+      if (lk.indexOf('eco_foto_bk_keys_') === 0 && lk !== 'eco_foto_bk_keys_' + hoje) {
+        try { JSON.parse(localStorage.getItem(lk) || '[]').forEach(function(ok){ localStorage.removeItem('eco_foto_bk_' + ok); }); } catch(e) {}
+        localStorage.removeItem(lk);
+        apagou = true;
+      }
+    });
+  } catch(e) {}
+  return apagou;
+}
+var _avisouBackupCheio = false;
+function _guardarBackupFoto(fotoKey, base64) {
+  var hoje = getLocalDate();
+  _limparBackupsFotoOutrosDias(hoje);
+  try {
+    localStorage.setItem('eco_foto_bk_' + fotoKey, base64);
+    var bk = JSON.parse(localStorage.getItem('eco_foto_bk_keys_' + hoje) || '[]');
+    if (bk.indexOf(fotoKey) < 0) { bk.push(fotoKey); localStorage.setItem('eco_foto_bk_keys_' + hoje, JSON.stringify(bk)); }
+    return true;
+  } catch(e) {
+    if (!_avisouBackupCheio) {
+      _avisouBackupCheio = true;
+      showToast('⚠️ Memória do navegador cheia: a foto foi guardada só no servidor. Mantenha o app aberto com internet até enviar.', 7000);
+    }
+    return false;
+  }
+}
+
+// BUILD 436: `fotos` era lida no servidor 2-3x por abertura (login + cada troca
+// pra aba Executar). Agora: backup local primeiro; servidor no máximo 1x a cada
+// 5 min; sem servidor (cota estourada / sem internet) usa o cache do Firestore,
+// que guarda o que este aparelho já gravou hoje.
+var _fotosServidorEm = 0;
 function carregarFotosFirebase(callback) {
-  // Primeiro restaura backups do localStorage (disponível offline)
   var hoje3 = getLocalDate();
   try {
     var bkKeys = JSON.parse(localStorage.getItem('eco_foto_bk_keys_'+hoje3) || '[]');
@@ -999,18 +1035,22 @@ function carregarFotosFirebase(callback) {
   } catch(e) {}
 
   var userId = S.currentUser ? S.currentUser.id : 'guest';
-  var today = getLocalDate();
-  db.collection('fotos').where('userId','==',userId).where('date','==',today).get()
-    .then(function(snap){
-      snap.docs.forEach(function(doc){
-        var d = doc.data();
-        if (d.base64) {
-          var key = d.clId + '_foto_' + d.tipo + '_' + d.idx;
-          S.checkState[key] = d.base64;
-        }
-      });
-      if (callback) callback();
-    }).catch(function(){ if (callback) callback(); });
+  var q = db.collection('fotos').where('userId','==',userId).where('date','==',hoje3);
+  var aplicar = function(snap){
+    snap.docs.forEach(function(doc){
+      var d = doc.data();
+      if (d.base64) S.checkState[d.clId + '_foto_' + d.tipo + '_' + d.idx] = d.base64;
+    });
+  };
+  var doCache = function(){
+    q.get({source:'cache'}).then(aplicar).catch(function(){}).then(function(){ if (callback) callback(); });
+  };
+  if (Date.now() - _fotosServidorEm < 5 * 60 * 1000) { doCache(); return; }
+  q.get().then(function(snap){
+    _fotosServidorEm = Date.now();
+    aplicar(snap);
+    if (callback) callback();
+  }).catch(doCache);
 }
 var CLKEY = 'eco_cl_custom';
 var RESKEY = 'eco_resultados';
@@ -2168,11 +2208,10 @@ function finalizarLogin(found) {
       buildCLTabs();
       renderAlertaPlanos();
     });
-    // limparPlanosAntigos() continua reusando ESTE load de planos (não um
-    // fetch próprio) pra nunca decidir o que limpar em cima de cache local
-    // desatualizado (ver comentário na função) — só isso ainda espera o load.
+    // BUILD 436: no login só os planos abertos; limparPlanosAntigos() roda
+    // dentro do load completo (página Plano de Ação / Central), nunca em cima
+    // de cache local desatualizado (ver comentário na função).
     loadPlanosFromFirebase(function() {
-      limparPlanosAntigos();
       renderAlertaPlanos();
     });
     var hoje = new Date();
@@ -2562,7 +2601,7 @@ function nav(page, el) {
       renderPlanos(planoFiltroAtual||'aberto');
       atualizarBadgePlano();
       initFotoObrigToggle();
-    });
+    }, true);
   }
   if (page==='inv') {
     // Captura ANTES do async para não perder o estado em corrida
@@ -2632,13 +2671,14 @@ function sincronizarEstadoFirebase() {
   var promiseState = db.collection('checkstates').doc(userId+'_'+hoje).get()
     .then(function(doc){
       var localState = loadCheckState();
-      // Restaurar backup de fotos do localStorage no localState
-      Object.keys(localStorage).forEach(function(k) {
-        if (k.indexOf('eco_foto_bk_') === 0) {
-          var fotoKey = k.replace('eco_foto_bk_', '');
-          if (!localState[fotoKey]) localState[fotoKey] = localStorage.getItem(k);
-        }
-      });
+      // Restaurar backup de fotos de HOJE do localStorage no localState (BUILD 436:
+      // a chave da foto não tem data — antes, foto de ontem reaparecia como de hoje)
+      try {
+        JSON.parse(localStorage.getItem('eco_foto_bk_keys_' + hoje) || '[]').forEach(function(fk) {
+          var bk = localStorage.getItem('eco_foto_bk_' + fk);
+          if (bk && !localState[fk]) localState[fk] = bk;
+        });
+      } catch(e) {}
       if (doc.exists && doc.data().state && doc.data().localDate === getLocalDate()) {
         try {
           var fbState = JSON.parse(doc.data().state);
@@ -3324,20 +3364,7 @@ function salvarFotoTipo(clId, idx, tipo, input) {
     _registrarHoraResposta(clId, idx);
 
     // Backup local da foto (evita perda se Firebase demorar ou conexão cair)
-    try {
-      var hoje2 = getLocalDate();
-      localStorage.setItem('eco_foto_bk_' + fotoKey, base64);
-      // Guardar data do backup para limpeza posterior
-      var bkKeys = JSON.parse(localStorage.getItem('eco_foto_bk_keys_'+hoje2) || '[]');
-      if (bkKeys.indexOf(fotoKey) < 0) { bkKeys.push(fotoKey); localStorage.setItem('eco_foto_bk_keys_'+hoje2, JSON.stringify(bkKeys)); }
-      // Limpar backups de dias anteriores
-      Object.keys(localStorage).forEach(function(lk) {
-        if (lk.indexOf('eco_foto_bk_keys_') === 0 && lk !== 'eco_foto_bk_keys_'+hoje2) {
-          try { var oldKeys = JSON.parse(localStorage.getItem(lk)||'[]'); oldKeys.forEach(function(ok){ localStorage.removeItem('eco_foto_bk_'+ok); }); } catch(e){}
-          localStorage.removeItem(lk);
-        }
-      });
-    } catch(e) {}
+    _guardarBackupFoto(fotoKey, base64);
 
     // Salvar foto separado no Firebase (nao no checkstate)
     var userId = S.currentUser ? S.currentUser.id : 'guest';
@@ -3391,12 +3418,7 @@ function salvarFotoMulti(clId, idx, input) {
     var fotoKey = clId+'_foto_multi_'+idx+'_'+slot;
     S.checkState[fotoKey] = base64;
     _registrarHoraResposta(clId, idx);
-    try {
-      var hojM = getLocalDate();
-      localStorage.setItem('eco_foto_bk_'+fotoKey, base64);
-      var bkKeysM = JSON.parse(localStorage.getItem('eco_foto_bk_keys_'+hojM)||'[]');
-      if (bkKeysM.indexOf(fotoKey)<0){bkKeysM.push(fotoKey);localStorage.setItem('eco_foto_bk_keys_'+hojM, JSON.stringify(bkKeysM));}
-    } catch(e){}
+    _guardarBackupFoto(fotoKey, base64);
     var userId = S.currentUser ? S.currentUser.id : 'guest';
     var today = getLocalDate();
     db.collection('fotos').doc(userId+'_'+today+'_'+clId+'_multi_'+idx+'_'+slot).set({
@@ -3966,19 +3988,17 @@ function limparPlanosAntigos() {
 
 function limparContagensAntigas() {
   var hoje = new Date().toISOString().slice(0, 10);
-  db.collection('contagens').get().then(function(snap) {
-    snap.docs.forEach(function(doc) {
-      if ((doc.data().data || '') < hoje) {
-        doc.ref.delete().catch(function() {});
-      }
-    });
+  // BUILD 436: só os vencidos (antes lia a coleção inteira a cada login)
+  db.collection('contagens').where('data', '<', hoje).get().then(function(snap) {
+    snap.docs.forEach(function(doc) { doc.ref.delete().catch(function() {}); });
   }).catch(function() {});
 }
 
 function loadPlanilhasDiarias(cb) {
   var hoje = new Date().toISOString().slice(0, 10);
   var myClient = (S.currentUser && S.currentUser.clienteId) || '';
-  db.collection('contagens').get().then(function(snap) {
+  // BUILD 436: só as planilhas de hoje (antes lia a coleção inteira no login e a cada aba Executar)
+  db.collection('contagens').where('tipo', '==', 'planilha_diaria').where('data', '==', hoje).get().then(function(snap) {
     _planilhaTemplates = {};
     snap.docs.forEach(function(doc) {
       var d = doc.data();
@@ -5358,7 +5378,7 @@ function switchCentralTab(tab, btn) {
   document.querySelectorAll('#central-tabs .tab').forEach(function(t){t.classList.remove('on');});
   if (btn) btn.classList.add('on');
   if (tab === 'plano') {
-    loadPlanosFromFirebase(function(){ renderCentralPlanos(); });
+    loadPlanosFromFirebase(function(){ renderCentralPlanos(); }, true);
     return;
   }
   if (tab === 'pendencias') {
@@ -10880,8 +10900,15 @@ function savePlanos(list) {
 function _gravarPlanoNoFirestore(plano) {
   if (db && plano) db.collection('planos').doc(plano.id).set(plano, {merge:true}).catch(function(){});
 }
-function loadPlanosFromFirebase(cb) {
-  db.collection('planos').get().then(function(snap){
+// BUILD 436 (04/11/26 — a cota grátis de 50 mil leituras/dia estourou de novo
+// com o 435): esta função lia a coleção INTEIRA (todos os clientes, resolvidos
+// de 30 dias) no login E a cada entrada na tela Checklist. Agora o padrão lê só
+// abertos/em andamento (é o que trava o envio e o que a loja precisa); a lista
+// completa (completo=true) fica pra página Plano de Ação e pra Central, que
+// também fazem a limpeza dos resolvidos antigos.
+function loadPlanosFromFirebase(cb, completo) {
+  var consulta = completo ? db.collection('planos') : db.collection('planos').where('status', 'in', ['aberto', 'andamento']);
+  consulta.get().then(function(snap){
     var myClient = (S.currentUser && S.currentUser.clienteId) || '';
     var remotos = snap.docs.map(function(d){ return d.data(); })
       .filter(function(p){ return (p.clienteId || 'economico') === myClient; });
@@ -10903,8 +10930,16 @@ function loadPlanosFromFirebase(cb) {
       }
       return r;
     });
+    if (!completo) {
+      // Mantém os resolvidos já em cache; aberto que sumiu do servidor foi
+      // resolvido/apagado em outro aparelho — sai do cache (e para de travar o envio).
+      var ids = {};
+      list.forEach(function(p){ ids[p.id] = true; });
+      getPlanos().forEach(function(p){ if (!ids[p.id] && p.status === 'resolvido') list.push(p); });
+    }
     _planosCache = list;
     try { localStorage.setItem(PLANO_KEY, JSON.stringify(list)); } catch(e) {}
+    if (completo) limparPlanosAntigos();
     if (cb) cb();
   }).catch(function(){ if (cb) cb(); });
 }

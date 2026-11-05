@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '437';
+var BUILD = '438';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -12245,7 +12245,16 @@ function _renovarLicencaAgora(clienteId) {
   base.setHours(0,0,0,0);
   var nova = new Date(base); nova.setDate(nova.getDate()+d);
   var novaStr = nova.toISOString().slice(0,10);
-  if (!confirm('Renovar '+clienteId+' por '+d+' dias?\n\nNova validade: '+nova.toLocaleDateString('pt-BR'))) return;
+  // BUILD 438: sem confirm() (navegador com diálogos bloqueados fazia o botão
+  // "não fazer nada") — a prévia do modal já é a confirmação. Mostra estado e,
+  // se o servidor não responder (cota do Firestore), avisa que ficou na fila.
+  var btn = document.querySelector('#modal-gerar-token .btn-p');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Renovando…'; }
+  if (el) el.textContent = '';
+  var demora = setTimeout(function(){
+    if (el) el.textContent = 'O servidor não respondeu. Se a cota do Firestore estiver estourada, a renovação fica na fila e aplica sozinha quando a cota voltar (~05h) — pode fechar.';
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Renovar agora'; }
+  }, 12000);
   var batch = db.batch();
   batch.update(db.collection('clientes').doc(clienteId), { validade: novaStr, ativo: true });
   batch.set(db.collection('tokens').doc(), {
@@ -12255,11 +12264,16 @@ function _renovarLicencaAgora(clienteId) {
     criadoPor: S.currentUser ? S.currentUser.id : 'superadmin', usadoPor: S.currentUser ? S.currentUser.id : 'superadmin'
   });
   batch.commit().then(function() {
+    clearTimeout(demora);
     var m = document.getElementById('modal-gerar-token'); if (m) m.remove();
     c.validade = novaStr; c.ativo = true;
     _renderClientesLista();
     showToast('✅ '+clienteId+' renovado até '+nova.toLocaleDateString('pt-BR'));
-  }).catch(function(e){ if (el) el.textContent='Erro ao renovar: '+e.message; });
+  }).catch(function(e){
+    clearTimeout(demora);
+    if (btn) { btn.disabled = false; btn.textContent = '✅ Renovar agora'; }
+    if (el) el.textContent='Erro ao renovar: '+e.message;
+  });
 }
 
 function _gerarNovoToken(clienteId, d, c) {

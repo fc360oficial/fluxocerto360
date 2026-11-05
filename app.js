@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '439';
+var BUILD = '440';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -2187,7 +2187,13 @@ function finalizarLogin(found) {
   document.getElementById('app').style.opacity='0.6';
 
   function iniciarApp() {
-    limparContagensAntigas();
+    // BUILD 440 (04/11/26): limparContagensAntigas() SAIU do login. O gráfico de
+    // uso do Firestore mostrou 49 mil leituras + 20 mil exclusões entre a
+    // madrugada e as 7h — antes de qualquer loja abrir — que é exatamente o
+    // perfil dessa limpeza (lia a coleção inteira e apagava os dias anteriores
+    // em TODO login). Documento velho em `contagens` não atrapalha ninguém:
+    // loadPlanilhasDiarias só lê os de hoje. Limpeza, se um dia precisar, é
+    // pelo servidor (.254), aos poucos, dentro da cota.
     setTimeout(mostrarConviteInstalar, 1500); // BUILD 431: "Deixe o celular pronto" (instalar + avisos)
     _registrarDispositivo();
     _inscreverPush();       // BUILD 432: push com o app fechado
@@ -4002,14 +4008,6 @@ function limparPlanosAntigos() {
   _planosCache = novaLista;
   try { localStorage.setItem(PLANO_KEY, JSON.stringify(novaLista)); } catch(e) {}
   removidos.forEach(function(p){ db.collection('planos').doc(p.id).delete().catch(function(){}); });
-}
-
-function limparContagensAntigas() {
-  var hoje = new Date().toISOString().slice(0, 10);
-  // BUILD 436: só os vencidos (antes lia a coleção inteira a cada login)
-  db.collection('contagens').where('data', '<', hoje).get().then(function(snap) {
-    snap.docs.forEach(function(doc) { doc.ref.delete().catch(function() {}); });
-  }).catch(function() {});
 }
 
 function loadPlanilhasDiarias(cb) {

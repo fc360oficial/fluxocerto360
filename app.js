@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '440';
+var BUILD = '441';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 (function() {
   var vEl = document.getElementById('sb-versao');
@@ -2038,10 +2038,49 @@ function doLogin() {
       if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
       if (e.code === 'auth/user-disabled') msg = 'Usuário inativo. Contate o administrador.';
       if (e.code === 'perfil/nao-encontrado') msg = 'Usuário não encontrado no sistema.';
-      err.innerHTML = msg + '<br><span style="font-size:10px;opacity:.55">' + (e.code||'erro desconhecido') + '</span>';
+      // BUILD 441 (05/11/26): erro SEM código não é senha errada — é exceção
+      // local (JS/IndexedDB) depois que a senha já passou (Porta Larga viu
+      // "erro desconhecido" no v440 enquanto o mesmo login entrava no PC).
+      // Mostra a mensagem real e oferece limpar os dados locais do app.
+      var _semCodigo = !e.code;
+      var _detalhe = e.code || (e && e.message ? String(e.message).slice(0, 160) : 'erro desconhecido');
+      if (_semCodigo) msg = 'Não foi possível entrar neste aparelho.';
+      err.innerHTML = msg + '<br><span style="font-size:10px;opacity:.55">' + _escHtml(_detalhe) + '</span>'
+        + (_semCodigo ? '<br><button type="button" onclick="_limparDadosLocaisApp()" style="margin-top:8px;padding:8px 12px;border:1px solid var(--r);background:#fff;color:var(--r);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Limpar dados do app e tentar de novo</button>' : '');
       err.style.color = 'var(--r)';
       err.style.display = 'block';
     });
+}
+
+function _escHtml(s) {
+  return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+
+// BUILD 441: zera o estado local que pode travar o login (banco offline do
+// Firestore + sessão do Auth no IndexedDB + cache do service worker) e
+// recarrega. NÃO mexe no localStorage: é lá que ficam as respostas do
+// checklist ainda não enviadas (eco_clstate_*) e o backup das fotos do dia.
+function _limparDadosLocaisApp() {
+  var err = document.getElementById('lErr');
+  if (err) { err.textContent = 'Limpando dados locais...'; err.style.color = '#856404'; }
+  var passos = [];
+  try { passos.push(firebase.auth().signOut().catch(function(){})); } catch(e) {}
+  try { passos.push(db.terminate().then(function(){ return db.clearPersistence(); }).catch(function(){})); } catch(e) {}
+  if ('caches' in window) {
+    passos.push(caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){ return caches.delete(k); })); }).catch(function(){}));
+  }
+  if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+    passos.push(navigator.serviceWorker.getRegistrations().then(function(regs){ return Promise.all(regs.map(function(r){ return r.unregister(); })); }).catch(function(){}));
+  }
+  try { sessionStorage.removeItem('eco_session'); } catch(e) {}
+  var _feito = false;
+  var fim = function(){
+    if (_feito) return; _feito = true;
+    try { indexedDB.deleteDatabase('firebaseLocalStorageDb'); } catch(e) {}
+    setTimeout(function(){ window.location.reload(); }, 400);
+  };
+  Promise.all(passos).then(fim, fim);
+  setTimeout(fim, 6000); // nunca fica preso esperando IndexedDB
 }
 
 function _doLogin_legado_unused() {

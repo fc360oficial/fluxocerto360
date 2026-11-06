@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '444';
+var BUILD = '445';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -45,7 +45,8 @@ var db = FC360Store.db;
 FC360Api.configurar({
   baseUrl: FC360_API_URL,
   // BUILD 444: token é o JWT do login próprio (localStorage), não mais o do Firebase
-  obterToken: function(){ var t = _tokenApi(); return t ? Promise.resolve(t) : Promise.reject(new Error('sem login')); },
+  // sem token (tela de login) manda sem Authorization: /auth/login é pública e o resto responde 401
+  obterToken: function(){ return Promise.resolve(_tokenApi()); },
   log: function(m){ console.warn('[fc360-api] ' + m); }
 });
 FC360Store.configurar({ api: FC360Api, log: function(m){ console.warn('[fc360-store] ' + m); } });

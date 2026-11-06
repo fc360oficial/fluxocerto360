@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '448';
+var BUILD = '449';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -51,8 +51,21 @@ FC360Api.configurar({
 });
 FC360Store.configurar({ api: FC360Api, log: function(m){ console.warn('[fc360-store] ' + m); } });
 var TOKEN_KEY = 'fc360_token';
-function _tokenApi() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e) { return ''; } }
-function _guardarTokenApi(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch(e) {} }
+// BUILD 449 (06/11/26): o token é POR ABA (sessionStorage) — o Tiago abriu superadmin numa aba e
+// admin noutra, e a aba do admin pedia os dados com o token do superadmin (que não tem cliente)
+// e via tudo vazio. localStorage guarda o último login só pra reabrir o app logado; memória é
+// o plano B quando o navegador está sem espaço.
+var _tokenMem = '';
+function _tokenApi() {
+  try { var t = sessionStorage.getItem(TOKEN_KEY); if (t) return t; } catch(e) {}
+  if (_tokenMem) return _tokenMem;
+  try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e) { return ''; }
+}
+function _guardarTokenApi(t) {
+  _tokenMem = t || '';
+  try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY); } catch(e) {}
+  try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch(e) {}
+}
 // Confere a senha do usuário logado no servidor (substitui as comparações com o hash local).
 function _confirmarSenhaAtual(senha) {
   var email = S.currentUser && S.currentUser.email;
@@ -17912,7 +17925,7 @@ window.addEventListener('beforeunload', function() {
     // BUILD 444: app aberto do zero com token válido (30 dias) — entra sem digitar senha
     if (!saved && _tokenApi() && !/[?&]checkin=1/.test(location.search)) {
       FC360Api.chamar('GET', '/auth/me').then(function(me) {
-        if (me && me.id && me.perfil) { if (me.ativo === false) return; finalizarLogin(me); }
+        if (me && me.id && me.perfil) { if (me.ativo === false) return; _guardarTokenApi(_tokenApi()); finalizarLogin(me); }
       }).catch(function(e) { if (e && (e.status === 401 || e.status === 403 || e.status === 404)) _guardarTokenApi(''); });
       return;
     }

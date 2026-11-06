@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '446';
+var BUILD = '447';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -4058,9 +4058,11 @@ function limparPlanosAntigos() {
   var novaLista = lista.filter(function(p) {
     return !removidos.some(function(r){ return r.id === p.id; });
   });
+  // BUILD 447 (06/11/26): NÃO apaga mais no servidor. No Firestore essa limpeza nunca
+  // terminava (cota) e o histórico ficou; no Postgres ela apagou 529 planos de uma vez e
+  // o Tiago quer o histórico. Só enxuga o cache local — o servidor guarda tudo.
   _planosCache = novaLista;
   try { localStorage.setItem(PLANO_KEY, JSON.stringify(novaLista)); } catch(e) {}
-  removidos.forEach(function(p){ db.collection('planos').doc(p.id).delete().catch(function(){}); });
 }
 
 function loadPlanilhasDiarias(cb) {

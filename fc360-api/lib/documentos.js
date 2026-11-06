@@ -10,7 +10,7 @@
 'use strict';
 
 const OPS_WHERE = new Set(['==', '!=', '<', '<=', '>', '>=', 'in', 'array-contains']);
-const LIMITE_MAX = 2000;
+const LIMITE_MAX = 10000; // o app baixa coleções inteiras (planos tem ~3 mil); 2 mil cortava o plano aberto
 const SENSIVEIS = { usuarios: ['senha', 'senha_hash', '_fbNewPass'] };
 
 // ── escopo por coleção ─────────────────────────────────────────────────────────

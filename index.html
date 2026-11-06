@@ -56,6 +56,8 @@
       <div class="lerr" id="lErr">E-mail ou senha incorretos.</div>
       <button class="lbtn" onclick="doLogin()">Entrar no Sistema</button>
       <div id="login-versao" style="text-align:center;margin-top:14px;font-size:9px;color:rgba(0,0,0,.3)"></div>
+      <!-- BUILD 442: saída pra aparelho com fila do Firestore travada (não entra / não envia) -->
+      <div style="text-align:center;margin-top:6px"><a href="#" onclick="if(confirm('Isso limpa a fila e o cache do app neste aparelho e recarrega. As respostas do checklist já preenchidas e as fotos do dia continuam. Continuar?'))_limparDadosLocaisApp();return false;" style="font-size:11px;color:rgba(0,0,0,.45);text-decoration:underline">Problemas pra entrar ou enviar? Limpar dados do app</a></div>
     </div>
   </div>
 </div>
@@ -198,6 +200,9 @@
       </div>
       <div id="topbar-menu-token" onclick="abrirModalToken();toggleUserMenu()" style="display:none;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t2);transition:background .12s" onmouseover="this.style.background='var(--gray)'" onmouseout="this.style.background=''">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:15px;height:15px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>Licença
+      </div>
+      <div id="topbar-menu-limpar" onclick="toggleUserMenu();if(confirm('Isso limpa a fila e o cache do app neste aparelho e recarrega (você vai entrar de novo). As respostas do checklist já preenchidas e as fotos do dia continuam. Continuar?'))_limparDadosLocaisApp()" style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t2);transition:background .12s" onmouseover="this.style.background='var(--gray)'" onmouseout="this.style.background=''">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:15px;height:15px;flex-shrink:0"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>Limpar dados do app
       </div>
       <div style="border-top:1px solid rgba(0,0,0,.06);margin:4px 0;padding-top:4px">
         <div onclick="forcarAtualizacao();toggleUserMenu()" style="display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t2);transition:background .12s" onmouseover="this.style.background='var(--gray)'" onmouseout="this.style.background=''">🔄 Verificar atualização</div>
@@ -2208,7 +2213,7 @@
   setInterval(function(){ if(box) log('INFO','vivo, tela='+(document.querySelector('.page.on,.view.on')||{}).id); },15000);
 })();
 </script>
-<script src="app.js?v=441" defer></script>
+<script src="app.js?v=442" defer></script>
 
 
 </body>

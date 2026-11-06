@@ -190,6 +190,15 @@ async function aplicarOps(client, usuario, ops) {
     }
     if (existente && esc.somenteIds && !esc.somenteIds.includes(id)) { rejeitados.push({ col, id, motivo: 'sem acesso' }); continue; }
     if (!esc.escrever(id, o.dados, existente)) { rejeitados.push({ col, id, motivo: 'sem permissão' }); continue; }
+    if (col === 'usuarios' && usuario.perfil !== 'superadmin') {
+      // quem não é gestor só mexe no próprio aparelho/push; ninguém vira superadmin nem troca de cliente por aqui
+      const gestor = ['admin', 'gerencia', 'supervisor'].includes(usuario.perfil);
+      const chaves = Object.keys(ehObj(o.dados) ? o.dados : {}).map(k => k.split('.')[0]);
+      const PROPRIOS = ['dispositivo', 'push', 'ultimoAcesso', 'ultimoLogin', 'fotoPerfil', 'telefone'];
+      if (!gestor && (o.op !== 'update' || chaves.some(k => !PROPRIOS.includes(k)))) { rejeitados.push({ col, id, motivo: 'só gestor altera cadastro de usuário' }); continue; }
+      const d = ehObj(o.dados) ? o.dados : {};
+      if (d.perfil === 'superadmin' || (d.clienteId && d.clienteId !== usuario.clienteId)) { rejeitados.push({ col, id, motivo: 'perfil/cliente não permitido' }); continue; }
+    }
     if (o.op === 'delete') {
       await client.query('DELETE FROM documento WHERE colecao=$1 AND id=$2', [col, id]);
       feitos.push({ col, id, op: 'delete' }); continue;

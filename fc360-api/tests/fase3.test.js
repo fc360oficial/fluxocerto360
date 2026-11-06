@@ -131,6 +131,18 @@ test('documentos: montarConsulta traduz where/orderBy/limit e escopo', () => {
     assert.equal((await api('GET', '/col/planos/p1', null, tokFluxo)).status, 404);
     r = await api('POST', '/sync', { ops: [{ op: 'update', col: 'planos', id: 'p1', dados: { status: 'resolvido' } }] }, tokFluxo);
     assert.equal(r.body.rejeitados[0].motivo, 'documento de outro cliente');
+    // quem não é gestor não muda o próprio cadastro (perfil, loja...), só aparelho/push; gestor não vira superadmin
+    r = await api('POST', '/sync', { ops: [
+      { op: 'update', col: 'usuarios', id: 'u_cahu', dados: { perfil: 'admin' } },
+      { op: 'set', col: 'usuarios', id: 'u_cahu', dados: { nome: 'x', perfil: 'admin' } },
+      { op: 'update', col: 'usuarios', id: 'u_cahu', dados: { 'push.p9': { endpoint: 'e9' }, 'dispositivo.modo': 'app' } },
+    ] }, tokCahu);
+    assert.deepEqual(r.body.ops.map(x => x.op), ['update']);
+    assert.equal(r.body.rejeitados.length, 2);
+    assert.equal((await api('GET', '/col/usuarios/u_cahu', null, tokCahu)).body.perfil, 'prevencao');
+    r = await api('POST', '/sync', { ops: [{ op: 'update', col: 'usuarios', id: 'u_cahu', dados: { perfil: 'superadmin' } }, { op: 'update', col: 'usuarios', id: 'u_cahu', dados: { loja: 'Ponte' } }] }, tokAdmin);
+    assert.deepEqual(r.body.ops.length, 1);
+    assert.equal((await api('GET', '/col/usuarios/u_cahu', null, tokAdmin)).body.loja, 'Ponte');
     // FieldValue.delete em caminho com ponto
     r = await api('POST', '/sync', { ops: [{ op: 'update', col: 'usuarios', id: 'u_cahu', dados: { 'push.p1': { __delete: true } } }] }, tokCahu);
     assert.equal((await api('GET', '/col/usuarios/u_cahu', null, tokCahu)).body.push.p1, undefined);

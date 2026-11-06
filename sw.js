@@ -1,6 +1,6 @@
 // Fluxo Certo 360 — Service Worker v228
 // Atualiza este numero de versao sempre que publicar novos arquivos
-var CACHE_NAME = 'cahu360-v445';
+var CACHE_NAME = 'cahu360-v446';
 
 // Arquivos críticos: sempre buscados da rede (nunca do cache)
 var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
@@ -8,7 +8,7 @@ var NETWORK_FIRST = ['app.js', 'index.html', 'monitor.html'];
 var SHELL_ASSETS = [
   './',
   './index.html',
-  './app.js?v=445',
+  './app.js?v=446',
   './style.css?v=410',
   './logo.png',
   './icon-192.png',
@@ -52,8 +52,8 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   var url = event.request.url;
 
-  // Firebase: não intercepta
-  if (url.includes('googleapis.com') || url.includes('firestore.googleapis.com') || url.includes('firebaseio.com')) {
+  // Firebase e FC360 API (.254): não intercepta — resposta de API nunca pode vir do cache
+  if (url.includes('googleapis.com') || url.includes('firestore.googleapis.com') || url.includes('firebaseio.com') || url.includes('/fc360-api/') || url.includes('mynetname.net')) {
     return;
   }
 

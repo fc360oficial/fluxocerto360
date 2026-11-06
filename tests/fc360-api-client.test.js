@@ -114,6 +114,28 @@ test('ouvintes da fila recebem o resultado de cada drenagem com envios', async (
   assert.deepEqual(vistos[0].enviados[0].resposta.resultados, ['r9']);
 });
 
+test('item que entra durante uma drenagem em curso é entregue antes de enviarOuEnfileirar resolver', async () => {
+  const storage = storageFake();
+  const chamadas = [];
+  let liberar = null;
+  const fetch = async (url, init) => {
+    chamadas.push(JSON.parse(init.body));
+    if (chamadas.length === 1) await new Promise(r => { liberar = r; }); // 1ª entrega fica pendurada
+    return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true }) };
+  };
+  FC360Api.configurar({ baseUrl: 'https://x', obterToken: async () => 't', fetch, storage, agora: () => 1, log: () => {} });
+  FC360Api.fila.adicionar({ resultados: [{ id: 'a' }] });
+  const p1 = FC360Api.fila.drenar();                    // em curso, presa no 1º item
+  await new Promise(r => setTimeout(r, 10));
+  const p2 = FC360Api.enviarOuEnfileirar({ resultados: [{ id: 'b' }] }); // entra atrás, durante a passagem
+  await new Promise(r => setTimeout(r, 10));
+  liberar();
+  const [, estado] = await Promise.all([p1, p2]);
+  assert.equal(estado, 'enviado');
+  assert.equal(FC360Api.fila.pendentes(), 0);
+  assert.deepEqual(chamadas.map(c => c.resultados[0].id), ['a', 'b']);
+});
+
 test('drenar() concorrente reaproveita a mesma passagem', async () => {
   preparar(['offline', { status: 200, body: { ok: true } }]);
   await FC360Api.enviarOuEnfileirar({ resultados: [{ id: 'r' }] });

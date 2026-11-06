@@ -66,7 +66,7 @@ test('doc: set/get/update/delete, exists, data() sem id, caminhos com ponto e Fi
   let snap = await ref.get();
   assert.equal(snap.exists, true);
   assert.equal(snap.id, 'p1');
-  assert.deepEqual(snap.data(), { desc: 'x', status: 'aberto', criadoEm: { __serverTimestamp: true } });
+  assert.deepEqual(snap.data(), { id: 'p1', desc: 'x', status: 'aberto', criadoEm: { __serverTimestamp: true } }, 'data() mantém o id dentro do doc');
   await ref.update({ status: 'resolvido', 'meta.por': 'eu' });
   await ref.update(new FC360Store.FieldPath('fila', 'A1'), FC360Store.FieldValue.delete());
   await ref.update('push.k1', { endpoint: 'e' });

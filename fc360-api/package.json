@@ -1,0 +1,18 @@
+{
+  "name": "fc360-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FC360 — API do checklist no Postgres do .254 (resultados, fotos, estado do checklist)",
+  "main": "fc360-api.js",
+  "scripts": {
+    "start": "node fc360-api.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.0",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.1.0",
+    "pg": "^8.16.0"
+  }
+}

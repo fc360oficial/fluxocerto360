@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '445';
+var BUILD = '446';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {

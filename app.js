@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '449';
+var BUILD = '450';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -1107,6 +1107,17 @@ function carregarFotosFirebase(callback) {
   FC360Api.chamar('GET', '/fotos?date=' + hoje3 + '&userId=' + encodeURIComponent(userId) + '&colecao=fotos&comBase64=1').then(function(lista){
     _fotosServidorEm = Date.now();
     aplicar(lista);
+    // BUILD 450: o que o servidor já tem não precisa de cópia local — libera a memória do aparelho
+    try {
+      var noServidor = {};
+      (lista || []).forEach(function(d){ noServidor[d.clId + '_foto_' + d.tipo + '_' + d.idx] = true; });
+      var chaveLista = 'eco_foto_bk_keys_' + hoje3;
+      var restantes = JSON.parse(localStorage.getItem(chaveLista) || '[]').filter(function(fk){
+        if (noServidor[fk]) { localStorage.removeItem('eco_foto_bk_' + fk); return false; }
+        return true;
+      });
+      localStorage.setItem(chaveLista, JSON.stringify(restantes));
+    } catch(e) {}
     if (callback) callback();
   }).catch(function(){ if (callback) callback(); });
 }
@@ -3473,10 +3484,8 @@ function salvarFotoTipo(clId, idx, tipo, input) {
     S.checkState[fotoKey] = base64;
     _registrarHoraResposta(clId, idx);
 
-    // Backup local da foto (evita perda se Firebase demorar ou conexão cair)
-    _guardarBackupFoto(fotoKey, base64);
-
-    // Salvar foto separado no Firebase (nao no checkstate)
+    // BUILD 450: cópia local da foto só se o servidor NÃO confirmou na hora (ficou na fila).
+    // Antes guardava sempre e lotava a memória do navegador ("memória cheia" nas lojas).
     var userId = S.currentUser ? S.currentUser.id : 'guest';
     var today = getLocalDate();
     var fotoDocId = userId+'_'+today+'_'+clId+'_'+tipo+'_'+idx;
@@ -3485,7 +3494,8 @@ function salvarFotoTipo(clId, idx, tipo, input) {
       tipo: tipo, idx: idx, base64: base64,
       loja: S.currentUser ? S.currentUser.loja || '' : '',
       operador: S.currentUser ? S.currentUser.nome || '' : ''
-    }] }).catch(function(e){ console.log('Erro ao salvar foto:', e); });
+    }] }).then(function(estado){ if (estado !== 'enviado') _guardarBackupFoto(fotoKey, base64); })
+      .catch(function(e){ _guardarBackupFoto(fotoKey, base64); console.log('Erro ao salvar foto:', e); });
 
     var cl = getMyCLs().find(function(cc){return cc.id===clId;});
     if (cl && cl.itens[idx]) {
@@ -3528,14 +3538,14 @@ function salvarFotoMulti(clId, idx, input) {
     var fotoKey = clId+'_foto_multi_'+idx+'_'+slot;
     S.checkState[fotoKey] = base64;
     _registrarHoraResposta(clId, idx);
-    _guardarBackupFoto(fotoKey, base64);
     var userId = S.currentUser ? S.currentUser.id : 'guest';
     var today = getLocalDate();
     FC360Api.enviarOuEnfileirar({ fotos: [{
       id: userId+'_'+today+'_'+clId+'_multi_'+idx+'_'+slot,
       userId:userId, date:today, clId:clId, tipo:'multi_'+idx, idx:slot, base64:base64,
       loja:S.currentUser?S.currentUser.loja||'':'', operador:S.currentUser?S.currentUser.nome||'':''
-    }] }).catch(function(e){console.log('Erro ao salvar foto multi:',e);});
+    }] }).then(function(estado){ if (estado !== 'enviado') _guardarBackupFoto(fotoKey, base64); })
+      .catch(function(e){ _guardarBackupFoto(fotoKey, base64); console.log('Erro ao salvar foto multi:',e);});
     saveCheckState();
     var b = document.getElementById('cl-block-'+clId);
     if (b) b.innerHTML = buildCLBlock(cl);

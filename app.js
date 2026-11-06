@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '443';
+var BUILD = '444';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -32,16 +32,35 @@ firebase.initializeApp({
   messagingSenderId: "650620659681",
   appId: "1:650620659681:web:4ca84bdb330d028e9f14a0"
 });
-var db = firebase.firestore();
+// BUILD 444 (06/11/26, fase 3): `db` passou a ser a FC360Store — a mesma API do Firestore
+// (collection/doc/get/set/update/where/onSnapshot/batch) servida pela FC360 API no Postgres
+// do .254. O Firestore de verdade (dbFirebase) fica só pro módulo Promotores, cuja página
+// pública do promotor usa auth anônimo do Firebase (fornecedoresCol/visitasCol).
+var dbFirebase = firebase.firestore();
+var db = FC360Store.db;
 // BUILD 443 (05/11/26): resultados, fotos e estado do checklist vão pra FC360 API
 // (Postgres do .254, lib/fc360-api-client.js). O Firestore continua só pra usuários,
 // checklists, clientes, planos e contagens (fase 3 da migração). Quando a internet
 // falha, o envio fica na fila do aparelho (localStorage) e sobe sozinho depois.
 FC360Api.configurar({
   baseUrl: FC360_API_URL,
-  obterToken: function(){ var u = firebase.auth().currentUser; return u ? u.getIdToken() : Promise.reject(new Error('sem login')); },
+  // BUILD 444: token é o JWT do login próprio (localStorage), não mais o do Firebase
+  obterToken: function(){ var t = _tokenApi(); return t ? Promise.resolve(t) : Promise.reject(new Error('sem login')); },
   log: function(m){ console.warn('[fc360-api] ' + m); }
 });
+FC360Store.configurar({ api: FC360Api, log: function(m){ console.warn('[fc360-store] ' + m); } });
+var TOKEN_KEY = 'fc360_token';
+function _tokenApi() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e) { return ''; } }
+function _guardarTokenApi(t) { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch(e) {} }
+// Confere a senha do usuário logado no servidor (substitui as comparações com o hash local).
+function _confirmarSenhaAtual(senha) {
+  var email = S.currentUser && S.currentUser.email;
+  if (!email) return Promise.resolve(false);
+  return FC360Api.chamar('POST', '/auth/login', { email: email, senha: senha }).then(function(){ return true; }, function(e){
+    if (e && (e.status === 401 || e.status === 403)) return false;
+    throw e;
+  });
+}
 FC360Api.fila.aoDrenar(function(r){
   var ids = [];
   (r.enviados || []).forEach(function(e){ ((e.resposta && e.resposta.resultados) || []).forEach(function(id){ ids.push({ id: id }); }); });
@@ -288,7 +307,7 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
 
     function gravar(geo) {
       var dados = {
-        checkInEm: firebase.firestore.FieldValue.serverTimestamp(),
+        checkInEm: FC360Store.FieldValue.serverTimestamp(),
         checkInGeo: geo,
         sessionUid: guestUid,
         status: 'na_loja'
@@ -378,7 +397,7 @@ db.enablePersistence({synchronizeTabs: true}).catch(function(err){
     btn.disabled = true; btn.textContent = 'Registrando...';
     function gravar(geo) {
       guestDb.collection('clientes').doc(CLIENTE_ID).collection('promotor_visitas').doc(visitaAbertaId).update({
-        checkOutEm: firebase.firestore.FieldValue.serverTimestamp(),
+        checkOutEm: FC360Store.FieldValue.serverTimestamp(),
         checkOutGeo: geo,
         status: 'realizada'
       }).then(function() {
@@ -405,9 +424,7 @@ function zerarRelatoriosEPlanos() {
   if (senha === null) return;
   if (!senha) { alert('Senha não pode ser vazia.'); return; }
 
-  hashPassword(senha).then(function(hash) {
-    var u = S.currentUser || {};
-    var senhaCorreta = isHashed(u.senha) ? u.senha === hash : u.senha === senha;
+  _confirmarSenhaAtual(senha).then(function(senhaCorreta) {
     if (!senhaCorreta) { alert('❌ Senha incorreta. Operação cancelada.'); return; }
 
     if (!confirm('⚠️ ATENÇÃO: Isso vai apagar PERMANENTEMENTE todos os resultados de checklist e planos de ação.\n\nEssa ação não pode ser desfeita.\n\nConfirmar?')) return;
@@ -1344,15 +1361,7 @@ function loadResultadosFromFirebase(callback) {
       if (callback) callback();
     });
   };
-  // Garante que Firebase Auth está pronto antes de buscar do Firestore
-  if (firebase.auth().currentUser) {
-    doFetch();
-  } else {
-    var unsub = firebase.auth().onAuthStateChanged(function(fbUser) {
-      unsub();
-      doFetch();
-    });
-  }
+  doFetch();
 }
 
 function limparResultadosFirebase() {
@@ -1911,7 +1920,7 @@ function ativarToken(fromModal) {
     dataFim.setDate(dataFim.getDate() + (t.dias||30));
     var dataFimStr = dataFim.toISOString().slice(0,10);
     var batch = db.batch();
-    batch.update(doc.ref, { usado: true, ativadoEm: firebase.firestore.FieldValue.serverTimestamp(), dataFim: dataFimStr, usadoPor: S.currentUser.id });
+    batch.update(doc.ref, { usado: true, ativadoEm: FC360Store.FieldValue.serverTimestamp(), dataFim: dataFimStr, usadoPor: S.currentUser.id });
     batch.update(db.collection('clientes').doc(clienteId), { validade: dataFimStr, ativo: true });
     batch.commit().then(function() {
       S.clienteConfig = Object.assign({}, S.clienteConfig, { validade: dataFimStr, ativo: true });
@@ -2046,13 +2055,13 @@ function doLogin() {
   err.style.color = '#856404';
   err.style.display = 'block';
 
-  firebase.auth().signInWithEmailAndPassword(email, pass)
-    .then(function(cred) {
-      return db.collection('usuarios').where('email', '==', (cred.user.email||'').toLowerCase()).get();
-    })
-    .then(function(snap) {
-      if (snap.empty) throw { code: 'perfil/nao-encontrado' };
-      var found = snap.docs[0].data();
+  // BUILD 444: login na FC360 API (senha conferida no .254; na 1ª vez ainda confere no Firebase e migra)
+  FC360Api.chamar('POST', '/auth/login', { email: email, senha: pass })
+    .then(function(r) {
+      if (!r || !r.token || !r.usuario) throw { code: 'perfil/nao-encontrado' };
+      _guardarTokenApi(r.token);
+      FC360Store._limparCache();
+      var found = r.usuario;
       if (found.ativo === false) throw { code: 'auth/user-disabled' };
       err.style.display = 'none';
       finalizarLogin(found);
@@ -2060,6 +2069,9 @@ function doLogin() {
     .catch(function(e) {
       console.error('FC360 login error:', e.code, e.message, e);
       var msg = 'E-mail ou senha incorretos.';
+      if (e && e.status === 401) e.code = 'auth/wrong-password';
+      if (e && e.status === 403) e.code = 'auth/user-disabled';
+      if (e && e.offline) e.code = 'auth/network-request-failed';
       if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
       if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';
       if (e.code === 'auth/user-disabled') msg = 'Usuário inativo. Contate o administrador.';
@@ -2090,7 +2102,7 @@ function _limparDadosLocaisApp() {
   var err = document.getElementById('lErr');
   if (err) { err.textContent = 'Limpando dados locais...'; err.style.color = '#856404'; }
   var passos = [];
-  try { passos.push(firebase.auth().signOut().catch(function(){})); } catch(e) {}
+  _guardarTokenApi('');
   try { passos.push(db.terminate().then(function(){ return db.clearPersistence(); }).catch(function(){})); } catch(e) {}
   if ('caches' in window) {
     passos.push(caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){ return caches.delete(k); })); }).catch(function(){}));
@@ -2177,7 +2189,7 @@ function finalizarLogin(found) {
   var mismatchDeployNormal = !isDeployUniversal && userClient !== deployClient;
   if ((semTenantProprio || mismatchDeployNormal) && found.perfil !== 'superadmin' && !found._impersonadoPorSuperadmin) {
     try { sessionStorage.removeItem('eco_session'); } catch(e) {}
-    firebase.auth().signOut().catch(function(){});
+    _guardarTokenApi('');
     var errEl = document.getElementById('lErr');
     if (errEl) {
       errEl.textContent = semTenantProprio
@@ -2209,16 +2221,7 @@ function finalizarLogin(found) {
       showToast('🔓 Envio de hoje liberado — as respostas continuam preenchidas, é só enviar de novo.', 6000);
     } catch(e) {}
   }
-  // Aplica nova senha pendente definida pelo admin
-  if (found._fbNewPass) {
-    var unsub = firebase.auth().onAuthStateChanged(function(fbUser) {
-      unsub();
-      if (!fbUser) return;
-      fbUser.updatePassword(found._fbNewPass).then(function(){
-        db.collection('usuarios').doc(found.id).update({ _fbNewPass: firebase.firestore.FieldValue.delete() }).catch(function(){});
-      }).catch(function(){});
-    });
-  }
+  // BUILD 444: senha trocada pelo admin já vale no servidor (POST /auth/senha); nada pendente.
   // Aviso de primeiro acesso: admin deve trocar a senha
   if (found._primeiroAcesso) {
     setTimeout(function(){
@@ -2433,7 +2436,8 @@ function finalizarLogin(found) {
 }
 
 function doLogout() {
-  firebase.auth().signOut().catch(function(){});
+  _guardarTokenApi('');
+  FC360Store._limparCache();
   if (_resultadosUnsub) { _resultadosUnsub(); _resultadosUnsub = null; }
   sessionStorage.removeItem('eco_session');
   sessionStorage.removeItem('eco_last_page');
@@ -4812,8 +4816,7 @@ function confirmarExcluir() {
   if (!digitada) { if(errEl){errEl.textContent='Digite sua senha.';errEl.style.display='block';} if(senhaEl)senhaEl.focus(); return; }
   var u = S.currentUser;
   if (!u) { if(errEl){errEl.textContent='Sessão inválida.';errEl.style.display='block';} return; }
-  hashPassword(digitada).then(function(hash) {
-    var match = isHashed(u.senha) ? (u.senha === hash) : (u.senha === digitada);
+  _confirmarSenhaAtual(digitada).then(function(match) {
     if (!match) {
       if (errEl) { errEl.textContent='Senha incorreta.'; errEl.style.display='block'; }
       if (senhaEl) { senhaEl.value=''; senhaEl.focus(); }
@@ -5452,11 +5455,11 @@ function switchCentralTab(tab, btn) {
 
 // ── Promotores (fornecedores + visitas) ──
 function fornecedoresCol() {
-  return db.collection('clientes').doc(S.clienteConfig.id).collection('fornecedores');
+  return dbFirebase.collection('clientes').doc(S.clienteConfig.id).collection('fornecedores');
 }
 
 function visitasCol() {
-  return db.collection('clientes').doc(S.clienteConfig.id).collection('promotor_visitas');
+  return dbFirebase.collection('clientes').doc(S.clienteConfig.id).collection('promotor_visitas');
 }
 
 var STATUS_VISITA = {
@@ -5634,7 +5637,7 @@ function renderTabelaVisitas() {
 function fecharVisitaManualmente(id) {
   if (!confirm('Fechar esta visita manualmente? Use quando o promotor esqueceu de registrar a saída ou trocou de celular no meio da visita.')) return;
   visitasCol().doc(id).update({
-    checkOutEm: firebase.firestore.FieldValue.serverTimestamp(),
+    checkOutEm: FC360Store.FieldValue.serverTimestamp(),
     status: 'realizada'
   }).then(function() {
     showToast('Visita fechada.');
@@ -5740,7 +5743,7 @@ function renderPromotoresMobile() {
 function marcarChegadaManual(id) {
   visitasCol().doc(id).update({
     status: 'na_loja',
-    checkInEm: firebase.firestore.FieldValue.serverTimestamp(),
+    checkInEm: FC360Store.FieldValue.serverTimestamp(),
     registradoPor: (S.currentUser && S.currentUser.nome) || null
   }).then(function() { showToast('Entrada registrada.'); renderPromotoresPainel(); })
     .catch(function(e) { showToast('Erro: ' + e.message); });
@@ -5806,7 +5809,7 @@ function salvarVisitaManual() {
     manual: true, registradoPor: (S.currentUser && S.currentUser.nome) || null
   };
   visitasCol().add(base).then(function(ref) {
-    return ref.update({ status: 'na_loja', checkInEm: firebase.firestore.FieldValue.serverTimestamp() });
+    return ref.update({ status: 'na_loja', checkInEm: FC360Store.FieldValue.serverTimestamp() });
   }).then(function() {
     document.getElementById('modal-visita-manual').style.display = 'none';
     showToast('Entrada registrada.');
@@ -6539,7 +6542,7 @@ function buscarProdutoParaLote() {
   var erroEl = document.getElementById('lote-busca-erro');
   erroEl.style.display = 'none';
   if (!codigo) return;
-  firebase.auth().currentUser.getIdToken().then(function(token) {
+  Promise.resolve(_tokenApi()).then(function(token) {
     return fetch(ETIQUETAS_API_URL + '/produto/' + encodeURIComponent(codigo), {
       headers: {Authorization: 'Bearer ' + token}
     });
@@ -6579,7 +6582,7 @@ function salvarLote() {
   if (!_loteItensAtual.length) { showToast('Adicione ao menos um item.'); return; }
   etiquetasLoteCol().add({
     criadoPor: S.currentUser ? S.currentUser.nome : '-',
-    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    criadoEm: FC360Store.FieldValue.serverTimestamp(),
     status: 'pendente',
     itens: _loteItensAtual
   }).then(function() {
@@ -7174,7 +7177,7 @@ function buscarProdutoAvulsa(codigo) {
   _etcAvulsaProdutoAtual = null;
   var preview = document.getElementById('etc-avulsa-preview');
   preview.innerHTML = '<div class="empty">Buscando...</div>';
-  firebase.auth().currentUser.getIdToken().then(function(token) {
+  Promise.resolve(_tokenApi()).then(function(token) {
     return fetch(ETIQUETAS_API_URL + '/produto/' + encodeURIComponent(codigo), {
       headers: {Authorization: 'Bearer ' + token}
     });
@@ -7244,7 +7247,7 @@ function _etcImprimirAvulsa(produto) {
       loteId: null,
       operadorId: S.currentUser ? S.currentUser.id : null,
       operadorNome: S.currentUser ? S.currentUser.nome : '-',
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: FC360Store.FieldValue.serverTimestamp()
     }).catch(function(e) {
       showToast('⚠️ Etiqueta impressa, mas houve erro ao registrar o log: ' + e.message);
     });
@@ -7446,7 +7449,7 @@ function renderEtcMontarLote() {
     clearTimeout(timer);
     var valor = input.value.trim();
     if (!valor) return;
-    firebase.auth().currentUser.getIdToken().then(function(token) {
+    Promise.resolve(_tokenApi()).then(function(token) {
       return fetch(ETIQUETAS_API_URL + '/produto/' + encodeURIComponent(valor), {
         headers: {Authorization: 'Bearer ' + token}
       });
@@ -7479,7 +7482,7 @@ function _etcCarregarFiltrosLote() {
     if (_etcLoteFiltros.codGrupo) _etcCarregarSetoresLote(_etcLoteFiltros.codGrupo, _etcLoteFiltros.codGrupoSub);
   }
   if (_etcMercadologicoGrupos) { preencherDeptos(); return; }
-  firebase.auth().currentUser.getIdToken().then(function(token) {
+  Promise.resolve(_tokenApi()).then(function(token) {
     return fetch(ETIQUETAS_API_URL + '/mercadologico/grupos', { headers: {Authorization: 'Bearer ' + token} });
   }).then(function(resp) { return resp.ok ? resp.json() : []; }).then(function(grupos) {
     _etcMercadologicoGrupos = grupos;
@@ -7492,7 +7495,7 @@ function _etcCarregarSetoresLote(codGrupo, codGrupoSubSelecionado) {
   if (!selSetor) return;
   selSetor.disabled = true;
   selSetor.innerHTML = '<option value="">Carregando...</option>';
-  firebase.auth().currentUser.getIdToken().then(function(token) {
+  Promise.resolve(_tokenApi()).then(function(token) {
     return fetch(ETIQUETAS_API_URL + '/mercadologico/subgrupos?codGrupo=' + encodeURIComponent(codGrupo), { headers: {Authorization: 'Bearer ' + token} });
   }).then(function(resp) { return resp.ok ? resp.json() : []; }).then(function(subgrupos) {
     selSetor.disabled = false;
@@ -7538,7 +7541,7 @@ function _etcBuscarProdutosLote(termo) {
   var qs = 'q=' + encodeURIComponent((termo && termo.length >= 2) ? termo : '');
   if (_etcLoteFiltros.codGrupo) qs += '&codGrupo=' + encodeURIComponent(_etcLoteFiltros.codGrupo);
   if (_etcLoteFiltros.codGrupoSub) qs += '&codGrupoSub=' + encodeURIComponent(_etcLoteFiltros.codGrupoSub);
-  firebase.auth().currentUser.getIdToken().then(function(token) {
+  Promise.resolve(_tokenApi()).then(function(token) {
     return fetch(ETIQUETAS_API_URL + '/produtos/buscar?' + qs, {
       headers: {Authorization: 'Bearer ' + token}
     });
@@ -7705,7 +7708,7 @@ function _etcGerarLoteMock() {
   if (!itens.length) return;
   var wrap = document.getElementById('etc-view-lote');
   wrap.innerHTML = '<div class="empty">Resolvendo preços...</div>';
-  firebase.auth().currentUser.getIdToken().then(function(token) {
+  Promise.resolve(_tokenApi()).then(function(token) {
     return Promise.all(itens.map(function(it) {
       return fetch(ETIQUETAS_API_URL + '/produto/' + encodeURIComponent(it.produto.codigoBarras), {
         headers: {Authorization: 'Bearer ' + token}
@@ -7767,7 +7770,7 @@ function abrirLoteParaImpressao(loteId) {
   db.collection('clientes').doc(S.clienteConfig.id).collection('etiquetas_lote').doc(loteId).get()
     .then(function(doc) {
       var itens = doc.data().itens;
-      return firebase.auth().currentUser.getIdToken().then(function(token) {
+      return Promise.resolve(_tokenApi()).then(function(token) {
         return Promise.all(itens.map(function(item) {
           return fetch(ETIQUETAS_API_URL + '/produto/' + encodeURIComponent(item.codigoBarras), {
             headers: {Authorization: 'Bearer ' + token}
@@ -7894,7 +7897,7 @@ function imprimirProximoDaFila() {
       loteSessaoId: _loteSessaoId,
       operadorId: S.currentUser ? S.currentUser.id : null,
       operadorNome: S.currentUser ? S.currentUser.nome : '-',
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: FC360Store.FieldValue.serverTimestamp()
     }).then(function() {
       // Impressão e log OK: avança a fila normalmente.
       _etcFilaImpressasCount++;
@@ -8005,7 +8008,7 @@ function buscarProdutoConsulta(codigo) {
   if (!codigo) return;
   var preview = document.getElementById('etc-consulta-preview');
   preview.innerHTML = '<div class="empty">Buscando...</div>';
-  firebase.auth().currentUser.getIdToken().then(function(token) {
+  Promise.resolve(_tokenApi()).then(function(token) {
     return fetch(ETIQUETAS_API_URL + '/produto/' + encodeURIComponent(codigo), {
       headers: {Authorization: 'Bearer ' + token}
     });
@@ -8056,7 +8059,7 @@ function _etcImprimirConsulta(produto) {
       loteId: null,
       operadorId: S.currentUser ? S.currentUser.id : null,
       operadorNome: S.currentUser ? S.currentUser.nome : '-',
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: FC360Store.FieldValue.serverTimestamp()
     }).catch(function(e) {
       showToast('⚠️ Etiqueta impressa, mas houve erro ao registrar o log: ' + e.message);
     });
@@ -8619,9 +8622,10 @@ function salvarUser() {
   // Ao editar: senha em branco = manter a existente
   var trocandoSenha = senha.length > 0;
   if (!editingUserId && !trocandoSenha){err.textContent='Informe uma senha.';err.style.display='block';return;}
-  if (trocandoSenha && senha.length<6){err.textContent='Senha com mínimo 6 caracteres (exigido pelo Firebase Auth).';err.style.display='block';return;}
+  if (trocandoSenha && senha.length<6){err.textContent='Senha com mínimo 6 caracteres.';err.style.display='block';return;}
   if (trocandoSenha && senha!==senha2){err.textContent='Senhas não coincidem.';err.style.display='block';return;}
   var users=getUsers();
+  var novoUserId=genId();
   var dup=users.find(function(u){return u.email.toLowerCase()===email && u.id!==editingUserId;});
   if (dup){err.textContent='E-mail já cadastrado.';err.style.display='block';return;}
 
@@ -8637,7 +8641,7 @@ function salvarUser() {
       // clienteId precisa ser gravado explicitamente: usuarios sem esse campo
       // são tratados como Economico (legado pré multi-tenant) na leitura filtrada.
       var clienteIdNovo = (S.currentUser && S.currentUser.clienteId) || '';
-      users.push({id:genId(),nome:nome,email:email,senha:senhaFinal,perfil:perfil,setor:setor,cargo:cargo,loja:loja,telefone:telefone,ativo:true,checklistAtivo:checklistAtivo,clienteId:clienteIdNovo});
+      users.push({id:novoUserId,nome:nome,email:email,senha:senhaFinal,perfil:perfil,setor:setor,cargo:cargo,loja:loja,telefone:telefone,ativo:true,checklistAtivo:checklistAtivo,clienteId:clienteIdNovo});
     }
     saveUsers(users);
     fecharModalUser();
@@ -8645,47 +8649,19 @@ function salvarUser() {
   }
 
   if (!editingUserId) {
-    // Usuário novo: antes disso a senha digitada aqui nunca virava um login de
-    // verdade (só ia o hash pro Firestore) — o usuário só conseguia entrar
-    // depois de rodar a migração em lote, com senha temporária aleatória.
-    // Agora cria a conta no Firebase Auth já com a senha que o admin digitou.
-    var secondaryAuth = _getSecondaryAuth();
-    secondaryAuth.createUserWithEmailAndPassword(email, senha).then(function(){
-      secondaryAuth.signOut().catch(function(){});
-      hashPassword(senha).then(function(hash){ aplicarSalvar(hash); });
-    }).catch(function(e){
-      secondaryAuth.signOut().catch(function(){});
-      var msg = e.code === 'auth/email-already-in-use' ? 'Este e-mail já tem login no sistema.'
-        : e.code === 'auth/weak-password' ? 'Senha muito fraca (mínimo 6 caracteres).'
-        : 'Erro ao criar login: '+e.code;
-      err.textContent = msg; err.style.color='var(--r)'; err.style.display='block';
-    });
-  } else if (trocandoSenha) {
-    hashPassword(senha).then(function(hash){
-      aplicarSalvar(hash);
-      var unsub = firebase.auth().onAuthStateChanged(function(fbUser) {
-        unsub();
-        if (!fbUser) return;
-        var isSelf = fbUser.email.toLowerCase() === email.toLowerCase();
-        if (isSelf) {
-          // Próprio usuário logado — atualiza diretamente
-          fbUser.updatePassword(senha).catch(function(e){
-            if (e.code === 'auth/requires-recent-login') {
-              // Salva pendente no Firestore para aplicar no próximo login
-              var uid = editingUserId;
-              db.collection('usuarios').doc(uid).update({ _fbNewPass: senha }).catch(function(){});
-              showToast('Senha salva. Saia e entre novamente para confirmar.', 6000);
-            }
-          });
-        } else {
-          // Outro usuário — salva senha pendente no Firestore
-          // No próximo login desse usuário, o app aplica automaticamente
-          var uid = editingUserId;
-          db.collection('usuarios').doc(uid).update({ _fbNewPass: senha }).catch(function(){});
-          showToast('Nova senha salva. O usuário precisará entrar com a senha antiga uma última vez para atualizar.', 7000);
-        }
+    // BUILD 444: a conta nasce na FC360 API (documento + senha bcrypt), sem Firebase Auth.
+    var clienteIdNovo2 = (S.currentUser && S.currentUser.clienteId) || '';
+    FC360Api.chamar('POST', '/auth/usuarios', { usuario: {id:novoUserId,nome:nome,email:email,perfil:perfil,setor:setor,cargo:cargo,loja:loja,telefone:telefone,ativo:true,checklistAtivo:checklistAtivo,clienteId:clienteIdNovo2}, senha: senha })
+      .then(function(){ aplicarSalvar(null); })
+      .catch(function(e){
+        var msg = e && e.status === 409 ? 'Este e-mail já tem login no sistema.' : 'Erro ao criar login: ' + (e && e.message ? e.message : e);
+        err.textContent = msg; err.style.color='var(--r)'; err.style.display='block';
       });
-    });
+  } else if (trocandoSenha) {
+    // BUILD 444: senha trocada no servidor na hora, pra qualquer usuário do cliente
+    FC360Api.chamar('POST', '/auth/senha', { usuarioId: editingUserId, senha: senha })
+      .then(function(){ aplicarSalvar(null); showToast('Senha atualizada.'); })
+      .catch(function(e){ err.textContent = 'Erro ao trocar a senha: ' + (e && e.message ? e.message : e); err.style.color='var(--r)'; err.style.display='block'; });
   } else {
     aplicarSalvar(null);
   }
@@ -8814,7 +8790,7 @@ function limparSenhasFirestore() {
     var count = 0;
     snap.docs.forEach(function(doc) {
       if (doc.data().senha !== undefined) {
-        batch.update(doc.ref, { senha: firebase.firestore.FieldValue.delete() });
+        batch.update(doc.ref, { senha: FC360Store.FieldValue.delete() });
         count++;
       }
     });
@@ -11752,7 +11728,7 @@ function excluirClienteCompleto(id) {
     })
     .then(function(doc) {
       if (doc.exists && doc.data()[id] !== undefined) {
-        var upd = {}; upd[id] = firebase.firestore.FieldValue.delete();
+        var upd = {}; upd[id] = FC360Store.FieldValue.delete();
         return db.collection('config').doc('repos').update(upd);
       }
     })
@@ -11787,6 +11763,7 @@ function entrarComoCliente(id) {
     currentUser: S.currentUser,
     role: S.role
   };
+  original.token = _tokenApi();
   _superadminOriginal = original;
   try { sessionStorage.setItem(IMPERSON_KEY, JSON.stringify(original)); } catch(e) {}
   window.FC360_CLIENT_ID = id;
@@ -11802,7 +11779,13 @@ function entrarComoCliente(id) {
   };
   S.usersCache = null; S.resultadosCache = null; S.customCLsCache = null;
   _planosCache = null; S.clienteConfig = null; S.checkState = {};
-  finalizarLogin(impersonado);
+  // BUILD 444: a API só enxerga o cliente pelo token — pede um token de impersonação
+  FC360Api.chamar('POST', '/auth/impersonar', { clienteId: id }).then(function(r){
+    _guardarTokenApi(r.token); FC360Store._limparCache();
+    finalizarLogin(impersonado);
+    _mostrarFaixaImpersonar(c.nome || id);
+  }).catch(function(e){ showToast('Não foi possível entrar como o cliente: ' + (e && e.message ? e.message : e)); });
+  return;
   // Sessão persiste em eco_session (via finalizarLogin) de propósito — um F5
   // continua operando como o cliente até clicar em "Voltar ao Painel".
   _mostrarFaixaImpersonar(c.nome || id);
@@ -11824,6 +11807,7 @@ function sairImpersonar() {
   document.body.style.paddingTop = '';
   document.documentElement.style.setProperty('--faixa-h', '0px');
   _ajustarAlturaCapa();
+  if (original.token) { _guardarTokenApi(original.token); FC360Store._limparCache(); }
   finalizarLogin(original.currentUser);
 }
 
@@ -12181,7 +12165,7 @@ function criarNovoCliente() {
     plano: (document.getElementById('nc-plano')||{}).value||'basico',
     validade: (document.getElementById('nc-validade')||{}).value||'',
     ativo: true, modulos: modulos,
-    criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    criadoEm: FC360Store.FieldValue.serverTimestamp()
   }).then(function() {
     fecharNovoCliente();
     renderPainelClientes();
@@ -12273,7 +12257,7 @@ function _confirmarGerarToken(clienteId) {
       var tData = pendente.data();
       var ok = confirm('⚠️ Já existe um token ainda não usado para este cliente.\n\nToken: '+tData.token+'\n\nCancelar esse e gerar um novo?');
       if (!ok) return;
-      pendente.ref.update({ cancelado: true, canceladoEm: firebase.firestore.FieldValue.serverTimestamp() }).then(function() {
+      pendente.ref.update({ cancelado: true, canceladoEm: FC360Store.FieldValue.serverTimestamp() }).then(function() {
         _gerarNovoToken(clienteId, d, c);
       }).catch(function(e){ var el=document.getElementById('gt-err'); if(el) el.textContent='Erro ao cancelar token: '+e.message; });
     } else {
@@ -12312,8 +12296,8 @@ function _renovarLicencaAgora(clienteId) {
   batch.update(db.collection('clientes').doc(clienteId), { validade: novaStr, ativo: true });
   batch.set(db.collection('tokens').doc(), {
     token: 'RENOVAÇÃO DIRETA', clienteId: clienteId, dias: d, usado: true, cancelado: false,
-    dataFim: novaStr, criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-    ativadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    dataFim: novaStr, criadoEm: FC360Store.FieldValue.serverTimestamp(),
+    ativadoEm: FC360Store.FieldValue.serverTimestamp(),
     criadoPor: S.currentUser ? S.currentUser.id : 'superadmin', usadoPor: S.currentUser ? S.currentUser.id : 'superadmin'
   });
   batch.commit().then(function() {
@@ -12335,7 +12319,7 @@ function _gerarNovoToken(clienteId, d, c) {
   token = token.slice(0,4)+'-'+token.slice(4,8)+'-'+token.slice(8,12);
   db.collection('tokens').add({
     token: token, clienteId: clienteId, dias: d, usado: false, cancelado: false,
-    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    criadoEm: FC360Store.FieldValue.serverTimestamp(),
     criadoPor: S.currentUser ? S.currentUser.id : 'superadmin'
   }).then(function() {
     var m = document.getElementById('modal-gerar-token'); if (m) m.remove();
@@ -12405,7 +12389,7 @@ function cancelarToken(tokenId, clienteId) {
   var ontemStr = ontem.toISOString().slice(0,10);
   // Atualiza cliente (crítico) e tenta marcar token (pode falhar se já foi excluído)
   db.collection('clientes').doc(clienteId).update({ validade: ontemStr }).then(function() {
-    db.collection('tokens').doc(tokenId).update({ cancelado: true, canceladoEm: firebase.firestore.FieldValue.serverTimestamp() }).catch(function(){});
+    db.collection('tokens').doc(tokenId).update({ cancelado: true, canceladoEm: FC360Store.FieldValue.serverTimestamp() }).catch(function(){});
     var m = document.getElementById('modal-tokens'); if (m) m.remove();
     renderPainelClientes();
     showToast('🔒 Acesso revogado.');
@@ -12613,7 +12597,7 @@ function _pollWorkflow(org, repoName, token, since, btn, clienteId, silencioso, 
         setTimeout(_tick, 10000);
       } else if (run.status === 'completed') {
         if (run.conclusion === 'success') {
-          db.collection('clientes').doc(clienteId).update({ ultimoDeploy: firebase.firestore.FieldValue.serverTimestamp(), buildDeploy: buildAlvo }).catch(function(){});
+          db.collection('clientes').doc(clienteId).update({ ultimoDeploy: FC360Store.FieldValue.serverTimestamp(), buildDeploy: buildAlvo }).catch(function(){});
           if (btn) { btn.textContent = '✅ Publicado!'; btn.style.background = 'linear-gradient(135deg,#22c55e,#15803d)'; }
           if (!silencioso) showToast('✅ Deploy concluído para '+clienteId+'!');
           setTimeout(function() {
@@ -13953,7 +13937,7 @@ function atribuirColetor(invId, endereco, selectEl) {
   if (user) {
     update['atribuicoes.'+endereco] = { userId: user.id, nome: user.nome };
   } else {
-    update['atribuicoes.'+endereco] = firebase.firestore.FieldValue.delete();
+    update['atribuicoes.'+endereco] = FC360Store.FieldValue.delete();
   }
   db.collection('inv_inventarios').doc(invId).update(update).then(function(){
     if (_invAtivo && _invAtivo.id===invId) {
@@ -14110,8 +14094,7 @@ function _confirmarEncerrarInv(invId) {
   if (!senha) { if(errEl) errEl.textContent='Informe sua senha.'; return; }
   var user=S.currentUser;
   if (!user) { if(errEl) errEl.textContent='Sessão inválida.'; return; }
-  hashPassword(senha).then(function(senhaHash) {
-    var match=isHashed(user.senha)?(user.senha===senhaHash):(user.senha===senha);
+  _confirmarSenhaAtual(senha).then(function(match) {
     if (!match) {
       if(errEl) errEl.textContent='Senha incorreta. Tente novamente.';
       if(senhaEl){ senhaEl.value=''; senhaEl.focus(); }
@@ -14120,7 +14103,7 @@ function _confirmarEncerrarInv(invId) {
     fecharModalEncerrarInv();
     db.collection('inv_inventarios').doc(invId).update({
       status:'encerrado',
-      encerradoEm:firebase.firestore.FieldValue.serverTimestamp(),
+      encerradoEm:FC360Store.FieldValue.serverTimestamp(),
       encerradoPor:user.id
     }).then(function(){
       loadInventariosFromFirebase(function(){
@@ -14551,7 +14534,7 @@ function aplicarCorrecaoBipagem() {
     invId:inv.id, loja:inv.loja||'', endereco:(_corrEanCache.alvo&&_corrEanCache.alvo!=='_CORRECAO')?_corrEanCache.alvo:'_CORRECAO', ean:_corrEanCache.ean, codigo:_corrEanCache.codigo||'',
     qty:val, rodada:0, modo:'correcao',
     coletorId:coletorId, coletorNome:coletorNome,
-    ts:firebase.firestore.FieldValue.serverTimestamp(), seq:Date.now()
+    ts:FC360Store.FieldValue.serverTimestamp(), seq:Date.now()
   }).then(function(){
     var final=_corrEanCache.total+val;
     // Mostra confirmação brevemente, depois limpa tudo para novo EAN
@@ -14635,9 +14618,9 @@ function _confirmarExclusaoBip(){
     var reg={bipId:bip._id, seq:bip.seq||0, ean:bip.ean||'', codigo:bip.codigo||'', desc:c.desc||'', qty:bip.qty||0, endereco:bip.endereco||'', setor:bip.setor||'',
       coletorId:bip.coletorId||'', coletorNome:bip.coletorNome||'', autorizadoPor:email, motivo:motivo, excluidoEm:Date.now()};
     return db.collection('inv_bipagens').doc(bip._id).delete().then(function(){
-      db.collection('inv_inventarios').doc(inv.id).update({bipsExcluidas:firebase.firestore.FieldValue.arrayUnion(reg)}).catch(function(e){ console.error('bipsExcluidas',e); });
+      db.collection('inv_inventarios').doc(inv.id).update({bipsExcluidas:FC360Store.FieldValue.arrayUnion(reg)}).catch(function(e){ console.error('bipsExcluidas',e); });
       db.collection('inv_auditlog').add({invId:inv.id, clienteId:inv.clienteId||'', acao:'bipagem_excluida', userName:(bip.coletorNome||bip.coletorId||'coletor')+' (aut. '+email+')',
-        detalhes:'End. '+reg.endereco+' · #'+reg.seq+' · '+(reg.codigo||reg.ean)+' '+reg.desc+' · '+reg.qty+' un'+(motivo?' · '+motivo:''), ts:firebase.firestore.FieldValue.serverTimestamp()}).catch(function(){});
+        detalhes:'End. '+reg.endereco+' · #'+reg.seq+' · '+(reg.codigo||reg.ean)+' '+reg.desc+' · '+reg.qty+' un'+(motivo?' · '+motivo:''), ts:FC360Store.FieldValue.serverTimestamp()}).catch(function(){});
       _bipsLocais=_bipsLocais.filter(function(b){ return b._id!==bip._id; });
       _renderUltimasBipagens(_bipsLocais.slice(0,20), inv.id);
       _fecharExclusaoBip(); _bipSom('alerta');
@@ -14669,7 +14652,7 @@ function _logAuditoria(invId, acao, detalhes) {
     invId:invId, loja:(S.currentUser&&S.currentUser.loja)||'',
     userId:S.currentUser?S.currentUser.id:'', userName:S.currentUser?S.currentUser.nome:'',
     acao:acao, detalhes:detalhes||'',
-    ts:firebase.firestore.FieldValue.serverTimestamp()
+    ts:FC360Store.FieldValue.serverTimestamp()
   }).catch(function(){});
 }
 
@@ -15325,7 +15308,7 @@ function criarInventario() {
   db.collection('inv_inventarios').add({
     nome: nome, loja: loja, status: 'aberto', tipo: tipo,
     clienteId: (S.currentUser && S.currentUser.clienteId) || '',
-    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    criadoEm: FC360Store.FieldValue.serverTimestamp(),
     criadoPor: S.currentUser ? S.currentUser.id : '',
     enderecos: enderecos, atribuicoes: {},
     modoFila: modoFila, fila: {},
@@ -15355,17 +15338,9 @@ var _invBipCount = {};
 // Conta bipagens sem baixar os docs. O SDK compat 10.12 não expõe count(), então usa a
 // API REST de agregação com o token do próprio usuário (mesmas regras de segurança).
 function _contarDocs(colecao, campo, valor) {
-  var u=firebase.auth().currentUser; if(!u) return Promise.resolve(null);
-  var proj=firebase.app().options.projectId;
-  return u.getIdToken().then(function(tok){
-    return fetch('https://firestore.googleapis.com/v1/projects/'+proj+'/databases/(default)/documents:runAggregationQuery',{
-      method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
-      body:JSON.stringify({structuredAggregationQuery:{aggregations:[{count:{},alias:'n'}],structuredQuery:{from:[{collectionId:colecao}],where:{fieldFilter:{field:{fieldPath:campo},op:'EQUAL',value:{stringValue:valor}}}}}})
-    });
-  }).then(function(r){ return r.json(); }).then(function(j){
-    var n=parseInt((((j[0]||{}).result||{}).aggregateFields||{}).n&&j[0].result.aggregateFields.n.integerValue);
-    return isNaN(n)?null:n;
-  }).catch(function(){ return null; });
+  // BUILD 444: contagem na FC360 API (count=1), sem baixar os docs
+  return FC360Api.chamar('GET', '/col/' + encodeURIComponent(colecao) + '?count=1&where=' + encodeURIComponent(JSON.stringify([[campo, '==', valor]])))
+    .then(function(r){ return r && typeof r.count === 'number' ? r.count : null; }).catch(function(){ return null; });
 }
 function _contarBipagens(invId, cb) {
   var c=_invBipCount[invId];
@@ -15747,19 +15722,19 @@ function _confirmarSetorFila(invId, found, setor) {
   // Já tem outro coletor ativo aqui? Pergunta antes de entrar junto.
   var outros=_slotAtivos(slot).filter(function(c){ return c.key!==key; });
   if (outros.length && !confirm('Já tem '+outros.length+' coletor'+(outros.length>1?'es':'')+' neste endereço ('+outros.map(function(c){ return c.nome||c.coletorId; }).join(', ')+').\nEntrar junto e contar em paralelo?')) return;
-  var entrada={userId:u?u.id:'',coletorId:coletorId,nome:displayNome,desde:firebase.firestore.FieldValue.serverTimestamp(),concluido:false};
+  var entrada={userId:u?u.id:'',coletorId:coletorId,nome:displayNome,desde:FC360Store.FieldValue.serverTimestamp(),concluido:false};
   var ref=db.collection('inv_inventarios').doc(invId), p;
   if (!slot) {
     var novo={userId:entrada.userId,coletorId:coletorId,nome:displayNome,setor:setor,desde:entrada.desde,concluido:false,coletores:{}}; novo.coletores[key]=entrada;
-    p=ref.update(new firebase.firestore.FieldPath('fila',found), novo);
+    p=ref.update(new FC360Store.FieldPath('fila',found), novo);
   } else {
     // Slot antigo sem lista: converte o 1º coletor pra lista antes de adicionar o novo
     var lista={}; _slotColetores(slot).forEach(function(c){ lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:!!c.concluido}; if(c.concluidoEm) lista[c.key].concluidoEm=c.concluidoEm; });
     lista[key]=entrada;
     p=ref.update(
-      new firebase.firestore.FieldPath('fila',found,'coletores'), lista,
-      new firebase.firestore.FieldPath('fila',found,'concluido'), false,
-      new firebase.firestore.FieldPath('fila',found,'setor'), slot.setor||setor
+      new FC360Store.FieldPath('fila',found,'coletores'), lista,
+      new FC360Store.FieldPath('fila',found,'concluido'), false,
+      new FC360Store.FieldPath('fila',found,'setor'), slot.setor||setor
     );
   }
   p.then(function(){
@@ -15776,14 +15751,14 @@ function liberarEnderecoFila(invId, endereco) {
   var key=_slotKey(_getIdColetor()||(S.currentUser&&S.currentUser.id));
   var restantes=_slotColetores(slot).filter(function(c){ return c.key!==key; });
   var ref=db.collection('inv_inventarios').doc(invId);
-  if (!restantes.length) { ref.update(new firebase.firestore.FieldPath('fila',endereco), firebase.firestore.FieldValue.delete()).catch(function(){}); return; }
+  if (!restantes.length) { ref.update(new FC360Store.FieldPath('fila',endereco), FC360Store.FieldValue.delete()).catch(function(){}); return; }
   var lista={}; restantes.forEach(function(c){ lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:!!c.concluido}; if(c.concluidoEm) lista[c.key].concluidoEm=c.concluidoEm; });
   var primeiro=restantes[0];
   ref.update(
-    new firebase.firestore.FieldPath('fila',endereco,'coletores'), lista,
-    new firebase.firestore.FieldPath('fila',endereco,'userId'), primeiro.userId||'',
-    new firebase.firestore.FieldPath('fila',endereco,'coletorId'), primeiro.coletorId||'',
-    new firebase.firestore.FieldPath('fila',endereco,'nome'), primeiro.nome||''
+    new FC360Store.FieldPath('fila',endereco,'coletores'), lista,
+    new FC360Store.FieldPath('fila',endereco,'userId'), primeiro.userId||'',
+    new FC360Store.FieldPath('fila',endereco,'coletorId'), primeiro.coletorId||'',
+    new FC360Store.FieldPath('fila',endereco,'nome'), primeiro.nome||''
   ).catch(function(){});
 }
 // ── QR Code Scanner ───────────────────────────────────────────────────────
@@ -16141,7 +16116,7 @@ function _confirmarIdColetor() {
     localStorage.setItem(_COLETOR_INV_KEY, activeInv.id);
     if(S.currentUser) {
       var regKey='col_'+val; // chave por coletorId — funciona com login compartilhado
-      var upd={}; upd['coletoresReg.'+regKey]={coletorId:val,nome:nome||val,userNome:S.currentUser.nome||'',registradoEm:firebase.firestore.FieldValue.serverTimestamp()};
+      var upd={}; upd['coletoresReg.'+regKey]={coletorId:val,nome:nome||val,userNome:S.currentUser.nome||'',registradoEm:FC360Store.FieldValue.serverTimestamp()};
       db.collection('inv_inventarios').doc(activeInv.id).update(upd).catch(function(){});
     }
   }
@@ -16409,7 +16384,7 @@ function _confirmarFinalizarRodada() {
     var _dispNome=_colId+(_colNome?' - '+_colNome:'');
     var _existing=(inv.fila||{})[end]||{};
     var _setor=(_filaEndAtual&&_filaEndAtual.setor)||_existing.setor||'';
-    var _key=_slotKey(_colId||(_u&&_u.id)), _agora=firebase.firestore.FieldValue.serverTimestamp();
+    var _key=_slotKey(_colId||(_u&&_u.id)), _agora=FC360Store.FieldValue.serverTimestamp();
     var _lista={}; _slotColetores(_existing).forEach(function(c){ _lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:!!c.concluido}; if(c.concluidoEm) _lista[c.key].concluidoEm=c.concluidoEm; });
     if(!_lista[_key]) _lista[_key]={userId:_u?_u.id:'',coletorId:_colId,nome:_dispNome,desde:_agora,concluido:false};
     _lista[_key].concluido=true; _lista[_key].concluidoEm=_agora;
@@ -16426,7 +16401,7 @@ function _confirmarFinalizarRodada() {
     };
     if (_todos) _fullSlot.concluidoEm=_agora;
     db.collection('inv_inventarios').doc(invId).update(
-      new firebase.firestore.FieldPath('fila',end), _fullSlot
+      new FC360Store.FieldPath('fila',end), _fullSlot
     ).then(function(){
       info.concluido=true;
       var idx=(S.invsCache||[]).findIndex(function(i){ return i.id===invId; });
@@ -16801,40 +16776,17 @@ function confirmarExcluirInv() {
     });
   }
 
-  // Verifica via Firebase Auth (reauth) — mais confiável que senha local
-  var fbUser = firebase.auth().currentUser;
-  if (fbUser) {
-    var cred = firebase.auth.EmailAuthProvider.credential(fbUser.email, senha);
-    fbUser.reauthenticateWithCredential(cred).then(function() {
-      _doDelete();
-    }).catch(function(reauthErr) {
-      // Fallback: compara com senha armazenada localmente
-      hashPassword(senha).then(function(senhaHash) {
-        var match = isHashed(u.senha) ? (u.senha === senhaHash) : (u.senha === senha);
-        if (!match) {
-          if (btn) { btn.textContent = '🗑 Excluir permanentemente'; btn.disabled = false; }
-          var motivo = (reauthErr && reauthErr.code) ? reauthErr.code : (reauthErr && reauthErr.message) || 'desconhecido';
-          if (errEl) { errEl.textContent = 'Senha incorreta. Use sua senha de login. (' + motivo + ')'; errEl.style.display = 'block'; }
-          return;
-        }
-        _doDelete();
-      }).catch(function(err) {
-        mostrarErro('Erro ao verificar senha: ' + (err.message || String(err)));
-      });
-    });
-  } else {
-    hashPassword(senha).then(function(senhaHash) {
-      var match = isHashed(u.senha) ? (u.senha === senhaHash) : (u.senha === senha);
-      if (!match) {
-        if (btn) { btn.textContent = '🗑 Excluir permanentemente'; btn.disabled = false; }
-        if (errEl) { errEl.textContent = 'Senha incorreta. Use sua senha de login.'; errEl.style.display = 'block'; }
-        return;
-      }
-      _doDelete();
-    }).catch(function(err) {
-      mostrarErro('Erro ao verificar senha: ' + (err.message || String(err)));
-    });
-  }
+  // BUILD 444: senha conferida no servidor (FC360 API)
+  _confirmarSenhaAtual(senha).then(function(match) {
+    if (!match) {
+      if (btn) { btn.textContent = '🗑 Excluir permanentemente'; btn.disabled = false; }
+      if (errEl) { errEl.textContent = 'Senha incorreta. Use sua senha de login.'; errEl.style.display = 'block'; }
+      return;
+    }
+    _doDelete();
+  }).catch(function(err) {
+    mostrarErro('Erro ao verificar senha: ' + (err.message || String(err)));
+  });
 }
 
 function _limparSubcolecoes(invId) {
@@ -16953,8 +16905,8 @@ function reabrirEndereco(invId, endereco) {
     if (!slot) return;
     var lista={}; _slotColetores(slot).forEach(function(c){ lista[c.key]={userId:c.userId||'',coletorId:c.coletorId||'',nome:c.nome||'',desde:c.desde||null,concluido:false}; });
     db.collection('inv_inventarios').doc(invId).update(
-      new firebase.firestore.FieldPath('fila',endereco,'concluido'), false,
-      new firebase.firestore.FieldPath('fila',endereco,'coletores'), lista
+      new FC360Store.FieldPath('fila',endereco,'concluido'), false,
+      new FC360Store.FieldPath('fila',endereco,'coletores'), lista
     ).then(function(){
       loadInventariosFromFirebase(function(){ renderInvEnderecos(); });
     }).catch(function(e){ alert('Erro: '+e.message); });
@@ -17128,9 +17080,9 @@ function _salvarEditColetor(regKey) {
   var newRegKey = 'col_'+newId;
   var upd = {};
   if (newRegKey !== regKey) {
-    upd['coletoresReg.'+regKey] = firebase.firestore.FieldValue.delete();
+    upd['coletoresReg.'+regKey] = FC360Store.FieldValue.delete();
   }
-  upd['coletoresReg.'+newRegKey] = {coletorId:newId, nome:newNome, userNome:cur.userNome||'', registradoEm:cur.registradoEm||firebase.firestore.FieldValue.serverTimestamp()};
+  upd['coletoresReg.'+newRegKey] = {coletorId:newId, nome:newNome, userNome:cur.userNome||'', registradoEm:cur.registradoEm||FC360Store.FieldValue.serverTimestamp()};
 
   db.collection('inv_inventarios').doc(_invAtivo.id).update(upd).then(function(){
     // Propaga pra bipagens já feitas com o ID antigo (ID e/ou nome corrigidos)
@@ -17159,7 +17111,7 @@ function _excluirColetorReg(regKey) {
   var reg = window._invColetoresRegCache||{};
   var cur = reg[regKey]; if(!cur||!_invAtivo) return;
   if (!confirm('Remover "'+cur.nome+'" ('+cur.coletorId+') da lista de coletores identificados?\n\nAs bipagens já feitas por ele continuam normalmente — só some o registro desta lista.')) return;
-  var upd = {}; upd['coletoresReg.'+regKey] = firebase.firestore.FieldValue.delete();
+  var upd = {}; upd['coletoresReg.'+regKey] = FC360Store.FieldValue.delete();
   db.collection('inv_inventarios').doc(_invAtivo.id).update(upd).then(function(){
     renderInvColetores();
   }).catch(function(e){ alert('Erro ao excluir: '+e.message); });
@@ -17419,7 +17371,7 @@ function _registrarResolvido(lido, res, qtyTotal, fator, pularDup) {
   }
   var cat=_catCache[inv.id]||null, hasCat=!!(cat&&cat.total);
   var bip={invId:inv.id,loja:inv.loja||'',endereco:end,seq:_nextSeq,ean:lido,codigo:res?res.codigo:'',qty:qtyTotal,rodada:rodada,modo:modo,
-    setor:(_filaEndAtual&&_filaEndAtual.setor)||'',coletorId:_getIdColetor(),coletorNome:_getNomeColetor()||_getIdColetor(),ts:firebase.firestore.FieldValue.serverTimestamp()};
+    setor:(_filaEndAtual&&_filaEndAtual.setor)||'',coletorId:_getIdColetor(),coletorNome:_getNomeColetor()||_getIdColetor(),ts:FC360Store.FieldValue.serverTimestamp()};
   if(fator>1) bip.fator=fator;
   if(hasCat&&!res) bip.naoCadastrado=true;
   _nextSeq++; _dupChecadoChave=null;
@@ -17766,7 +17718,7 @@ function registrarBipagemAvulsa() {
     invId:_avulsaInvId, loja:inv.loja||'', endereco:'_AVULSO', seq:Date.now(), ean:ean, qty:qty,
     rodada:1, modo:'avulso',
     coletorId:coletorId, coletorNome:_getNomeColetor()||coletorId,
-    ts:firebase.firestore.FieldValue.serverTimestamp()
+    ts:FC360Store.FieldValue.serverTimestamp()
   });
   _bipSom('ok');
   ei.value=''; qi.value='1';
@@ -17912,7 +17864,7 @@ function _confirmarSemEAN(){
     seq:_nextSeq, ean:ean, desc:desc, qty:qty, rodada:info.rodada||1,
     modo:info.modo||'colaboracao', setor:(_filaEndAtual&&_filaEndAtual.setor)||'',
     coletorId:coletorId, coletorNome:_getNomeColetor()||coletorId,
-    semEAN:true, ts:firebase.firestore.FieldValue.serverTimestamp()
+    semEAN:true, ts:FC360Store.FieldValue.serverTimestamp()
   };
   _nextSeq++;
   _gravarBipagemLocal(bipData);
@@ -17945,6 +17897,13 @@ window.addEventListener('beforeunload', function() {
 (function() {
   try {
     var saved = sessionStorage.getItem('eco_session');
+    // BUILD 444: app aberto do zero com token válido (30 dias) — entra sem digitar senha
+    if (!saved && _tokenApi() && !/[?&]checkin=1/.test(location.search)) {
+      FC360Api.chamar('GET', '/auth/me').then(function(me) {
+        if (me && me.id && me.perfil) { if (me.ativo === false) return; finalizarLogin(me); }
+      }).catch(function(e) { if (e && (e.status === 401 || e.status === 403 || e.status === 404)) _guardarTokenApi(''); });
+      return;
+    }
     if (saved) {
       var user = JSON.parse(saved);
       if (user && user.id && user.perfil) {
@@ -17962,19 +17921,8 @@ window.addEventListener('beforeunload', function() {
             } catch(e) {}
           }
         };
-        // A validação de clienteId x deploy atual roda dentro de finalizarLogin,
-        // que é chamada tanto aqui (restore) quanto no login ativo.
-        if (firebase.auth().currentUser) {
-          _restaurar();
-        } else {
-          var _unsub = firebase.auth().onAuthStateChanged(function(fbUser) {
-            _unsub();
-            if (fbUser) {
-              _restaurar();
-            }
-            // fbUser null = sessao Firebase expirou; tela de login ja aparece por padrao
-          });
-        }
+        // BUILD 444: a sessão é o JWT da FC360 API (30 dias, localStorage). Sem token, tela de login.
+        if (_tokenApi()) _restaurar();
       }
     }
   } catch(e) {}

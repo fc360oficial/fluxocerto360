@@ -7,6 +7,7 @@
 'use strict';
 const fotosDisco = require('./fotos-disco');
 const ResultadosCore = require('./resultados-core');
+const documentos = require('./documentos');
 
 const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
 function dataValida(s) { return typeof s === 'string' && DATA_RE.test(s); }
@@ -113,6 +114,13 @@ async function gravarSync(client, usuario, corpo, ip, fotosRaiz, opts) {
       [cliente, id].concat(cols, [JSON.stringify(doc)]));
     await log('patches', id, JSON.stringify(campos).length);
     out.patches.push(id);
+  }
+  // ops: coleções genéricas (fase 3) — set/update/delete em `documento`, ver lib/documentos.js
+  if (Array.isArray(corpo.ops) && corpo.ops.length) {
+    const r = await documentos.aplicarOps(client, usuario, corpo.ops);
+    out.ops = r.feitos;
+    r.rejeitados.forEach(x => out.rejeitados.push(Object.assign({ tipo: 'ops' }, x)));
+    await log('ops', r.feitos.map(f => f.col + '/' + f.id).join(',').slice(0, 200), JSON.stringify(corpo.ops).length);
   }
   return out;
 }

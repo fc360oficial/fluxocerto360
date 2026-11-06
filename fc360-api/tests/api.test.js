@@ -62,7 +62,7 @@ function resExemplo(extra) {
 
   await t.test('migra o schema e roda de novo sem reaplicar', async () => {
     const a = await migrar(pool);
-    assert.deepEqual(a, ['001_inicial.sql']);
+    assert.deepEqual(a, ['001_inicial.sql', '002_documentos_auth.sql']);
     const b = await migrar(pool);
     assert.deepEqual(b, []);
   });

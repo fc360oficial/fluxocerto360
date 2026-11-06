@@ -37,10 +37,24 @@ async function usuarioPorEmail(email) {
   return usuario;
 }
 
+// Fase 3: login próprio (JWT nosso). Sem JWT_SECRET no .env a API segue só com o token do Firebase.
+const { criarAuth } = require('./lib/auth');
+const pool = criarPool(process.env.DATABASE_URL);
+let auth = null;
+if (process.env.JWT_SECRET) {
+  auth = criarAuth({ pool, segredo: process.env.JWT_SECRET, firebaseApiKey: process.env.FIREBASE_WEB_API_KEY || '' });
+} else {
+  console.log('JWT_SECRET ausente — login próprio desligado (só token do Firebase)');
+}
+
 async function autenticar(req) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   if (!token) return null;
+  if (auth) {
+    const nosso = await auth.verificar(token); // null = não é JWT nosso → tenta Firebase
+    if (nosso) return nosso;
+  }
   const decoded = await getAuth().verifyIdToken(token);
   const email = (decoded.email || '').toLowerCase();
   if (!email) return null;
@@ -50,10 +64,9 @@ async function autenticar(req) {
 }
 
 (async () => {
-  const pool = criarPool(process.env.DATABASE_URL);
   const aplicadas = await migrar(pool);
   if (aplicadas.length) console.log(new Date().toISOString(), 'migrações aplicadas:', aplicadas.join(', '));
-  const app = createApp({ pool, fotosRaiz: FOTOS_RAIZ, autenticar, build: BUILD,
+  const app = createApp({ pool, fotosRaiz: FOTOS_RAIZ, autenticar, auth, build: BUILD,
     origens: (process.env.ALLOWED_ORIGIN || 'https://fc360oficial.github.io').split(',').map(s => s.trim()).filter(Boolean) });
   app.listen(PORT, '127.0.0.1', () => console.log(new Date().toISOString(), `fc360-api ${BUILD} em http://127.0.0.1:${PORT} · fotos em ${FOTOS_RAIZ}`));
   vigiarCodigo();

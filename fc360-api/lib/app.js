@@ -8,6 +8,7 @@
 const express = require('express');
 const cors = require('cors');
 const fotosDisco = require('./fotos-disco');
+const documentos = require('./documentos');
 const { gravarSync, hojeIso, dataValida, str } = require('./gravar');
 
 const LIMITE_JSON = '30mb';
@@ -38,17 +39,128 @@ function createApp(opts) {
     res.json({ ok: db === 'ok', build, db, agora: new Date().toISOString() });
   });
 
+  // ── login próprio (fase 3) — pública ──────────────────────────────────────
+  const auth = opts.auth || null;
+  app.post('/auth/login', async (req, res) => {
+    if (!auth) return res.status(501).json({ error: 'login próprio não configurado' });
+    try {
+      const r = await auth.login(req.body && req.body.email, req.body && req.body.senha);
+      await pool.query('INSERT INTO envio_log (cliente_id, user_id, loja, tipo, ref_id, bytes, ip) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [r.usuario.clienteId || '', r.usuario.id, r.usuario.loja || '', 'login', r.usuario.email || '', 0, str(req.ip, 60)]).catch(() => {});
+      res.json(r);
+    } catch (e) {
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  });
+
   // ── autenticação ──────────────────────────────────────────────────────────
   app.use(async (req, res, next) => {
     try {
       const u = await autenticar(req);
-      if (!u || !u.clienteId) return res.status(401).json({ error: 'Não autenticado' });
+      // superadmin não tem tenant; todo mundo mais precisa de um
+      if (!u || (!u.clienteId && u.perfil !== 'superadmin')) return res.status(401).json({ error: 'Não autenticado' });
       req.usuario = { id: str(u.id, 120), email: str(u.email, 200), clienteId: str(u.clienteId, 60),
-        loja: str(u.loja, 120), nome: str(u.nome, 200), perfil: str(u.perfil, 40) };
+        loja: str(u.loja, 120), nome: str(u.nome, 200), perfil: str(u.perfil, 40), imp: !!u.imp };
       next();
     } catch (e) {
-      res.status(401).json({ error: 'Token inválido: ' + e.message });
+      res.status(e.status === 403 ? 403 : 401).json({ error: 'Token inválido: ' + e.message });
     }
+  });
+
+  app.get('/auth/me', async (req, res) => {
+    if (req.usuario.imp || req.usuario.perfil === 'superadmin' && !auth) return res.json(req.usuario);
+    const u = auth ? await auth.usuarioPorId(req.usuario.id) : null;
+    if (!u) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json(documentos.limparSensiveis('usuarios', u));
+  });
+
+  const gestor = p => ['admin', 'gerencia', 'supervisor', 'superadmin'].includes(p);
+
+  // admin cria usuário (documento + senha). superadmin pode criar pra qualquer cliente.
+  app.post('/auth/usuarios', async (req, res) => {
+    if (!auth) return res.status(501).json({ error: 'login próprio não configurado' });
+    if (!gestor(req.usuario.perfil)) return res.status(403).json({ error: 'Sem permissão' });
+    const dados = req.body && req.body.usuario && typeof req.body.usuario === 'object' ? Object.assign({}, req.body.usuario) : null;
+    const senha = req.body && req.body.senha;
+    if (!dados || !dados.email || !senha || String(senha).length < 4) return res.status(400).json({ error: 'usuario (com email) e senha (mín. 4) são obrigatórios' });
+    dados.email = String(dados.email).trim().toLowerCase();
+    if (req.usuario.perfil !== 'superadmin') dados.clienteId = req.usuario.clienteId;
+    if (!dados.clienteId) return res.status(400).json({ error: 'clienteId obrigatório' });
+    if (dados.perfil === 'superadmin' && req.usuario.perfil !== 'superadmin') return res.status(403).json({ error: 'Sem permissão' });
+    const id = str(dados.id || ('id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)), 120);
+    dados.id = id;
+    delete dados.senha; delete dados._fbNewPass;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const dup = await client.query("SELECT id FROM documento WHERE colecao='usuarios' AND lower(dados->>'email')=$1 AND id<>$2", [dados.email, id]);
+      if (dup.rows.length) { await client.query('ROLLBACK'); client.release(); return res.status(409).json({ error: 'Já existe usuário com esse e-mail' }); }
+      await client.query(`INSERT INTO documento (colecao, id, cliente_id, dados) VALUES ('usuarios',$1,$2,$3)
+        ON CONFLICT (colecao, id) DO UPDATE SET dados = EXCLUDED.dados, cliente_id = EXCLUDED.cliente_id, atualizado_em = now()`, [id, dados.clienteId, JSON.stringify(dados)]);
+      await client.query('COMMIT');
+    } catch (e) { await client.query('ROLLBACK').catch(() => {}); client.release(); return res.status(500).json({ error: e.message }); }
+    client.release();
+    await auth.definirSenha(id, dados.email, senha, 'bcrypt');
+    auth.esquecer(id);
+    res.json({ ok: true, id });
+  });
+
+  // troca de senha: a própria, ou de alguém do mesmo cliente se for gestor
+  app.post('/auth/senha', async (req, res) => {
+    if (!auth) return res.status(501).json({ error: 'login próprio não configurado' });
+    const alvoId = str(req.body && req.body.usuarioId || req.usuario.id, 120);
+    const senha = req.body && req.body.senha;
+    if (!senha || String(senha).length < 4) return res.status(400).json({ error: 'senha (mín. 4) obrigatória' });
+    const alvo = await auth.usuarioPorId(alvoId);
+    if (!alvo) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const mesmoCliente = (alvo.clienteId || 'economico') === req.usuario.clienteId;
+    if (!(alvoId === req.usuario.id || req.usuario.perfil === 'superadmin' || (gestor(req.usuario.perfil) && mesmoCliente))) return res.status(403).json({ error: 'Sem permissão' });
+    await auth.definirSenha(alvoId, alvo.email, senha, 'bcrypt');
+    await pool.query("UPDATE documento SET dados = dados - 'senha' - '_fbNewPass', atualizado_em = now() WHERE colecao='usuarios' AND id=$1", [alvoId]);
+    auth.esquecer(alvoId);
+    res.json({ ok: true });
+  });
+
+  // superadmin entra como um cliente (token descreve o usuário sintético)
+  app.post('/auth/impersonar', async (req, res) => {
+    if (!auth) return res.status(501).json({ error: 'login próprio não configurado' });
+    if (req.usuario.perfil !== 'superadmin') return res.status(403).json({ error: 'Sem permissão' });
+    const clienteId = str(req.body && req.body.clienteId, 60);
+    if (!clienteId) return res.status(400).json({ error: 'clienteId obrigatório' });
+    const token = auth.emitir({ id: 'superadmin', email: req.usuario.email, nome: 'Super Admin', perfil: 'admin', clienteId, loja: '' }, { imp: true });
+    res.json({ token });
+  });
+
+  // ── coleções genéricas (fase 3) ───────────────────────────────────────────
+  function lerJson(v) { if (v === undefined || v === '') return undefined; try { return JSON.parse(v); } catch { throw new Error('parâmetro inválido: ' + String(v).slice(0, 60)); } }
+  app.get('/col/:nome', async (req, res) => {
+    const nome = str(req.params.nome, 160);
+    if (/[^a-zA-Z0-9_\/-]/.test(nome)) return res.status(400).json({ error: 'coleção inválida' });
+    try {
+      const q = { where: lerJson(req.query.where), orderBy: lerJson(req.query.orderBy), limit: req.query.limit,
+        ids: req.query.ids ? String(req.query.ids).split(',').filter(Boolean) : undefined };
+      // 'resultados' mora na tabela própria (fase 2); aqui só o que o "zerar dados" do admin precisa
+      if (nome === 'resultados') {
+        const lim = Math.min(Math.max(parseInt(q.limit, 10) || 400, 1), 2000);
+        if (req.query.count === '1') { const c = await pool.query('SELECT count(*)::int AS n FROM resultado WHERE cliente_id=$1', [req.usuario.clienteId]); return res.json({ count: c.rows[0].n }); }
+        const r = await pool.query('SELECT id, dados FROM resultado WHERE cliente_id=$1 ORDER BY date_iso LIMIT ' + lim, [req.usuario.clienteId]);
+        return res.json(r.rows.map(x => Object.assign({ id: x.id }, x.dados)));
+      }
+      if (req.query.count === '1') {
+        const c = documentos.montarConsulta(req.usuario, nome, q);
+        if (!c) return res.json({ count: 0 });
+        const r = await pool.query('SELECT count(*)::int AS n FROM (' + c.sql.replace(/ LIMIT \d+$/, '') + ') t', c.params);
+        return res.json({ count: r.rows[0].n });
+      }
+      res.json(await documentos.consultar(pool, req.usuario, nome, q));
+    } catch (e) { res.status(400).json({ error: e.message }); }
+  });
+  app.get('/col/:nome/:id', async (req, res) => {
+    const nome = str(req.params.nome, 160);
+    if (/[^a-zA-Z0-9_\/-]/.test(nome)) return res.status(400).json({ error: 'coleção inválida' });
+    const d = await documentos.buscar(pool, req.usuario, nome, str(req.params.id, 200));
+    if (!d) return res.status(404).json({ error: 'Documento não encontrado' });
+    res.json(d);
   });
 
   async function sync(req, res) {

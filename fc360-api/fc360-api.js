@@ -56,4 +56,28 @@ async function autenticar(req) {
   const app = createApp({ pool, fotosRaiz: FOTOS_RAIZ, autenticar, build: BUILD,
     origens: (process.env.ALLOWED_ORIGIN || 'https://fc360oficial.github.io').split(',').map(s => s.trim()).filter(Boolean) });
   app.listen(PORT, '127.0.0.1', () => console.log(new Date().toISOString(), `fc360-api ${BUILD} em http://127.0.0.1:${PORT} · fotos em ${FOTOS_RAIZ}`));
+  vigiarCodigo();
 })().catch(e => { console.error(new Date().toISOString(), 'fc360-api não subiu:', e.message); process.exit(1); });
+
+// Deploy sem admin: quando um arquivo de código muda (scp/git pull), o processo sai
+// sozinho e quem mantém ele vivo (Econômico Relatórios, lib/fc360-api-proxy.js) sobe
+// a versão nova em 10 s. Mesma ideia do /deploy do Relatórios com o NSSM.
+function vigiarCodigo() {
+  if (process.env.FC360_API_SEM_VIGIA === '1') return;
+  const fs = require('fs');
+  let timer = null;
+  const sair = (arquivo) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { console.log(new Date().toISOString(), 'código mudou (' + arquivo + ') — saindo pra subir a versão nova'); process.exit(0); }, 2000);
+  };
+  for (const alvo of [path.join(__dirname, 'lib'), path.join(__dirname, 'sql'), __dirname]) {
+    try {
+      fs.watch(alvo, { persistent: false }, (ev, nome) => {
+        if (!nome) return;
+        if (alvo === __dirname && !/^(fc360-api\.js|package\.json|\.env)$/.test(nome)) return;
+        if (!/\.(js|sql)$|^\.env$|^package\.json$/.test(nome)) return;
+        sair(nome);
+      });
+    } catch (e) { console.log('vigia de código indisponível em', alvo, e.message); }
+  }
+}

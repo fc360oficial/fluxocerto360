@@ -1,6 +1,6 @@
 {
   "name": "fc360-api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "FC360 — API do checklist no Postgres do .254 (resultados, fotos, estado do checklist)",
   "main": "fc360-api.js",

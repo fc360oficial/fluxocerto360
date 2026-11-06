@@ -71,7 +71,18 @@ function ouvir(nome, consulta) {
   });
 }
 let unsubResultados = null, diaResultados = '';
+// BUILD 443 (05/11/26): os envios do checklist moram no Postgres do .254 (FC360 API).
+// Com DATABASE_URL no .env, consulta a tabela `resultado` a cada tick (≤ 1 min, só o dia);
+// sem DATABASE_URL cai no listener antigo do Firestore (transição).
+const pg = process.env.DATABASE_URL ? new (require('pg').Pool)({ connectionString: process.env.DATABASE_URL, max: 2 }) : null;
 async function ouvirResultadosDoDia() {
+  if (pg) {
+    const { rows } = await pg.query('SELECT id, dados FROM resultado WHERE date_iso = $1', [H.iso]);
+    E.resultados.clear();
+    for (const r of rows) E.resultados.set(r.id, { id: r.id, _doc: r.id, ...r.dados });
+    diaResultados = H.iso;
+    return;
+  }
   if (diaResultados === H.iso) return;
   if (unsubResultados) unsubResultados();
   E.resultados.clear();

@@ -202,6 +202,38 @@ function resExemplo(extra) {
     assert.ok(porTipo.resultados_fotos >= 4);
   });
 
+  await t.test('patches: mescla campos no doc (resetado/substituidoPor), recalcula colunas, só do próprio tenant', async () => {
+    const r = await api('POST', '/sync', { patches: [
+      { id: 'id_lote', campos: { resetado: true, substituidoPor: 'id_x', pct: 40, clienteId: 'fluxocerto' } },
+      { id: 'nao_existe', campos: { resetado: true } },
+    ] });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.deepEqual(r.body.patches, ['id_lote']);
+    assert.equal(r.body.rejeitados.length, 1);
+    const { rows } = await pool.query("SELECT resetado, pct, cliente_id, dados->>'substituidoPor' AS sub, dados->>'checklistNome' AS nome FROM resultado WHERE id='id_lote'");
+    assert.equal(rows[0].resetado, true);
+    assert.equal(rows[0].pct, 40);
+    assert.equal(rows[0].sub, 'id_x');
+    assert.equal(rows[0].cliente_id, 'economico', 'clienteId do patch é ignorado');
+    assert.equal(rows[0].nome, 'Abertura de Loja', 'campos não citados ficam como estavam');
+    usuarioAtual = USUARIOS.outro;
+    const alheio = await api('POST', '/sync', { patches: [{ id: 'id_lote', campos: { resetado: false } }] });
+    usuarioAtual = USUARIOS.cahu;
+    assert.equal(alheio.body.rejeitados[0].motivo, 'resultado não encontrado');
+    const r2 = await api('PUT', '/checkstates/x_y', { state: {} });
+    assert.equal(r2.status, 200);
+  });
+
+  await t.test('GET /fotos?comBase64=1 devolve a imagem junto; por resultadoId serve pra hidratar o detalhe', async () => {
+    const lista = await api('GET', '/fotos?resultadoId=id_1700000000000_abc&comBase64=1');
+    assert.equal(lista.status, 200);
+    assert.equal(lista.body.length, 4);
+    assert.ok(lista.body.every(f => typeof f.base64 === 'string' && f.base64.startsWith('data:image/jpeg;base64,')));
+    assert.deepEqual(lista.body.map(f => f.slot).sort(), ['0_depois', '1_m0', '1_m1', 'assinatura']);
+    const sem = await api('GET', '/fotos?resultadoId=id_1700000000000_abc');
+    assert.ok(sem.body.every(f => f.base64 === undefined));
+  });
+
   await t.test('rota inexistente responde JSON 404', async () => {
     const r = await api('GET', '/nada');
     assert.equal(r.status, 404);

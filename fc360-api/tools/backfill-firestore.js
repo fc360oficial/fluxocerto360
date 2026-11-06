@@ -1,5 +1,5 @@
 // Importa o histórico do Firestore pro Postgres — roda 1x no .254 antes de virar a chave do app.
-//   node tools/backfill-firestore.js [--dias-fotos=2] [--so-contar]
+//   node tools/backfill-firestore.js [--dias-fotos=2] [--so-contar] [--pular-resultados]
 //
 // O que traz: resultados (todos), resultados_fotos (todas), fotos avulsas e checkstates só
 // dos últimos N dias (são do checklist em andamento; o resto é lixo). Idempotente: grava com
@@ -25,7 +25,14 @@ function diasAtras(n) { const d = new Date(Date.now() - 3 * 3600 * 1000 - n * 86
 function usuarioFake(clienteId) { return { id: 'backfill', clienteId, loja: '', nome: 'backfill' }; }
 
 async function lote(colecao, filtro, cb) {
-  // pagina de 200 em 200 por id (sem índice composto) pra não segurar 2 mil docs com base64 na memória
+  // Com filtro (date >= X) o Firestore exige ordenar pelo campo do filtro, e o startAfter
+  // ficaria ambíguo — mas aí são poucos docs (dias recentes): busca tudo de uma vez.
+  if (filtro) {
+    const snap = await filtro(fs.collection(colecao)).get();
+    for (const d of snap.docs) await cb(Object.assign({ id: d.id }, d.data()));
+    return snap.size;
+  }
+  // Sem filtro pagina de 200 em 200 por id pra não segurar 2 mil docs com base64 na memória
   let ultimo = null, total = 0;
   for (;;) {
     let q = fs.collection(colecao).orderBy('__name__').limit(200);
@@ -63,7 +70,8 @@ async function lote(colecao, filtro, cb) {
     } finally { client.release(); }
   }
 
-  stats.resultados = await lote('resultados', null, async d => {
+  const PULAR = !!args['pular-resultados']; // já importados numa rodada anterior
+  stats.resultados = PULAR ? 0 : await lote('resultados', null, async d => {
     const clienteId = d.clienteId || 'economico';
     if (!dataValida(d.dateISO)) {
       // doc antigo sem dateISO: deriva de dataHora 'dd/mm/aaaa ...'
@@ -74,7 +82,7 @@ async function lote(colecao, filtro, cb) {
   });
   console.log(`resultados: ${stats.resultados}`);
 
-  stats.resultados_fotos = await lote('resultados_fotos', null, async d => {
+  stats.resultados_fotos = PULAR ? 0 : await lote('resultados_fotos', null, async d => {
     await gravar(d.clienteId || 'economico', { resultados_fotos: [d] });
   });
   console.log(`resultados_fotos: ${stats.resultados_fotos}`);

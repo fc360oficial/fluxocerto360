@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '447';
+var BUILD = '448';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -1298,7 +1298,9 @@ var _resAntigos = [];            // docs anteriores à janela, buscados sob dema
 // abre (loadResultadosFromFirebase); o resto, sob demanda (garantirResultadosDesde).
 // Admin/supervisor seguem com 7 dias.
 function _resJanelaInicio() {
-  var soHoje = S && (S.role === 'operator' || S.role === 'prevencao' || S.role === 'gerencia');
+  // BUILD 448 (06/11/26): sem a cota do Firestore não há por que a loja/gerência ver só hoje —
+  // todo mundo carrega a janela de RES_JANELA_DIAS; o resto continua sob demanda.
+  var soHoje = false;
   return ResultadosCore.janelaISO(soHoje ? 0 : RES_JANELA_DIAS);
 }
 
@@ -10943,10 +10945,17 @@ function _gravarPlanoNoFirestore(plano) {
 // completa (completo=true) fica pra página Plano de Ação e pra Central, que
 // também fazem a limpeza dos resolvidos antigos.
 function loadPlanosFromFirebase(cb, completo) {
-  var consulta = completo ? db.collection('planos') : db.collection('planos').where('status', 'in', ['aberto', 'andamento']);
-  consulta.get().then(function(snap){
+  // BUILD 448: no login traz abertos/andamento + resolvidos dos últimos 90 dias (antes, só os
+  // abertos — restrição da cota do Firestore); a tela de Planos/Central (completo) traz tudo.
+  var consultas = completo
+    ? [db.collection('planos').get()]
+    : [db.collection('planos').where('status', 'in', ['aberto', 'andamento']).get(),
+       db.collection('planos').where('status', '==', 'resolvido').where('resolvidoTimestamp', '>=', Date.now() - 90 * 86400000).get()];
+  Promise.all(consultas).then(function(snaps){
+    var vistos = {}, docs = [];
+    snaps.forEach(function(sn){ sn.docs.forEach(function(d){ if (!vistos[d.id]) { vistos[d.id] = true; docs.push(d); } }); });
     var myClient = (S.currentUser && S.currentUser.clienteId) || '';
-    var remotos = snap.docs.map(function(d){ return d.data(); })
+    var remotos = docs.map(function(d){ return d.data(); })
       .filter(function(p){ return (p.clienteId || 'economico') === myClient; });
     // Merge: status local mais avançado vence (resolvido > andamento > aberto)
     var STATUS_ORD = {resolvido: 2, andamento: 1, aberto: 0};

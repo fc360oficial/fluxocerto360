@@ -27,6 +27,10 @@ function createApp(opts) {
     maxAge: 600
   }));
   app.use(express.json({ limit: LIMITE_JSON }));
+  // O app consulta as mesmas URLs o tempo todo (/resultados?desde=..., /envios?date=...):
+  // nada de cache HTTP, senão o navegador devolve a resposta velha e o "ao vivo" morre.
+  // (/fotos/:id/arquivo sobrescreve com cache privado, imagem não muda.)
+  app.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
   app.get('/health', async (req, res) => {
     let db = 'ok';

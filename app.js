@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '451';
+var BUILD = '452';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -5446,24 +5446,82 @@ function abrirFotoFull(fotos, idx) {
   fotoFullList = fotos;
   fotoFullIdx = idx || 0;
   renderFotoFull();
-  document.getElementById('modal-foto-full').style.display = 'flex';
+  var m = document.getElementById('modal-foto-full');
+  m.style.display = 'flex';
+  if (!m._ffPronto) {
+    m._ffPronto = true;
+    // Teclado: ← → navegam, Esc fecha
+    document.addEventListener('keydown', function(e){
+      if (m.style.display !== 'flex') return;
+      if (e.key === 'ArrowLeft') { navFoto(-1); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { navFoto(1); e.preventDefault(); }
+      else if (e.key === 'Escape') { fecharFotoFull(); }
+    });
+    // Deslizar no celular
+    var stage = document.getElementById('foto-full-stage'), x0 = null;
+    stage.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, {passive:true});
+    stage.addEventListener('touchend', function(e){
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 50) navFoto(dx < 0 ? 1 : -1);
+    }, {passive:true});
+    // Clique no fundo escuro fecha
+    stage.addEventListener('click', function(e){ if (e.target === stage) fecharFotoFull(); });
+  }
+}
+
+function fecharFotoFull() {
+  document.getElementById('modal-foto-full').style.display = 'none';
 }
 
 function renderFotoFull() {
   var foto = fotoFullList[fotoFullIdx];
   if (!foto) return;
-  document.getElementById('foto-full-img').src = foto.src;
-  document.getElementById('foto-full-label').textContent = foto.label || '';
-  document.getElementById('foto-full-counter').textContent = (fotoFullIdx+1)+'/'+fotoFullList.length;
-  // Thumbnails
+  var label = foto.label || '';
+  var tag = foto.tag || '';
+  if (!tag) {
+    var mt = label.match(/^(ANTES|DEPOIS|Foto \d+)\s*[—-]\s*/i);
+    if (mt) { tag = mt[1]; label = label.slice(mt[0].length); }
+  } else {
+    label = label.replace(/^(ANTES|DEPOIS|Foto \d+)\s*[—-]\s*/i, '');
+  }
+  var img = document.getElementById('foto-full-img');
+  img.style.width = ''; img.style.height = '';
+  img.onload = _ajustarFotoFull;
+  img.src = foto.src;
+  if (img.complete && img.naturalWidth) _ajustarFotoFull();
+  document.getElementById('foto-full-label').textContent = label;
+  var tagEl = document.getElementById('foto-full-tag');
+  tagEl.textContent = tag;
+  tagEl.style.display = tag ? '' : 'none';
+  document.getElementById('foto-full-counter').textContent = (fotoFullIdx+1)+' / '+fotoFullList.length;
+  var soUma = fotoFullList.length < 2;
+  document.querySelectorAll('#modal-foto-full .ff-nav').forEach(function(b){ b.style.display = soUma ? 'none' : ''; });
+  // Faixa de miniaturas (rolável), a atual centralizada
   var thumbs = document.getElementById('foto-full-thumbnails');
+  thumbs.style.display = soUma ? 'none' : '';
   thumbs.innerHTML = fotoFullList.map(function(f,i){
-    return '<img src="'+f.src+'" onclick="fotoFullIdx='+i+';renderFotoFull()" '
-      +'style="width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid '+(i===fotoFullIdx?'#FFC600':'rgba(255,255,255,.3)')+'"/>';
+    return '<img src="'+f.src+'" class="'+(i===fotoFullIdx?'on':'')+'" onclick="fotoFullIdx='+i+';renderFotoFull()" alt=""/>';
   }).join('');
+  var on = thumbs.querySelector('img.on');
+  if (on && on.scrollIntoView) { try { on.scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'}); } catch(e) {} }
 }
 
+// Dimensiona a foto pra ocupar o palco inteiro (amplia fotos pequenas até 2x, sem cortar)
+function _ajustarFotoFull() {
+  var img = document.getElementById('foto-full-img'), stage = document.getElementById('foto-full-stage');
+  if (!img || !stage || !img.naturalWidth) return;
+  var cs = getComputedStyle(stage);
+  var w = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  var h = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  var esc = Math.min(w / img.naturalWidth, h / img.naturalHeight, 2);
+  img.style.width = Math.round(img.naturalWidth * esc) + 'px';
+  img.style.height = Math.round(img.naturalHeight * esc) + 'px';
+}
+window.addEventListener('resize', _ajustarFotoFull);
+
 function navFoto(dir) {
+  if (!fotoFullList.length) return;
   fotoFullIdx = (fotoFullIdx + dir + fotoFullList.length) % fotoFullList.length;
   renderFotoFull();
 }

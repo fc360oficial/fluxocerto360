@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '450';
+var BUILD = '451';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -5048,18 +5048,36 @@ function verDetalhe(id) {
   hidratarFotos(r, _renderDetalhe);
 }
 
+// Cartão de foto grande (galeria e itens). idx = posição em fotoFullList (lightbox).
+function _detFotoCard(f, idx, alto) {
+  return '<figure onclick="abrirFotoFull(fotoFullList,'+idx+')" style="margin:0;position:relative;border-radius:12px;overflow:hidden;background:#1a1d21;cursor:zoom-in;box-shadow:var(--sh)">'
+    +'<img src="'+f.src+'" loading="lazy" alt="" style="display:block;width:100%;height:'+alto+'px;object-fit:cover;transition:transform .25s" onmouseover="this.style.transform=\'scale(1.03)\'" onmouseout="this.style.transform=\'\'"/>'
+    +'<span style="position:absolute;top:10px;left:10px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:20px;backdrop-filter:blur(3px)">'+f.tag+'</span>'
+    +'<span style="position:absolute;bottom:10px;right:10px;font-size:11px;font-weight:600;color:#fff;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:20px;backdrop-filter:blur(3px)">⤢ ampliar</span>'
+    +'</figure>';
+}
+
+function _detCard(titulo, extraHdr, corpo, borda) {
+  return '<div style="background:#fff;border-radius:14px;padding:20px 22px;margin-bottom:18px;box-shadow:var(--sh)'+(borda?';border-left:4px solid '+borda:'')+'">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">'
+    +'<div style="font-size:12px;font-weight:800;color:'+(borda||'var(--t2)')+';text-transform:uppercase;letter-spacing:.7px">'+titulo+'</div>'
+    +(extraHdr||'')+'</div>'+corpo+'</div>';
+}
+
 function _renderDetalhe(r) {
+  var esc = function(s){ return _escHtml(s === undefined || s === null ? '' : String(s)); };
   var todasFotos = [];
-  (r.itens||[]).forEach(function(item){
-    if (item.fotoAntes) todasFotos.push({src:item.fotoAntes, label:'ANTES — '+item.texto});
-    if (item.fotoDepois) todasFotos.push({src:item.fotoDepois, label:'DEPOIS — '+item.texto});
+  (r.itens||[]).forEach(function(item, ii){
+    if (item.fotoAntes) todasFotos.push({src:item.fotoAntes, label:'ANTES — '+item.texto, tag:'Antes', item:ii});
+    if (item.fotoDepois) todasFotos.push({src:item.fotoDepois, label:'DEPOIS — '+item.texto, tag:'Depois', item:ii});
     if (item.fotosMulti && item.fotosMulti.length) {
       item.fotosMulti.forEach(function(src, fi){
-        todasFotos.push({src:src, label:'Foto '+(fi+1)+' — '+item.texto});
+        todasFotos.push({src:src, label:'Foto '+(fi+1)+' — '+item.texto, tag:'Foto '+(fi+1), item:ii});
       });
     }
   });
   fotoFullList = todasFotos;
+  var idxDe = function(src){ return todasFotos.findIndex(function(f){ return f.src === src; }); };
 
   // ── Cabeçalho ──
   document.getElementById('det-titulo').textContent = r.checklistNome;
@@ -5068,31 +5086,37 @@ function _renderDetalhe(r) {
   else if (r.pct===100) { badge.textContent='✅ APROVADO'; badge.className='st st-ok'; }
   else { badge.textContent='⚠️ '+r.pct+'% concluído'; badge.className='st st-warn'; }
 
-  // ── Meta ──
+  // ── Meta (chips com rótulo) ──
+  var PLABEL = {admin:'Administrador',gerencia:'Gerência',supervisor:'Supervisor',operator:'Operador',prevencao:'Prevenção'};
   var metaItems = [
-    r.loja ? '🏪 '+r.loja : '',
-    '👤 '+r.operador,
-    '📂 '+r.setor,
-    '🕐 '+r.dataHora
+    r.loja ? ['Loja', r.loja] : null,
+    ['Responsável', r.operador],
+    ['Setor', r.setor || PLABEL[r.perfil] || '—'],
+    ['Enviado em', r.dataHora],
+    r.manual ? ['Origem', 'Lançado no papel'] : null
   ].filter(Boolean);
   document.getElementById('det-meta').innerHTML = metaItems.map(function(m){
-    return '<span style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:#fff;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--gray2)">'+m+'</span>';
+    return '<span style="display:inline-flex;flex-direction:column;padding:6px 14px;background:#fff;border-radius:10px;border:1px solid var(--gray2);min-width:110px">'
+      +'<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3)">'+m[0]+'</span>'
+      +'<span style="font-size:13px;font-weight:600;color:var(--t)">'+esc(m[1])+'</span></span>';
   }).join('');
 
   // ── KPIs ──
   var naoConformIds = (r.itens||[]).filter(function(it){ return it.tipo==='simNao'&&it.resposta==='nao'; }).length;
   var naoFeitos = (r.itens||[]).filter(function(it){ return it.tipo!=='planilha'&&!it.feito; }).length;
   var fotoCount = todasFotos.length;
+  var nc = naoConformIds+naoFeitos;
   var pctColor = r.pct===100?'var(--g)':r.pct>=50?'var(--am)':'var(--r)';
   document.getElementById('det-kpis').innerHTML = [
-    {val: r.pct+'%', label:'Conformidade', color: pctColor, bg: r.pct===100?'var(--g3)':r.pct>=50?'var(--am2)':'var(--r2)'},
-    {val: r.feitos+'/'+r.total, label:'Itens Concluídos', color:'var(--bl)', bg:'var(--bl2)'},
-    {val: fotoCount, label:'Fotos Registradas', color:'var(--t2)', bg:'var(--gray)'},
-    {val: naoConformIds+naoFeitos, label:'Não Conformes', color: (naoConformIds+naoFeitos)>0?'var(--r)':'var(--g)', bg:(naoConformIds+naoFeitos)>0?'var(--r2)':'var(--g3)'}
+    {val: r.pct+'%', label:'Conformidade', color: pctColor, sub: r.pct===100?'tudo em ordem':'abaixo da meta'},
+    {val: r.feitos+'/'+r.total, label:'Itens concluídos', color:'var(--bl)', sub: r.total ? Math.round(r.feitos/r.total*100)+'% do checklist' : ''},
+    {val: fotoCount, label:'Fotos registradas', color:'var(--t)', sub: fotoCount===1?'1 evidência':fotoCount+' evidências'},
+    {val: nc, label:'Não conformes', color: nc>0?'var(--r)':'var(--g)', sub: nc>0?'precisam de ação':'nenhuma pendência'}
   ].map(function(k){
-    return '<div style="background:'+k.bg+';border-radius:12px;padding:16px 14px;text-align:center">'
-      +'<div style="font-size:24px;font-weight:800;color:'+k.color+';font-family:\'Plus Jakarta Sans\',sans-serif">'+k.val+'</div>'
-      +'<div style="font-size:11px;font-weight:600;color:var(--t2);margin-top:4px;text-transform:uppercase;letter-spacing:.4px">'+k.label+'</div>'
+    return '<div style="background:#fff;border-radius:14px;padding:16px 18px;box-shadow:var(--sh);border-top:4px solid '+k.color+'">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">'+k.label+'</div>'
+      +'<div style="font-size:30px;font-weight:800;color:'+k.color+';font-family:\'Plus Jakarta Sans\',sans-serif;line-height:1.15;margin-top:4px">'+k.val+'</div>'
+      +'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+k.sub+'</div>'
       +'</div>';
   }).join('');
 
@@ -5109,79 +5133,80 @@ function _renderDetalhe(r) {
     return (it.tipo==='simNao'&&it.resposta==='nao') || (it.tipo!=='planilha'&&it.tipo!=='simNao'&&!it.feito);
   });
   var nconformEl = document.getElementById('det-nconform');
-  if (nconformItens.length) {
-    nconformEl.innerHTML = '<div style="background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:var(--sh);border-left:4px solid var(--r)">'
-      +'<div style="font-size:12px;font-weight:800;color:var(--r);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">⚠ Não Conformidades ('+nconformItens.length+')</div>'
-      +nconformItens.map(function(it){
-        var justHtml = it.justificativa ? '<div style="margin-top:6px;padding:8px 12px;background:var(--r2);border-radius:8px;font-size:12px;color:var(--r)">📋 '+it.justificativa+'</div>' : '';
-        return '<div style="padding:10px 12px;border-radius:8px;background:var(--r2);border:1px solid #fac5c0;margin-bottom:8px">'
-          +'<div style="font-size:13px;font-weight:600;color:var(--r)">'+it.texto+'</div>'
-          +(it.obs?'<div style="font-size:11px;color:var(--r);margin-top:2px;opacity:.7">'+it.obs+'</div>':'')
-          +justHtml
-          +'</div>';
-      }).join('')
-      +'</div>';
-  } else {
-    nconformEl.innerHTML = '';
+  nconformEl.innerHTML = nconformItens.length
+    ? _detCard('⚠ Não conformidades ('+nconformItens.length+')', '',
+        nconformItens.map(function(it){
+          var justHtml = it.justificativa ? '<div style="margin-top:6px;padding:8px 12px;background:#fff;border-radius:8px;font-size:12px;color:var(--r)">📋 '+esc(it.justificativa)+'</div>' : '';
+          return '<div style="padding:12px 14px;border-radius:10px;background:var(--r2);border:1px solid #fac5c0;margin-bottom:8px">'
+            +'<div style="font-size:13px;font-weight:600;color:var(--r)">'+esc(it.texto)+'</div>'
+            +(it.obs?'<div style="font-size:11px;color:var(--r);margin-top:2px;opacity:.75">'+esc(it.obs)+'</div>':'')
+            +justHtml+'</div>';
+        }).join(''), 'var(--r)')
+    : '';
+
+  // ── Registro fotográfico (galeria grande) ──
+  var galEl = document.getElementById('det-galeria');
+  if (galEl) {
+    galEl.innerHTML = todasFotos.length
+      ? _detCard('📷 Registro fotográfico',
+          '<span style="font-size:12px;font-weight:700;color:var(--t2);background:var(--gray);padding:3px 10px;border-radius:20px">'+fotoCount+' foto'+(fotoCount===1?'':'s')+' · toque para ampliar</span>',
+          '<div class="det-gal-grid">'+todasFotos.map(function(f, i){
+            return '<div>'+_detFotoCard(f, i, 230)
+              +'<div style="font-size:12px;color:var(--t2);margin-top:7px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'
+              +'<b style="color:var(--t)">Item '+(f.item+1)+'</b> · '+esc((r.itens[f.item]||{}).texto)+'</div></div>';
+          }).join('')+'</div>')
+      : '';
   }
+
   // ── Itens do checklist (exceto planilha) ──
   var itensNormais = (r.itens||[]).filter(function(it){ return (it.tipo||'checkbox') !== 'planilha'; });
   var itensPlanilha = (r.itens||[]).filter(function(it){ return it.tipo === 'planilha'; });
-  var fotosDosItens = todasFotos;
 
   document.getElementById('det-itens').innerHTML = itensNormais.length
-    ? '<div style="background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:var(--sh)">'
-      +'<div style="font-size:12px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">☑ Itens do Checklist</div>'
-      +itensNormais.map(function(item){
+    ? _detCard('☑ Itens do checklist', '<span style="font-size:12px;font-weight:700;color:var(--t2);background:var(--gray);padding:3px 10px;border-radius:20px">'+itensNormais.length+' itens</span>',
+        itensNormais.map(function(item, idx){
           var tipo = item.tipo || 'checkbox';
+          var fotos = [];
+          if (item.fotoAntes) fotos.push(idxDe(item.fotoAntes));
+          if (item.fotoDepois) fotos.push(idxDe(item.fotoDepois));
+          (item.fotosMulti||[]).forEach(function(src){ fotos.push(idxDe(src)); });
           var fotoHtml = '';
-          if (item.fotoAntes || item.fotoDepois || (item.fotosMulti && item.fotosMulti.length)) {
-            if (item.fotoAntes) {
-              var fi = fotosDosItens.findIndex(function(f){return f.src===item.fotoAntes;});
-              fotoHtml += '<img src="'+item.fotoAntes+'" onclick="abrirFotoFull(fotoFullList,'+fi+')" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--gray2);margin-top:8px;margin-right:6px" title="ANTES"/>';
-            }
-            if (item.fotoDepois) {
-              var fj = fotosDosItens.findIndex(function(f){return f.src===item.fotoDepois;});
-              fotoHtml += '<img src="'+item.fotoDepois+'" onclick="abrirFotoFull(fotoFullList,'+fj+')" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--gray2);margin-top:8px" title="DEPOIS"/>';
-            }
-            if (item.fotosMulti && item.fotosMulti.length) {
-              item.fotosMulti.forEach(function(src, mi){
-                var mk = fotosDosItens.findIndex(function(f){return f.src===src;});
-                fotoHtml += '<img src="'+src+'" onclick="abrirFotoFull(fotoFullList,'+mk+')" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--gray2);margin-top:8px;margin-right:6px" title="Foto '+(mi+1)+'"/>';
-              });
-            }
-            fotoHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px">'+fotoHtml+'</div>';
+          if (fotos.length) {
+            fotoHtml = '<div class="det-item-fotos">'+fotos.filter(function(i){ return i>=0; }).map(function(i){ return _detFotoCard(todasFotos[i], i, 200); }).join('')+'</div>';
           } else if (item.foto && item.foto !== 'none') {
-            fotoHtml = '<div style="font-size:11px;color:var(--am);margin-top:6px;padding:5px 10px;background:var(--am2);border-radius:6px;display:inline-block">📷 Foto não enviada</div>';
+            fotoHtml = '<div style="font-size:11px;font-weight:600;color:var(--am);margin-top:8px;padding:5px 10px;background:var(--am2);border-radius:6px;display:inline-block">📷 Foto não enviada</div>';
           }
-          var respostaHtml = '';
+          var pill = '';
           if (tipo==='simNao') {
-            var snL=item.resposta==='sim'?'✓ Sim':item.resposta==='nao'?'✗ Não':'—';
+            var snL=item.resposta==='sim'?'Sim':item.resposta==='nao'?'Não':'Sem resposta';
             var snC=item.resposta==='sim'?'var(--g)':item.resposta==='nao'?'var(--r)':'var(--t3)';
-            respostaHtml='<span style="font-size:12px;font-weight:700;color:'+snC+'"> · '+snL+'</span>';
+            var snB=item.resposta==='sim'?'var(--g3)':item.resposta==='nao'?'var(--r2)':'var(--gray)';
+            pill='<span style="font-size:11px;font-weight:800;color:'+snC+';background:'+snB+';padding:3px 10px;border-radius:20px;white-space:nowrap">'+snL+'</span>';
           } else if (tipo==='nota') {
             var nv=parseInt(item.resposta)||0;
-            respostaHtml='<span style="font-size:12px;font-weight:700;color:var(--dk)"> · Nota: '+nv+'/5</span>';
-          } else if (tipo==='texto'&&item.resposta) {
-            respostaHtml='<div style="margin-top:5px;padding:6px 10px;background:var(--gray);border-radius:6px;font-size:12px;color:var(--t2)">'+item.resposta+'</div>';
+            pill='<span style="font-size:11px;font-weight:800;color:var(--dk);background:var(--gray);padding:3px 10px;border-radius:20px;white-space:nowrap">Nota '+nv+'/5</span>';
+          } else {
+            pill='<span style="font-size:11px;font-weight:800;color:'+(item.feito?'var(--g)':'var(--t3)')+';background:'+(item.feito?'var(--g3)':'var(--gray)')+';padding:3px 10px;border-radius:20px;white-space:nowrap">'+(item.feito?'Feito':'Não feito')+'</span>';
           }
-          var bg = !item.feito?'#fff':(tipo==='simNao'&&item.resposta==='nao')?'var(--r2)':'var(--g3)';
-          var icon = tipo==='simNao'?(item.resposta==='sim'?'✅':item.resposta==='nao'?'❌':'⬜'):(item.feito?'✅':'⬜');
-          var txtS = tipo==='checkbox'&&item.feito?'text-decoration:line-through;color:var(--t3)':'color:var(--t)';
-          return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:'+bg+';border:1px solid var(--gray2);margin-bottom:8px">'
-            +'<span style="font-size:17px;flex-shrink:0;margin-top:1px">'+icon+'</span>'
+          var textoResp = (tipo==='texto'&&item.resposta) ? '<div style="margin-top:8px;padding:10px 12px;background:var(--gray);border-radius:8px;font-size:13px;color:var(--t);line-height:1.4">'+esc(item.resposta)+'</div>' : '';
+          var ok = tipo==='simNao' ? item.resposta==='sim' : !!item.feito;
+          var ruim = tipo==='simNao' && item.resposta==='nao';
+          var corNum = ruim?'var(--r)':ok?'var(--g)':'var(--t3)';
+          var bgNum = ruim?'var(--r2)':ok?'var(--g3)':'var(--gray)';
+          var tags = (item.critico?'<span style="font-size:10px;font-weight:800;color:var(--r);background:var(--r2);padding:2px 8px;border-radius:20px;border:1px solid var(--r)">⚠ CRÍTICO</span>':'')
+            +(item.horaLimite?(item.foraDoPrazo?'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;color:#c0392b;background:#fdecea;border:1px solid #e74c3c">⏰ fora do prazo ('+esc(item.horaLimite)+') — não pontuou</span>':'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;color:#1a7a4a;background:#e8f5ee;border:1px solid #a8d5b5">⏰ '+esc(item.horaResposta||'')+' (até '+esc(item.horaLimite)+')</span>'):'');
+          return '<div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-top:1px solid var(--gray2)">'
+            +'<span style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:'+bgNum+';color:'+corNum+';font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">'+(idx+1)+'</span>'
             +'<div style="flex:1;min-width:0">'
-            +'<div style="font-size:13px;font-weight:600;'+txtS+'">'+item.texto
-            +respostaHtml
-            +(item.critico?'<span style="font-size:10px;font-weight:800;color:var(--r);background:var(--r2);padding:1px 6px;border-radius:20px;border:1px solid var(--r);margin-left:6px">⚠ CRÍTICO</span>':'')
-            +(item.horaLimite?(item.foraDoPrazo?'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;color:#c0392b;background:#fdecea;border:1px solid #e74c3c">⏰ fora do prazo ('+item.horaLimite+') — não pontuou</span>':'<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;color:#1a7a4a;background:#e8f5ee;border:1px solid #a8d5b5">⏰ '+(item.horaResposta||'')+' (até '+item.horaLimite+')</span>'):'')
-            +'</div>'
-            +(item.obs?'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+item.obs+'</div>':'')
-            +(item.justificativa?'<div style="margin-top:6px;padding:6px 10px;background:var(--r2);border-radius:6px;font-size:12px;color:var(--r)">📋 '+item.justificativa+'</div>':'')
+            +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'
+            +'<div style="font-size:14px;font-weight:600;color:var(--t);line-height:1.4">'+esc(item.texto)+'</div>'+pill+'</div>'
+            +(tags?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+tags+'</div>':'')
+            +textoResp
+            +(item.obs?'<div style="font-size:12px;color:var(--t3);margin-top:4px">'+esc(item.obs)+'</div>':'')
+            +(item.justificativa?'<div style="margin-top:8px;padding:8px 12px;background:var(--r2);border-radius:8px;font-size:12px;color:var(--r)">📋 '+esc(item.justificativa)+'</div>':'')
             +fotoHtml
             +'</div></div>';
-        }).join('')
-      +'</div>'
+        }).join(''))
     : '';
 
   // ── Contagem de Estoque (planilha) ──
@@ -5189,12 +5214,9 @@ function _renderDetalhe(r) {
     if (!item.produtos || !item.produtos.length) return '';
     var preenchidos = item.produtos.filter(function(p){ return p.quantidade && p.quantidade !== ''; }).length;
     var totalP = item.produtos.length;
-    return '<div style="background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:var(--sh)">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">'
-      +'<div style="font-size:12px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.6px">📊 '+item.texto+'</div>'
-      +'<span style="font-size:12px;font-weight:700;color:var(--bl);background:var(--bl2);padding:3px 10px;border-radius:20px">'+preenchidos+'/'+totalP+' preenchidos</span>'
-      +'</div>'
-      +'<div style="overflow-x:auto">'
+    return _detCard('📊 '+esc(item.texto),
+      '<span style="font-size:12px;font-weight:700;color:var(--bl);background:var(--bl2);padding:3px 10px;border-radius:20px">'+preenchidos+'/'+totalP+' preenchidos</span>',
+      '<div style="overflow-x:auto">'
       +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
       +'<thead><tr style="border-bottom:2px solid var(--gray2)">'
       +'<th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Código</th>'
@@ -5205,21 +5227,19 @@ function _renderDetalhe(r) {
       +item.produtos.map(function(p, pi){
           var semQtd = !p.quantidade || p.quantidade === '';
           return '<tr style="border-bottom:1px solid var(--gray2);background:'+(pi%2===0?'#fff':'#fafafa')+'">'
-            +'<td style="padding:9px 10px;font-size:12px;color:var(--t3);font-family:monospace">'+p.codigo+'</td>'
-            +'<td style="padding:9px 10px;font-weight:500;color:var(--t)">'+p.descricao+'</td>'
-            +'<td style="padding:9px 10px;font-size:12px;color:var(--t2)">'+( p.setor||'—')+'</td>'
-            +'<td style="padding:9px 10px;text-align:center;font-size:15px;font-weight:800;color:'+(semQtd?'var(--t3)':'var(--g)')+'">'+( semQtd?'—':p.quantidade)+'</td>'
+            +'<td style="padding:9px 10px;font-size:12px;color:var(--t3);font-family:monospace">'+esc(p.codigo)+'</td>'
+            +'<td style="padding:9px 10px;font-weight:500;color:var(--t)">'+esc(p.descricao)+'</td>'
+            +'<td style="padding:9px 10px;font-size:12px;color:var(--t2)">'+esc(p.setor||'—')+'</td>'
+            +'<td style="padding:9px 10px;text-align:center;font-size:15px;font-weight:800;color:'+(semQtd?'var(--t3)':'var(--g)')+'">'+(semQtd?'—':esc(p.quantidade))+'</td>'
             +'</tr>';
         }).join('')
-      +'</tbody></table></div></div>';
+      +'</tbody></table></div>');
   }).join('');
 
   // ── Assinatura ──
   document.getElementById('det-assinatura').innerHTML = r.assinatura
-    ? '<div style="background:#fff;border-radius:12px;padding:18px 20px;box-shadow:var(--sh)">'
-      +'<div style="font-size:12px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">✍ Assinatura Digital</div>'
-      +'<img src="'+r.assinatura+'" style="max-width:280px;border:1px solid var(--gray2);border-radius:8px;background:#fff"/>'
-      +'</div>'
+    ? _detCard('✍ Assinatura digital', '<span style="font-size:12px;color:var(--t3)">'+esc(r.operador)+' · '+esc(r.dataHora)+'</span>',
+        '<img src="'+r.assinatura+'" style="max-width:320px;width:100%;border:1px solid var(--gray2);border-radius:10px;background:#fff"/>')
     : '';
 
   window._detAtual = r;

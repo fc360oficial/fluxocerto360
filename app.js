@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '452';
+var BUILD = '453';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -995,6 +995,32 @@ function loadCheckState() {
 // continua imediato (é dele que a tela restaura) e o servidor recebe no máximo
 // 1 gravação a cada 20 s — e sempre que o app sai da tela ou vai enviar.
 var _checkStateTimer = null, _checkStatePendente = null;
+// BUILD 453 (Tiago, 12/11: "a Ponte tira a foto às 11 e quando vai finalizar
+// aparece que não tá 100%"). No aparelho da Ponte o localStorage estava cheio:
+// o setItem estourava DENTRO do try e a função saía sem gravar no celular e sem
+// agendar o envio pro servidor — a resposta e a hora da manhã morriam quando o
+// app fechava, e à tarde só a foto voltava (do servidor), com a pergunta travada.
+// Agora: (1) o servidor recebe o estado mesmo se o aparelho não conseguir gravar;
+// (2) memória cheia = apaga estados e cópias de foto de OUTROS dias e tenta de novo
+// (os eco_clstate_ de dias passados nunca eram apagados).
+function _limparEstadosOutrosDias(hoje) {
+  try {
+    Object.keys(localStorage).forEach(function(lk) {
+      if (lk.indexOf(CLSTATE_PREFIX) === 0 && lk.slice(-10) !== hoje) localStorage.removeItem(lk);
+    });
+  } catch(e) {}
+}
+function _gravarEstadoLocal(st) {
+  var chave = getStateKey(), txt = JSON.stringify(st);
+  try { localStorage.setItem(chave, txt); return true; } catch(e) {}
+  try {
+    var hoje = getLocalDate();
+    _limparEstadosOutrosDias(hoje);
+    _limparBackupsFotoOutrosDias(hoje);
+    localStorage.setItem(chave, txt);
+    return true;
+  } catch(e2) { return false; }
+}
 function saveCheckState() {
   try {
     // Salvar no localStorage SEM fotos (evita quota exceeded)
@@ -1003,9 +1029,11 @@ function saveCheckState() {
       if (k.indexOf('_foto_') >= 0) return;
       stateParaSalvar[k] = S.checkState[k];
     });
-    localStorage.setItem(getStateKey(), JSON.stringify(stateParaSalvar));
     _checkStatePendente = stateParaSalvar;
-    if (!_checkStateTimer) _checkStateTimer = setTimeout(_flushCheckState, 20000);
+    var gravouLocal = _gravarEstadoLocal(stateParaSalvar);
+    // sem cópia no aparelho o servidor é a única garantia: manda em 2 s em vez de 20 s
+    if (!gravouLocal && _checkStateTimer) { clearTimeout(_checkStateTimer); _checkStateTimer = null; }
+    if (!_checkStateTimer) _checkStateTimer = setTimeout(_flushCheckState, gravouLocal ? 20000 : 2000);
   } catch(e) {}
 }
 function _flushCheckState() {
@@ -1085,6 +1113,29 @@ function _guardarBackupFoto(fotoKey, base64) {
 // pra aba Executar). Agora: backup local primeiro; servidor no máximo 1x a cada
 // 5 min; sem servidor (cota estourada / sem internet) usa o cache do Firestore,
 // que guarda o que este aparelho já gravou hoje.
+// BUILD 453: a foto voltou do servidor mas o aparelho não tem a hora dela (estado
+// perdido: memória cheia, outro celular, app reinstalado) → a hora que vale é a
+// que o SERVIDOR recebeu a foto. Pergunta com várias fotos usa a mais tardia.
+// Nunca troca uma hora que o aparelho já tem. Retorna true se recuperou alguma.
+function _recuperarHoraDasFotos(lista) {
+  var horas = {};
+  (lista || []).forEach(function(d){
+    if (!d || !d.base64 || !d.clId || !d.recebidoEm) return;
+    var tipo = String(d.tipo || '');
+    var idxItem = tipo.indexOf('multi_') === 0 ? parseInt(tipo.slice(6), 10) : parseInt(d.idx, 10);
+    if (isNaN(idxItem)) return;
+    var dt = new Date(d.recebidoEm);
+    if (isNaN(dt.getTime())) return;
+    var hhmm = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+    var k = d.clId + '_hrresp_' + idxItem;
+    if (!horas[k] || hhmm > horas[k]) horas[k] = hhmm;
+  });
+  var mudou = false;
+  Object.keys(horas).forEach(function(k){
+    if (!S.checkState[k]) { S.checkState[k] = horas[k]; mudou = true; }
+  });
+  return mudou;
+}
 var _fotosServidorEm = 0;
 function carregarFotosFirebase(callback) {
   var hoje3 = getLocalDate();
@@ -1102,6 +1153,7 @@ function carregarFotosFirebase(callback) {
     (lista || []).forEach(function(d){
       if (d.base64) S.checkState[d.clId + '_foto_' + d.tipo + '_' + d.idx] = d.base64;
     });
+    if (_recuperarHoraDasFotos(lista)) saveCheckState();
   };
   if (Date.now() - _fotosServidorEm < 5 * 60 * 1000) { if (callback) callback(); return; }
   FC360Api.chamar('GET', '/fotos?date=' + hoje3 + '&userId=' + encodeURIComponent(userId) + '&colecao=fotos&comBase64=1').then(function(lista){
@@ -2917,7 +2969,7 @@ function buildCLBlock(cl) {
   var _jaConcluidoBloco = jaConcluido;
   var items = cl.itens.map(function(item,i){
     // Item com hora-limite vencida fica somente leitura (como checklist já enviado)
-    var _prazoFechado = !_jaConcluidoBloco && _prazoItemEncerrado(item);
+    var _prazoFechado = !_jaConcluidoBloco && _itemTravadoPeloPrazo(cl.id, item, i); // BUILD 453: foto no prazo não trava
     var jaConcluido = _jaConcluidoBloco || _prazoFechado;
     var planoDoItem = _planoAbertoDoItem(cl.label, item.t);
     if (planoDoItem) {
@@ -3033,6 +3085,9 @@ function buildCLBlock(cl) {
           + '<span style="font-size:11px;font-weight:700;color:var(--r)">Prazo encerrado às ' + item.horaLimite + ' — esta pergunta não pontua hoje</span></div>';
       } else if (on && _hrResp && _itemNoPrazo(cl.id, item, i)) {
         _prazoHtml = '<span style="font-size:10px;font-weight:700;color:var(--g);background:var(--g3);padding:1px 7px;border-radius:20px;border:1px solid var(--g2);white-space:nowrap">⏰ respondido ' + _hrResp + '</span>';
+      } else if (!on && _hrResp && _fotoEntregueNoPrazo(cl.id, item, i)) {
+        // BUILD 453: foto já entregue no horário, falta só marcar a resposta (pode ser depois do prazo)
+        _prazoHtml = '<span style="font-size:10px;font-weight:800;color:var(--g);background:var(--g3);padding:1px 7px;border-radius:20px;border:1px solid var(--g2);white-space:nowrap">📷 foto no prazo (' + _hrResp + ')' + (_jaConcluidoBloco ? '' : ' — falta responder') + '</span>';
       } else {
         _prazoHtml = '<span style="font-size:10px;font-weight:800;color:#b45309;background:#fff8e1;padding:1px 7px;border-radius:20px;border:1px solid #f0c36d;white-space:nowrap">⏰ ATÉ ' + item.horaLimite + '</span>';
       }
@@ -3312,13 +3367,36 @@ function _itemNoPrazo(clId, item, idx) {
   var hr = _hhmmParaMin(S.checkState[clId + '_hrresp_' + idx]);
   return hr !== null && hr <= lim;
 }
+// BUILD 453: pergunta com foto obrigatória e hora-limite — o que tem prazo é a
+// FOTO. Se todas as fotos foram tiradas até o horário, a pergunta NÃO trava
+// depois dele: a loja ainda pode marcar Sim/Não no fim do dia e pontua (a hora
+// que vale continua sendo a da foto). Sem foto no prazo, trava como antes.
+function _fotosDoItemCompletas(clId, item, idx) {
+  var ef = (item && item.foto && item.foto !== 'none') ? item.foto : 'none';
+  if (ef === 'none') return false;
+  if (ef === 'multiplas') { var qt = item.fotoQtd || 2, ct = 0; for (var f = 0; f < qt; f++) { if (S.checkState[clId + '_foto_multi_' + idx + '_' + f]) ct++; } return ct >= qt; }
+  var td = !!(S.checkState[clId + '_foto_depois_' + idx] || S.checkState[clId + '_foto_' + idx]);
+  if (ef === 'antes_depois') return !!S.checkState[clId + '_foto_antes_' + idx] && td;
+  return td;
+}
+function _fotoEntregueNoPrazo(clId, item, idx) {
+  return !!(item && item.horaLimite) && _fotosDoItemCompletas(clId, item, idx) && _itemNoPrazo(clId, item, idx);
+}
+// true = prazo passou E a pergunta não pode mais ser respondida hoje
+function _itemTravadoPeloPrazo(clId, item, idx) {
+  return _prazoItemEncerrado(item) && !_fotoEntregueNoPrazo(clId, item, idx);
+}
 function _registrarHoraResposta(clId, idx) {
+  // resposta dada depois do horário numa pergunta cuja foto chegou no prazo: mantém a hora da foto
+  var cl = getMyCLs().find(function(c){ return c.id === clId; });
+  var item = cl && cl.itens[idx];
+  if (item && _prazoItemEncerrado(item) && _itemNoPrazo(clId, item, idx)) return;
   S.checkState[clId + '_hrresp_' + idx] = _horaAgoraHHMM();
 }
 // Barra a resposta se o prazo do item já passou; true = pode responder
 function _podeResponderNoPrazo(cl, idx) {
   var item = cl && cl.itens[idx];
-  if (!item || !_prazoItemEncerrado(item)) return true;
+  if (!item || !_itemTravadoPeloPrazo(cl.id, item, idx)) return true;
   showToast('⏰ O prazo desta pergunta encerrou às ' + item.horaLimite + '. A resposta não pontua mais hoje.', 5000);
   var b = document.getElementById('cl-block-' + cl.id);
   if (b) b.innerHTML = buildCLBlock(cl);
@@ -4338,7 +4416,7 @@ function _montarAvisoFaltando(cl, clId, label) {
   var abertas = [], vencidas = [];
   cl.itens.forEach(function(item, idx){
     if (_itemFeitoParaEnvio(clId, label, item, idx)) return;
-    if (_prazoItemEncerrado(item)) vencidas.push(item.t); else abertas.push(item.t);
+    if (_itemTravadoPeloPrazo(clId, item, idx)) vencidas.push(item.t); else abertas.push(item.t);
   });
   var esc = function(s){ return String(s||'').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
   if (!abertas.length) {

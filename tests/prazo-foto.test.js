@@ -17,13 +17,15 @@ function extrair(nome) {
   return fonte.slice(ini + 1, i + 1);
 }
 const NOMES = ['_hhmmParaMin', '_horaAgoraHHMM', '_prazoItemEncerrado', '_itemNoPrazo', '_fotosDoItemCompletas', '_fotoEntregueNoPrazo', '_itemTravadoPeloPrazo',
-  '_registrarHoraResposta', '_podeResponderNoPrazo', '_recuperarHoraDasFotos', 'getStateKey', '_limparEstadosOutrosDias', '_limparBackupsFotoOutrosDias', '_gravarEstadoLocal', 'saveCheckState', '_flushCheckState'];
+  '_autoConcluirPorFoto', '_itemConcluidoPorFoto', '_aposFotoComPrazo', '_registrarHoraResposta', '_podeResponderNoPrazo', '_recuperarHoraDasFotos', 'getStateKey', '_limparEstadosOutrosDias', '_limparBackupsFotoOutrosDias', '_gravarEstadoLocal', 'saveCheckState', '_flushCheckState'];
 
 const CL = { id: 'cl1', itens: [
   { t: 'Foto do açougue', tipo: 'simNao', foto: 'depois', horaLimite: '11:00' },
   { t: 'Loja limpa?', tipo: 'simNao', foto: 'none', horaLimite: '11:00' },
   { t: 'Fachada', tipo: 'simNao', foto: 'depois' },
   { t: 'Quatro fotos', tipo: 'simNao', foto: 'multiplas', fotoQtd: 2, horaLimite: '11:00' },
+  { t: 'Freezer limpo', tipo: 'checkbox', foto: 'depois', horaLimite: '11:00' },
+  { t: 'Nota do balcão', tipo: 'nota', foto: 'depois', horaLimite: '11:00' },
 ] };
 
 function ambiente(hora, opts) {
@@ -42,7 +44,7 @@ function ambiente(hora, opts) {
   const timers = [];
   const ctx = { Date: FakeDate, S: { checkState: {}, currentUser: { id: 'u1' } }, localStorage: ls, console,
     CLSTATE_PREFIX: 'eco_clstate_', _checkStateTimer: null, _checkStatePendente: null,
-    getLocalDate: () => '2026-11-12', getMyCLs: () => [CL], showToast: t => toasts.push(t), buildCLBlock: () => '', document: { getElementById: () => null },
+    getLocalDate: () => '2026-11-12', getMyCLs: () => [CL], jaEnviouHoje: () => false, showToast: t => toasts.push(t), buildCLBlock: () => '', document: { getElementById: () => null },
     setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; }, clearTimeout: id => { if (timers[id - 1]) timers[id - 1].cancelado = true; },
     FC360Api: { enviarOuEnfileirar: c => { enviados.push(c); return Promise.resolve('enviado'); } } };
   vm.createContext(ctx);
@@ -131,4 +133,53 @@ test('localStorage sem jeito: o estado vai pro servidor mesmo assim, em 2 s', ()
   assert.equal(a.enviados.length, 1);
   assert.deepEqual(JSON.parse(JSON.stringify(a.enviados[0].checkstates[0].state)), /* objeto nasce em outro contexto (vm) */ { 'cl1_Foto do açougue': 'sim', 'cl1_hrresp_0': '10:12' });
   assert.equal(a.enviados[0].checkstates[0].id, 'u1_2026-11-12');
+});
+
+// ── BUILD 454: a foto no prazo É a resposta (verde, concluída e intocável) ──
+test('454: completou a foto no prazo → marca sozinho (Sim / ok), grava no servidor na hora e avisa', () => {
+  const a = ambiente('10:12');
+  a.S.checkState['cl1_foto_depois_0'] = 'x'; a.S.checkState['cl1_hrresp_0'] = '10:12';
+  a.S.checkState['cl1_foto_depois_4'] = 'x'; a.S.checkState['cl1_hrresp_4'] = '10:12';
+  assert.equal(a.ctx._aposFotoComPrazo(CL), true);
+  assert.equal(a.S.checkState['cl1_Foto do açougue'], 'sim');
+  assert.equal(a.S.checkState['cl1_Freezer limpo'], true);
+  assert.equal(a.enviados.length, 1);                                  // não espera os 20 s
+  assert.equal(JSON.parse(JSON.stringify(a.enviados[0].checkstates[0].state))['cl1_Foto do açougue'], 'sim');
+  assert.equal(a.toasts.length, 1);
+  assert.equal(a.ctx._aposFotoComPrazo(CL), false);                    // nada novo: não regrava nem avisa de novo
+});
+
+test('454: não conclui sozinho sem todas as fotos, com foto fora do prazo, sem prazo ou em pergunta de nota', () => {
+  const a = ambiente('16:50');
+  a.S.checkState['cl1_foto_multi_3_0'] = 'x'; a.S.checkState['cl1_hrresp_3'] = '10:00';          // falta 1 foto
+  a.S.checkState['cl1_foto_depois_0'] = 'x'; a.S.checkState['cl1_hrresp_0'] = '11:05';           // fora do prazo
+  a.S.checkState['cl1_foto_depois_2'] = 'x';                                                    // pergunta sem prazo
+  a.S.checkState['cl1_foto_depois_5'] = 'x'; a.S.checkState['cl1_hrresp_5'] = '09:00';           // nota: precisa da nota
+  assert.equal(a.ctx._autoConcluirPorFoto(CL), 0);
+  for (const t of ['Quatro fotos', 'Foto do açougue', 'Fachada', 'Nota do balcão']) assert.ok(!a.S.checkState['cl1_' + t], t);
+});
+
+test('454: caso da Ponte — à tarde a foto volta do servidor sem hora nem resposta e a pergunta fecha sozinha', () => {
+  const a = ambiente('16:45');
+  a.S.checkState['cl1_foto_depois_0'] = 'data:image/jpeg;base64,xx';   // hidratada do servidor
+  a.ctx._recuperarHoraDasFotos([{ clId: 'cl1', tipo: 'depois', idx: 0, base64: 'x', recebidoEm: new Date(2026, 10, 12, 10, 12).toISOString() }]);
+  assert.equal(a.ctx._autoConcluirPorFoto(CL), 1);
+  assert.equal(a.S.checkState['cl1_Foto do açougue'], 'sim');
+  assert.equal(a.ctx._itemNoPrazo('cl1', CL.itens[0], 0), true);       // pontua no envio
+});
+
+test('454: pergunta concluída pela foto fica intocável, antes e depois do horário', () => {
+  for (const hora of ['10:30', '16:50']) {
+    const a = ambiente(hora);
+    a.S.checkState['cl1_foto_depois_0'] = 'x'; a.S.checkState['cl1_hrresp_0'] = '10:12'; a.S.checkState['cl1_Foto do açougue'] = 'sim';
+    assert.equal(a.ctx._itemConcluidoPorFoto('cl1', CL.itens[0], 0), true, hora);
+    assert.equal(a.ctx._podeResponderNoPrazo(CL, 0), false, hora);
+    assert.match(a.toasts[0], /já concluída com a foto das 10:12/);
+  }
+});
+
+test('454: resposta que o gerente já deu não é trocada', () => {
+  const a = ambiente('10:30');
+  a.S.checkState['cl1_foto_depois_0'] = 'x'; a.S.checkState['cl1_hrresp_0'] = '10:12'; a.S.checkState['cl1_Foto do açougue'] = 'nao';
+  assert.equal(a.ctx._autoConcluirPorFoto(CL), 0); assert.equal(a.S.checkState['cl1_Foto do açougue'], 'nao');
 });

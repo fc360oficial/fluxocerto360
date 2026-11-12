@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '453';
+var BUILD = '454';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -1153,7 +1153,10 @@ function carregarFotosFirebase(callback) {
     (lista || []).forEach(function(d){
       if (d.base64) S.checkState[d.clId + '_foto_' + d.tipo + '_' + d.idx] = d.base64;
     });
-    if (_recuperarHoraDasFotos(lista)) saveCheckState();
+    var _recup = _recuperarHoraDasFotos(lista), _auto = 0;
+    // BUILD 454: foto no prazo que voltou do servidor já conclui a pergunta (sem depender de clique)
+    try { getMyCLs().forEach(function(c){ if (!jaEnviouHoje(c.id)) _auto += _autoConcluirPorFoto(c); }); } catch(e) {}
+    if (_recup || _auto) { saveCheckState(); if (_auto) _flushCheckState(); }
   };
   if (Date.now() - _fotosServidorEm < 5 * 60 * 1000) { if (callback) callback(); return; }
   FC360Api.chamar('GET', '/fotos?date=' + hoje3 + '&userId=' + encodeURIComponent(userId) + '&colecao=fotos&comBase64=1').then(function(lista){
@@ -2953,6 +2956,8 @@ function buildCLBlock(cl) {
     }
   }
 
+  // BUILD 454: rede de segurança — qualquer caminho que traga foto no prazo sem resposta conclui aqui
+  if (!jaEnviouHoje(cl.id) && _autoConcluirPorFoto(cl)) { saveCheckState(); _flushCheckState(); }
   var itensAtivos = cl.itens.filter(function(i){ return !_planoAbertoDoItem(cl.label, i.t); });
   var done = itensAtivos.filter(function(i){ return S.checkState[cl.id+'_'+i.t]; }).length;
   var total = itensAtivos.length;
@@ -2970,7 +2975,7 @@ function buildCLBlock(cl) {
   var items = cl.itens.map(function(item,i){
     // Item com hora-limite vencida fica somente leitura (como checklist já enviado)
     var _prazoFechado = !_jaConcluidoBloco && _itemTravadoPeloPrazo(cl.id, item, i); // BUILD 453: foto no prazo não trava
-    var jaConcluido = _jaConcluidoBloco || _prazoFechado;
+    var jaConcluido = _jaConcluidoBloco || _prazoFechado || _itemConcluidoPorFoto(cl.id, item, i); // BUILD 454: concluída pela foto = intocável
     var planoDoItem = _planoAbertoDoItem(cl.label, item.t);
     if (planoDoItem) {
       var statusLabel = {'aberto':'Em aberto','em-andamento':'Em andamento'}[planoDoItem.status] || planoDoItem.status;
@@ -3084,7 +3089,7 @@ function buildCLBlock(cl) {
           + '<span style="font-size:13px">⏰</span>'
           + '<span style="font-size:11px;font-weight:700;color:var(--r)">Prazo encerrado às ' + item.horaLimite + ' — esta pergunta não pontua hoje</span></div>';
       } else if (on && _hrResp && _itemNoPrazo(cl.id, item, i)) {
-        _prazoHtml = '<span style="font-size:10px;font-weight:700;color:var(--g);background:var(--g3);padding:1px 7px;border-radius:20px;border:1px solid var(--g2);white-space:nowrap">⏰ respondido ' + _hrResp + '</span>';
+        _prazoHtml = '<span style="font-size:10px;font-weight:700;color:var(--g);background:var(--g3);padding:1px 7px;border-radius:20px;border:1px solid var(--g2);white-space:nowrap">' + (_fotosDoItemCompletas(cl.id, item, i) ? '✅ foto enviada às ' + _hrResp + ' — concluída no prazo' : '⏰ respondido ' + _hrResp) + '</span>';
       } else if (!on && _hrResp && _fotoEntregueNoPrazo(cl.id, item, i)) {
         // BUILD 453: foto já entregue no horário, falta só marcar a resposta (pode ser depois do prazo)
         _prazoHtml = '<span style="font-size:10px;font-weight:800;color:var(--g);background:var(--g3);padding:1px 7px;border-radius:20px;border:1px solid var(--g2);white-space:nowrap">📷 foto no prazo (' + _hrResp + ')' + (_jaConcluidoBloco ? '' : ' — falta responder') + '</span>';
@@ -3386,6 +3391,32 @@ function _fotoEntregueNoPrazo(clId, item, idx) {
 function _itemTravadoPeloPrazo(clId, item, idx) {
   return _prazoItemEncerrado(item) && !_fotoEntregueNoPrazo(clId, item, idx);
 }
+// BUILD 454 (Tiago, 12/11: "assim que enviasse as fotos pela manhã essas perguntas
+// aparecer verde já como feita... pra depois quando entrar tá ali intocável... tem
+// que ser algo certo porque gerente erra"). Pergunta com "Responder até" + foto
+// obrigatória: a FOTO NO PRAZO É A RESPOSTA. Completou as fotos até o horário →
+// o app marca sozinho (Sim / ok), a pergunta fica verde e travada e o estado vai
+// pro servidor na hora. Ninguém precisa clicar em nada depois da foto.
+// Só Sim/Não e checkbox (nota e texto continuam precisando da resposta escrita).
+function _autoConcluirPorFoto(cl) {
+  if (!cl || !cl.itens) return 0;
+  var n = 0;
+  cl.itens.forEach(function(item, idx){
+    if (!item || !item.horaLimite) return;
+    var tipo = item.tipo || 'checkbox';
+    if (tipo !== 'simNao' && tipo !== 'checkbox') return;
+    var key = cl.id + '_' + item.t;
+    if (S.checkState[key]) return;
+    if (!_fotoEntregueNoPrazo(cl.id, item, idx)) return;
+    S.checkState[key] = tipo === 'simNao' ? 'sim' : true;
+    n++;
+  });
+  return n;
+}
+// true = pergunta com prazo já concluída pela foto no horário (verde e intocável)
+function _itemConcluidoPorFoto(clId, item, idx) {
+  return !!(item && item.horaLimite) && !!S.checkState[clId + '_' + item.t] && _fotoEntregueNoPrazo(clId, item, idx);
+}
 function _registrarHoraResposta(clId, idx) {
   // resposta dada depois do horário numa pergunta cuja foto chegou no prazo: mantém a hora da foto
   var cl = getMyCLs().find(function(c){ return c.id === clId; });
@@ -3396,6 +3427,10 @@ function _registrarHoraResposta(clId, idx) {
 // Barra a resposta se o prazo do item já passou; true = pode responder
 function _podeResponderNoPrazo(cl, idx) {
   var item = cl && cl.itens[idx];
+  if (item && _itemConcluidoPorFoto(cl.id, item, idx)) {
+    showToast('✅ Pergunta já concluída com a foto das ' + (S.checkState[cl.id + '_hrresp_' + idx] || item.horaLimite) + '. Não precisa mexer.', 4000);
+    return false;
+  }
   if (!item || !_itemTravadoPeloPrazo(cl.id, item, idx)) return true;
   showToast('⏰ O prazo desta pergunta encerrou às ' + item.horaLimite + '. A resposta não pontua mais hoje.', 5000);
   var b = document.getElementById('cl-block-' + cl.id);
@@ -3594,10 +3629,20 @@ function salvarFotoTipo(clId, idx, tipo, input) {
     }
 
     saveCheckState();
+    _aposFotoComPrazo(cl);
     var b = document.getElementById('cl-block-'+clId);
     if (b && cl) b.innerHTML = buildCLBlock(cl);
     updateDash();
   });
+}
+
+// BUILD 454: completou as fotos de uma pergunta com prazo → conclui, grava no servidor na hora e avisa
+function _aposFotoComPrazo(cl) {
+  if (!cl || !_autoConcluirPorFoto(cl)) return false;
+  saveCheckState();
+  _flushCheckState();
+  showToast('✅ Foto enviada no prazo — pergunta concluída. Não precisa responder.', 4500);
+  return true;
 }
 
 function salvarFotoMulti(clId, idx, input) {
@@ -3625,6 +3670,7 @@ function salvarFotoMulti(clId, idx, input) {
     }] }).then(function(estado){ if (estado !== 'enviado') _guardarBackupFoto(fotoKey, base64); })
       .catch(function(e){ _guardarBackupFoto(fotoKey, base64); console.log('Erro ao salvar foto multi:',e);});
     saveCheckState();
+    _aposFotoComPrazo(cl);
     var b = document.getElementById('cl-block-'+clId);
     if (b) b.innerHTML = buildCLBlock(cl);
     updateDash();

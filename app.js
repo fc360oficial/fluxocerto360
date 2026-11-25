@@ -1,5 +1,5 @@
 ﻿// Verificação de versão — roda antes de tudo
-var BUILD = '454';
+var BUILD = '455';
 var ETIQUETAS_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/etiquetas-api';
 var FC360_API_URL = 'https://hhk0a8gt2cn.sn.mynetname.net/fc360-api'; // BUILD 443: checklist no Postgres do .254
 (function() {
@@ -2153,6 +2153,7 @@ function doLogin() {
       var msg = 'E-mail ou senha incorretos.';
       if (e && e.status === 401) e.code = 'auth/wrong-password';
       if (e && e.status === 403) e.code = 'auth/user-disabled';
+      if (e && e.status === 429) e.code = 'auth/too-many-requests';   // limite de tentativas da API (25/11/26)
       if (e && e.offline) e.code = 'auth/network-request-failed';
       if (e.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Aguarde alguns minutos.';
       if (e.code === 'auth/network-request-failed') msg = 'Sem conexão com a internet.';

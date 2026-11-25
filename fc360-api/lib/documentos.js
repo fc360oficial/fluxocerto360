@@ -12,6 +12,7 @@
 const OPS_WHERE = new Set(['==', '!=', '<', '<=', '>', '>=', 'in', 'array-contains']);
 const LIMITE_MAX = 10000; // o app baixa coleções inteiras (planos tem ~3 mil); 2 mil cortava o plano aberto
 const SENSIVEIS = { usuarios: ['senha', 'senha_hash', '_fbNewPass'] };
+const regras = require('./regras-usuario');
 
 // ── escopo por coleção ─────────────────────────────────────────────────────────
 // Devolve como a consulta é restringida e quem pode escrever. Padrão: tudo do tenant.
@@ -59,9 +60,15 @@ function montarConsulta(usuario, colecao, q) {
   if (esc.clienteId !== null && esc.clienteId !== undefined) { params.push(esc.clienteId); cond.push('cliente_id = $' + params.length); }
   if (esc.somenteIds) { params.push(esc.somenteIds); cond.push('id = ANY($' + params.length + '::text[])'); }
   if (q.ids && q.ids.length) { params.push(q.ids.slice(0, 500)); cond.push('id = ANY($' + params.length + '::text[])'); }
+  // 25/11/2026: campo sensível não sai na resposta — e também não pode servir de filtro nem de ordem, senão dá pra
+  // descobrir a senha antiga de alguém perguntando "quem tem senha == X?" ou ordenando por ela.
+  const proibidos = SENSIVEIS[colecao] || [];
+  const conferirCampo = (campo) => { if (proibidos.includes(caminho(campo)[0])) throw new Error('campo não permitido na consulta'); };
+  for (const o of q.orderBy || []) conferirCampo(Array.isArray(o) ? o[0] : o);
   for (const w of q.where || []) {
     if (!Array.isArray(w) || w.length !== 3) throw new Error('where inválido');
     const [campo, op, valor] = w;
+    conferirCampo(campo);
     if (!OPS_WHERE.has(op)) throw new Error('operador inválido: ' + op);
     params.push(caminho(campo));
     const p = '$' + params.length + '::text[]';
@@ -198,6 +205,15 @@ async function aplicarOps(client, usuario, ops) {
       if (!gestor && (o.op !== 'update' || chaves.some(k => !PROPRIOS.includes(k)))) { rejeitados.push({ col, id, motivo: 'só gestor altera cadastro de usuário' }); continue; }
       const d = ehObj(o.dados) ? o.dados : {};
       if (d.perfil === 'superadmin' || (d.clienteId && d.clienteId !== usuario.clienteId)) { rejeitados.push({ col, id, motivo: 'perfil/cliente não permitido' }); continue; }
+      // 25/11/2026 (lib/regras-usuario.js): documento de superadmin só o superadmin toca — nem alterar, nem apagar
+      // (ele mora no mesmo cliente_id do Econômico); gestor só mexe em quem pode gerir e não se promove.
+      const atual = existente ? (existente.dados || {}) : null;
+      if (atual && atual.perfil === 'superadmin') { rejeitados.push({ col, id, motivo: 'documento de superadmin' }); continue; }
+      if (gestor) {
+        if (atual && id !== usuario.id && !regras.podeGerir(usuario, atual)) { rejeitados.push({ col, id, motivo: 'sem permissão sobre esse usuário' }); continue; }
+        const mudaPerfil = Object.prototype.hasOwnProperty.call(d, 'perfil') && d.perfil !== (atual ? atual.perfil : undefined);
+        if (mudaPerfil && !regras.podeAtribuir(usuario, d.perfil)) { rejeitados.push({ col, id, motivo: 'perfil não permitido' }); continue; }
+      }
     }
     if (o.op === 'delete') {
       await client.query('DELETE FROM documento WHERE colecao=$1 AND id=$2', [col, id]);

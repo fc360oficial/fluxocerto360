@@ -10,8 +10,11 @@ const cors = require('cors');
 const fotosDisco = require('./fotos-disco');
 const documentos = require('./documentos');
 const { gravarSync, hojeIso, dataValida, str } = require('./gravar');
+const regras = require('./regras-usuario');
+const { criarLimiteLogin } = require('./limite');
 
 const LIMITE_JSON = '30mb';
+const LIMITE_JSON_LOGIN = '20kb'; // e-mail e senha: não faz sentido aceitar 30 MB de quem ainda nem entrou
 
 function createApp(opts) {
   const { pool, fotosRaiz, autenticar } = opts;
@@ -27,6 +30,7 @@ function createApp(opts) {
     allowedHeaders: ['Authorization', 'Content-Type'],
     maxAge: 600
   }));
+  app.use('/auth/login', express.json({ limit: LIMITE_JSON_LOGIN })); // antes do parser geral: corpo já lido, o de 30 MB não entra
   app.use(express.json({ limit: LIMITE_JSON }));
   // O app consulta as mesmas URLs o tempo todo (/resultados?desde=..., /envios?date=...):
   // nada de cache HTTP, senão o navegador devolve a resposta velha e o "ao vivo" morre.
@@ -41,14 +45,24 @@ function createApp(opts) {
 
   // ── login próprio (fase 3) — pública ──────────────────────────────────────
   const auth = opts.auth || null;
+  // Limite de tentativas (25/11/2026): 10 erros em 15 min na mesma conta+IP (30 na conta, 60 no IP) = 15 min de
+  // espera; bloqueado nem confere a senha. req.ip é o que o proxy do Econômico Relatórios manda em X-Forwarded-For
+  // (ele sobrescreve o cabeçalho com o IP real de quem chamou; a API só escuta em 127.0.0.1).
+  const limiteLogin = opts.limiteLogin || criarLimiteLogin();
   app.post('/auth/login', async (req, res) => {
     if (!auth) return res.status(501).json({ error: 'login próprio não configurado' });
+    const contaLogin = str(req.body && req.body.email, 200).toLowerCase();
+    const ipLogin = str(req.ip, 60);
+    const esperaLogin = limiteLogin.bloqueado(contaLogin, ipLogin);
+    if (esperaLogin > 0) return res.status(429).json({ error: limiteLogin.aviso(esperaLogin) });
     try {
       const r = await auth.login(req.body && req.body.email, req.body && req.body.senha);
+      limiteLogin.sucesso(contaLogin, ipLogin);
       await pool.query('INSERT INTO envio_log (cliente_id, user_id, loja, tipo, ref_id, bytes, ip) VALUES ($1,$2,$3,$4,$5,$6,$7)',
         [r.usuario.clienteId || '', r.usuario.id, r.usuario.loja || '', 'login', r.usuario.email || '', 0, str(req.ip, 60)]).catch(() => {});
       res.json(r);
     } catch (e) {
+      if (e.status === 401 && limiteLogin.falha(contaLogin, ipLogin)) console.log(new Date().toISOString(), 'login bloqueado por excesso de tentativas:', contaLogin, ipLogin);
       res.status(e.status || 500).json({ error: e.message });
     }
   });
@@ -86,13 +100,19 @@ function createApp(opts) {
     dados.email = String(dados.email).trim().toLowerCase();
     if (req.usuario.perfil !== 'superadmin') dados.clienteId = req.usuario.clienteId;
     if (!dados.clienteId) return res.status(400).json({ error: 'clienteId obrigatório' });
-    if (dados.perfil === 'superadmin' && req.usuario.perfil !== 'superadmin') return res.status(403).json({ error: 'Sem permissão' });
+    // 25/11/2026: o perfil que se pode dar segue lib/regras-usuario.js (gerência/supervisor não criam outro gestor).
+    if (!regras.podeAtribuir(req.usuario, dados.perfil)) return res.status(403).json({ error: 'Sem permissão para criar usuário com esse perfil' });
     const id = str(dados.id || ('id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)), 120);
     dados.id = id;
     delete dados.senha; delete dados._fbNewPass;
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+      // O id vem do aparelho. Se já existe um usuário com ele, esta rota REGRAVA o cadastro e a senha — então só
+      // vale pra quem já poderia mexer nesse usuário (repetição do próprio cadastro, por exemplo). Sem isso, bastava
+      // mandar o id do superadmin ou de alguém de outro cliente pra tomar a conta.
+      const jaExiste = await client.query("SELECT dados FROM documento WHERE colecao='usuarios' AND id=$1 FOR UPDATE", [id]);
+      if (jaExiste.rows.length && !regras.podeGerir(req.usuario, jaExiste.rows[0].dados || {})) { await client.query('ROLLBACK'); client.release(); return res.status(403).json({ error: 'Sem permissão sobre esse usuário' }); }
       const dup = await client.query("SELECT id FROM documento WHERE colecao='usuarios' AND lower(dados->>'email')=$1 AND id<>$2", [dados.email, id]);
       if (dup.rows.length) { await client.query('ROLLBACK'); client.release(); return res.status(409).json({ error: 'Já existe usuário com esse e-mail' }); }
       await client.query(`INSERT INTO documento (colecao, id, cliente_id, dados) VALUES ('usuarios',$1,$2,$3)
@@ -105,7 +125,8 @@ function createApp(opts) {
     res.json({ ok: true, id });
   });
 
-  // troca de senha: a própria, ou de alguém do mesmo cliente se for gestor
+  // troca de senha: a própria, ou a de quem a pessoa pode gerir (lib/regras-usuario.js): admin = qualquer um do
+  // próprio cliente; gerência/supervisor = só quem está abaixo; ninguém além do superadmin troca a do superadmin.
   app.post('/auth/senha', async (req, res) => {
     if (!auth) return res.status(501).json({ error: 'login próprio não configurado' });
     const alvoId = str(req.body && req.body.usuarioId || req.usuario.id, 120);
@@ -113,8 +134,7 @@ function createApp(opts) {
     if (!senha || String(senha).length < 4) return res.status(400).json({ error: 'senha (mín. 4) obrigatória' });
     const alvo = await auth.usuarioPorId(alvoId);
     if (!alvo) return res.status(404).json({ error: 'Usuário não encontrado' });
-    const mesmoCliente = (alvo.clienteId || 'economico') === req.usuario.clienteId;
-    if (!(alvoId === req.usuario.id || req.usuario.perfil === 'superadmin' || (gestor(req.usuario.perfil) && mesmoCliente))) return res.status(403).json({ error: 'Sem permissão' });
+    if (!(alvoId === req.usuario.id || regras.podeGerir(req.usuario, alvo))) return res.status(403).json({ error: 'Sem permissão' });
     await auth.definirSenha(alvoId, alvo.email, senha, 'bcrypt');
     await pool.query("UPDATE documento SET dados = dados - 'senha' - '_fbNewPass', atualizado_em = now() WHERE colecao='usuarios' AND id=$1", [alvoId]);
     auth.esquecer(alvoId);
